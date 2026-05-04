@@ -4,16 +4,870 @@ import {
   Music, MapPin, Clock, Users, Play, Calendar,
   Flame, ChevronRight, UserPlus, UserCheck, Sparkles, Radio,
   Heart, MessageCircle, Share2, Bookmark, Film, RefreshCw,
-  X, Send, Check,
+  X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3,
+  Image as ImageIcon, Video, Type, MoreHorizontal,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import type { Concert, Event, Post, Reel } from '../types';
+import type { Concert, Event, Post, Reel, StoryGroup } from '../types';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+// ── Story Creator ─────────────────────────────────────────────────────────────
+const TEXT_COLORS = ['#7B3FF2','#E0389A','#F0365A','#FF7A2F','#36D9A0','#3B82F6','#F59E0B','#1a0533','#000000','#ffffff'];
+
+function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [mode,      setMode]      = useState<'pick'|'text'|'image'|'video'|'preview'>('pick');
+  const [bgColor,   setBgColor]   = useState(TEXT_COLORS[0]);
+  const [caption,   setCaption]   = useState('');
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image'|'video'>('image');
+  const [uploading, setUploading] = useState(false);
+  const [success,   setSuccess]   = useState(false);
+  const fileRef  = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const MODES = [
+    { key: 'text'  as const, icon: <Type size={22} />,       label: 'Texte',   sub: 'Message sur fond coloré',    grad: 'linear-gradient(135deg,#7B3FF2,#9B65F5)' },
+    { key: 'image' as const, icon: <ImageIcon size={22} />,  label: 'Photo',   sub: 'Depuis votre galerie',       grad: 'linear-gradient(135deg,#1565C0,#2196F3)' },
+    { key: 'video' as const, icon: <Video size={22} />,      label: 'Vidéo',   sub: 'Clip jusqu\'à 30 secondes',  grad: 'linear-gradient(135deg,#AD1457,#E91E63)' },
+  ];
+
+  function pickFile(type: 'image'|'video') {
+    setMediaType(type);
+    if (fileRef.current) {
+      fileRef.current.accept = type === 'image' ? 'image/*' : 'video/*';
+      fileRef.current.click();
+    }
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setMediaFile(f);
+    setMediaPreview(URL.createObjectURL(f));
+    setMode('preview');
+    e.target.value = '';
+  }
+
+  async function publish() {
+    setUploading(true);
+    try {
+      let media_url: string | undefined;
+      let thumbnail_url: string | undefined;
+      let duration_sec = 5;
+      let background_color: string | undefined;
+      let final_media_type: string = 'text';
+
+      if (mode === 'text' || (mode === 'preview' && !mediaFile)) {
+        final_media_type = 'text';
+        background_color = bgColor;
+        duration_sec = 5;
+      } else if (mediaFile) {
+        final_media_type = mediaType;
+        const fd = new FormData();
+        fd.append('file', mediaFile);
+        if (mediaType === 'image') {
+          const res = await apiClient.upload<any>(Endpoints.upload.images('stories'), fd);
+          const uploaded = (res.data as any)?.uploaded?.[0] ?? res.data;
+          media_url = uploaded?.url ?? uploaded;
+          thumbnail_url = media_url;
+        } else {
+          const res = await apiClient.upload<any>(Endpoints.upload.video('stories'), fd);
+          const d = res.data as any;
+          media_url = d?.url ?? d;
+          thumbnail_url = d?.thumbnail_url;
+          duration_sec = d?.duration ? Math.min(Math.ceil(d.duration), 30) : 10;
+        }
+      }
+
+      await apiClient.post(Endpoints.stories.create, {
+        media_url,
+        media_type: final_media_type,
+        thumbnail_url,
+        caption: caption.trim() || undefined,
+        duration_sec,
+        background_color,
+      });
+
+      setSuccess(true);
+      setTimeout(() => { onCreated(); onClose(); }, 2000);
+    } catch (e: any) {
+      alert(e?.message ?? 'Erreur lors de la publication');
+    } finally { setUploading(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
+      onClick={onClose}>
+      <div
+        className="relative w-full sm:w-[420px] flex flex-col overflow-hidden"
+        style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', maxHeight: '92dvh' }}
+        onClick={e => e.stopPropagation()}>
+
+        <input ref={fileRef} type="file" className="hidden" onChange={onFileChange} />
+
+        {success ? (
+          /* ── Succès ── */
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              <Check size={28} className="text-white" />
+            </div>
+            <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>Story publiée !</p>
+            <p className="text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>Visible par tous vos abonnés pendant 24h</p>
+          </div>
+        ) : mode === 'pick' ? (
+          /* ── Choix du type ── */
+          <>
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <p className="font-black text-lg" style={{ color: 'var(--text-primary)' }}>Nouvelle story</p>
+              <button onClick={onClose} className="p-2 rounded-xl" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-2 px-4 pb-6">
+              {MODES.map(m => (
+                <button key={m.key}
+                  onClick={() => { if (m.key === 'text') setMode('text'); else pickFile(m.key === 'image' ? 'image' : 'video'); }}
+                  className="flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white"
+                    style={{ background: m.grad }}>{m.icon}</div>
+                  <div>
+                    <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{m.label}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{m.sub}</p>
+                  </div>
+                  <ChevronRight size={16} className="ml-auto shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+              ))}
+              <p className="text-xs text-center pt-2" style={{ color: 'var(--text-tertiary)' }}>
+                Les stories disparaissent automatiquement après 24h
+              </p>
+            </div>
+          </>
+        ) : mode === 'text' ? (
+          /* ── Éditeur texte ── */
+          <>
+            <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+              <button onClick={() => setMode('pick')} className="p-2 rounded-xl" style={{ color: 'var(--text-secondary)' }}>
+                <ChevronLeft size={18} />
+              </button>
+              <p className="font-black text-sm flex-1" style={{ color: 'var(--text-primary)' }}>Story texte</p>
+            </div>
+            {/* Aperçu */}
+            <div className="mx-4 rounded-2xl overflow-hidden flex items-center justify-center"
+              style={{ height: 240, background: bgColor }}>
+              {caption ? (
+                <p className="text-white font-black text-xl text-center px-6 leading-snug">{caption}</p>
+              ) : (
+                <p className="text-white/40 text-sm">Votre texte apparaît ici</p>
+              )}
+            </div>
+            {/* Palette couleurs */}
+            <div className="flex gap-2 px-4 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+              {TEXT_COLORS.map(c => (
+                <button key={c} onClick={() => setBgColor(c)}
+                  className="rounded-full shrink-0 transition-transform"
+                  style={{ width: 28, height: 28, background: c, border: bgColor === c ? '3px solid var(--text-primary)' : '2px solid var(--border)', transform: bgColor === c ? 'scale(1.2)' : 'scale(1)' }} />
+              ))}
+            </div>
+            {/* Input caption */}
+            <div className="px-4 pb-2">
+              <textarea
+                value={caption}
+                onChange={e => setCaption(e.target.value)}
+                placeholder="Écrivez votre message..."
+                maxLength={300}
+                rows={3}
+                className="w-full rounded-xl text-sm resize-none outline-none px-4 py-3"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            <div className="px-4 pb-5">
+              <button onClick={publish} disabled={!caption.trim() || uploading}
+                className="w-full py-3 rounded-xl font-black text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-40"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                {uploading ? <Spinner size="sm" /> : <><Send size={14} /> Publier</>}
+              </button>
+            </div>
+          </>
+        ) : (
+          /* ── Aperçu media ── */
+          <>
+            <div className="relative w-full rounded-t-[20px] overflow-hidden bg-black"
+              style={{ height: 380 }}>
+              {mediaType === 'image' && mediaPreview && (
+                <img src={mediaPreview} className="w-full h-full object-contain" alt="" />
+              )}
+              {mediaType === 'video' && mediaPreview && (
+                <video ref={videoRef} src={mediaPreview} className="w-full h-full object-contain" autoPlay muted loop playsInline />
+              )}
+              <div className="absolute top-3 left-3">
+                <button onClick={() => { setMode('pick'); setMediaFile(null); setMediaPreview(null); }}
+                  className="p-2 rounded-full" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                  <X size={16} className="text-white" />
+                </button>
+              </div>
+            </div>
+            {/* Caption */}
+            <div className="px-4 py-3">
+              <input
+                value={caption}
+                onChange={e => setCaption(e.target.value)}
+                placeholder="Ajouter une légende..."
+                maxLength={200}
+                className="w-full rounded-xl text-sm outline-none px-4 py-2.5"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            <div className="px-4 pb-5">
+              <button onClick={publish} disabled={uploading}
+                className="w-full py-3 rounded-xl font-black text-white flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                {uploading ? <Spinner size="sm" /> : <><Send size={14} /> Publier</>}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Story Viewer ──────────────────────────────────────────────────────────────
+function StoryViewer({
+  groups, initialIndex, initialStoryIndex = 0, currentUserId, onClose, onReload,
+}: {
+  groups: StoryGroup[];
+  initialIndex: number;
+  initialStoryIndex?: number;
+  currentUserId?: string;
+  onClose: () => void;
+  onReload: () => void;
+}) {
+  const [groupIdx,   setGroupIdx]   = useState(initialIndex);
+  const [storyIdx,   setStoryIdx]   = useState(initialStoryIndex);
+  const [progress,   setProgress]   = useState(0);
+  const [paused,     setPaused]     = useState(false);
+  const [menuOpen,   setMenuOpen]   = useState(false);
+  const [editMode,   setEditMode]   = useState(false);
+  const [editText,   setEditText]   = useState('');
+  const [viewers,    setViewers]    = useState<any[]>([]);
+  const [viewersOpen,setViewersOpen]= useState(false);
+  const [viewersLoading, setViewersLoading] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const group  = groups[groupIdx];
+  const story  = group?.stories[storyIdx];
+  const dur    = (story?.duration_sec ?? 5) * 1000;
+  const isOwn  = !!currentUserId && (story as any)?.user_id === currentUserId;
+  const totalInGroup = group?.stories.length ?? 0;
+
+  // Mark viewed
+  useEffect(() => {
+    if (!story) return;
+    apiClient.post(Endpoints.stories.view(story.id)).catch(() => {});
+  }, [story?.id]);
+
+  // Progress bar
+  useEffect(() => {
+    setProgress(0);
+    if (paused || menuOpen || editMode || !story) return;
+    const start = Date.now();
+    timerRef.current = setInterval(() => {
+      const pct = Math.min(((Date.now() - start) / dur) * 100, 100);
+      setProgress(pct);
+      if (pct >= 100) goNext();
+    }, 50);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [groupIdx, storyIdx, paused, menuOpen, editMode, dur]);
+
+  function goNext() {
+    if (storyIdx < totalInGroup - 1) { setStoryIdx(s => s + 1); }
+    else if (groupIdx < groups.length - 1) { setGroupIdx(g => g + 1); setStoryIdx(0); }
+    else { onClose(); }
+  }
+  function goPrev() {
+    if (storyIdx > 0) { setStoryIdx(s => s - 1); }
+    else if (groupIdx > 0) { setGroupIdx(g => g - 1); setStoryIdx(0); }
+  }
+
+  async function openViewers() {
+    setPaused(true); setViewersOpen(true); setViewersLoading(true);
+    try {
+      await apiClient.get<any>(`${Endpoints.social.comments}?story_id=${story?.id}&limit=1`);
+      // Actually fetch story viewers
+      const vRes = await apiClient.get<any>(`/api/v1/stories/${story?.id}/viewers`);
+      const raw = vRes.data;
+      setViewers(Array.isArray(raw) ? raw : raw?.items ?? []);
+    } catch { setViewers([]); }
+    setViewersLoading(false);
+  }
+
+  async function deleteStory() {
+    if (!story) return;
+    setMenuOpen(false);
+    try {
+      await apiClient.delete(Endpoints.stories.delete(story.id));
+      onReload();
+      if (totalInGroup > 1) setStoryIdx(storyIdx < totalInGroup - 1 ? storyIdx : storyIdx - 1);
+      else onClose();
+    } catch { alert('Erreur lors de la suppression'); }
+  }
+
+  async function saveEdit() {
+    if (!story) return;
+    try { await apiClient.patch(`/api/v1/stories/${story.id}`, { caption: editText.trim() || null }); }
+    catch { /* silencieux */ }
+    setEditMode(false); setPaused(false);
+  }
+
+  if (!group || !story) return null;
+  const author = group.user;
+
+  const timeAgo = (() => {
+    const d = (Date.now() - new Date(story.created_at).getTime()) / 1000;
+    if (d < 60) return 'À l\'instant';
+    if (d < 3600) return `${Math.floor(d / 60)} min`;
+    return `${Math.floor(d / 3600)} h`;
+  })();
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
+      onClick={onClose}>
+      <div className="relative"
+        style={{ width: 'min(100vw, 420px)', height: 'min(100dvh, 750px)', borderRadius: 16, overflow: 'hidden', background: '#000' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* ── Progress bars ── */}
+        <div className="absolute top-0 inset-x-0 z-30 flex gap-1 px-2 pt-2">
+          {group.stories.map((_, i) => (
+            <div key={i} className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.3)' }}>
+              <div className="h-full rounded-full"
+                style={{ background: '#fff', width: i < storyIdx ? '100%' : i === storyIdx ? `${progress}%` : '0%', transition: 'none' }} />
+            </div>
+          ))}
+        </div>
+
+        {/* ── Header ── */}
+        <div className="absolute top-6 inset-x-0 z-30 flex items-center gap-2.5 px-3">
+          <div className="rounded-full p-[2px]" style={{ border: '2px solid rgba(255,255,255,0.6)' }}>
+            <Avatar src={author.avatar_url} name={author.display_name ?? author.username ?? ''} size="sm" verified={author.is_verified} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-xs font-bold truncate">{author.display_name ?? author.username}</p>
+            <p className="text-white/60 text-[10px]">{timeAgo}</p>
+          </div>
+          {isOwn && (
+            <button onClick={() => { setPaused(true); setMenuOpen(true); }}
+              className="p-1.5 rounded-full" style={{ background: 'rgba(0,0,0,0.35)' }}>
+              <MoreHorizontal size={16} className="text-white" />
+            </button>
+          )}
+          <button onClick={onClose} className="p-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
+            <X size={15} className="text-white" />
+          </button>
+        </div>
+
+        {/* ── Media ── */}
+        <div className="absolute inset-0"
+          onMouseDown={() => setPaused(true)} onMouseUp={() => setPaused(false)}
+          onTouchStart={() => setPaused(true)} onTouchEnd={() => setPaused(false)}>
+          {story.media_type === 'video' && story.media_url ? (
+            <video src={story.media_url} className="w-full h-full object-contain" autoPlay loop={false} playsInline />
+          ) : story.media_url ? (
+            <img src={story.media_url} alt="" className="w-full h-full object-contain" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center"
+              style={{ background: story.background_color ?? '#7B3FF2' }}>
+              {story.caption && (
+                <p className="text-white font-black text-2xl text-center px-8 leading-snug">{story.caption}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Gradients */}
+        <div className="absolute inset-x-0 top-0 h-40 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.65), transparent)' }} />
+        <div className="absolute inset-x-0 bottom-0 h-40 pointer-events-none"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65), transparent)' }} />
+
+        {/* Caption (media stories) */}
+        {story.caption && story.media_url && (
+          <div className="absolute bottom-16 inset-x-0 px-4 z-10">
+            <div className="inline-block rounded-2xl px-4 py-2.5" style={{ background: 'rgba(0,0,0,0.5)' }}>
+              <p className="text-white text-sm leading-relaxed">{story.caption}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Vue count — own story */}
+        {isOwn && (
+          <button onClick={openViewers}
+            className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+            style={{ background: 'rgba(0,0,0,0.5)' }}>
+            <Eye size={13} className="text-white" />
+            <span className="text-white text-xs font-bold">{(story as any).view_count ?? 0} vue{((story as any).view_count ?? 0) !== 1 ? 's' : ''}</span>
+          </button>
+        )}
+
+        {/* Tap zones */}
+        <button className="absolute left-0 top-0 w-1/3 h-full z-10 opacity-0" onClick={goPrev} />
+        <button className="absolute right-0 top-0 w-1/3 h-full z-10 opacity-0" onClick={goNext} />
+
+        {/* Group arrows */}
+        {groupIdx > 0 && (
+          <button className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.2)' }}
+            onClick={() => { setGroupIdx(g => g - 1); setStoryIdx(0); }}>
+            <ChevronLeft size={16} className="text-white" />
+          </button>
+        )}
+        {groupIdx < groups.length - 1 && (
+          <button className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.2)' }}
+            onClick={() => { setGroupIdx(g => g + 1); setStoryIdx(0); }}>
+            <ChevronRight size={16} className="text-white" />
+          </button>
+        )}
+
+        {/* ── Menu (own story) ── */}
+        {menuOpen && (
+          <div className="absolute inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)' }}
+            onClick={() => { setMenuOpen(false); setPaused(false); }}>
+            <div className="absolute bottom-0 inset-x-0 rounded-t-2xl overflow-hidden"
+              style={{ background: '#12121E' }}
+              onClick={e => e.stopPropagation()}>
+              <div className="w-9 h-1 rounded-full mx-auto mt-3 mb-3" style={{ background: 'rgba(255,255,255,0.2)' }} />
+              <button onClick={() => { setMenuOpen(false); setEditText(story.caption ?? ''); setEditMode(true); }}
+                className="w-full flex items-center gap-4 px-5 py-4">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(123,63,242,0.15)' }}>
+                  <Edit3 size={16} style={{ color: '#7B3FF2' }} />
+                </div>
+                <span className="text-white font-medium text-sm">Modifier la légende</span>
+                <ChevronRight size={15} className="ml-auto text-white/30" />
+              </button>
+              <button onClick={deleteStory}
+                className="w-full flex items-center gap-4 px-5 py-4">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,68,68,0.15)' }}>
+                  <Trash2 size={16} style={{ color: '#ff4444' }} />
+                </div>
+                <span className="font-medium text-sm" style={{ color: '#ff4444' }}>Supprimer la story</span>
+                <ChevronRight size={15} className="ml-auto" style={{ color: 'rgba(255,68,68,0.3)' }} />
+              </button>
+              <button onClick={() => { setMenuOpen(false); setPaused(false); }}
+                className="w-full py-4 text-sm font-medium text-center"
+                style={{ color: 'rgba(255,255,255,0.5)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Edit caption ── */}
+        {editMode && (
+          <div className="absolute inset-0 z-40 flex items-end" style={{ background: 'rgba(0,0,0,0.7)' }}>
+            <div className="w-full rounded-t-2xl p-5" style={{ background: '#12121E' }}>
+              <div className="w-9 h-1 rounded-full mx-auto mb-4" style={{ background: 'rgba(255,255,255,0.2)' }} />
+              <p className="text-white font-bold mb-3">Modifier la légende</p>
+              <textarea value={editText} onChange={e => setEditText(e.target.value)}
+                className="w-full rounded-xl text-sm resize-none outline-none px-4 py-3 text-white"
+                style={{ background: 'rgba(255,255,255,0.07)', minHeight: 80, border: '1px solid rgba(255,255,255,0.1)' }}
+                rows={3} maxLength={300} autoFocus />
+              <div className="flex gap-3 mt-4">
+                <button onClick={() => { setEditMode(false); setPaused(false); }}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
+                  Annuler
+                </button>
+                <button onClick={saveEdit}
+                  className="flex-1 py-3 rounded-xl text-sm font-black text-white"
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Viewers panel ── */}
+        {viewersOpen && (
+          <div className="absolute inset-0 z-40" style={{ background: 'rgba(0,0,0,0.6)' }}
+            onClick={() => { setViewersOpen(false); setPaused(false); }}>
+            <div className="absolute bottom-0 inset-x-0 rounded-t-2xl overflow-hidden"
+              style={{ background: '#12121E', maxHeight: '65%' }}
+              onClick={e => e.stopPropagation()}>
+              <div className="w-9 h-1 rounded-full mx-auto mt-3 mb-2" style={{ background: 'rgba(255,255,255,0.2)' }} />
+              <div className="flex items-center gap-2 px-5 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <Eye size={15} style={{ color: '#7B3FF2' }} />
+                <p className="text-white font-black">{viewers.length} vue{viewers.length !== 1 ? 's' : ''}</p>
+              </div>
+              <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
+                {viewersLoading ? (
+                  <div className="flex justify-center py-8"><Spinner size="sm" /></div>
+                ) : viewers.length === 0 ? (
+                  <div className="flex flex-col items-center py-10 gap-2 opacity-40">
+                    <Eye size={32} className="text-white" />
+                    <p className="text-white text-sm">Aucune vue pour l'instant</p>
+                  </div>
+                ) : viewers.map((v: any) => (
+                  <div key={v.id} className="flex items-center gap-3 px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <Avatar src={v.avatar_url} name={v.display_name ?? v.username ?? '?'} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-semibold truncate">{v.display_name ?? v.username}</p>
+                      <p className="text-white/40 text-xs">@{v.username}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── My Stories Page (WhatsApp style) ─────────────────────────────────────────
+function MyStoriesPage({
+  myGroup,
+  user,
+  onClose,
+  onViewStory,
+  onNewStory,
+  onReload,
+}: {
+  myGroup: StoryGroup | undefined;
+  user: any;
+  onClose: () => void;
+  onViewStory: (storyIdx: number) => void;
+  onNewStory: () => void;
+  onReload: () => void;
+}) {
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const stories = myGroup?.stories ?? [];
+
+  function timeLeft(createdAt: string, _durationSec: number) {
+    const expiry = new Date(createdAt).getTime() + 24 * 3600 * 1000;
+    const diff   = expiry - Date.now();
+    if (diff <= 0) return 'Expirée';
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    if (h > 0) return `Expire dans ${h}h ${m}min`;
+    return `Expire dans ${m}min`;
+  }
+
+  async function deleteStory(id: string) {
+    setDeleting(id);
+    try {
+      await apiClient.delete(Endpoints.stories.delete(id));
+      onReload();
+    } catch { /* ignore */ }
+    setDeleting(null);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(14px)' }}
+      onClick={onClose}>
+      <div
+        className="relative w-full sm:w-[440px] flex flex-col overflow-hidden"
+        style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', maxHeight: '88dvh' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 pt-5 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="rounded-full p-[2.5px] shrink-0"
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
+              <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="md" />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>
+              {user?.display_name ?? user?.username}
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              {stories.length} story{stories.length !== 1 ? 's' : ''} active{stories.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Stories list */}
+        <div className="flex-1 overflow-y-auto">
+          {stories.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 opacity-50">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--bg-secondary)' }}>
+                <Plus size={28} style={{ color: 'var(--text-tertiary)' }} />
+              </div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                Aucune story active
+              </p>
+            </div>
+          ) : (
+            <div className="py-2">
+              {stories.map((story, idx) => (
+                <div key={story.id}
+                  className="flex items-center gap-3 px-4 py-3 transition-all"
+                  style={{ borderBottom: '1px solid var(--border)' }}>
+
+                  {/* Thumbnail */}
+                  <button onClick={() => onViewStory(idx)}
+                    className="relative shrink-0 rounded-2xl overflow-hidden"
+                    style={{ width: 60, height: 80, background: story.background_color ?? '#1a0533' }}>
+                    {story.media_type === 'video' && story.thumbnail_url ? (
+                      <img src={story.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                    ) : story.media_url ? (
+                      <img src={story.media_url} alt="" className="w-full h-full object-cover" />
+                    ) : story.caption ? (
+                      <div className="w-full h-full flex items-center justify-center p-1">
+                        <p className="text-white font-black text-[9px] text-center leading-snug line-clamp-3">
+                          {story.caption}
+                        </p>
+                      </div>
+                    ) : null}
+                    {story.media_type === 'video' && (
+                      <div className="absolute inset-0 flex items-center justify-center"
+                        style={{ background: 'rgba(0,0,0,0.3)' }}>
+                        <Play size={14} className="text-white" fill="white" />
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Info */}
+                  <button onClick={() => onViewStory(idx)} className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+                      {story.caption || (story.media_type === 'video' ? 'Vidéo' : story.media_type === 'image' ? 'Photo' : 'Story texte')}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Eye size={12} style={{ color: 'var(--primary)' }} />
+                      <span className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
+                        {(story as any).view_count ?? 0} vue{((story as any).view_count ?? 0) !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                      {timeLeft(story.created_at, story.duration_sec ?? 5)}
+                    </p>
+                  </button>
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => deleteStory(story.id)}
+                    disabled={deleting === story.id}
+                    className="p-2 rounded-xl transition-all"
+                    style={{ color: deleting === story.id ? 'var(--text-tertiary)' : '#ff4444', background: 'rgba(255,68,68,0.08)' }}>
+                    {deleting === story.id ? <Spinner size="sm" /> : <Trash2 size={16} />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="px-4 py-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <button onClick={onNewStory}
+            className="w-full py-3.5 rounded-2xl font-black text-white flex items-center justify-center gap-2.5 transition-opacity"
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            <Plus size={18} />
+            Ajouter une nouvelle story
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Stories bar ───────────────────────────────────────────────────────────────
+function StoriesBar() {
+  const { user }     = useAuthStore();
+  const [groups,     setGroups]     = useState<StoryGroup[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [viewer,          setViewer]          = useState<number | null>(null);
+  const [initialStoryIdx, setInitialStoryIdx] = useState(0);
+  const [creator,         setCreator]         = useState(false);
+  const [myStories,       setMyStories]       = useState(false);
+
+  function load() {
+    apiClient.get<StoryGroup[]>(Endpoints.stories.feed)
+      .then(res => {
+        const raw = res.data;
+        setGroups(Array.isArray(raw) ? raw : (raw as any)?.items ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
+  useEffect(() => { load(); }, []);
+
+  const myGroup     = groups.find(g => g.user.id === user?.id);
+  const otherGroups = groups.filter(g => g.user.id !== user?.id);
+  const allGroups   = myGroup ? [myGroup, ...otherGroups] : groups;
+
+  if (!loading && allGroups.length === 0) {
+    return (
+      <>
+        <div className="rounded-2xl overflow-hidden animate-reveal-up"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div className="flex gap-3 px-3 py-3">
+            <button onClick={() => setCreator(true)}
+              className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 58 }}>
+              <div className="relative">
+                <div className="rounded-full p-[2px]" style={{ border: '2px dashed var(--border)' }}>
+                  <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
+                  style={{ background: 'var(--primary)', width: 18, height: 18, border: '2px solid var(--surface)' }}>
+                  <Plus size={9} className="text-white" />
+                </div>
+              </div>
+              <span className="text-[10px] font-semibold text-center w-full truncate" style={{ color: 'var(--text-secondary)' }}>
+                Ajouter
+              </span>
+            </button>
+          </div>
+        </div>
+        {creator && <StoryCreator onClose={() => setCreator(false)} onCreated={() => { setCreator(false); load(); }} />}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="rounded-2xl overflow-hidden animate-reveal-up"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex gap-3 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+
+          {/* Mon story / add */}
+          <button
+            onClick={() => myGroup ? setMyStories(true) : setCreator(true)}
+            className="flex flex-col items-center gap-1.5 shrink-0 transition-transform hover:scale-105"
+            style={{ width: 58 }}>
+            <div className="relative">
+              {myGroup ? (
+                <div className="rounded-full p-[2.5px]"
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
+                    <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-full p-[2px]" style={{ border: '2px dashed var(--border)' }}>
+                  <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
+                </div>
+              )}
+              <div className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--primary)', width: 18, height: 18, border: '2px solid var(--surface)' }}>
+                <Plus size={9} className="text-white" />
+              </div>
+            </div>
+            <span className="text-[10px] font-semibold text-center w-full truncate"
+              style={{ color: 'var(--text-secondary)' }}>
+              {myGroup ? 'Ma story' : 'Ajouter'}
+            </span>
+          </button>
+
+          {(otherGroups.length > 0 || loading) && (
+            <div className="w-px self-stretch my-1 shrink-0" style={{ background: 'var(--border)' }} />
+          )}
+
+          {/* Autres stories */}
+          {otherGroups.map((group) => {
+            const idx  = allGroups.indexOf(group);
+            const u    = group.user;
+            const name = (u.display_name ?? u.username ?? '').split(' ')[0];
+            return (
+              <button key={u.id} onClick={() => setViewer(idx)}
+                className="flex flex-col items-center gap-1.5 shrink-0 transition-transform hover:scale-105"
+                style={{ width: 58 }}>
+                <div className="relative">
+                  {group.has_unseen ? (
+                    <div className="rounded-full p-[2.5px]"
+                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                      <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
+                        <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? ''} size="sm" verified={u.is_verified} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-full p-[2px]" style={{ border: '2px solid var(--border)', opacity: 0.7 }}>
+                      <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? ''} size="sm" verified={u.is_verified} />
+                    </div>
+                  )}
+                  {group.stories.length > 1 && (
+                    <div className="absolute -top-0.5 -right-0.5 rounded-full flex items-center justify-center text-white font-black"
+                      style={{ background: 'var(--primary)', minWidth: 15, height: 15, fontSize: 8, paddingInline: 3, border: '1.5px solid var(--surface)' }}>
+                      {group.stories.length}
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] font-semibold text-center w-full truncate"
+                  style={{ color: group.has_unseen ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                  {name}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Skeletons */}
+          {loading && [0,1,2,3].map(i => (
+            <div key={i} className="flex flex-col items-center gap-1.5 shrink-0 animate-pulse" style={{ width: 58 }}>
+              <div className="w-10 h-10 rounded-full" style={{ background: 'var(--bg-tertiary)' }} />
+              <div className="w-8 h-2 rounded-full" style={{ background: 'var(--bg-secondary)' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {viewer !== null && allGroups.length > 0 && (
+        <StoryViewer
+          groups={allGroups}
+          initialIndex={viewer}
+          initialStoryIndex={initialStoryIdx}
+          currentUserId={user?.id}
+          onClose={() => { setViewer(null); setInitialStoryIdx(0); load(); }}
+          onReload={load}
+        />
+      )}
+
+      {myStories && (
+        <MyStoriesPage
+          myGroup={myGroup}
+          user={user}
+          onClose={() => setMyStories(false)}
+          onViewStory={(idx) => {
+            setInitialStoryIdx(idx);
+            setMyStories(false);
+            if (myGroup) setViewer(allGroups.indexOf(myGroup));
+          }}
+          onNewStory={() => { setMyStories(false); setCreator(true); }}
+          onReload={() => { load(); }}
+        />
+      )}
+
+      {creator && (
+        <StoryCreator onClose={() => setCreator(false)} onCreated={() => { setCreator(false); load(); }} />
+      )}
+    </>
+  );
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FeedItem =
@@ -329,7 +1183,7 @@ function ActionBar({
 }) {
   const [liked,        setLiked]        = useState(initialLiked);
   const [likeCount,    setLikeCount]    = useState(initialLikeCount);
-  const [commentCount] = useState(initialCommentCount);
+  const [commentCount] = useState(initialCommentCount ?? 0);
   const [saved,        setSaved]        = useState(false);
   const [shareToast,   setShareToast]   = useState(false);
 
@@ -380,7 +1234,8 @@ function ActionBar({
 
   return (
     <>
-      <div className="flex items-center gap-1 px-2 py-2" style={{ borderTop: '1px solid var(--border)' }}>
+      <div className="flex items-center gap-1 px-2 py-2" style={{ borderTop: '1px solid var(--border)' }}
+        onClick={e => e.stopPropagation()}>
         {/* Like */}
         <button onClick={handleLike}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
@@ -731,81 +1586,74 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments }: {
 }
 
 // ── Reel card (inline preview) ────────────────────────────────────────────────
-function ReelCard({ reel, delay = 0, followedIds, onFollow, onOpenComments }: {
+function ReelCard({ reel, delay = 0 }: {
   reel: Reel; delay?: number;
-  followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
-  onOpenComments: OpenCommentsFn;
 }) {
-  const navigate   = useNavigate();
-  const authorId   = reel.author?.id;
-  const isFollowed = authorId ? followedIds.has(authorId) : false;
+  const navigate  = useNavigate();
+  const videoRef  = useRef<HTMLVideoElement>(null);
+  const cardRef   = useRef<HTMLDivElement>(null);
+
+  // Autoplay when visible, pause when out of view
+  useEffect(() => {
+    const el = cardRef.current;
+    const video = videoRef.current;
+    if (!el || !video) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { entry.isIntersecting ? video.play().catch(() => {}) : video.pause(); },
+      { threshold: 0.5 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
-    <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)', animationDelay: `${delay}s` }}>
+    <div ref={cardRef} className="rounded-2xl overflow-hidden animate-reveal-up"
+      style={{ background: '#000', border: '1px solid var(--border)', animationDelay: `${delay}s`, aspectRatio: '9/16', maxHeight: 480, position: 'relative', cursor: 'pointer' }}
+      onClick={() => navigate(`/reels?id=${reel.id}`)}>
 
-      <AuthorRow
-        author={reel.author}
-        authorId={authorId}
-        publishedAt={reel.created_at}
-        isFollowed={isFollowed}
-        onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${authorId}`); }}
-        onFollowClick={e => authorId && onFollow(authorId, e)}
-      />
-
-      {/* Thumbnail 9/16 → displayed as 16/9 banner with overlay */}
-      <div onClick={() => navigate(`/reels?id=${reel.id}`)}
-        className="relative overflow-hidden cursor-pointer group"
-        style={{ aspectRatio: '16/9', background: '#000' }}>
-        {reel.thumbnail_url ? (
-          <img src={reel.thumbnail_url} alt={reel.caption ?? 'Reel'}
-            className="w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#0f0f1a,#1a0533,#2d1052)' }}>
-            <Play size={40} className="text-white opacity-40" />
-          </div>
-        )}
-        {/* Play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-            <Play size={24} fill="white" className="text-white ml-1" />
-          </div>
-        </div>
-        {/* Reel badge */}
-        <div className="absolute top-2.5 left-2.5">
-          <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full text-white"
-            style={{ background: 'linear-gradient(135deg,#E0389A,#7B3FF2)', backdropFilter: 'blur(4px)' }}>
-            <Film size={10} /> Reel
-          </span>
-        </div>
-        {/* View count */}
-        {reel.view_count > 0 && (
-          <div className="absolute bottom-2.5 right-2.5">
-            <span className="flex items-center gap-1 text-[10px] text-white font-semibold px-2 py-1 rounded-full"
-              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-              <Play size={9} fill="white" /> {fmtCount(reel.view_count)}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {reel.caption && (
-        <div className="px-3 pt-2.5 pb-1 cursor-pointer" onClick={() => navigate(`/reels?id=${reel.id}`)}>
-          <p className="text-sm line-clamp-2" style={{ color: 'var(--text-primary)' }}>{reel.caption}</p>
+      {/* Video autoplay muted — pointer-events-none so clicks go to the wrapper */}
+      {reel.video_url ? (
+        <video
+          ref={videoRef}
+          src={reel.video_url}
+          poster={reel.thumbnail_url ?? undefined}
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-contain pointer-events-none"
+        />
+      ) : reel.thumbnail_url ? (
+        <img src={reel.thumbnail_url} alt="" className="w-full h-full object-contain pointer-events-none" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center pointer-events-none"
+          style={{ background: 'linear-gradient(135deg,#0f0f1a,#1a0533,#2d1052)' }}>
+          <Play size={40} className="text-white opacity-40" />
         </div>
       )}
 
-      <ActionBar
-        id={reel.id} kind="reel"
-        initialLiked={reel.user_reaction === 'like'}
-        initialLikeCount={reel.like_count ?? 0}
-        initialCommentCount={reel.comment_count ?? 0}
-        shareCount={reel.share_count ?? 0}
-        titleForShare={reel.caption ?? 'Reel'}
-        onOpenComments={onOpenComments}
-      />
+      {/* Gradient overlay bottom */}
+      <div className="absolute inset-x-0 bottom-0 h-24 pointer-events-none"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)' }} />
+
+      {/* Reel badge */}
+      <div className="absolute top-2.5 left-2.5">
+        <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full text-white"
+          style={{ background: 'linear-gradient(135deg,#E0389A,#7B3FF2)' }}>
+          <Film size={10} /> Reel
+        </span>
+      </div>
+
+      {/* Caption + view count bottom */}
+      <div className="absolute bottom-0 inset-x-0 px-3 pb-3">
+        {reel.caption && (
+          <p className="text-xs text-white font-medium line-clamp-2 mb-1">{reel.caption}</p>
+        )}
+        {reel.view_count > 0 && (
+          <span className="flex items-center gap-1 text-[10px] text-white/70 font-semibold">
+            <Play size={9} fill="white" className="opacity-70" /> {fmtCount(reel.view_count)}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -879,6 +1727,102 @@ function SuggestionsInline() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Upcoming events panel ─────────────────────────────────────────────────────
+function UpcomingEventsPanel() {
+  const navigate = useNavigate();
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    apiClient.get<any>(`${Endpoints.events.list}?limit=4&status=published`)
+      .then(res => setEvents(toArray<any>(res.data).slice(0, 4)))
+      .catch(() => {});
+  }, []);
+
+  if (events.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <Calendar size={13} style={{ color: '#F59E0B' }} />
+          <p className="font-black text-xs" style={{ color: 'var(--text-primary)' }}>À venir</p>
+        </div>
+        <button onClick={() => navigate('/events')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
+      </div>
+      <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+        {events.map((e: any) => {
+          const color = EVENT_COLORS[e.event_type ?? 'other'] ?? EVENT_COLORS.other;
+          return (
+            <div key={e.id}
+              onClick={() => navigate(`/events/${e.id}`)}
+              className="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all"
+              onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bg-secondary)')}
+              onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
+              <div className="w-8 h-8 rounded-lg flex flex-col items-center justify-center shrink-0 font-black text-white"
+                style={{ background: `${color}CC` }}>
+                {e.starts_at && <>
+                  <span className="text-[11px] leading-none">{format(new Date(e.starts_at), 'd')}</span>
+                  <span className="text-[8px] uppercase opacity-80">{format(new Date(e.starts_at), 'MMM', { locale: fr })}</span>
+                </>}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold truncate leading-snug" style={{ color: 'var(--text-primary)' }}>{e.title}</p>
+                {e.venue_city && <p className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}><MapPin size={8} className="inline mr-0.5" />{e.venue_city}</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Trending panel ────────────────────────────────────────────────────────────
+function TrendingPanel() {
+  const navigate = useNavigate();
+  const [concerts, setConcerts] = useState<any[]>([]);
+
+  useEffect(() => {
+    apiClient.get<any>(`${Endpoints.concerts.list}?limit=4&status=published`)
+      .then(res => setConcerts(toArray<any>(res.data).slice(0, 4)))
+      .catch(() => {});
+  }, []);
+
+  if (concerts.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <Flame size={13} style={{ color: '#F0365A' }} />
+          <p className="font-black text-xs" style={{ color: 'var(--text-primary)' }}>Tendances</p>
+        </div>
+        <button onClick={() => navigate('/concerts')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
+      </div>
+      <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+        {concerts.map((c: any, i: number) => (
+          <div key={c.id}
+            onClick={() => navigate(`/concerts/${c.id}`)}
+            className="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all"
+            onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
+            <span className="text-sm font-black w-4 shrink-0" style={{ color: i < 3 ? 'var(--primary)' : 'var(--text-tertiary)' }}>
+              {i + 1}
+            </span>
+            {c.thumbnail_url
+              ? <img src={c.thumbnail_url} alt={c.title} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+              : <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}><Music size={12} className="text-white" /></div>}
+            <div className="min-w-0">
+              <p className="text-xs font-semibold truncate leading-snug" style={{ color: 'var(--text-primary)' }}>{c.title}</p>
+              {c.genre && <p className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>{c.genre}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1075,10 +2019,16 @@ export default function FeedPage() {
 
   return (
     <div className="px-4 sm:px-6 py-6">
-      <div className="max-w-5xl mx-auto flex gap-6 items-start">
+      <div className="max-w-6xl mx-auto flex gap-5 items-start">
+
+        {/* ── Left panel (xl+) ── */}
+        <div className="w-56 shrink-0 hidden xl:flex flex-col gap-4 sticky top-4">
+          <UpcomingEventsPanel />
+          <TrendingPanel />
+        </div>
 
         {/* ── Feed column ── */}
-        <div className="flex-1 min-w-0 max-w-xl mx-auto xl:mx-0 space-y-5">
+        <div className="flex-1 min-w-0 space-y-5">
 
           {/* Greeting */}
           <div className="flex items-start justify-between animate-reveal-up">
@@ -1106,6 +2056,9 @@ export default function FeedPage() {
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
+
+          {/* ── Stories ── */}
+          <StoriesBar />
 
           {/* ── LIVE HERO ── */}
           {live.length > 0 && (
@@ -1172,7 +2125,7 @@ export default function FeedPage() {
                   return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
                 }
                 if (item.kind === 'reel') {
-                  return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
+                  return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;
                 }
                 return null;
               })}

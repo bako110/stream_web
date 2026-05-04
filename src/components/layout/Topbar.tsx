@@ -1,21 +1,46 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Search, Bell } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
+import { Images } from '../assets';
 
 interface Props { onMenuClick: () => void; }
 
 export function Topbar({ onMenuClick }: Props) {
   const { user }  = useAuthStore();
+  const { isDark } = useThemeStore();
   const navigate  = useNavigate();
+  const location  = useLocation();
   const [query, setQuery] = useState('');
+
+  // Sync search bar with URL when navigating to/from /search
+  // Also cancels any pending debounce when leaving the search page
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlQ = params.get('q') ?? '';
+    if (location.pathname === '/search') setQuery(urlQ);
+    else setQuery('');
+  }, [location.pathname, location.search]);
+
+  // Debounce: navigate to /search ONLY when on /feed or /search, never elsewhere
+  useEffect(() => {
+    if (location.pathname !== '/feed' && location.pathname !== '/search') return;
+    if (!query.trim()) {
+      if (location.pathname === '/search') navigate('/search', { replace: true });
+      return;
+    }
+    const t = setTimeout(() => {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`, { replace: location.pathname === '/search' });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [query]); // eslint-disable-line
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (query.trim()) {
       navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-      setQuery('');
     }
   }
 
@@ -41,7 +66,7 @@ export function Topbar({ onMenuClick }: Props) {
       </button>
 
       {/* Logo mobile */}
-      <span className="text-lg font-black gradient-text lg:hidden">FoliX</span>
+      <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-7 w-auto lg:hidden" />
 
       {/* Desktop hamburger (sidebar collapse) */}
       <button

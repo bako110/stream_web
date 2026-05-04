@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, TrendingUp, Film, Music, Calendar, User, X } from 'lucide-react';
+import { Search, TrendingUp, Film, Music, Calendar, User } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
@@ -29,10 +29,9 @@ function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: s
 }
 
 export default function SearchPage() {
-  const [params, setParams]     = useSearchParams();
+  const [params]                = useSearchParams();
   const navigate                = useNavigate();
   const q                       = params.get('q') ?? '';
-  const [query,   setQuery]     = useState(q);
   const [results, setResults]   = useState<SearchResult | null>(null);
   const [loading, setLoading]   = useState(false);
   const [trending, setTrending] = useState<{ id: string; title: string; thumbnail_url?: string | null }[]>([]);
@@ -59,18 +58,9 @@ export default function SearchPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Debounce live search — 400ms
+  // React to URL param changes (set by Topbar debounce)
   useEffect(() => {
-    const t = setTimeout(() => {
-      setParams(query.trim() ? { q: query.trim() } : {}, { replace: true });
-      doSearch(query);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [query]); // eslint-disable-line
-
-  // Aussi déclencher quand le param URL change (ex: depuis la Topbar)
-  useEffect(() => {
-    if (q !== query) { setQuery(q); doSearch(q); }
+    doSearch(q);
   }, [q]); // eslint-disable-line
 
   const total = results
@@ -83,30 +73,7 @@ export default function SearchPage() {
     : 0;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
-      {/* Barre de recherche */}
-      <div className="relative">
-        <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ color: 'var(--text-tertiary)' }} />
-        <input
-          className="input pl-11 pr-10 py-3 text-base"
-          placeholder="Films, artistes, concerts, événements…"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          autoFocus
-        />
-        {query && (
-          <button
-            onClick={() => { setQuery(''); setParams({}); setResults(null); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-all"
-            style={{ color: 'var(--text-tertiary)' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-            <X size={15} />
-          </button>
-        )}
-      </div>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
       {/* Loading */}
       {loading && (
@@ -117,7 +84,7 @@ export default function SearchPage() {
       )}
 
       {/* Tendances */}
-      {!query && !loading && (
+      {!q && !loading && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={15} style={{ color: 'var(--primary)' }} />
@@ -126,7 +93,7 @@ export default function SearchPage() {
           {trending.length > 0 ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {trending.map((t) => (
-                <button key={t.id} onClick={() => setQuery(t.title)}
+                <button key={t.id} onClick={() => navigate(`/search?q=${encodeURIComponent(t.title)}`)}
                   className="group text-left transition-all cursor-pointer">
                   <div className="aspect-[2/3] rounded-xl overflow-hidden mb-1.5"
                     style={{ background: 'var(--bg-tertiary)' }}>
@@ -170,7 +137,7 @@ export default function SearchPage() {
           {(results.users?.length ?? 0) > 0 && (
             <section>
               <SectionHeader icon={<User size={14} />} title="Utilisateurs" count={results.users!.length} />
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {results.users!.map((u: any) => (
                   <button key={u.id} onClick={() => navigate(`/user/${u.id}`)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
@@ -194,7 +161,7 @@ export default function SearchPage() {
           {(results.films?.length ?? 0) > 0 && (
             <section>
               <SectionHeader icon={<Film size={14} />} title="Films" count={results.films!.length} />
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3">
                 {results.films!.map((c: any) => (
                   <div key={c.id} onClick={() => navigate(`/films/${c.id}`)} className="cursor-pointer group">
                     <div className="aspect-[2/3] rounded-xl overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
@@ -215,7 +182,7 @@ export default function SearchPage() {
           {(results.series?.length ?? 0) > 0 && (
             <section>
               <SectionHeader icon={<Film size={14} />} title="Séries" count={results.series!.length} />
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3">
                 {results.series!.map((c: any) => (
                   <div key={c.id} onClick={() => navigate(`/series/${c.id}`, { state: { item: c } })} className="cursor-pointer group">
                     <div className="aspect-[2/3] rounded-xl overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
@@ -236,7 +203,7 @@ export default function SearchPage() {
           {(results.concerts?.length ?? 0) > 0 && (
             <section>
               <SectionHeader icon={<Music size={14} />} title="Concerts" count={results.concerts!.length} />
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {results.concerts!.map((c: any) => (
                   <button key={c.id} onClick={() => navigate(`/concerts/${c.id}`)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
@@ -269,7 +236,7 @@ export default function SearchPage() {
           {(results.events?.length ?? 0) > 0 && (
             <section>
               <SectionHeader icon={<Calendar size={14} />} title="Événements" count={results.events!.length} />
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {results.events!.map((ev: any) => (
                   <button key={ev.id} onClick={() => navigate(`/events/${ev.id}`)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  base: '/', // Changez en '/folix/' ou votre sous-répertoire si applicable
 
   server: {
     proxy: {

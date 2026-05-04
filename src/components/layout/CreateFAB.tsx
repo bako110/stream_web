@@ -15,12 +15,17 @@ interface UploadedImage { url: string; public_id: string; width?: number; height
 interface UploadedVideo { url: string; public_id: string; duration?: number; thumbnail_url?: string; }
 
 async function uploadImages(files: File[], folder: string): Promise<UploadedImage[]> {
-  const fd = new FormData();
-  files.forEach(f => fd.append('file', f));
-  const res = await apiClient.upload<{ uploaded: UploadedImage[] }>(
-    Endpoints.upload.images(folder), fd,
-  );
-  return (res.data as any)?.uploaded ?? (Array.isArray(res.data) ? res.data : [res.data]);
+  const results: UploadedImage[] = [];
+  for (const f of files) {
+    const fd = new FormData();
+    fd.append('file', f);
+    const res = await apiClient.upload<{ uploaded: UploadedImage[] }>(
+      Endpoints.upload.images(folder), fd,
+    );
+    const uploaded = (res.data as any)?.uploaded ?? (Array.isArray(res.data) ? res.data : [res.data]);
+    results.push(...uploaded);
+  }
+  return results;
 }
 
 async function uploadVideo(
@@ -188,10 +193,10 @@ function CreatePostModal({ onClose, onDone }: { onClose: () => void; onDone: () 
       let imageUrls: string[] | undefined;
 
       if (images.length === 1) {
-        const [uploaded] = await uploadImages(images, 'posts');
+        const [uploaded] = await uploadImages(images, 'content');
         imageUrl = uploaded?.url;
       } else if (images.length > 1) {
-        const uploaded = await uploadImages(images, 'posts');
+        const uploaded = await uploadImages(images, 'content');
         imageUrls = uploaded.map(u => u.url);
         imageUrl  = uploaded[0]?.url;
       }

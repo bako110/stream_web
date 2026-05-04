@@ -1,20 +1,33 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { Images } from '../../components/assets';
+import { apiClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
+
+declare global { interface Window { google?: any; } }
+
+const FEATURES = [
+  { icon: Play,      label: 'Reels & Vidéos',     color: '#E0389A' },
+  { icon: Music2,    label: 'Concerts en direct',  color: '#7B3FF2' },
+  { icon: Calendar,  label: 'Événements',           color: '#F59E0B' },
+  { icon: Film,      label: 'Films & Séries',       color: '#3B82F6' },
+  { icon: Radio,     label: 'Live streaming',       color: '#F0365A' },
+];
 
 export default function LoginPage() {
   const navigate   = useNavigate();
   const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
   const [identifier, setIdentifier] = useState('');
-  const [password, setPassword]     = useState('');
-  const [showPwd, setShowPwd]       = useState(false);
-  const [focused, setFocused]       = useState<string | null>(null);
+  const [password,   setPassword]   = useState('');
+  const [showPwd,    setShowPwd]    = useState(false);
+  const [focused,    setFocused]    = useState<string | null>(null);
+  const [gLoading,   setGLoading]   = useState(false);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) navigate('/feed', { replace: true });
   }, [isAuthenticated, navigate]);
@@ -28,102 +41,161 @@ export default function LoginPage() {
     } catch { /* error shown via store */ }
   }
 
+  async function handleGoogle() {
+    if (!window.google) return;
+    setGLoading(true);
+    try {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
+        callback: async (resp: any) => {
+          try {
+            const res = await apiClient.post<any>(Endpoints.auth.oauthGoogle, { access_token: resp.credential });
+            const token = res.data;
+            if (token?.access_token) {
+              navigate('/feed', { replace: true });
+            }
+          } catch { /* ignore */ } finally { setGLoading(false); }
+        },
+      });
+      window.google.accounts.id.prompt();
+    } catch { setGLoading(false); }
+  }
+
+  const inp = (name: string) => ({
+    boxShadow:   focused === name ? '0 0 0 3px rgba(123,63,242,0.18)' : 'none',
+    borderColor: focused === name ? 'var(--primary)' : 'var(--border)',
+  });
+
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden"
-      style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--bg)' }}>
 
-      {/* Background orbs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full animate-float-slow"
-          style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: isDark ? 0.18 : 0.08 }} />
-        <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full animate-float-mid"
-          style={{ background: 'radial-gradient(circle,#E0389A,transparent 70%)', opacity: isDark ? 0.14 : 0.06, animationDelay: '3s' }} />
-        {/* Grid */}
-        <div className="absolute inset-0 hero-grid opacity-50" />
-      </div>
+      {/* ── Left panel — branding ── */}
+      <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-10"
+        style={{ background: 'linear-gradient(145deg,#0d0118 0%,#1a0533 40%,#2d0f5e 70%,#1a0533 100%)' }}>
 
-      <div className="relative w-full max-w-md animate-scale-in">
-
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="relative w-12 h-12">
-              <div className="absolute inset-0 rounded-2xl rotate-12"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }} />
-              <div className="absolute inset-1 rounded-xl flex items-center justify-center"
-                style={{ background: 'var(--bg)' }}>
-                <span className="text-base font-black gradient-text">FX</span>
-              </div>
-            </div>
-            <span className="text-3xl font-black gradient-text tracking-tight">FoliX</span>
-          </div>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Bienvenue ! Connectez-vous pour continuer
-          </p>
+        {/* Orbs */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[-80px] left-[-80px] w-72 h-72 rounded-full"
+            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.35 }} />
+          <div className="absolute bottom-[-60px] right-[-60px] w-64 h-64 rounded-full"
+            style={{ background: 'radial-gradient(circle,#E0389A,transparent 70%)', opacity: 0.25 }} />
+          <div className="absolute inset-0 hero-grid opacity-20" />
         </div>
 
-        {/* Card */}
-        <div className="glass-card rounded-2xl p-8 shadow-2xl" style={{ borderRadius: '1.5rem' }}>
+        {/* Logo */}
+        <div className="relative z-10">
+          <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-10 w-auto" />
+        </div>
 
+        {/* Center content */}
+        <div className="relative z-10 space-y-8">
+          <div>
+            <h1 className="text-4xl font-black text-white leading-tight mb-3">
+              Votre univers<br />
+              <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                culturel digital
+              </span>
+            </h1>
+            <p className="text-white/60 text-base leading-relaxed">
+              Concerts, événements, films, reels — tout ce qui vous passionne en un seul endroit.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {FEATURES.map(({ icon: Icon, label, color }) => (
+              <div key={label} className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: `${color}25`, border: `1px solid ${color}40` }}>
+                  <Icon size={15} style={{ color }} />
+                </div>
+                <span className="text-white/75 text-sm font-medium">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-10">
+          <p className="text-white/30 text-xs">© 2026 Sahelys · Intégrateur de solutions informatiques</p>
+        </div>
+      </div>
+
+      {/* ── Right panel — form ── */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative overflow-y-auto">
+
+        {/* BG orbs mobile */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden lg:hidden">
+          <div className="absolute -top-32 -left-32 w-72 h-72 rounded-full"
+            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: isDark ? 0.15 : 0.06 }} />
+          <div className="absolute -bottom-32 -right-32 w-64 h-64 rounded-full"
+            style={{ background: 'radial-gradient(circle,#E0389A,transparent 70%)', opacity: isDark ? 0.12 : 0.05 }} />
+        </div>
+
+        <div className="relative w-full max-w-md">
+
+          {/* Mobile logo */}
+          <div className="flex justify-center mb-8 lg:hidden">
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-9 w-auto" />
+          </div>
+
+          <div className="mb-7">
+            <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Bon retour 👋</h2>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte FoliX</p>
+          </div>
+
+          {/* Google button */}
+          <button onClick={handleGoogle} disabled={gLoading}
+            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl mb-5 transition-all font-semibold text-sm"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            {gLoading ? 'Connexion…' : 'Continuer avec Google'}
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>ou avec email</span>
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          </div>
+
+          {/* Error */}
           {error && (
-            <div className="mb-5 px-4 py-3 rounded-xl text-sm"
+            <div className="mb-4 px-4 py-3 rounded-xl text-sm"
               style={{ background: 'rgba(240,54,90,0.1)', border: '1px solid rgba(240,54,90,0.3)', color: '#F0365A' }}>
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            {/* Identifier */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                 Email ou nom d'utilisateur
               </label>
-              <input
-                type="text"
-                placeholder="email@exemple.com"
-                value={identifier}
+              <input type="text" placeholder="email@exemple.com" value={identifier}
                 onChange={e => setIdentifier(e.target.value)}
-                onFocus={() => setFocused('id')}
-                onBlur={() => setFocused(null)}
-                required
-                autoComplete="username"
-                className="input"
-                style={{
-                  boxShadow: focused === 'id' ? '0 0 0 3px rgba(123,63,242,0.2)' : 'none',
-                  borderColor: focused === 'id' ? 'var(--primary)' : 'var(--border)',
-                }}
-              />
+                onFocus={() => setFocused('id')} onBlur={() => setFocused(null)}
+                required autoComplete="username" className="input" style={inp('id')} />
             </div>
 
-            {/* Password */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  Mot de passe
-                </label>
-                <Link to="/auth/forgot-password"
-                  className="text-xs font-medium transition-colors"
-                  style={{ color: 'var(--primary)' }}>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Mot de passe</label>
+                <Link to="/auth/forgot-password" className="text-xs font-medium" style={{ color: 'var(--primary)' }}>
                   Mot de passe oublié ?
                 </Link>
               </div>
               <div className="relative">
-                <input
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password}
+                <input type={showPwd ? 'text' : 'password'} placeholder="••••••••" value={password}
                   onChange={e => setPassword(e.target.value)}
-                  onFocus={() => setFocused('pwd')}
-                  onBlur={() => setFocused(null)}
-                  required
-                  autoComplete="current-password"
-                  className="input pr-11"
-                  style={{
-                    boxShadow: focused === 'pwd' ? '0 0 0 3px rgba(123,63,242,0.2)' : 'none',
-                    borderColor: focused === 'pwd' ? 'var(--primary)' : 'var(--border)',
-                  }}
-                />
+                  onFocus={() => setFocused('pwd')} onBlur={() => setFocused(null)}
+                  required autoComplete="current-password" className="input pr-11" style={inp('pwd')} />
                 <button type="button" onClick={() => setShowPwd(v => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
                   style={{ color: 'var(--text-tertiary)' }}
@@ -134,53 +206,31 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Submit */}
-            <button type="submit" disabled={isLoading} className="btn-primary w-full mt-2 gap-2"
+            <button type="submit" disabled={isLoading} className="btn-primary w-full gap-2 mt-1"
               style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
               {isLoading ? (
-                <>
-                  <span className="inline-flex gap-1">
-                    {[0,1,2].map(i => (
-                      <span key={i} className="w-1.5 h-1.5 rounded-full bg-white"
-                        style={{ animation: `blink 1s ease-in-out ${i*0.15}s infinite` }} />
-                    ))}
-                  </span>
-                  Connexion…
-                </>
-              ) : (
-                <>
-                  <Sparkles size={16} />
-                  Se connecter
-                </>
-              )}
+                <span className="inline-flex gap-1">
+                  {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-white"
+                    style={{ animation: `blink 1s ease-in-out ${i*0.15}s infinite` }} />)}
+                </span>
+              ) : <Sparkles size={16} />}
+              {isLoading ? 'Connexion…' : 'Se connecter'}
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>ou</span>
-            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-          </div>
-
-          <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Pas encore de compte ?{' '}
-            <Link to="/auth/register"
-              className="font-semibold transition-colors"
-              style={{ color: 'var(--primary)' }}>
+            <Link to="/auth/register" className="font-semibold" style={{ color: 'var(--primary)' }}>
               S'inscrire gratuitement
             </Link>
           </p>
-        </div>
 
-        {/* Back to explore */}
-        <p className="text-center mt-6 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          <Link to="/explore/films"
-            className="transition-colors hover:underline"
-            style={{ color: 'var(--text-secondary)' }}>
-            ← Continuer sans compte
-          </Link>
-        </p>
+          <p className="text-center mt-4 text-sm">
+            <Link to="/explore/films" className="hover:underline" style={{ color: 'var(--text-tertiary)' }}>
+              ← Continuer sans compte
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

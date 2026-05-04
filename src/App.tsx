@@ -119,9 +119,12 @@ function AppShell() {
 
         {/* Routes protégées */}
         <Route element={<ProtectedRoute />}>
+
+          {/* Reels — plein écran, sans Topbar ni BottomNav */}
+          <Route path="/reels" element={<ReelsPage />} />
+
           <Route element={<AppLayout />}>
             <Route path="/feed"              element={<FeedPage />} />
-            <Route path="/reels"             element={<ReelsPage />} />
             <Route path="/films"             element={<FilmsPage type="film" />} />
             <Route path="/films/:id"         element={<FilmDetailPage />} />
             <Route path="/series"            element={<FilmsPage type="serie" />} />

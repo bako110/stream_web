@@ -13,6 +13,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading:       boolean;
   isInitializing:  boolean;
+  isRefreshing:    boolean;
   error:           string | null;
 
   login:              (data: LoginRequest)     => Promise<void>;
@@ -63,6 +64,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   isAuthenticated: false,
   isLoading:       false,
   isInitializing:  true,
+  isRefreshing:    false,
   error:           null,
 
   login: async (data) => {
@@ -119,6 +121,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       await get().logout();
       throw new Error('No refresh token');
     }
+    set({ isRefreshing: true });
     try {
       const res = await apiClient.post<AuthToken>(
         Endpoints.auth.refresh,
@@ -128,12 +131,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       if (!newToken) throw new Error('Token refresh invalide');
       setAuthToken(newToken);
       saveTokens(newToken, refreshToken);
-      set({ accessToken: newToken });
+      set({ accessToken: newToken, isRefreshing: false });
       return newToken;
     } catch (e) {
       setAuthToken(null);
       saveTokens(null, null);
-      set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isInitializing: false });
+      set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isInitializing: false, isRefreshing: false });
       throw e;
     }
   },
