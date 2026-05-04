@@ -208,7 +208,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
 
 // ── Chat window ────────────────────────────────────────────────────────────────
 
-function ChatWindow({ userId, wsPayload, isWsConnected, onSendWs, onMessageSent }: {
+function ChatWindow({ userId, wsPayload, isWsConnected, onSendWs: _onSendWs, onMessageSent }: {
   userId: string;
   wsPayload: WsPayload | null;
   isWsConnected: boolean;

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   MapPin, Globe, Phone, Calendar, UserPlus, UserCheck,
-  UserX, MessageCircle, Play, Eye, Heart, Grid3x3,
+  MessageCircle, Play, Eye, Heart, Grid3x3,
   Info, BadgeCheck, ShieldOff, Shield,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -287,14 +287,13 @@ export default function UserProfilePage() {
       {/* ── Avatar + actions ── */}
       <div className="px-5">
         <div className="flex items-end justify-between -mt-12 mb-4 relative z-10">
-          <div className="ring-4 rounded-full" style={{ ringColor: 'var(--bg)' }}>
+          <div className="ring-4 rounded-full" style={{ boxShadow: '0 0 0 4px var(--bg)' }}>
             <Avatar
               src={profile.avatar_url}
               name={name}
               size="xl"
               verified={profile.is_verified}
               className="ring-4 ring-offset-0"
-              style={{ boxShadow: '0 0 0 4px var(--bg)' } as any}
             />
           </div>
 
@@ -381,7 +380,7 @@ export default function UserProfilePage() {
 
         {/* ── Stats ── */}
         <div className="flex rounded-2xl p-4 mb-5 divide-x"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)', divideColor: 'var(--border)' }}>
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <Stat value={profile.followers_count ?? 0}  label="Abonnés"      />
           <Stat value={profile.following_count ?? 0}  label="Abonnements"  />
           <Stat value={(profile as any).posts_count ?? (profile as any).publications_count ?? 0} label="Publications" />

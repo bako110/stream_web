@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Music, MapPin, Clock, Users, Play, Calendar,
   Flame, ChevronRight, UserPlus, UserCheck, Sparkles, Radio,
-  Heart, MessageCircle, Share2, Bookmark, Film,
+  Heart, MessageCircle, Share2, Bookmark, Film, RefreshCw,
+  X, Send, Check,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -107,23 +108,230 @@ function AuthorRow({
   );
 }
 
+// ── Comments sheet (style mobile — monte depuis le bas) ───────────────────────
+function CommentsModal({
+  open, onClose, targetKind, targetId, initialCount: _initialCount, onCountChange,
+}: {
+  open: boolean;
+  onClose: () => void;
+  targetKind: 'event' | 'concert' | 'post' | 'reel';
+  targetId: string;
+  initialCount: number;
+  onCountChange: (n: number) => void;
+}) {
+  const { user } = useAuthStore();
+  const [comments, setComments] = useState<any[]>([]);
+  const [loading,  setLoading]  = useState(false);
+  const [body,     setBody]     = useState('');
+  const [sending,  setSending]  = useState(false);
+  const inputRef  = useRef<HTMLInputElement>(null);
+  const listRef   = useRef<HTMLDivElement>(null);
+
+  const qParam = targetKind === 'post'    ? `post_id=${targetId}`
+               : targetKind === 'reel'    ? `reel_id=${targetId}`
+               : targetKind === 'concert' ? `concert_id=${targetId}`
+               :                            `event_id=${targetId}`;
+
+  useEffect(() => {
+    if (!open) return;
+    setComments([]);
+    setLoading(true);
+    apiClient.get<any>(`${Endpoints.social.comments}?${qParam}&limit=50`)
+      .then(res => setComments(Array.isArray(res.data) ? res.data : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    setTimeout(() => inputRef.current?.focus(), 300);
+  }, [open, targetId]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!body.trim() || sending) return;
+    setSending(true);
+    const payload: Record<string, string> = { body: body.trim() };
+    if (targetKind === 'post')    payload.post_id    = targetId;
+    if (targetKind === 'reel')    payload.reel_id    = targetId;
+    if (targetKind === 'concert') payload.concert_id = targetId;
+    if (targetKind === 'event')   payload.event_id   = targetId;
+    try {
+      const res = await apiClient.post<any>(Endpoints.social.comments, payload);
+      setComments(prev => [...prev, res.data]);
+      onCountChange(comments.length + 1);
+      setBody('');
+      setTimeout(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, 50);
+    } catch { /* silencieux */ }
+    finally { setSending(false); }
+  }
+
+  if (!open) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40"
+        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(3px)', animation: 'fadeIn 0.2s ease-out' }}
+        onClick={onClose}
+      />
+
+      {/* Sheet — monte depuis le bas, max 75vh, centré horizontalement sur desktop */}
+      <div
+        className="fixed z-50 left-0 right-0 bottom-0 flex flex-col"
+        style={{
+          maxHeight: '75vh',
+          animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)',
+          background: 'var(--surface)',
+          borderRadius: '20px 20px 0 0',
+          boxShadow: '0 -8px 40px rgba(0,0,0,0.35)',
+          border: '1px solid var(--border)',
+          borderBottom: 'none',
+          /* centré sur grand écran */
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          maxWidth: '600px',
+          /* full width sur mobile, limité sur desktop */
+        }}
+      >
+        {/* Poignée */}
+        <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 shrink-0"
+          style={{ borderBottom: '1px solid var(--border)' }}>
+          <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>
+            Commentaires
+            {comments.length > 0 && (
+              <span className="ml-2 text-sm font-normal" style={{ color: 'var(--text-tertiary)' }}>
+                {fmtCount(comments.length)}
+              </span>
+            )}
+          </p>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+            style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Liste commentaires */}
+        <div ref={listRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-5" style={{ minHeight: 0 }}>
+          {loading ? (
+            <div className="flex justify-center py-10"><Spinner size="sm" /></div>
+          ) : comments.length === 0 ? (
+            <div className="flex flex-col items-center py-10 gap-2">
+              <MessageCircle size={28} style={{ color: 'var(--text-tertiary)', opacity: 0.35 }} />
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun commentaire. Sois le premier !</p>
+            </div>
+          ) : (
+            comments.map((c: any) => (
+              <div key={c.id} className="flex gap-3 items-start">
+                <Avatar
+                  src={c.author?.avatar_url}
+                  name={c.author?.display_name ?? c.author?.username ?? '?'}
+                  size="sm"
+                  verified={c.author?.is_verified}
+                  className="shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  {/* Bulle style mobile */}
+                  <div className="inline-block rounded-2xl rounded-tl-sm px-3.5 py-2.5 max-w-full"
+                    style={{ background: 'var(--bg-secondary)' }}>
+                    <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
+                      {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                    </p>
+                    <p className="text-sm leading-relaxed break-words" style={{ color: 'var(--text-primary)' }}>
+                      {c.body}
+                    </p>
+                  </div>
+                  <p className="text-[11px] mt-1 ml-1" style={{ color: 'var(--text-tertiary)' }}>
+                    {timeAgo(c.created_at)}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Input */}
+        <form onSubmit={submit}
+          className="flex items-center gap-3 px-4 py-3 shrink-0"
+          style={{ borderTop: '1px solid var(--border)' }}>
+          {user && (
+            <Avatar src={user.avatar_url} name={user.display_name ?? user.username ?? ''} size="sm" className="shrink-0" />
+          )}
+          <input
+            ref={inputRef}
+            value={body}
+            onChange={e => setBody(e.target.value)}
+            placeholder="Écrire un commentaire…"
+            className="flex-1 text-sm rounded-full px-4 py-2.5 outline-none transition-all"
+            style={{
+              background: 'var(--bg-secondary)',
+              border: '1px solid transparent',
+              color: 'var(--text-primary)',
+            }}
+            onFocus={e => (e.target.style.border = '1px solid var(--primary)')}
+            onBlur={e  => (e.target.style.border = '1px solid transparent')}
+          />
+          <button type="submit" disabled={!body.trim() || sending}
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+            style={{
+              background: body.trim() ? 'var(--primary)' : 'var(--bg-secondary)',
+              color: body.trim() ? '#fff' : 'var(--text-tertiary)',
+            }}>
+            {sending ? <Spinner size="sm" /> : <Send size={15} />}
+          </button>
+        </form>
+      </div>
+
+      <style>{`
+        @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+        @keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+      `}</style>
+    </>
+  );
+}
+
+// ── Share toast ───────────────────────────────────────────────────────────────
+function ShareToast({ onDone }: { onDone: () => void }) {
+  useEffect(() => { const t = setTimeout(onDone, 2000); return () => clearTimeout(t); }, []);
+  return (
+    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-white shadow-lg"
+      style={{ background: 'rgba(30,30,40,0.92)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <Check size={14} /><span>Lien copié !</span>
+    </div>
+  );
+}
+
 // ── Action bar — per-card state ───────────────────────────────────────────────
 function ActionBar({
-  id, kind, initialLiked, initialLikeCount, commentCount = 0, shareCount = 0,
-  onComment, titleForShare,
+  id, kind, initialLiked, initialLikeCount, initialCommentCount = 0, shareCount = 0,
+  titleForShare, onOpenComments,
 }: {
   id: string;
   kind: 'event' | 'concert' | 'post' | 'reel';
   initialLiked: boolean;
   initialLikeCount: number;
-  commentCount?: number;
+  initialCommentCount?: number;
   shareCount?: number;
-  onComment: (e: React.MouseEvent) => void;
   titleForShare?: string;
+  onOpenComments: (id: string, kind: 'event' | 'concert' | 'post' | 'reel', count: number) => void;
 }) {
-  const [liked,     setLiked]     = useState(initialLiked);
-  const [likeCount, setLikeCount] = useState(initialLikeCount);
-  const [saved,     setSaved]     = useState(false);
+  const [liked,        setLiked]        = useState(initialLiked);
+  const [likeCount,    setLikeCount]    = useState(initialLikeCount);
+  const [commentCount] = useState(initialCommentCount);
+  const [saved,        setSaved]        = useState(false);
+  const [shareToast,   setShareToast]   = useState(false);
 
   async function handleLike(e: React.MouseEvent) {
     e.stopPropagation();
@@ -133,11 +341,11 @@ function ActionBar({
     try {
       if (kind === 'post') {
         await apiClient.post(`${Endpoints.posts.react(id)}?reaction_type=like`);
-      } else if (kind === 'reel') {
-        await apiClient.post(`${Endpoints.social.toggleReaction}`, { reel_id: id, reaction_type: 'like' });
       } else {
         await apiClient.post(Endpoints.social.toggleReaction, {
-          ...(kind === 'event' ? { event_id: id } : { concert_id: id }),
+          ...(kind === 'event'   ? { event_id: id }   :
+              kind === 'concert' ? { concert_id: id } :
+                                   { reel_id: id }),
           reaction_type: 'like',
         });
       }
@@ -147,50 +355,75 @@ function ActionBar({
     }
   }
 
-  function handleShare(e: React.MouseEvent) {
+  async function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    const url = window.location.origin + `/${kind === 'concert' ? 'concerts' : kind === 'event' ? 'events' : kind === 'post' ? 'posts' : 'reels'}/${id}`;
-    if (navigator.share) navigator.share({ title: titleForShare ?? '', url });
-    else navigator.clipboard.writeText(url);
+    const path = kind === 'concert' ? 'concerts' : kind === 'event' ? 'events' : kind === 'post' ? 'posts' : 'reels';
+    const url  = `${window.location.origin}/${path}/${id}`;
+
+    if (navigator.share) {
+      navigator.share({ title: titleForShare ?? '', url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShareToast(true);
+    }
+    // Record share in backend
+    try {
+      await apiClient.post(Endpoints.social.share, {
+        ...(kind === 'event'   ? { event_id: id }   :
+            kind === 'concert' ? { concert_id: id } :
+            kind === 'reel'    ? { reel_id: id }    :
+                                 { post_id: id }),
+        platform: 'link',
+      });
+    } catch { /* silencieux */ }
   }
 
   return (
-    <div className="flex items-center gap-1 px-2 py-2" style={{ borderTop: '1px solid var(--border)' }}>
-      <button onClick={handleLike}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
-        style={{ color: liked ? '#E0389A' : 'var(--text-secondary)' }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-        <Heart size={15} fill={liked ? '#E0389A' : 'none'} />
-        {likeCount > 0 && <span>{fmtCount(likeCount)}</span>}
-      </button>
+    <>
+      <div className="flex items-center gap-1 px-2 py-2" style={{ borderTop: '1px solid var(--border)' }}>
+        {/* Like */}
+        <button onClick={handleLike}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          style={{ color: liked ? '#E0389A' : 'var(--text-secondary)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+          <Heart size={15} fill={liked ? '#E0389A' : 'none'} strokeWidth={liked ? 0 : 2} />
+          {likeCount > 0 && <span>{fmtCount(likeCount)}</span>}
+        </button>
 
-      <button onClick={onComment}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
-        style={{ color: 'var(--text-secondary)' }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-        <MessageCircle size={15} />
-        {commentCount > 0 && <span>{fmtCount(commentCount)}</span>}
-      </button>
+        {/* Comment */}
+        <button onClick={e => { e.stopPropagation(); onOpenComments(id, kind, commentCount); }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          style={{ color: 'var(--text-secondary)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+          <MessageCircle size={15} />
+          {commentCount > 0 && <span>{fmtCount(commentCount)}</span>}
+        </button>
 
-      <button onClick={handleShare}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
-        style={{ color: 'var(--text-secondary)' }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-        <Share2 size={15} />
-        {shareCount > 0 && <span>{fmtCount(shareCount)}</span>}
-      </button>
+        {/* Share */}
+        <button onClick={handleShare}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          style={{ color: 'var(--text-secondary)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+          <Share2 size={15} />
+          {(shareCount ?? 0) > 0 && <span>{fmtCount(shareCount!)}</span>}
+        </button>
 
-      <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ml-auto"
-        style={{ color: saved ? 'var(--primary)' : 'var(--text-secondary)' }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-        <Bookmark size={15} fill={saved ? 'var(--primary)' : 'none'} />
-      </button>
-    </div>
+        {/* Save */}
+        <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ml-auto"
+          style={{ color: saved ? 'var(--primary)' : 'var(--text-secondary)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+          <Bookmark size={15} fill={saved ? 'var(--primary)' : 'none'} />
+        </button>
+      </div>
+
+      {/* Share toast — local */}
+      {shareToast && <ShareToast onDone={() => setShareToast(false)} />}
+    </>
   );
 }
 
@@ -281,9 +514,12 @@ function LiveHero({ concert }: { concert: Concert }) {
 }
 
 // ── Concert card ──────────────────────────────────────────────────────────────
-function ConcertCard({ concert, delay = 0, followedIds, onFollow }: {
+type OpenCommentsFn = (id: string, kind: 'event'|'concert'|'post'|'reel', count: number) => void;
+
+function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments }: {
   concert: Concert; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
+  onOpenComments: OpenCommentsFn;
 }) {
   const navigate   = useNavigate();
   const isLive     = concert.status === 'live';
@@ -344,16 +580,17 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow }: {
         id={concert.id} kind="concert"
         initialLiked={false} initialLikeCount={0}
         titleForShare={concert.title}
-        onComment={e => { e.stopPropagation(); navigate(`/concerts/${concert.id}`); }}
+        onOpenComments={onOpenComments}
       />
     </div>
   );
 }
 
 // ── Event card ────────────────────────────────────────────────────────────────
-function EventCard({ event, delay = 0, followedIds, onFollow }: {
+function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments }: {
   event: Event; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
+  onOpenComments: OpenCommentsFn;
 }) {
   const navigate   = useNavigate();
   const color      = EVENT_COLORS[event.event_type ?? 'other'] ?? EVENT_COLORS.other;
@@ -416,16 +653,17 @@ function EventCard({ event, delay = 0, followedIds, onFollow }: {
         id={event.id} kind="event"
         initialLiked={false} initialLikeCount={0}
         titleForShare={event.title}
-        onComment={e => { e.stopPropagation(); navigate(`/events/${event.id}`); }}
+        onOpenComments={onOpenComments}
       />
     </div>
   );
 }
 
 // ── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, delay = 0, followedIds, onFollow }: {
+function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments }: {
   post: Post; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
+  onOpenComments: OpenCommentsFn;
 }) {
   const navigate   = useNavigate();
   const authorId   = post.author?.id;
@@ -483,19 +721,20 @@ function PostCard({ post, delay = 0, followedIds, onFollow }: {
         id={post.id} kind="post"
         initialLiked={post.user_reaction === 'like'}
         initialLikeCount={post.like_count ?? 0}
-        commentCount={post.comment_count ?? 0}
+        initialCommentCount={post.comment_count ?? 0}
         shareCount={post.share_count ?? 0}
         titleForShare={post.body?.slice(0, 60)}
-        onComment={e => { e.stopPropagation(); navigate(`/posts/${post.id}`); }}
+        onOpenComments={onOpenComments}
       />
     </div>
   );
 }
 
 // ── Reel card (inline preview) ────────────────────────────────────────────────
-function ReelCard({ reel, delay = 0, followedIds, onFollow }: {
+function ReelCard({ reel, delay = 0, followedIds, onFollow, onOpenComments }: {
   reel: Reel; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
+  onOpenComments: OpenCommentsFn;
 }) {
   const navigate   = useNavigate();
   const authorId   = reel.author?.id;
@@ -562,10 +801,10 @@ function ReelCard({ reel, delay = 0, followedIds, onFollow }: {
         id={reel.id} kind="reel"
         initialLiked={reel.user_reaction === 'like'}
         initialLikeCount={reel.like_count ?? 0}
-        commentCount={reel.comment_count ?? 0}
+        initialCommentCount={reel.comment_count ?? 0}
         shareCount={reel.share_count ?? 0}
         titleForShare={reel.caption ?? 'Reel'}
-        onComment={e => { e.stopPropagation(); navigate(`/reels?id=${reel.id}`); }}
+        onOpenComments={onOpenComments}
       />
     </div>
   );
@@ -742,30 +981,44 @@ export default function FeedPage() {
   const [live,  setLive]    = useState<Concert[]>([]);
   const [loading, setLoading]  = useState(true);
   const { followedIds, toggle: toggleFollow } = useFollow();
-  const loadFeed = useCallback(async (filter: typeof tab) => {
+  const [commentTarget, setCommentTarget] = useState<{ id: string; kind: 'event'|'concert'|'post'|'reel'; count: number } | null>(null);
+
+  function openComments(id: string, kind: 'event'|'concert'|'post'|'reel', count: number) {
+    setCommentTarget({ id, kind, count });
+  }
+  async function loadFeed(filter: typeof tab) {
     setLoading(true);
     try {
       if (filter === 'all') {
-        // Parallel load — apiClient returns { data, status }, extract .data
+        // Parallel load — apiClient.get returns { data, status }
+        // /search/feed → { items: [{kind, ...fields}], total, page, limit }
+        // /reels       → flat array  OR  { items: [...] }
+        // /posts/feed  → flat array
         const [feedRes, reelsRes, postsRes] = await Promise.all([
-          apiClient.get<any>(`${Endpoints.search.feed}?limit=40`).catch(() => ({ data: { items: [] } })),
-          apiClient.get<any>(`${Endpoints.reels.feed}?limit=20`).catch(() => ({ data: { items: [] } })),
-          apiClient.get<any>(`${Endpoints.posts.feed}?limit=20`).catch(() => ({ data: [] })),
+          apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=40`).catch(() => null),
+          apiClient.get<any>(`${Endpoints.reels.feed}?page=1&limit=20`).catch(() => null),
+          apiClient.get<any>(`${Endpoints.posts.feed}?page=1&limit=20`).catch(() => null),
         ]);
 
-        const feedItems: FeedItem[] = toArray<any>(feedRes.data)
-          .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert'))
-          .map((d: any) => ({ kind: d.kind as 'event' | 'concert', id: d.id, data: d }));
+        // /search/feed: { items: [{kind, id, ...fields}] }
+        const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
+        const feedItems: FeedItem[] = feedRaw
+          .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'reel'))
+          .map((d: any) => ({ kind: d.kind as 'event' | 'concert' | 'reel', id: String(d.id), data: d }));
 
-        const reelItems: FeedItem[] = toArray<any>(reelsRes.data)
+        // /reels: flat array or { items: [...] }
+        const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
+        const reelItems: FeedItem[] = reelsRaw
           .filter((d: any) => d.id)
-          .map((d: any) => ({ kind: 'reel' as const, id: d.id, data: d }));
+          .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d }));
 
-        const postItems: FeedItem[] = toArray<any>(postsRes.data)
+        // /posts/feed: flat array
+        const postsRaw: any[] = postsRes ? toArray<any>(postsRes.data) : [];
+        const postItems: FeedItem[] = postsRaw
           .filter((d: any) => d.id)
-          .map((d: any) => ({ kind: 'post' as const, id: d.id, data: d }));
+          .map((d: any) => ({ kind: 'post' as const, id: String(d.id), data: d }));
 
-        // Deduplicate by composite key
+        // Merge all, deduplicate by composite key
         const seen = new Set<string>();
         const deduped = [...feedItems, ...reelItems, ...postItems].filter(item => {
           const key = `${item.kind}-${item.id}`;
@@ -774,27 +1027,29 @@ export default function FeedPage() {
           return true;
         });
 
-        // Fisher-Yates shuffle
+        // Fisher-Yates shuffle — truly random order every time
         for (let i = deduped.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [deduped[i], deduped[j]] = [deduped[j], deduped[i]];
         }
 
-        // Inject suggestions at random position 5–15
-        const pos = Math.min(Math.floor(Math.random() * 11) + 5, deduped.length);
-        deduped.splice(pos, 0, { kind: 'suggestions', id: '__suggestions__', data: null });
+        // Inject suggestions block at random position 5–15
+        if (deduped.length > 0) {
+          const pos = Math.min(Math.floor(Math.random() * 11) + 5, deduped.length);
+          deduped.splice(pos, 0, { kind: 'suggestions', id: '__suggestions__', data: null });
+        }
 
         setItems(deduped);
       } else {
-        // Filter-specific load
+        // Filter-specific — sorted by date, no shuffle
         const results: FeedItem[] = [];
         if (filter === 'concerts') {
-          const res = await apiClient.get<any>(`${Endpoints.concerts.list}?limit=30&status=published`).catch(() => ({ data: [] }));
-          toArray<Concert>(res.data).forEach(c => results.push({ kind: 'concert', id: c.id, data: c }));
+          const res = await apiClient.get<any>(`${Endpoints.concerts.list}?limit=30&status=published`).catch(() => null);
+          if (res) toArray<Concert>(res.data).forEach(c => results.push({ kind: 'concert', id: c.id, data: c }));
         }
         if (filter === 'events') {
-          const res = await apiClient.get<any>(`${Endpoints.events.list}?limit=30&status=published`).catch(() => ({ data: [] }));
-          toArray<Event>(res.data).forEach(e => results.push({ kind: 'event', id: e.id, data: e }));
+          const res = await apiClient.get<any>(`${Endpoints.events.list}?limit=30&status=published`).catch(() => null);
+          if (res) toArray<Event>(res.data).forEach(e => results.push({ kind: 'event', id: e.id, data: e }));
         }
         results.sort((a, b) =>
           new Date((b.data as any).created_at ?? 0).getTime() -
@@ -804,7 +1059,7 @@ export default function FeedPage() {
       }
     } catch { /* silencieux */ }
     finally { setLoading(false); }
-  }, []);
+  }
 
   // Load live concerts once
   useEffect(() => {
@@ -814,11 +1069,9 @@ export default function FeedPage() {
   }, []);
 
   // Reload when tab changes
-  useEffect(() => {
-    loadFeed(tab);
-  }, [tab]);
+  useEffect(() => { loadFeed(tab); }, [tab]);
 
-  const displayedItems = items; // already filtered inside loadFeed
+  function handleRefresh() { loadFeed(tab); }
 
   return (
     <div className="px-4 sm:px-6 py-6">
@@ -828,16 +1081,30 @@ export default function FeedPage() {
         <div className="flex-1 min-w-0 max-w-xl mx-auto xl:mx-0 space-y-5">
 
           {/* Greeting */}
-          <div className="animate-reveal-up">
-            <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
-              Bonjour,{' '}
-              <span className="gradient-text">
-                {user?.display_name ?? user?.first_name ?? user?.username}
-              </span>{' '}👋
-            </h1>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-              Concerts, événements et posts du moment
-            </p>
+          <div className="flex items-start justify-between animate-reveal-up">
+            <div>
+              <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
+                Bonjour,{' '}
+                <span className="gradient-text">
+                  {user?.display_name ?? user?.first_name ?? user?.username}
+                </span>{' '}👋
+              </h1>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                {items.filter(i => i.kind !== 'suggestions').length > 0
+                  ? `${items.filter(i => i.kind !== 'suggestions').length} éléments dans ton fil`
+                  : 'Concerts, événements, reels et posts mélangés'}
+              </p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="p-2 rounded-xl transition-all mt-1 shrink-0"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              title="Mélanger à nouveau">
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            </button>
           </div>
 
           {/* ── LIVE HERO ── */}
@@ -878,7 +1145,7 @@ export default function FeedPage() {
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map(i => <CardSkeleton key={i} />)}
             </div>
-          ) : displayedItems.length === 0 ? (
+          ) : items.length === 0 ? (
             <div className="rounded-2xl p-12 text-center animate-scale-in"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
@@ -891,21 +1158,21 @@ export default function FeedPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-3 animate-reveal-up delay-300">
-              {displayedItems.map((item, i) => {
+              {items.map((item, i) => {
                 if (item.kind === 'suggestions') {
                   return <SuggestionsInline key="__suggestions__" />;
                 }
                 if (item.kind === 'concert') {
-                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} />;
+                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
                 }
                 if (item.kind === 'event') {
-                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} />;
+                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
                 }
                 if (item.kind === 'post') {
-                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} />;
+                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
                 }
                 if (item.kind === 'reel') {
-                  return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} />;
+                  return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
                 }
                 return null;
               })}
@@ -919,6 +1186,16 @@ export default function FeedPage() {
         </div>
 
       </div>
+
+      {/* ── Single global comments sheet ── */}
+      <CommentsModal
+        open={!!commentTarget}
+        onClose={() => setCommentTarget(null)}
+        targetKind={commentTarget?.kind ?? 'event'}
+        targetId={commentTarget?.id ?? ''}
+        initialCount={commentTarget?.count ?? 0}
+        onCountChange={n => setCommentTarget(prev => prev ? { ...prev, count: n } : null)}
+      />
     </div>
   );
 }

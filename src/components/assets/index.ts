@@ -1,13 +1,11 @@
 // Centralisation des assets — utiliser uniquement via cet index
 
-export const Images = {
-  // Logos FoliX — light/dark selon le thème
-  logoLight: require('./images/stream_logo_light.png'),
-  logoDark:  require('./images/stream_logo_dark.png'),
+import logoLightUrl from './images/stream_logo_light.png';
+import logoDarkUrl  from './images/stream_logo_dark.png';
 
-  // Placeholders
-  // thumbPlaceholder: require('./images/thumb_placeholder.png'),
-  // avatarPlaceholder: require('./images/avatar_placeholder.png'),
+export const Images = {
+  logoLight: logoLightUrl,
+  logoDark:  logoDarkUrl,
 } as const;
 
 export type ImageKey = keyof typeof Images;

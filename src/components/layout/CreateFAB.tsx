@@ -107,7 +107,7 @@ function ErrorBanner({ msg }: { msg: string }) {
 }
 
 function UploadZone({
-  accept, label, sub, icon: Icon_, preview, onPick, onRemove,
+  accept: _accept, label, sub, icon: Icon_, preview, onPick, onRemove,
 }: {
   accept: string; label: string; sub: string; icon: React.ElementType;
   preview?: React.ReactNode; onPick: () => void; onRemove?: () => void;
