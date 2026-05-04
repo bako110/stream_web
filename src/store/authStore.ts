@@ -69,10 +69,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await apiClient.post<AuthToken>(Endpoints.auth.login, data);
-      const { access_token, refresh_token } = res.data;
-      setAuthToken(access_token);
-      saveTokens(access_token, refresh_token);
-      set({ accessToken: access_token, refreshToken: refresh_token, isLoading: false });
+      const token = res.data;
+      if (!token?.access_token) throw new Error('Réponse invalide du serveur');
+      setAuthToken(token.access_token);
+      saveTokens(token.access_token, token.refresh_token);
+      set({ accessToken: token.access_token, refreshToken: token.refresh_token, isLoading: false });
       await get().fetchMe();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erreur de connexion';
@@ -85,10 +86,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await apiClient.post<AuthToken>(Endpoints.auth.register, data);
-      const { access_token, refresh_token } = res.data;
-      setAuthToken(access_token);
-      saveTokens(access_token, refresh_token);
-      set({ accessToken: access_token, refreshToken: refresh_token, isLoading: false });
+      const token = res.data;
+      if (!token?.access_token) throw new Error('Réponse invalide du serveur');
+      setAuthToken(token.access_token);
+      saveTokens(token.access_token, token.refresh_token);
+      set({ accessToken: token.access_token, refreshToken: token.refresh_token, isLoading: false });
       await get().fetchMe();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erreur d'inscription";
@@ -122,7 +124,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         Endpoints.auth.refresh,
         { refresh_token: refreshToken },
       );
-      const newToken = res.data.access_token;
+      const newToken = res.data?.access_token;
+      if (!newToken) throw new Error('Token refresh invalide');
       setAuthToken(newToken);
       saveTokens(newToken, refreshToken);
       set({ accessToken: newToken });

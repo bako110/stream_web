@@ -1,5 +1,5 @@
-export const API_BASE_URL = '';
-export const WS_BASE_URL  = '';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+export const WS_BASE_URL  = import.meta.env.VITE_WS_BASE_URL  ?? '';
 
 export const APP_NAME    = 'FoliX';
 export const APP_VERSION = '1.0.0';
