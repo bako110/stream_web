@@ -1,0 +1,429 @@
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
+  Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
+} from 'lucide-react';
+import type { Event } from '../../types';
+import { apiClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
+import { useApi } from '../../hooks/useApi';
+import { Avatar } from '../../components/ui/Avatar';
+import { Spinner } from '../../components/ui/Spinner';
+import { useAuthStore } from '../../store/authStore';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+const TYPE_LABELS: Record<string, string> = {
+  concert: 'Concert', birthday: 'Anniversaire', festival: 'Festival',
+  conference: 'Conférence', sport: 'Sport', theater: 'Théâtre',
+  exhibition: 'Exposition', other: 'Autre',
+};
+const TYPE_COLORS: Record<string, string> = {
+  concert: '#7B3FF2', festival: '#E0389A', sport: '#FF7A2F',
+  conference: '#3B82F6', theater: '#8B5CF6', exhibition: '#06B6D4',
+  birthday: '#F59E0B', other: '#6B7280',
+};
+
+function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () => void }) {
+  const { user: me } = useAuthStore();
+  const [comments, setComments] = useState<any[]>([]);
+  const [input,    setInput]    = useState('');
+  const [sending,  setSending]  = useState(false);
+  const [loading,  setLoading]  = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    apiClient.get<any>(`${Endpoints.social.comments}?event_id=${targetId}&limit=50`)
+      .then(res => {
+        const raw = res.data;
+        setComments(Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? raw?.comments ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, [targetId]);
+
+  async function submit() {
+    if (!input.trim() || sending) return;
+    const text = input.trim();
+    setInput('');
+    setSending(true);
+    try {
+      const res = await apiClient.post<any>(Endpoints.social.comments, { event_id: targetId, body: text });
+      setComments(prev => [...prev, res.data]);
+    } catch { setInput(text); }
+    finally { setSending(false); }
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col"
+        style={{
+          background: 'var(--surface)',
+          borderTop: '1px solid var(--border)',
+          borderRadius: '1.5rem 1.5rem 0 0',
+          maxHeight: '80vh',
+          boxShadow: '0 -16px 64px rgba(0,0,0,0.3)',
+        }}>
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 shrink-0"
+          style={{ borderBottom: '1px solid var(--border)' }}>
+          <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>Commentaires</h3>
+          <button onClick={onClose} className="p-1.5 rounded-xl transition-all"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
+          {loading ? (
+            <div className="flex justify-center py-10"><Spinner /></div>
+          ) : comments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 opacity-50">
+              <MessageCircle size={28} style={{ color: 'var(--text-tertiary)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun commentaire — soyez le premier !</p>
+            </div>
+          ) : comments.map((c, i) => (
+            <div key={c.id ?? i} className="flex gap-3">
+              <Avatar src={c.author?.avatar_url} name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
+              <div className="flex-1 rounded-2xl px-3.5 py-2.5" style={{ background: 'var(--bg-secondary)' }}>
+                <p className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
+                  {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                </p>
+                <p className="text-sm mt-0.5 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  {c.body ?? c.content}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Input */}
+        <div className="shrink-0 px-4 py-3 flex gap-2 items-center"
+          style={{ borderTop: '1px solid var(--border)', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <Avatar src={me?.avatar_url} name={me?.display_name ?? me?.username ?? '?'} size="sm" />
+          <div className="flex-1 relative">
+            <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
+              placeholder="Écrire un commentaire…"
+              className="input text-sm w-full pr-10" />
+            <button onClick={submit} disabled={!input.trim() || sending}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all disabled:opacity-30"
+              style={{ color: 'var(--primary)' }}>
+              {sending ? <Spinner size="sm" /> : <Send size={14} />}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default function EventDetailPage() {
+  const { id }     = useParams<{ id: string }>();
+  const navigate   = useNavigate();
+  const { user: me } = useAuthStore();
+
+  const { data: event, loading } = useApi<Event>(
+    () => apiClient.get<Event>(Endpoints.events.byId(id!)), [id]
+  );
+
+  const [liked,       setLiked]       = useState(false);
+  const [likeCount,   setLikeCount]   = useState(0);
+  const [following,   setFollowing]   = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [buying,      setBuying]      = useState(false);
+  const [shareOk,     setShareOk]     = useState(false);
+
+  const toggleLike = useCallback(async () => {
+    setLiked(v => !v);
+    setLikeCount(v => liked ? v - 1 : v + 1);
+    try {
+      await apiClient.post(Endpoints.social.toggleReaction, {
+        event_id: id, reaction_type: 'like',
+      });
+    } catch {
+      setLiked(v => !v);
+      setLikeCount(v => liked ? v + 1 : v - 1);
+    }
+  }, [liked, id]);
+
+  const toggleFollow = useCallback(async () => {
+    if (!event?.organizer?.id) return;
+    setFollowing(v => !v);
+    try {
+      await apiClient.post(Endpoints.users.follow(event.organizer.id));
+    } catch { setFollowing(v => !v); }
+  }, [event?.organizer?.id]);
+
+  const share = useCallback(async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: event?.title, url });
+      else await navigator.clipboard.writeText(url);
+      setShareOk(true);
+      setTimeout(() => setShareOk(false), 2000);
+    } catch { /* ignore */ }
+  }, [event?.title]);
+
+  const buyTicket = useCallback(async () => {
+    setBuying(true);
+    try {
+      await apiClient.post(Endpoints.events.buyTicket(id!));
+      alert('Ticket acheté !');
+    } catch (e: any) {
+      alert(e?.message ?? 'Erreur lors de l\'achat');
+    } finally { setBuying(false); }
+  }, [id]);
+
+  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (!event)  return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Événement introuvable.</div>;
+
+  const e     = event;
+  const color = TYPE_COLORS[e.event_type] ?? '#7B3FF2';
+  const label = TYPE_LABELS[e.event_type] ?? e.event_type;
+
+  return (
+    <div className="max-w-3xl mx-auto pb-16">
+      {/* Back */}
+      <button onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-4 text-sm transition-all"
+        style={{ color: 'var(--text-secondary)' }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
+        <ArrowLeft size={16} /> Retour
+      </button>
+
+      {/* Hero */}
+      <div className="relative overflow-hidden mx-4 rounded-2xl" style={{ aspectRatio: '16/9', background: 'var(--bg-tertiary)' }}>
+        {e.banner_url || e.thumbnail_url
+          ? <img src={e.banner_url ?? e.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={e.title} />
+          : <div className="w-full h-full flex items-center justify-center">
+              <Calendar size={56} style={{ color, opacity: 0.4 }} />
+            </div>
+        }
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)' }} />
+
+        {/* Badges */}
+        <span className="absolute top-4 left-4 text-xs font-bold px-3 py-1.5 rounded-full text-white"
+          style={{ background: color }}>
+          {label}
+        </span>
+        {e.access_type === 'free' && (
+          <span className="absolute top-4 right-4 text-xs font-semibold px-3 py-1.5 rounded-full"
+            style={{ background: 'rgba(34,197,94,0.25)', color: '#22c55e', border: '1px solid #22c55e40' }}>
+            Gratuit
+          </span>
+        )}
+
+        {/* Title overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <h1 className="text-2xl font-black text-white leading-tight" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
+            {e.title}
+          </h1>
+          <div className="flex items-center gap-2 mt-2 text-white/70 text-sm">
+            <Clock size={12} />
+            {format(new Date(e.starts_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+          </div>
+        </div>
+      </div>
+
+      {/* Action bar */}
+      <div className="flex items-center gap-2 px-4 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+        {/* Like */}
+        <button onClick={toggleLike}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+          style={{
+            background: liked ? 'rgba(240,62,62,0.12)' : 'var(--bg-secondary)',
+            color: liked ? '#f03e3e' : 'var(--text-secondary)',
+            border: `1px solid ${liked ? '#f03e3e40' : 'var(--border)'}`,
+          }}>
+          <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+          {likeCount > 0 && <span>{likeCount}</span>}
+          <span className="hidden sm:inline">J'aime</span>
+        </button>
+
+        {/* Comment */}
+        <button onClick={() => setShowComments(v => !v)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+          style={{
+            background: showComments ? 'rgba(123,63,242,0.12)' : 'var(--bg-secondary)',
+            color: showComments ? 'var(--primary)' : 'var(--text-secondary)',
+            border: `1px solid ${showComments ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
+          }}>
+          <MessageCircle size={16} />
+          <span className="hidden sm:inline">Commenter</span>
+        </button>
+
+        {/* Share */}
+        <button onClick={share}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+          style={{
+            background: shareOk ? 'rgba(34,197,94,0.12)' : 'var(--bg-secondary)',
+            color: shareOk ? '#22c55e' : 'var(--text-secondary)',
+            border: `1px solid ${shareOk ? '#22c55e40' : 'var(--border)'}`,
+          }}>
+          <Share2 size={16} />
+          <span className="hidden sm:inline">{shareOk ? 'Copié !' : 'Partager'}</span>
+        </button>
+
+        {/* Follow organizer */}
+        {e.organizer && e.organizer.id !== me?.id && (
+          <button onClick={toggleFollow}
+            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: following ? 'rgba(123,63,242,0.12)' : 'var(--primary)',
+              color: following ? 'var(--primary)' : '#fff',
+              border: `1px solid ${following ? 'rgba(123,63,242,0.3)' : 'transparent'}`,
+            }}>
+            {following ? <UserCheck size={15} /> : <UserPlus size={15} />}
+            {following ? 'Suivi' : 'Suivre'}
+          </button>
+        )}
+      </div>
+
+      <div className="px-4 pt-5 space-y-6">
+        {/* Organizer */}
+        {e.organizer && (
+          <div className="flex items-center gap-3 p-3 rounded-2xl" style={{ background: 'var(--bg-secondary)' }}>
+            <Avatar src={e.organizer.avatar_url} name={e.organizer.display_name ?? e.organizer.username} size="md" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Organisé par</p>
+              <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                {e.organizer.display_name ?? e.organizer.username}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Infos */}
+        <div className="space-y-3">
+          <div className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: `${color}18` }}>
+              <Calendar size={15} style={{ color }} />
+            </div>
+            <div>
+              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {format(new Date(e.starts_at), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+              </p>
+              {e.ends_at && <p className="text-xs mt-0.5">Jusqu'à {format(new Date(e.ends_at), 'HH:mm')}</p>}
+            </div>
+          </div>
+
+          {e.is_online ? (
+            <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(34,197,94,0.12)' }}>
+                <Globe size={15} style={{ color: '#22c55e' }} />
+              </div>
+              <div>
+                <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>En ligne</p>
+                {e.online_url && (
+                  <a href={e.online_url} target="_blank" rel="noreferrer"
+                    className="text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--primary)' }}>
+                    Rejoindre <ExternalLink size={10} />
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : (e.venue_city || e.venue_name) && (
+            <div className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(239,68,68,0.12)' }}>
+                <MapPin size={15} style={{ color: '#ef4444' }} />
+              </div>
+              <div>
+                {e.venue_name && <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{e.venue_name}</p>}
+                <p className="text-xs mt-0.5">
+                  {[e.venue_address, e.venue_city, e.venue_country].filter(Boolean).join(', ')}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {e.max_attendees != null && (
+            <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(59,130,246,0.12)' }}>
+                <Users size={15} style={{ color: '#3b82f6' }} />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {e.current_attendees ?? 0} / {e.max_attendees} participants
+                </p>
+                <div className="mt-1.5 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
+                  <div className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(100, ((e.current_attendees ?? 0) / e.max_attendees) * 100)}%`,
+                      background: color,
+                    }} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Description */}
+        {e.description && (
+          <div>
+            <h3 className="font-bold mb-2" style={{ color: 'var(--text-primary)' }}>À propos</h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{e.description}</p>
+          </div>
+        )}
+
+        {/* Gallery */}
+        {e.gallery_urls && e.gallery_urls.length > 0 && (
+          <div>
+            <h3 className="font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Galerie</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {e.gallery_urls.map((url, i) => (
+                <img key={i} src={url} className="aspect-square rounded-xl object-cover" alt="" />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* CTA */}
+        {e.status === 'published' && (
+          <div className="p-4 rounded-2xl flex items-center justify-between gap-4"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Accès</p>
+              <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>
+                {e.access_type === 'free' ? 'Gratuit' : e.access_type === 'ticket' ? `${e.ticket_price ?? '?'}€` : 'Sur invitation'}
+              </p>
+            </div>
+            {e.access_type === 'ticket' && (
+              <button onClick={buyTicket} disabled={buying}
+                className="btn-primary flex items-center gap-2 px-6">
+                {buying ? <Spinner size="sm" /> : <Ticket size={16} />}
+                Acheter
+              </button>
+            )}
+            {e.access_type === 'free' && (
+              <span className="text-sm font-bold px-4 py-2 rounded-xl"
+                style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}>
+                Entrée libre
+              </span>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      {showComments && <CommentsModal targetId={id!} onClose={() => setShowComments(false)} />}
+    </div>
+  );
+}
