@@ -100,24 +100,43 @@ function LiveChat({ liveId, accessToken }: { liveId: string; accessToken: string
   );
 }
 
-// ── Zone vidéo ─────────────────────────────────────────────────────────────────
+// ── Zone vidéo multi-participants ─────────────────────────────────────────────
+// - Spotlight (plein écran) : par défaut le host, sinon le 1er remote
+// - Cliquer sur une vignette met ce participant en spotlight
+// - Le host passe en PiP (coin bas droit) quand un viewer est en spotlight
+// - Cliquer sur le PiP revient au spotlight du host
 
 function LiveKitViewer({ isHost }: { isHost: boolean }) {
-  const tracks       = useTracks([Track.Source.Camera, Track.Source.ScreenShare], { onlySubscribed: false });
+  const tracks      = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const participants = useParticipants();
+  const [spotlightId, setSpotlightId] = useState<string | null>(null);
 
-  const videoTrack = isHost
-    ? tracks.find(t => t.participant.isLocal)
-    : tracks.find(t => !t.participant.isLocal);
+  // Tracks avec vidéo active (non muté)
+  const activeTracks = tracks.filter(t => !t.publication?.isMuted);
 
-  if (!videoTrack) {
+  // Spotlight par défaut
+  const defaultSpotlight = isHost
+    ? (activeTracks.find(t => t.participant.isLocal) ?? activeTracks[0] ?? null)
+    : (activeTracks.find(t => !t.participant.isLocal) ?? activeTracks[0] ?? null);
+
+  const spotlightTrack = activeTracks.find(t => t.participant.identity === spotlightId) ?? defaultSpotlight;
+  const thumbnailTracks = activeTracks.filter(t => t !== spotlightTrack);
+  const localTrack = activeTracks.find(t => t.participant.isLocal) ?? null;
+
+  // PiP host visible quand un viewer est en spotlight
+  const showHostPip = isHost
+    && spotlightTrack
+    && !spotlightTrack.participant.isLocal
+    && localTrack != null;
+
+  if (activeTracks.length === 0) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
         <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center animate-pulse">
           <Radio size={28} className="opacity-60" />
         </div>
         <p className="text-sm opacity-60">
-          {isHost ? 'Active ta caméra pour démarrer la diffusion' : 'En attente de la diffusion...'}
+          {isHost ? 'Active ta caméra pour démarrer' : 'En attente de la diffusion...'}
         </p>
         <p className="text-xs opacity-40">{participants.length} connecté(s)</p>
       </div>
@@ -125,10 +144,54 @@ function LiveKitViewer({ isHost }: { isHost: boolean }) {
   }
 
   return (
-    <>
+    <div className="relative w-full h-full bg-black overflow-hidden">
       <RoomAudioRenderer />
-      <VideoTrack trackRef={videoTrack} className="w-full h-full object-contain" />
-    </>
+
+      {/* Plein écran — spotlight */}
+      {spotlightTrack && (
+        <VideoTrack trackRef={spotlightTrack} className="w-full h-full object-cover" />
+      )}
+
+      {/* Nom du participant en spotlight */}
+      {spotlightTrack && (
+        <div className="absolute top-3 left-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm z-10">
+          {spotlightTrack.participant.isLocal ? 'Toi' : (spotlightTrack.participant.name || spotlightTrack.participant.identity)}
+        </div>
+      )}
+
+      {/* PiP du host quand un viewer est en spotlight */}
+      {showHostPip && localTrack && (
+        <div
+          className="absolute bottom-20 right-4 w-28 h-40 rounded-2xl overflow-hidden border-2 border-white/40 shadow-2xl cursor-pointer z-20 hover:border-brand-primary transition-all"
+          onClick={() => setSpotlightId(null)}
+          title="Revenir sur ta vue"
+        >
+          <VideoTrack trackRef={localTrack} className="w-full h-full object-cover" />
+          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-1">
+            Toi
+          </div>
+        </div>
+      )}
+
+      {/* Vignettes — autres participants avec caméra active */}
+      {thumbnailTracks.length > 0 && (
+        <div className="absolute bottom-20 left-3 flex flex-col gap-2 z-20">
+          {thumbnailTracks.map(t => (
+            <div
+              key={t.participant.identity}
+              className="w-24 h-36 rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl cursor-pointer hover:border-brand-primary transition-all relative"
+              onClick={() => setSpotlightId(t.participant.identity)}
+              title={`Mettre en plein écran`}
+            >
+              <VideoTrack trackRef={t} className="w-full h-full object-cover" />
+              <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate text-center py-1 px-1">
+                {t.participant.isLocal ? 'Toi' : (t.participant.name || t.participant.identity)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -143,7 +206,7 @@ function ViewerCount() {
   );
 }
 
-// ── Contrôles media (host + viewer) ───────────────────────────────────────────
+// ── Contrôles media ───────────────────────────────────────────────────────────
 
 function MediaControls({
   isHost,
@@ -241,8 +304,8 @@ export default function LiveSimplePage() {
   const liveApi   = useApi<LiveStream>(() => apiClient.get<LiveStream>(Endpoints.lives.byId(id!)), [id]);
   const statusApi = useApi<LiveStatusResponse>(() => apiClient.get<LiveStatusResponse>(Endpoints.lives.status(id!)), [id]);
 
-  const live   = liveApi.data;
-  const isHost = !!(live && user && live.user_id === user.id);
+  const live     = liveApi.data;
+  const isHost   = !!(live && user && live.user_id === user.id);
   const isActive = live?.status === 'active';
 
   useEffect(() => {
@@ -263,14 +326,12 @@ export default function LiveSimplePage() {
     setStopping(true);
     try {
       await apiClient.post(Endpoints.lives.stop(id));
-      await liveApi.refetch();
+      liveApi.refetch();
     } catch { /* error */ }
     finally { setStopping(false); }
   }, [id, liveApi]);
 
-  const handleLeave = useCallback(() => {
-    navigate(-1);
-  }, [navigate]);
+  const handleLeave = useCallback(() => { navigate(-1); }, [navigate]);
 
   if (liveApi.loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
   if (!live) return <div className="p-6 text-[var(--text-secondary)]">Live introuvable.</div>;
@@ -308,8 +369,8 @@ export default function LiveSimplePage() {
         <div className="flex-1 relative bg-black overflow-hidden">
           <LiveKitViewer isHost={isHost} />
 
-          {/* Contrôles overlay — visibles pour host ET viewer */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
+          {/* Contrôles overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-30">
             <MediaControls
               isHost={isHost}
               onStop={handleStop}
