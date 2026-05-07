@@ -27,8 +27,11 @@ const ReelsPage         = lazy(() => import('./pages/ReelsPage'));
 const FilmsPage         = lazy(() => import('./pages/FilmsPage'));
 const ConcertsPage      = lazy(() => import('./pages/ConcertsPage'));
 const EventsPage        = lazy(() => import('./pages/EventsPage'));
-const LiveListPage      = lazy(() => import('./pages/LiveListPage'));
-const LivePage          = lazy(() => import('./pages/LivePage'));
+const LiveListPage        = lazy(() => import('./pages/LiveListPage'));
+const LivePage            = lazy(() => import('./pages/LivePage'));
+const LiveSimpleListPage  = lazy(() => import('./pages/LiveSimpleListPage'));
+const LiveSimplePage      = lazy(() => import('./pages/LiveSimplePage'));
+const GoLivePage          = lazy(() => import('./pages/GoLivePage'));
 const SearchPage        = lazy(() => import('./pages/SearchPage'));
 const MessagesPage      = lazy(() => import('./pages/MessagesPage'));
 const CommunitiesPage   = lazy(() => import('./pages/CommunitiesPage'));
@@ -37,11 +40,30 @@ const ProfilePage       = lazy(() => import('./pages/ProfilePage'));
 const UserProfilePage   = lazy(() => import('./pages/UserProfilePage'));
 const SettingsPage      = lazy(() => import('./pages/SettingsPage'));
 const ActivityPage      = lazy(() => import('./pages/ActivityPage'));
+const WalletPage         = lazy(() => import('./pages/WalletPage'));
+const WalletBuyPage      = lazy(() => import('./pages/wallet/WalletBuyPage'));
+const WalletTransferPage = lazy(() => import('./pages/wallet/WalletTransferPage'));
+const WalletWithdrawPage = lazy(() => import('./pages/wallet/WalletWithdrawPage'));
+const WalletDashboardPage= lazy(() => import('./pages/wallet/WalletDashboardPage'));
+const WalletBoostPage    = lazy(() => import('./pages/wallet/WalletBoostPage'));
+const SubscriptionsPage  = lazy(() => import('./pages/SubscriptionsPage'));
+const PrivacyPage        = lazy(() => import('./pages/PrivacyPage'));
+const BlockedUsersPage   = lazy(() => import('./pages/BlockedUsersPage'));
+
+const SettingsVerificationPage  = lazy(() => import('./pages/settings/SettingsVerificationPage'));
+const SettingsAppearancePage    = lazy(() => import('./pages/settings/SettingsAppearancePage'));
+const SettingsNotificationsPage = lazy(() => import('./pages/settings/SettingsNotificationsPage'));
+const SettingsPlaybackPage      = lazy(() => import('./pages/settings/SettingsPlaybackPage'));
+const SettingsAccountPage       = lazy(() => import('./pages/settings/SettingsAccountPage'));
+const SettingsContentPage       = lazy(() => import('./pages/settings/SettingsContentPage'));
+const SettingsAboutPage         = lazy(() => import('./pages/settings/SettingsAboutPage'));
+const SettingsDangerPage        = lazy(() => import('./pages/settings/SettingsDangerPage'));
 
 const FilmDetailPage      = lazy(() => import('./pages/detail/FilmDetailPage'));
 const SerieDetailPage     = lazy(() => import('./pages/detail/SerieDetailPage'));
 const ConcertDetailPage   = lazy(() => import('./pages/detail/ConcertDetailPage'));
 const EventDetailPage     = lazy(() => import('./pages/detail/EventDetailPage'));
+const PostDetailPage      = lazy(() => import('./pages/detail/PostDetailPage'));
 const CommunityDetailPage = lazy(() => import('./pages/detail/CommunityDetailPage'));
 
 // ── Loader animé partagé ──────────────────────────────────────────────────────
@@ -133,8 +155,12 @@ function AppShell() {
             <Route path="/concerts/:id"      element={<ConcertDetailPage />} />
             <Route path="/events"            element={<EventsPage />} />
             <Route path="/events/:id"        element={<EventDetailPage />} />
+            <Route path="/posts/:id"         element={<PostDetailPage />} />
             <Route path="/live"              element={<LiveListPage />} />
             <Route path="/live/:id"          element={<LivePage />} />
+            <Route path="/lives"             element={<LiveSimpleListPage />} />
+            <Route path="/lives/:id"         element={<LiveSimplePage />} />
+            <Route path="/go-live"           element={<GoLivePage />} />
             <Route path="/search"            element={<SearchPage />} />
             <Route path="/messages"          element={<MessagesPage />} />
             <Route path="/messages/:userId"  element={<MessagesPage />} />
@@ -143,8 +169,25 @@ function AppShell() {
             <Route path="/notifications"     element={<NotificationsPage />} />
             <Route path="/profile"           element={<ProfilePage />} />
             <Route path="/user/:id"          element={<UserProfilePage />} />
-            <Route path="/settings"          element={<SettingsPage />} />
+            <Route path="/settings"                    element={<SettingsPage />} />
+            <Route path="/settings/verification"       element={<SettingsVerificationPage />} />
+            <Route path="/settings/appearance"         element={<SettingsAppearancePage />} />
+            <Route path="/settings/notifications"      element={<SettingsNotificationsPage />} />
+            <Route path="/settings/playback"           element={<SettingsPlaybackPage />} />
+            <Route path="/settings/account"            element={<SettingsAccountPage />} />
+            <Route path="/settings/content"            element={<SettingsContentPage />} />
+            <Route path="/settings/about"              element={<SettingsAboutPage />} />
+            <Route path="/settings/danger"             element={<SettingsDangerPage />} />
             <Route path="/activity"          element={<ActivityPage />} />
+            <Route path="/wallet"              element={<WalletPage />} />
+            <Route path="/wallet/buy"        element={<WalletBuyPage />} />
+            <Route path="/wallet/transfer"   element={<WalletTransferPage />} />
+            <Route path="/wallet/withdraw"   element={<WalletWithdrawPage />} />
+            <Route path="/wallet/dashboard"  element={<WalletDashboardPage />} />
+            <Route path="/wallet/boost"      element={<WalletBoostPage />} />
+            <Route path="/subscriptions"     element={<SubscriptionsPage />} />
+            <Route path="/privacy"           element={<PrivacyPage />} />
+            <Route path="/blocked-users"     element={<BlockedUsersPage />} />
           </Route>
         </Route>
 

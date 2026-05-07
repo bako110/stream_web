@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Search, Bell, Radio } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -108,6 +108,19 @@ export function Topbar({ onMenuClick }: Props) {
           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
         >
           <Search size={20} />
+        </button>
+
+        {/* Go Live */}
+        <button
+          onClick={() => navigate('/go-live')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', color: '#fff', boxShadow: '0 2px 10px rgba(240,54,90,0.35)' }}
+          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 18px rgba(240,54,90,0.55)')}
+          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 10px rgba(240,54,90,0.35)')}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          <span className="hidden sm:inline">Go Live</span>
+          <Radio size={14} className="sm:hidden" />
         </button>
 
         {/* Notifications */}

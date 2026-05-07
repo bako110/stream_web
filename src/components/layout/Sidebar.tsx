@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
   Home, Play, Film, Radio, Calendar, Music2, Users, MessageCircle,
-  Bell, Bookmark, Settings, LogOut, Sun, Moon, Activity,
+  Bell, Search, Settings, LogOut, Sun, Moon, Activity, Video,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -17,14 +17,15 @@ const mainLinks = [
   { to: '/series',   label: 'Séries',     icon: Film,         color: '#9B65F5' },
   { to: '/concerts', label: 'Concerts',   icon: Music2,       color: '#FF7A2F' },
   { to: '/events',   label: 'Événements', icon: Calendar,     color: '#F59E0B' },
-  { to: '/live',     label: 'Live',       icon: Radio,        color: '#F0365A' },
+  { to: '/live',     label: 'Live concerts', icon: Radio,  color: '#F0365A' },
+  { to: '/lives',    label: 'Lives',         icon: Video,  color: '#E0389A' },
 ];
 
 const secondaryLinks = [
   { to: '/communities',    label: 'Communautés', icon: Users,          color: '#36D9A0' },
   { to: '/messages',       label: 'Messages',    icon: MessageCircle,  color: '#3B82F6' },
   { to: '/notifications',  label: 'Notifications',icon: Bell,          color: '#E0389A' },
-  { to: '/favorites',      label: 'Favoris',     icon: Bookmark,       color: '#F59E0B' },
+  { to: '/search',          label: 'Recherche',   icon: Search,         color: '#F59E0B' },
   { to: '/activity',       label: 'Activité',    icon: Activity,       color: '#36D9A0' },
 ];
 
