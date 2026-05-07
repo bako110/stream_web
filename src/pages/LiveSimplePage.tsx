@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Radio, Eye, MessageCircle, Send, X, StopCircle, ChevronLeft, Mic, MicOff, VideoIcon, VideoOff } from 'lucide-react';
 import {
@@ -30,7 +30,6 @@ function LiveChat({ liveId, accessToken }: { liveId: string; accessToken: string
   const wsRef     = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // WS — reception uniquement
   useEffect(() => {
     if (!accessToken) return;
     const ws = new WebSocket(`${WS_BASE_URL}/api/v1/social/comments/ws/live/${liveId}?token=${accessToken}`);
@@ -49,7 +48,6 @@ function LiveChat({ liveId, accessToken }: { liveId: string; accessToken: string
         }
       } catch { /* ignore */ }
     };
-    // Ping toutes les 25s pour garder la connexion ouverte
     const ping = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) ws.send('{"type":"ping"}');
     }, 25_000);
@@ -58,7 +56,6 @@ function LiveChat({ liveId, accessToken }: { liveId: string; accessToken: string
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  // Envoi via REST → le backend broadcast via WS à tous les connectés
   async function send() {
     if (!input.trim() || sending) return;
     const body = input.trim();
@@ -103,14 +100,12 @@ function LiveChat({ liveId, accessToken }: { liveId: string; accessToken: string
   );
 }
 
-// ── Viewer LiveKit ─────────────────────────────────────────────────────────────
+// ── Zone vidéo ─────────────────────────────────────────────────────────────────
 
 function LiveKitViewer({ isHost }: { isHost: boolean }) {
-  // onlySubscribed: false → inclut aussi les tracks locaux (nécessaire pour le host)
   const tracks       = useTracks([Track.Source.Camera, Track.Source.ScreenShare], { onlySubscribed: false });
   const participants = useParticipants();
 
-  // Host : affiche son propre track local. Viewer : affiche le track distant.
   const videoTrack = isHost
     ? tracks.find(t => t.participant.isLocal)
     : tracks.find(t => !t.participant.isLocal);
@@ -137,7 +132,7 @@ function LiveKitViewer({ isHost }: { isHost: boolean }) {
   );
 }
 
-// ── Compteur viewers temps réel ───────────────────────────────────────────────
+// ── Compteur viewers ──────────────────────────────────────────────────────────
 
 function ViewerCount() {
   const participants = useParticipants();
@@ -148,14 +143,23 @@ function ViewerCount() {
   );
 }
 
-// ── Contrôles host ────────────────────────────────────────────────────────────
+// ── Contrôles media (host + viewer) ───────────────────────────────────────────
 
-function HostControls({ onStop, stopping }: { onStop: () => void; stopping: boolean }) {
+function MediaControls({
+  isHost,
+  onStop,
+  stopping,
+  onLeave,
+}: {
+  isHost: boolean;
+  onStop: () => void;
+  stopping: boolean;
+  onLeave: () => void;
+}) {
   const { localParticipant } = useLocalParticipant();
   const [camOn, setCamOn] = useState(false);
   const [micOn, setMicOn] = useState(false);
 
-  // Active cam + micro automatiquement dès que le participant local est prêt
   useEffect(() => {
     let cancelled = false;
     async function enableMedia() {
@@ -164,9 +168,7 @@ function HostControls({ onStop, stopping }: { onStop: () => void; stopping: bool
         if (!cancelled) setCamOn(true);
         await localParticipant.setMicrophoneEnabled(true);
         if (!cancelled) setMicOn(true);
-      } catch {
-        // permission refusée ou pas de device
-      }
+      } catch { /* permission refusée */ }
     }
     enableMedia();
     return () => { cancelled = true; };
@@ -183,21 +185,39 @@ function HostControls({ onStop, stopping }: { onStop: () => void; stopping: bool
 
   return (
     <div className="flex items-center gap-2">
-      <button onClick={toggleCam}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${camOn ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/60'}`}>
+      <button
+        onClick={toggleCam}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${camOn ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/60'}`}
+      >
         {camOn ? <VideoIcon size={13} /> : <VideoOff size={13} />}
         {camOn ? 'Cam ON' : 'Cam OFF'}
       </button>
-      <button onClick={toggleMic}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${micOn ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/60'}`}>
+      <button
+        onClick={toggleMic}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${micOn ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/60'}`}
+      >
         {micOn ? <Mic size={13} /> : <MicOff size={13} />}
         {micOn ? 'Micro ON' : 'Micro OFF'}
       </button>
-      <button onClick={onStop} disabled={stopping}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all">
-        {stopping ? <Spinner size="sm" /> : <StopCircle size={13} />}
-        {stopping ? 'Arrêt...' : 'Terminer'}
-      </button>
+
+      {isHost ? (
+        <button
+          onClick={onStop}
+          disabled={stopping}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
+        >
+          {stopping ? <Spinner size="sm" /> : <StopCircle size={13} />}
+          {stopping ? 'Arrêt...' : 'Terminer le live'}
+        </button>
+      ) : (
+        <button
+          onClick={onLeave}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/10 text-white/70 hover:bg-white/20 transition-all"
+        >
+          <ChevronLeft size={13} />
+          Quitter
+        </button>
+      )}
     </div>
   );
 }
@@ -210,7 +230,6 @@ export default function LiveSimplePage() {
   const location     = useLocation();
   const { user, accessToken } = useAuthStore();
 
-  // Token publisher passé en state si on vient de GoLivePage
   const stateToken: string | null = (location.state as any)?.publisherToken ?? null;
   const stateLkUrl: string | null = (location.state as any)?.livekitUrl ?? null;
 
@@ -222,11 +241,10 @@ export default function LiveSimplePage() {
   const liveApi   = useApi<LiveStream>(() => apiClient.get<LiveStream>(Endpoints.lives.byId(id!)), [id]);
   const statusApi = useApi<LiveStatusResponse>(() => apiClient.get<LiveStatusResponse>(Endpoints.lives.status(id!)), [id]);
 
-  const live     = liveApi.data;
-  const isHost   = !!(live && user && live.user_id === user.id);
+  const live   = liveApi.data;
+  const isHost = !!(live && user && live.user_id === user.id);
   const isActive = live?.status === 'active';
 
-  // Dès que live est chargé et qu'on n'a pas encore de token → fetch
   useEffect(() => {
     if (!id || !isActive || !live || lkToken) return;
     apiClient.get<StreamToken>(Endpoints.lives.token(id))
@@ -234,14 +252,13 @@ export default function LiveSimplePage() {
       .catch(() => {});
   }, [id, isActive, live, lkToken]);
 
-  // Refresh viewers toutes les 15s
   useEffect(() => {
     if (!isActive || !id) return;
     const iv = setInterval(() => { statusApi.refetch(); }, 15_000);
     return () => clearInterval(iv);
   }, [isActive, id]);
 
-  async function handleStop() {
+  const handleStop = useCallback(async () => {
     if (!id) return;
     setStopping(true);
     try {
@@ -249,32 +266,35 @@ export default function LiveSimplePage() {
       await liveApi.refetch();
     } catch { /* error */ }
     finally { setStopping(false); }
-  }
+  }, [id, liveApi]);
+
+  const handleLeave = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
 
   if (liveApi.loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
   if (!live) return <div className="p-6 text-[var(--text-secondary)]">Live introuvable.</div>;
 
-  const viewers = statusApi.data?.current_viewers ?? live.current_viewers;
-
-  // Contenu rendu DANS la LiveKitRoom — a accès au contexte LK
   function RoomContent() {
     return (
       <>
         <RoomAudioRenderer />
 
-        {/* Header — ViewerCount utilise useParticipants() du contexte LK parent */}
+        {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0">
-          <button onClick={() => navigate(-1)} className="text-white/60 hover:text-white transition-colors">
+          <button onClick={handleLeave} className="text-white/60 hover:text-white transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <Avatar src={live.user?.avatar_url} name={live.user?.display_name ?? live.user?.username} size="sm" />
+          <Avatar src={live!.user?.avatar_url} name={live!.user?.display_name ?? live!.user?.username} size="sm" />
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-white text-sm truncate">{live.title}</p>
-            <p className="text-xs text-white/50 truncate">{live.user?.display_name ?? live.user?.username}</p>
+            <p className="font-semibold text-white text-sm truncate">{live!.title}</p>
+            <p className="text-xs text-white/50 truncate">{live!.user?.display_name ?? live!.user?.username}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
+            <span
+              className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
+              style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}
+            >
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
             </span>
             <ViewerCount />
@@ -286,20 +306,22 @@ export default function LiveSimplePage() {
 
         {/* Player */}
         <div className="flex-1 relative bg-black overflow-hidden">
-          <LiveKitViewer isHost={!!isHost} />
+          <LiveKitViewer isHost={isHost} />
 
-          {/* Contrôles host overlay */}
-          {isHost && (
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
-              <HostControls onStop={handleStop} stopping={stopping} />
-            </div>
-          )}
+          {/* Contrôles overlay — visibles pour host ET viewer */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
+            <MediaControls
+              isHost={isHost}
+              onStop={handleStop}
+              stopping={stopping}
+              onLeave={handleLeave}
+            />
+          </div>
         </div>
 
-        {/* Info bar */}
-        {live.description && (
+        {live!.description && (
           <div className="shrink-0 px-4 py-2.5 border-t border-white/10 bg-black/80">
-            <p className="text-xs text-white/60 line-clamp-1">{live.description}</p>
+            <p className="text-xs text-white/60 line-clamp-1">{live!.description}</p>
           </div>
         )}
       </>
@@ -309,9 +331,7 @@ export default function LiveSimplePage() {
   return (
     <div className="flex h-[calc(100vh-57px)] overflow-hidden bg-black">
 
-      {/* Zone vidéo — une seule LiveKitRoom pour tout */}
       <div className="flex-1 flex flex-col min-w-0">
-
         {isActive && lkToken && lkUrl ? (
           <LiveKitRoom
             token={lkToken}
@@ -324,9 +344,8 @@ export default function LiveSimplePage() {
 
         ) : isActive ? (
           <>
-            {/* Header sans LK */}
             <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0">
-              <button onClick={() => navigate(-1)} className="text-white/60 hover:text-white transition-colors">
+              <button onClick={handleLeave} className="text-white/60 hover:text-white transition-colors">
                 <ChevronLeft size={20} />
               </button>
               <div className="flex-1 min-w-0">
@@ -348,7 +367,7 @@ export default function LiveSimplePage() {
         ) : (
           <>
             <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0">
-              <button onClick={() => navigate(-1)} className="text-white/60 hover:text-white transition-colors">
+              <button onClick={handleLeave} className="text-white/60 hover:text-white transition-colors">
                 <ChevronLeft size={20} />
               </button>
               <p className="font-semibold text-white text-sm truncate flex-1">{live.title}</p>
@@ -365,7 +384,7 @@ export default function LiveSimplePage() {
         )}
       </div>
 
-      {/* Chat panel */}
+      {/* Chat */}
       {showChat && (
         <div className="w-80 border-l border-white/10 bg-[var(--surface)] flex flex-col hidden lg:flex shrink-0">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] shrink-0">
