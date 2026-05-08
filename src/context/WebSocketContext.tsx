@@ -14,6 +14,7 @@ import React, {
   useCallback, useState, useMemo,
 } from 'react';
 import { WS_BASE_URL } from '../utils/constants';
+import { useAuthStore } from '../store/authStore';
 
 // ── Types payloads ────────────────────────────────────────────────────────────
 
@@ -117,6 +118,8 @@ function getToken(): string | null {
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { accessToken } = useAuthStore();
+
   const wsRef        = useRef<WebSocket | null>(null);
   const retryCount   = useRef(0);
   const retryTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -141,6 +144,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [lastGiftReceived,     setLastGiftReceived]     = useState<GiftReceivedPayload | null>(null);
   const [lastPresenceUpdate,   setLastPresenceUpdate]   = useState<PresencePayload | null>(null);
 
+  const connectRef     = useRef<((token: string) => void) | null>(null);
   const addListener    = useCallback((fn: (p: WsPayload) => void) => { listeners.current.add(fn); }, []);
   const removeListener = useCallback((fn: (p: WsPayload) => void) => { listeners.current.delete(fn); }, []);
 
@@ -203,10 +207,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, []);
 
-  const connect = useCallback(() => {
-    const token = getToken();
-    if (!token) return;
-
+  const connect = useCallback((token: string) => {
     const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
     const url  = `${base}/api/v1/messages/ws?token=${encodeURIComponent(token)}`;
     const ws   = new WebSocket(url);
@@ -237,8 +238,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (!isMounted.current) return;
       setIsConnected(false);
 
+      const currentToken = getToken();
+      if (!currentToken) return;
+
       if (event.code === 4001) {
-        retryTimer.current = setTimeout(connect, 3_000);
+        retryTimer.current = setTimeout(() => connectRef.current?.(currentToken), 3_000);
         return;
       }
       if (event.code === 1000 || event.code === 1001) return;
@@ -246,21 +250,41 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (retryCount.current < MAX_RETRIES) {
         const delay = INITIAL_DELAY * Math.pow(2, retryCount.current);
         retryCount.current++;
-        retryTimer.current = setTimeout(connect, delay);
+        retryTimer.current = setTimeout(() => connectRef.current?.(currentToken), delay);
       }
     };
   }, [dispatch]);
 
+  // Garder connectRef toujours a jour
+  useEffect(() => { connectRef.current = connect; }, [connect]);
+
   useEffect(() => {
     isMounted.current = true;
-    connect();
+    if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
+
+    if (!accessToken) {
+      // Pas de token — fermer proprement si une connexion existe
+      if (wsRef.current) {
+        wsRef.current.close(1000);
+        wsRef.current = null;
+      }
+      retryCount.current = 0;
+      return;
+    }
+
+    // Token présent — connecter seulement si pas déjà connecté
+    if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+      retryCount.current = 0;
+      connect(accessToken);
+    }
+
     return () => {
       isMounted.current = false;
       if (retryTimer.current) clearTimeout(retryTimer.current);
       if (pingTimer.current)  clearInterval(pingTimer.current);
       wsRef.current?.close();
     };
-  }, [connect]);
+  }, [accessToken, connect]);
 
   const sendMessage = useCallback((payload: object) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
