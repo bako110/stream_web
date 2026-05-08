@@ -633,9 +633,9 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
             <div key={msg.id} className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : ''}`}
               onClick={() => { setMenuMsgId(null); setEmojiMsgId(null); }}>
               {!isMe && (
-                <Avatar src={msg.sender_avatar_url} name={authorName} size="xs"
-                  className="mt-1 shrink-0 cursor-pointer"
-                  onClick={e => { e.stopPropagation(); navigate(`/users/${msg.sender_id}`); }} />
+                <button className="mt-1 shrink-0" onClick={e => { e.stopPropagation(); navigate(`/users/${msg.sender_id}`); }}>
+                  <Avatar src={msg.sender_avatar_url} name={authorName} size="xs" />
+                </button>
               )}
               <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
                 {!isMe && (

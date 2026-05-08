@@ -45,7 +45,7 @@ export default function SettingsVerificationPage() {
   const [bio,         setBio]         = useState('');
   const [links,       setLinks]       = useState('');
   const [loading,     setLoading]     = useState(false);
-  const [verifNote,   setVerifNote]   = useState<string | null>(user?.verification_note ?? null);
+  const [verifNote,   setVerifNote]   = useState<string | null>((user as any)?.verification_note ?? null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async () => {

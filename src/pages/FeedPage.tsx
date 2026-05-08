@@ -2109,7 +2109,7 @@ function CommunitiesSidePanel() {
                     {fmtCommCount(count)} membres
                   </p>
                 </div>
-                {c.is_private && <Lock size={11} style={{ color: 'var(--text-tertiary)', shrink: 0 }} />}
+                {c.is_private && <Lock size={11} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />}
               </button>
             );
           })}

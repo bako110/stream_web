@@ -19,7 +19,7 @@ interface BlockedUser {
 
 function displayName(u: BlockedUser) {
   const full = [u.first_name, u.last_name].filter(Boolean).join(' ');
-  return u.display_name ?? full || u.username;
+  return u.display_name ?? (full || u.username);
 }
 
 export default function BlockedUsersPage() {
