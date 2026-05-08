@@ -7,6 +7,7 @@ import { ExploreLayout }   from './components/layout/ExploreLayout';
 import { ProtectedRoute }  from './components/layout/ProtectedRoute';
 import { PublicOnlyRoute } from './components/layout/PublicOnlyRoute';
 import { bootstrapAuth, useAuthStore } from './store/authStore';
+import { WebSocketProvider } from './context/WebSocketContext';
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
 const LoginPage          = lazy(() => import('./pages/auth/LoginPage'));
@@ -201,17 +202,19 @@ function AppShell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: 'var(--surface)',
-            color:      'var(--text-primary)',
-            border:     '1px solid var(--border)',
-          },
-        }}
-      />
-      <AppShell />
+      <WebSocketProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: 'var(--surface)',
+              color:      'var(--text-primary)',
+              border:     '1px solid var(--border)',
+            },
+          }}
+        />
+        <AppShell />
+      </WebSocketProvider>
     </BrowserRouter>
   );
 }

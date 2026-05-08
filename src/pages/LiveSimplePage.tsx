@@ -10,10 +10,11 @@ import {
   useLocalParticipant,
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import type { LiveStream, LiveStatusResponse, StreamToken } from '../types';
+import type { LiveStream, StreamToken } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
+import { useWs } from '../context/WebSocketContext';
 import { Spinner } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
 import { WS_BASE_URL } from '../utils/constants';
@@ -301,8 +302,8 @@ export default function LiveSimplePage() {
   const [showChat, setShowChat] = useState(true);
   const [stopping, setStopping] = useState(false);
 
-  const liveApi   = useApi<LiveStream>(() => apiClient.get<LiveStream>(Endpoints.lives.byId(id!)), [id]);
-  const statusApi = useApi<LiveStatusResponse>(() => apiClient.get<LiveStatusResponse>(Endpoints.lives.status(id!)), [id]);
+  const liveApi = useApi<LiveStream>(() => apiClient.get<LiveStream>(Endpoints.lives.byId(id!)), [id]);
+  const { lastLiveEnded } = useWs();
 
   const live     = liveApi.data;
   const isHost   = !!(live && user && live.user_id === user.id);
@@ -316,10 +317,9 @@ export default function LiveSimplePage() {
   }, [id, isActive, live, lkToken]);
 
   useEffect(() => {
-    if (!isActive || !id) return;
-    const iv = setInterval(() => { statusApi.refetch(); }, 15_000);
-    return () => clearInterval(iv);
-  }, [isActive, id]);
+    if (!lastLiveEnded || lastLiveEnded !== id) return;
+    liveApi.refetch();
+  }, [lastLiveEnded, id]);
 
   const handleStop = useCallback(async () => {
     if (!id) return;

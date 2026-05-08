@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, MessageCircle, X, Edit3, Search, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Send, ArrowLeft, MessageCircle, X, SquarePen, Search, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import type { Conversation, Message, UserPublic } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
-import { useMessagesWebSocket } from '../hooks/useMessagesWebSocket';
-import type { WsPayload } from '../hooks/useMessagesWebSocket';
+import { useWs } from '../context/WebSocketContext';
+import type { WsPayload } from '../context/WebSocketContext';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -167,7 +167,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
         <MessageCircle size={22} style={{ color: 'var(--text-tertiary)' }} />
       </div>
       <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Aucune conversation</p>
-      <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>Démarrez une discussion ✏️</p>
+      <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>Démarrez une discussion</p>
     </div>
   );
 
@@ -434,19 +434,23 @@ export default function MessagesPage() {
 
   const { user: me } = useAuthStore();
 
-  const handleWsMessage = useCallback((payload: WsPayload) => {
-    if (payload.type === 'pong') return;
-    setLastWsPayload(payload);
+  const { sendMessage: sendWsMessage, isConnected, addListener, removeListener } = useWs();
 
-    if (payload.type === 'message') {
-      const msg = payload as any;
-      const partnerId = msg.sender_id === me?.id ? msg.receiver_id : msg.sender_id;
-      const preview = msg.body ?? msg.content ?? '';
-      convoListRef.current?.updatePreview(partnerId, preview);
-    }
-  }, [me?.id]);
+  useEffect(() => {
+    const handler = (payload: WsPayload) => {
+      if (payload.type === 'pong') return;
+      setLastWsPayload(payload);
 
-  const { sendWsMessage, isConnected } = useMessagesWebSocket(handleWsMessage);
+      if (payload.type === 'message') {
+        const msg = payload as any;
+        const partnerId = msg.sender_id === me?.id ? msg.receiver_id : msg.sender_id;
+        const preview = msg.body ?? msg.content ?? '';
+        convoListRef.current?.updatePreview(partnerId, preview);
+      }
+    };
+    addListener(handler);
+    return () => removeListener(handler);
+  }, [addListener, removeListener, me?.id]);
 
   function handleSelect(id: string) {
     setSelectedId(id);
@@ -470,7 +474,7 @@ export default function MessagesPage() {
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--primary)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)'; }}>
-            <Edit3 size={16} />
+            <SquarePen size={16} />
           </button>
         </div>
         <ConversationList

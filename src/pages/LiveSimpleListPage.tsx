@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Eye, Plus, Zap } from 'lucide-react';
 import type { LiveStream } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
+import { useWs } from '../context/WebSocketContext';
 import { Spinner } from '../components/ui/Spinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Avatar } from '../components/ui/Avatar';
@@ -102,11 +104,40 @@ function LiveCard({ live }: { live: LiveStream }) {
 
 export default function LiveSimpleListPage() {
   const navigate = useNavigate();
-  const { data: lives, loading, refetch } = useApi<LiveStream[]>(
+  const { data: initialLives, loading, refetch } = useApi<LiveStream[]>(
     () => apiClient.get<LiveStream[]>(Endpoints.lives.list),
   );
+  const { lastLiveStarted, lastLiveEnded, lastLiveViewersUpdated } = useWs();
 
-  const active = lives ?? [];
+  const [lives, setLives] = useState<LiveStream[]>([]);
+
+  useEffect(() => {
+    if (initialLives) setLives(initialLives);
+  }, [initialLives]);
+
+  useEffect(() => {
+    if (!lastLiveStarted) return;
+    setLives(prev => {
+      if (prev.some(l => l.id === lastLiveStarted.live.id)) return prev;
+      return [lastLiveStarted.live as unknown as LiveStream, ...prev];
+    });
+  }, [lastLiveStarted]);
+
+  useEffect(() => {
+    if (!lastLiveEnded) return;
+    setLives(prev => prev.filter(l => l.id !== lastLiveEnded));
+  }, [lastLiveEnded]);
+
+  useEffect(() => {
+    if (!lastLiveViewersUpdated) return;
+    setLives(prev => prev.map(l =>
+      l.id === lastLiveViewersUpdated.live_id
+        ? { ...l, current_viewers: lastLiveViewersUpdated.current_viewers }
+        : l
+    ));
+  }, [lastLiveViewersUpdated]);
+
+  const active = lives;
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-8">
