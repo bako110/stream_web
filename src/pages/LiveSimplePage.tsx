@@ -33,7 +33,8 @@ function LiveChat({ liveId, accessToken }: { liveId: string; accessToken: string
 
   useEffect(() => {
     if (!accessToken) return;
-    const ws = new WebSocket(`${WS_BASE_URL}/api/v1/social/comments/ws/live/${liveId}?token=${accessToken}`);
+    const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
+    const ws = new WebSocket(`${base}/api/v1/social/comments/ws/live/${liveId}?token=${accessToken}`);
     wsRef.current = ws;
     ws.onmessage = (e) => {
       try {

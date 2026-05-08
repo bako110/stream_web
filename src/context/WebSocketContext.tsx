@@ -118,7 +118,7 @@ function getToken(): string | null {
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { accessToken } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   const wsRef        = useRef<WebSocket | null>(null);
   const retryCount   = useRef(0);
@@ -263,10 +263,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     isMounted.current = true;
     if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
-    console.log('[WS] accessToken changed:', accessToken ? 'present' : 'null');
 
-    if (!accessToken) {
-      // Pas de token — fermer proprement si une connexion existe
+    const token = getToken();
+    console.log('[WS] isAuthenticated=', isAuthenticated, 'token=', token ? 'present' : 'null');
+
+    if (!isAuthenticated || !token) {
       if (wsRef.current) {
         wsRef.current.close(1000);
         wsRef.current = null;
@@ -275,10 +276,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
 
-    // Token présent — connecter seulement si pas déjà connecté
+    // Authentifié — connecter seulement si pas déjà connecté
     if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
       retryCount.current = 0;
-      connect(accessToken);
+      connect(token);
     }
 
     return () => {
@@ -287,7 +288,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (pingTimer.current)  clearInterval(pingTimer.current);
       wsRef.current?.close();
     };
-  }, [accessToken, connect]);
+  }, [isAuthenticated, connect]);
 
   const sendMessage = useCallback((payload: object) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

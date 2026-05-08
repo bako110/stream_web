@@ -12,6 +12,16 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.error('[proxy error]', err.message);
+          });
+          proxy.on('proxyReqWs', (_proxyReq, _req, socket) => {
+            socket.on('error', (err) => {
+              console.error('[proxy ws socket error]', err.message);
+            });
+          });
+        },
       },
       '/uploads': {
         target: 'http://178.104.248.78',

@@ -175,7 +175,20 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const res = await apiClient.get<User>(Endpoints.auth.me);
       set({ user: res.data, isAuthenticated: true, isInitializing: false });
-    } catch {
+    } catch (e: any) {
+      const status = e?.response?.status;
+      console.warn('[Auth] fetchMe failed status=', status);
+      // Token expiré (401) → tenter un refresh avant de déconnecter
+      if (status === 401) {
+        try {
+          await get().refreshAccessToken();
+          const res2 = await apiClient.get<User>(Endpoints.auth.me);
+          set({ user: res2.data, isAuthenticated: true, isInitializing: false });
+          return;
+        } catch {
+          // Refresh échoué → déconnecter
+        }
+      }
       setAuthToken(null);
       saveTokens(null, null);
       set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isInitializing: false });
