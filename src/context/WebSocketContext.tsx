@@ -210,6 +210,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const connect = useCallback((token: string) => {
     const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
     const url  = `${base}/api/v1/messages/ws?token=${encodeURIComponent(token)}`;
+    console.log('[WS] connecting to', url);
     const ws   = new WebSocket(url);
     wsRef.current = ws;
 
@@ -230,9 +231,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       } catch {}
     };
 
-    ws.onerror = () => {};
+    ws.onerror = (e) => { console.warn('[WS] error', e); };
 
     ws.onclose = (event) => {
+      console.warn('[WS] closed code=', event.code, 'reason=', event.reason, 'url=', url);
       wsRef.current = null;
       if (pingTimer.current) { clearInterval(pingTimer.current); pingTimer.current = null; }
       if (!isMounted.current) return;
@@ -261,6 +263,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     isMounted.current = true;
     if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
+    console.log('[WS] accessToken changed:', accessToken ? 'present' : 'null');
 
     if (!accessToken) {
       // Pas de token — fermer proprement si une connexion existe
