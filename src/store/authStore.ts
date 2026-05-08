@@ -17,6 +17,7 @@ interface AuthState {
   error:           string | null;
 
   login:              (data: LoginRequest)     => Promise<void>;
+  loginWithQR:        (accessToken: string, refreshToken?: string) => Promise<void>;
   register:           (data: RegisterRequest)  => Promise<void>;
   logout:             ()                       => Promise<void>;
   refreshAccessToken: ()                       => Promise<string>;
@@ -67,6 +68,21 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   isRefreshing:    false,
   error:           null,
 
+  loginWithQR: async (accessToken: string, refreshToken?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      if (!accessToken) throw new Error('Token invalide');
+      setAuthToken(accessToken);
+      saveTokens(accessToken, refreshToken ?? null);
+      set({ accessToken, refreshToken: refreshToken ?? null, isLoading: false });
+      await get().fetchMe();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Erreur de connexion QR';
+      set({ isLoading: false, error: msg, isAuthenticated: false });
+      throw e;
+    }
+  },
+
   login: async (data) => {
     set({ isLoading: true, error: null });
     try {
@@ -78,7 +94,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({ accessToken: token.access_token, refreshToken: token.refresh_token, isLoading: false });
       await get().fetchMe();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Erreur de connexion';
+      const detail = (e as any)?.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : 'Identifiants incorrects';
       set({ isLoading: false, error: msg, isAuthenticated: false });
       throw e;
     }
@@ -86,22 +103,36 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   register: async (data) => {
     set({ isLoading: true, error: null });
+    // Même logique que le mobile : ne jamais envoyer email/phone/username vides
+    const payload: typeof data = {
+      first_name: data.first_name,
+      last_name:  data.last_name,
+      password:   data.password,
+      ...(data.email    ? { email:    data.email }    : {}),
+      ...(data.phone    ? { phone:    data.phone }    : {}),
+      ...(data.username ? { username: data.username } : {}),
+    };
     try {
-      const res = await apiClient.post<AuthToken>(Endpoints.auth.register, data);
-      const token = res.data;
-      if (!token?.access_token) throw new Error('Réponse invalide du serveur');
-      setAuthToken(token.access_token);
-      saveTokens(token.access_token, token.refresh_token);
-      set({ accessToken: token.access_token, refreshToken: token.refresh_token, isLoading: false });
-      await get().fetchMe();
+      // register retourne UserResponse (pas de tokens) — même comportement que mobile
+      await apiClient.post(Endpoints.auth.register, payload);
+      // Auto-login après inscription avec identifier = email ?? phone
+      await get().login({
+        identifier: (payload.email ?? payload.phone)!,
+        password:   payload.password,
+      });
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Erreur d'inscription";
+      const detail = (e as any)?.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail
+        : Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ')
+        : "Erreur d'inscription";
       set({ isLoading: false, error: msg, isAuthenticated: false });
       throw e;
     }
   },
 
   logout: async () => {
+    // Appeler l'API avant de supprimer le token (sinon 403)
+    try { await apiClient.post(Endpoints.auth.logout); } catch { /* ignore */ }
     setAuthToken(null);
     saveTokens(null, null);
     set({
@@ -112,7 +143,6 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       isInitializing:  false,
       error:           null,
     });
-    try { await apiClient.post(Endpoints.auth.logout); } catch { /* ignore */ }
   },
 
   refreshAccessToken: async () => {

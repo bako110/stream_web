@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
   Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
+  ChevronLeft, ChevronRight, ZoomIn, Edit3,
 } from 'lucide-react';
 import type { Event } from '../../types';
 import { apiClient } from '../../api';
@@ -24,6 +25,85 @@ const TYPE_COLORS: Record<string, string> = {
   conference: '#3B82F6', theater: '#8B5CF6', exhibition: '#06B6D4',
   birthday: '#F59E0B', other: '#6B7280',
 };
+
+function LightboxModal({ urls, index, onClose }: { urls: string[]; index: number; onClose: () => void }) {
+  const [current, setCurrent] = useState(index);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape')     onClose();
+      if (e.key === 'ArrowRight') setCurrent(c => (c + 1) % urls.length);
+      if (e.key === 'ArrowLeft')  setCurrent(c => (c - 1 + urls.length) % urls.length);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [urls.length, onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)' }}
+      onClick={onClose}>
+
+      {/* Close */}
+      <button className="absolute top-4 right-4 p-2 rounded-full z-10 transition-all"
+        style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
+        onClick={onClose}>
+        <X size={20} />
+      </button>
+
+      {/* Counter */}
+      {urls.length > 1 && (
+        <span className="absolute top-4 left-1/2 -translate-x-1/2 text-sm font-semibold px-3 py-1 rounded-full"
+          style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}>
+          {current + 1} / {urls.length}
+        </span>
+      )}
+
+      {/* Prev */}
+      {urls.length > 1 && (
+        <button className="absolute left-3 p-2 rounded-full transition-all z-10"
+          style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
+          onClick={e => { e.stopPropagation(); setCurrent(c => (c - 1 + urls.length) % urls.length); }}>
+          <ChevronLeft size={24} />
+        </button>
+      )}
+
+      {/* Image */}
+      <img
+        src={urls[current]}
+        alt=""
+        className="max-w-[90vw] max-h-[85vh] rounded-2xl object-contain shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      />
+
+      {/* Next */}
+      {urls.length > 1 && (
+        <button className="absolute right-3 p-2 rounded-full transition-all z-10"
+          style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
+          onClick={e => { e.stopPropagation(); setCurrent(c => (c + 1) % urls.length); }}>
+          <ChevronRight size={24} />
+        </button>
+      )}
+
+      {/* Thumbnails strip */}
+      {urls.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"
+          onClick={e => e.stopPropagation()}>
+          {urls.map((u, i) => (
+            <button key={i} onClick={() => setCurrent(i)}
+              className="w-12 h-12 rounded-xl overflow-hidden transition-all shrink-0"
+              style={{
+                border: `2px solid ${i === current ? '#fff' : 'transparent'}`,
+                opacity: i === current ? 1 : 0.5,
+              }}>
+              <img src={u} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () => void }) {
   const { user: me } = useAuthStore();
@@ -131,33 +211,67 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
 }
 
 export default function EventDetailPage() {
-  const { id }     = useParams<{ id: string }>();
-  const navigate   = useNavigate();
+  const { id }       = useParams<{ id: string }>();
+  const navigate     = useNavigate();
   const { user: me } = useAuthStore();
 
   const { data: event, loading } = useApi<Event>(
     () => apiClient.get<Event>(Endpoints.events.byId(id!)), [id]
   );
 
-  const [liked,       setLiked]       = useState(false);
-  const [likeCount,   setLikeCount]   = useState(0);
-  const [following,   setFollowing]   = useState(false);
+  const [liked,        setLiked]        = useState(false);
+  const [likeCount,    setLikeCount]    = useState(0);
+  const [isOwner,      setIsOwner]      = useState(false);
+  const [following,    setFollowing]    = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [buying,      setBuying]      = useState(false);
-  const [shareOk,     setShareOk]     = useState(false);
+  const [buying,       setBuying]       = useState(false);
+  const [shareOk,      setShareOk]      = useState(false);
+  const [lightbox,     setLightbox]     = useState<number | null>(null);
+
+  // Charge les reactions et l'etat follow au montage — meme pattern que le mobile
+  useEffect(() => {
+    if (!id) return;
+    setLiked(false);
+    setLikeCount(0);
+    setFollowing(false);
+    setIsOwner(false);
+
+    apiClient.get<any>(`${Endpoints.social.reactionCounts}?event_id=${id}`)
+      .then(r => setLikeCount(r.data?.likes ?? r.data?.like ?? 0))
+      .catch(() => {});
+
+    apiClient.get<any>(`${Endpoints.social.myReaction}?event_id=${id}`)
+      .then(r => setLiked(r.data?.reaction_type === 'like'))
+      .catch(() => {});
+  }, [id]);
+
+  // Detecte si l'utilisateur est l'organisateur une fois l'event charge
+  useEffect(() => {
+    if (!event || !me) return;
+    setIsOwner(event.organizer?.id === me.id);
+    // Verifie si l'utilisateur suit deja l'organisateur
+    if (event.organizer?.id && event.organizer.id !== me.id) {
+      apiClient.get<any>(Endpoints.users.publicProfile(event.organizer.id))
+        .then(r => setFollowing(r.data?.is_followed ?? false))
+        .catch(() => {});
+    }
+  }, [event, me]);
 
   const toggleLike = useCallback(async () => {
-    setLiked(v => !v);
-    setLikeCount(v => liked ? v - 1 : v + 1);
+    // Lit l'etat courant via le setter fonctionnel pour eviter la closure stale
+    let prevLiked = false;
+    setLiked(v => { prevLiked = v; return !v; });
+    setLikeCount(v => prevLiked ? Math.max(0, v - 1) : v + 1);
     try {
       await apiClient.post(Endpoints.social.toggleReaction, {
         event_id: id, reaction_type: 'like',
       });
     } catch {
-      setLiked(v => !v);
-      setLikeCount(v => liked ? v + 1 : v - 1);
+      // Revert
+      setLiked(prevLiked);
+      setLikeCount(v => prevLiked ? v + 1 : Math.max(0, v - 1));
     }
-  }, [liked, id]);
+  }, [id]);
 
   const toggleFollow = useCallback(async () => {
     if (!event?.organizer?.id) return;
@@ -278,8 +392,15 @@ export default function EventDetailPage() {
           <span className="hidden sm:inline">{shareOk ? 'Copié !' : 'Partager'}</span>
         </button>
 
-        {/* Follow organizer */}
-        {e.organizer && e.organizer.id !== me?.id && (
+        {/* Follow organizer ou Modifier si owner */}
+        {isOwner ? (
+          <button onClick={() => navigate(`/events/${id}/edit`)}
+            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{ background: 'var(--bg-secondary)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
+            <Edit3 size={15} />
+            Modifier
+          </button>
+        ) : e.organizer && (
           <button onClick={toggleFollow}
             className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
             style={{
@@ -292,6 +413,7 @@ export default function EventDetailPage() {
           </button>
         )}
       </div>
+
 
       <div className="px-4 pt-5 space-y-6">
         {/* Organizer */}
@@ -389,7 +511,15 @@ export default function EventDetailPage() {
             <h3 className="font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Galerie</h3>
             <div className="grid grid-cols-3 gap-2">
               {e.gallery_urls.map((url, i) => (
-                <img key={i} src={url} className="aspect-square rounded-xl object-cover" alt="" />
+                <button key={i} onClick={() => setLightbox(i)}
+                  className="relative group aspect-square rounded-xl overflow-hidden"
+                  style={{ background: 'var(--bg-tertiary)' }}>
+                  <img src={url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: 'rgba(0,0,0,0.35)' }}>
+                    <ZoomIn size={22} color="#fff" />
+                  </div>
+                </button>
               ))}
             </div>
           </div>
@@ -424,6 +554,9 @@ export default function EventDetailPage() {
       </div>
 
       {showComments && <CommentsModal targetId={id!} onClose={() => setShowComments(false)} />}
+      {lightbox !== null && e.gallery_urls && (
+        <LightboxModal urls={e.gallery_urls} index={lightbox} onClose={() => setLightbox(null)} />
+      )}
     </div>
   );
 }

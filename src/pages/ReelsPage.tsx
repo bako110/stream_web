@@ -24,7 +24,11 @@ function CommentsPanel({ reelId, count, onClose }: {
   const { user }        = useAuthStore();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [localLikes, setLocalLikes] = useState<Record<string, number>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
 
   const { data, loading, refetch } = useApi<Comment[]>(
     () => apiClient.get<Comment[]>(`${Endpoints.social.comments}?reel_id=${reelId}&limit=50`),
@@ -32,12 +36,38 @@ function CommentsPanel({ reelId, count, onClose }: {
   );
   const comments = data ?? [];
 
+  function toggleLike(c: Comment) {
+    const isLiked = likedIds.has(c.id);
+    setLikedIds(prev => {
+      const next = new Set(prev);
+      isLiked ? next.delete(c.id) : next.add(c.id);
+      return next;
+    });
+    setLocalLikes(prev => ({ ...prev, [c.id]: (prev[c.id] ?? c.like_count) + (isLiked ? -1 : 1) }));
+    apiClient.post(Endpoints.social.toggleReaction, { comment_id: c.id, reaction_type: 'like' }).catch(() => {
+      setLikedIds(prev => { const next = new Set(prev); isLiked ? next.add(c.id) : next.delete(c.id); return next; });
+      setLocalLikes(prev => ({ ...prev, [c.id]: (prev[c.id] ?? c.like_count) + (isLiked ? 1 : -1) }));
+    });
+  }
+
+  function handleReply(c: Comment) {
+    const name = c.author?.display_name ?? c.author?.username ?? 'Utilisateur';
+    setReplyTo({ id: c.id, name });
+    setText(`@${name} `);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }
+
   async function send() {
     if (!text.trim()) return;
     setSending(true);
     try {
-      await apiClient.post(Endpoints.social.comments, { reel_id: reelId, body: text.trim() });
+      await apiClient.post(Endpoints.social.comments, {
+        reel_id: reelId,
+        body: text.trim(),
+        ...(replyTo ? { parent_id: replyTo.id } : {}),
+      });
       setText('');
+      setReplyTo(null);
       refetch();
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 200);
     } finally { setSending(false); }
@@ -102,10 +132,18 @@ function CommentsPanel({ reelId, count, onClose }: {
                     <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
                       {formatDistanceToNow(new Date(c.created_at), { locale: fr, addSuffix: true })}
                     </span>
-                    <button className="text-[11px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-                      J'aime · {c.like_count}
+                    <button
+                      onClick={() => toggleLike(c)}
+                      className="text-[11px] font-semibold transition-colors"
+                      style={{ color: likedIds.has(c.id) ? 'var(--primary)' : 'var(--text-tertiary)' }}>
+                      J'aime · {localLikes[c.id] ?? c.like_count}
                     </button>
-                    <button className="text-[11px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>
+                    <button
+                      onClick={() => handleReply(c)}
+                      className="text-[11px] font-semibold transition-colors"
+                      style={{ color: 'var(--text-tertiary)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
                       Répondre
                     </button>
                   </div>
@@ -116,6 +154,20 @@ function CommentsPanel({ reelId, count, onClose }: {
           <div ref={bottomRef} />
         </div>
 
+        {/* Reply indicator */}
+        {replyTo && (
+          <div className="flex items-center justify-between px-4 py-2"
+            style={{ background: 'rgba(123,63,242,0.06)', borderTop: '1px solid var(--border)' }}>
+            <p className="text-xs" style={{ color: 'var(--primary)' }}>
+              Répondre à <span className="font-bold">@{replyTo.name}</span>
+            </p>
+            <button onClick={() => { setReplyTo(null); setText(''); }} className="p-1"
+              style={{ color: 'var(--text-tertiary)' }}>
+              <X size={13} />
+            </button>
+          </div>
+        )}
+
         {/* Input */}
         <div className="flex items-center gap-3 px-4 py-3"
           style={{ borderTop: '1px solid var(--border)' }}>
@@ -123,6 +175,7 @@ function CommentsPanel({ reelId, count, onClose }: {
           <div className="flex-1 flex items-center gap-2 px-3.5 py-2 rounded-full"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
             <input
+              ref={inputRef}
               value={text}
               onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}

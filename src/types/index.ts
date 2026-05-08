@@ -113,6 +113,36 @@ export interface Concert {
 export interface StreamToken { token: string; room_name: string; livekit_url: string; }
 export interface StreamStatus { is_live: boolean; current_viewers: number; started_at: string | null; livekit_url: string | null; }
 
+// ── Live simple ────────────────────────────────────────────────────────────
+export type LiveStatus = 'active' | 'ended';
+export interface LiveStream {
+  id:              string;
+  user_id:         string;
+  title:           string;
+  description:     string | null;
+  thumbnail_url:   string | null;
+  status:          LiveStatus;
+  current_viewers: number;
+  peak_viewers:    number;
+  is_featured:     boolean;
+  started_at:      string;
+  ended_at:        string | null;
+  user:            User | null;
+}
+export interface LiveStartResponse {
+  live:        LiveStream;
+  token:       string;
+  room_name:   string;
+  livekit_url: string;
+}
+export interface LiveStatusResponse {
+  is_active:       boolean;
+  current_viewers: number;
+  started_at:      string;
+  ended_at:        string | null;
+  livekit_url:     string | null;
+}
+
 // ── Event ─────────────────────────────────────────────────────────────────
 export type EventType = 'concert' | 'birthday' | 'festival' | 'conference' | 'sport' | 'theater' | 'exhibition' | 'other';
 export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
@@ -169,6 +199,7 @@ export interface Comment {
   id: string; user_id: string; body: string; is_edited: boolean;
   like_count: number; reply_count?: number; parent_id: string | null;
   created_at: string; updated_at: string;
+  liked?: boolean;
   author?: { id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null; } | null;
 }
 export type ReactionType = 'like' | 'dislike';
@@ -176,7 +207,10 @@ export type ReactionType = 'like' | 'dislike';
 // ── Community ─────────────────────────────────────────────────────────────
 export interface Community {
   id: string; name: string; description: string | null; avatar_url: string | null;
-  banner_url: string | null; member_count: number; is_private: boolean;
+  banner_url: string | null; member_count: number; members_count?: number;
+  is_private: boolean; is_verified?: boolean;
+  creator?: { id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null } | null;
+  is_member?: boolean;
   created_at: string; updated_at: string;
 }
 

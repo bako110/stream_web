@@ -26,8 +26,13 @@ export function useApi<T>(
       .catch(e => { setError(e instanceof ApiError ? e.message : 'Erreur'); setLoading(false); });
   }, []);
 
+  useEffect(() => {
+    // Vide immédiatement les données de l'utilisateur précédent
+    setData(null);
+    setLoading(true);
+    run();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { run(); }, [...deps, run]);
+  }, deps);
 
   return { data, loading, error, refetch: run };
 }
@@ -61,7 +66,6 @@ export function usePaginatedApi<T>(
       .then(r => {
         const raw = r.data;
 
-        // Normalise different server shapes into { list, totalPages }
         let list: T[] = [];
         let totalPages = 1;
 
@@ -81,8 +85,14 @@ export function usePaginatedApi<T>(
       .catch(e => { setError(e instanceof Error ? e.message : 'Erreur'); setLoading(false); });
   }, []);
 
+  useEffect(() => {
+    // Vide immédiatement les items du profil précédent
+    setItems([]);
+    setPage(1);
+    setPages(1);
+    load(1, true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(1, true); }, [...deps, load]);
+  }, deps);
 
   return {
     items,

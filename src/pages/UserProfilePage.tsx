@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   MapPin, Globe, Phone, Calendar, UserPlus, UserCheck,
-  MessageCircle, Play, Eye, Heart, Grid3x3,
+  MessageCircle, Play, Eye, Heart, Grid3x3, FileText,
   Info, BadgeCheck, ShieldOff, Shield,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -42,24 +42,28 @@ function Stat({ value, label }: { value: number; label: string }) {
 
 // ── Publications grid ─────────────────────────────────────────────────────────
 function PublicationsTab({ userId }: { userId: string }) {
-  const { data: eventsData, loading: eventsLoading } = useApi<any>(
-    () => apiClient.get<any>(`${Endpoints.events.list}?organizer_id=${userId}&limit=20&status=published`), [userId],
+  const navigate = useNavigate();
+  const { data: eventsData,   loading: evL } = useApi<any>(
+    () => apiClient.get<any>(`${Endpoints.events.byUser(userId)}?limit=20`), [userId],
   );
-  const { data: concertsData, loading: concertsLoading } = useApi<any>(
-    () => apiClient.get<any>(`${Endpoints.concerts.list}?artist_id=${userId}&limit=20&status=published`), [userId],
+  const { data: concertsData, loading: coL } = useApi<any>(
+    () => apiClient.get<any>(`${Endpoints.concerts.byUser(userId)}?limit=20`), [userId],
+  );
+  const { data: postsData,    loading: poL } = useApi<any>(
+    () => apiClient.get<any>(`${Endpoints.posts.byUser(userId)}?limit=20`), [userId],
   );
 
-  const events: Event[]   = eventsData?.items ?? eventsData ?? [];
-  const concerts: Concert[] = concertsData?.items ?? concertsData ?? [];
+  const events:   any[] = eventsData?.items   ?? (Array.isArray(eventsData)   ? eventsData   : []);
+  const concerts: any[] = concertsData?.items ?? (Array.isArray(concertsData) ? concertsData : []);
+  const posts:    any[] = postsData?.items    ?? (Array.isArray(postsData)    ? postsData    : []);
 
   const items = [
-    ...events.map(e => ({ ...e, _kind: 'event' as const })),
+    ...events.map(e  => ({ ...e,  _kind: 'event'   as const })),
     ...concerts.map(c => ({ ...c, _kind: 'concert' as const })),
+    ...posts.map(p   => ({ ...p,  _kind: 'post'    as const })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  if (eventsLoading || concertsLoading) {
-    return <div className="flex justify-center py-16"><Spinner /></div>;
-  }
+  if (evL || coL || poL) return <div className="flex justify-center py-16"><Spinner /></div>;
 
   if (items.length === 0) {
     return (
@@ -71,37 +75,56 @@ function PublicationsTab({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
+    <div className="space-y-2 p-4">
       {items.map(item => {
-        const img = item.thumbnail_url ?? item.banner_url;
-        const isEvent = item._kind === 'event';
-        const color = isEvent ? '#F59E0B' : '#FF7A2F';
-        const date  = isEvent
-          ? (item as Event).starts_at
-          : (item as Concert).scheduled_at;
+        const isEvent   = item._kind === 'event';
+        const isConcert = item._kind === 'concert';
+        const isPost    = item._kind === 'post';
+
+        const color = isEvent ? '#F59E0B' : isConcert ? '#FF7A2F' : '#7B3FF2';
+        const label = isEvent ? 'Événement' : isConcert ? 'Concert' : 'Post';
+        const img   = item.thumbnail_url ?? item.banner_url ?? item.image_url;
+        const date  = isEvent ? item.starts_at : isConcert ? item.scheduled_at : item.created_at;
+        const title = item.title ?? item.body;
+        const desc  = isPost ? null : item.description;
+
+        const handleClick = () => {
+          if (isEvent)   navigate(`/events/${item.id}`);
+          if (isConcert) navigate(`/concerts/${item.id}`);
+          if (isPost)    navigate(`/posts/${item.id}`);
+        };
+
         return (
-          <div key={item.id} className="flex gap-3 p-3 rounded-2xl transition-all cursor-pointer"
+          <div key={`${item._kind}-${item.id}`}
+            onClick={handleClick}
+            className="flex gap-3 p-3 rounded-2xl cursor-pointer transition-all"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = color + '50')}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-            <div className="w-16 h-16 rounded-xl shrink-0 overflow-hidden"
-              style={{ background: 'var(--bg-secondary)' }}>
+
+            {/* Thumbnail / icon */}
+            <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden flex items-center justify-center"
+              style={{ background: img ? undefined : color + '15' }}>
               {img
                 ? <img src={img} alt="" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center"
-                    style={{ background: color + '20' }}>
-                    {isEvent ? <Calendar size={20} color={color} /> : <Heart size={20} color={color} />}
-                  </div>
+                : isPost
+                  ? <FileText size={20} color={color} />
+                  : isEvent
+                    ? <Calendar size={20} color={color} />
+                    : <Heart size={20} color={color} />
               }
             </div>
-            <div className="flex-1 min-w-0 space-y-1">
+
+            <div className="flex-1 min-w-0 space-y-0.5">
               <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: color + '20', color }}>
-                {isEvent ? 'Événement' : 'Concert'}
+                style={{ background: color + '18', color }}>
+                {label}
               </span>
-              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{item.title}</p>
-              {item.description && (
-                <p className="text-xs line-clamp-1" style={{ color: 'var(--text-secondary)' }}>{item.description}</p>
+              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                {isPost ? (item.body?.slice(0, 80) ?? '') : title}
+              </p>
+              {desc && (
+                <p className="text-xs line-clamp-1" style={{ color: 'var(--text-secondary)' }}>{desc}</p>
               )}
               {date && (
                 <p className="text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
@@ -232,13 +255,23 @@ export default function UserProfilePage() {
   const { id }       = useParams<{ id: string }>();
   const navigate     = useNavigate();
   const { user: me } = useAuthStore();
-  const [tab,        setTab]        = useState<Tab>('publications');
-  const [followed,   setFollowed]   = useState<boolean | null>(null);
-  const [blocked,    setBlocked]    = useState<boolean | null>(null);
+  const [tab,            setTab]            = useState<Tab>('publications');
+  const [followed,       setFollowed]       = useState<boolean | null>(null);
+  const [blocked,        setBlocked]        = useState<boolean | null>(null);
+  const [followersDelta, setFollowersDelta] = useState(0);
 
   const { data: profile, loading } = useApi<UserPublicProfile>(
     () => apiClient.get<UserPublicProfile>(Endpoints.users.publicProfile(id!)), [id],
   );
+
+  // Réinitialise les états locaux quand on change d'utilisateur
+  const prevId = useRef(id);
+  if (prevId.current !== id) {
+    prevId.current = id;
+    setFollowed(null);
+    setBlocked(null);
+    setFollowersDelta(0);
+  }
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
   if (!profile) return <div className="p-6 text-sm" style={{ color: 'var(--text-secondary)' }}>Profil introuvable.</div>;
@@ -249,11 +282,16 @@ export default function UserProfilePage() {
 
   async function toggleFollow() {
     if (isBlocked) return;
-    setFollowed(!isFollowed);
+    const wasFollowed = isFollowed;
+    setFollowed(!wasFollowed);
+    setFollowersDelta(d => d + (wasFollowed ? -1 : 1));
     try {
-      if (isFollowed) await apiClient.delete(Endpoints.users.follow(id!));
-      else            await apiClient.post(Endpoints.users.follow(id!));
-    } catch { setFollowed(isFollowed); }
+      if (wasFollowed) await apiClient.delete(Endpoints.users.follow(id!));
+      else             await apiClient.post(Endpoints.users.follow(id!));
+    } catch {
+      setFollowed(wasFollowed);
+      setFollowersDelta(d => d + (wasFollowed ? 1 : -1));
+    }
   }
 
   async function toggleBlock() {
@@ -381,7 +419,7 @@ export default function UserProfilePage() {
         {/* ── Stats ── */}
         <div className="flex rounded-2xl p-4 mb-5 divide-x"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <Stat value={profile.followers_count ?? 0}  label="Abonnés"      />
+          <Stat value={(profile.followers_count ?? 0) + followersDelta}  label="Abonnés"      />
           <Stat value={profile.following_count ?? 0}  label="Abonnements"  />
           <Stat value={(profile as any).posts_count ?? (profile as any).publications_count ?? 0} label="Publications" />
         </div>

@@ -5,11 +5,11 @@ import {
   Flame, ChevronRight, UserPlus, UserCheck, Sparkles, Radio,
   Heart, MessageCircle, Share2, Bookmark, Film, RefreshCw,
   X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3,
-  Image as ImageIcon, Video, Type, MoreHorizontal,
+  Image as ImageIcon, Video, Type, MoreHorizontal, Lock,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import type { Concert, Event, Post, Reel, StoryGroup } from '../types';
+import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
@@ -307,9 +307,7 @@ function StoryViewer({
   async function openViewers() {
     setPaused(true); setViewersOpen(true); setViewersLoading(true);
     try {
-      await apiClient.get<any>(`${Endpoints.social.comments}?story_id=${story?.id}&limit=1`);
-      // Actually fetch story viewers
-      const vRes = await apiClient.get<any>(`/api/v1/stories/${story?.id}/viewers`);
+      const vRes = await apiClient.get<any>(Endpoints.stories.viewers(story!.id));
       const raw = vRes.data;
       setViewers(Array.isArray(raw) ? raw : raw?.items ?? []);
     } catch { setViewers([]); }
@@ -791,9 +789,11 @@ function StoriesBar() {
 
           {/* Autres stories */}
           {otherGroups.map((group) => {
-            const idx  = allGroups.indexOf(group);
-            const u    = group.user;
-            const name = (u.display_name ?? u.username ?? '').split(' ')[0];
+            const idx        = allGroups.indexOf(group);
+            const u          = group.user;
+            const name       = (u.display_name ?? u.username ?? '').split(' ')[0];
+            const firstStory = group.stories[0];
+            const thumb      = firstStory?.thumbnail_url ?? firstStory?.media_url ?? null;
             return (
               <button key={u.id} onClick={() => setViewer(idx)}
                 className="flex flex-col items-center gap-1.5 shrink-0 transition-transform hover:scale-105"
@@ -803,12 +803,31 @@ function StoriesBar() {
                     <div className="rounded-full p-[2.5px]"
                       style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
                       <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
-                        <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? ''} size="sm" verified={u.is_verified} />
+                        {thumb ? (
+                          <div className="w-10 h-10 rounded-full overflow-hidden">
+                            <img src={thumb} alt={name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? ''} size="sm" verified={u.is_verified} />
+                        )}
                       </div>
                     </div>
                   ) : (
                     <div className="rounded-full p-[2px]" style={{ border: '2px solid var(--border)', opacity: 0.7 }}>
-                      <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? ''} size="sm" verified={u.is_verified} />
+                      {thumb ? (
+                        <div className="w-10 h-10 rounded-full overflow-hidden">
+                          <img src={thumb} alt={name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? ''} size="sm" verified={u.is_verified} />
+                      )}
+                    </div>
+                  )}
+                  {/* Avatar overlay en bas à gauche si thumbnail présent */}
+                  {thumb && u.avatar_url && (
+                    <div className="absolute -bottom-0.5 -left-0.5 w-[18px] h-[18px] rounded-full overflow-hidden"
+                      style={{ border: '1.5px solid var(--surface)' }}>
+                      <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
                     </div>
                   )}
                   {group.stories.length > 1 && (
@@ -871,11 +890,12 @@ function StoriesBar() {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FeedItem =
-  | { kind: 'concert';     id: string; data: Concert }
-  | { kind: 'event';       id: string; data: Event }
-  | { kind: 'post';        id: string; data: Post }
-  | { kind: 'reel';        id: string; data: Reel }
-  | { kind: 'suggestions'; id: string; data: null };
+  | { kind: 'concert';      id: string; data: Concert }
+  | { kind: 'event';        id: string; data: Event }
+  | { kind: 'post';         id: string; data: Post }
+  | { kind: 'reel';         id: string; data: Reel }
+  | { kind: 'suggestions';  id: string; data: null }
+  | { kind: 'communities';  id: string; data: Community[] };
 
 const EVENT_COLORS: Record<string, string> = {
   concert: '#7B3FF2', birthday: '#E0389A', festival: '#FF7A2F',
@@ -926,8 +946,15 @@ function useFollow() {
 }
 
 // ── Author row ────────────────────────────────────────────────────────────────
+const KIND_BADGE: Record<string, { label: string; bg: string; color: string }> = {
+  concert:    { label: 'Concert',     bg: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff' },
+  event:      { label: 'Événement',   bg: 'linear-gradient(135deg,#FF7A2F,#F59E0B)', color: '#fff' },
+  post:       { label: 'Post',        bg: 'rgba(123,63,242,0.12)',                   color: 'var(--primary)' },
+  reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#F0365A,#E0389A)', color: '#fff' },
+};
+
 function AuthorRow({
-  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick,
+  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind,
 }: {
   author: { display_name?: string | null; username?: string | null; avatar_url?: string | null; is_verified?: boolean } | undefined;
   authorId: string | undefined;
@@ -935,15 +962,25 @@ function AuthorRow({
   isFollowed: boolean;
   onAuthorClick: (e: React.MouseEvent) => void;
   onFollowClick: (e: React.MouseEvent) => void;
+  kind?: string;
 }) {
   if (!author && !authorId) return null;
-  const name = author?.display_name ?? author?.username ?? 'Auteur';
+  const name  = author?.display_name ?? author?.username ?? 'Auteur';
+  const badge = kind ? KIND_BADGE[kind] : undefined;
   return (
     <div className="flex items-center gap-2 px-3 pt-3 pb-1">
       <button onClick={onAuthorClick} className="flex items-center gap-2 min-w-0 flex-1">
         <Avatar src={author?.avatar_url} name={name} size="xs" verified={author?.is_verified} />
         <div className="min-w-0">
-          <span className="text-xs font-semibold truncate block" style={{ color: 'var(--text-primary)' }}>{name}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{name}</span>
+            {badge && (
+              <span className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                style={{ background: badge.bg, color: badge.color }}>
+                {badge.label}
+              </span>
+            )}
+          </div>
           {publishedAt && (
             <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{timeAgo(publishedAt)}</span>
           )}
@@ -1392,6 +1429,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         isFollowed={isFollowed}
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${authorId}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
+        kind="concert"
       />
 
       <div onClick={() => navigate(`/concerts/${concert.id}`)}
@@ -1463,6 +1501,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments }: 
         isFollowed={isFollowed}
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${authorId}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
+        kind="event"
       />
 
       <div onClick={() => navigate(`/events/${event.id}`)}
@@ -1538,6 +1577,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments }: {
         isFollowed={isFollowed}
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${authorId}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
+        kind="post"
       />
 
       {/* Body */}
@@ -1827,6 +1867,125 @@ function TrendingPanel() {
   );
 }
 
+// ── CommunitiesInline ─────────────────────────────────────────────────────────
+const COMM_GRADIENTS = [
+  ['#7B3FF2','#E0389A'],['#0EA5E9','#6366F1'],['#10B981','#0EA5E9'],
+  ['#F59E0B','#EF4444'],['#EC4899','#8B5CF6'],['#14B8A6','#3B82F6'],
+];
+function commGradient(name: string): [string, string] {
+  return COMM_GRADIENTS[(name.charCodeAt(0) || 0) % COMM_GRADIENTS.length] as [string, string];
+}
+function fmtCommCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
+function CommunitiesInline({ communities }: { communities: Community[] }) {
+  const navigate = useNavigate();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [joining, setJoining] = useState<Set<string>>(new Set());
+  const [joined,  setJoined]  = useState<Set<string>>(new Set());
+
+  async function handleJoin(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    setJoining(prev => new Set([...prev, id]));
+    try {
+      await apiClient.post(Endpoints.communities.join(id));
+      setJoined(prev => new Set([...prev, id]));
+    } catch { }
+    finally { setJoining(prev => { const n = new Set(prev); n.delete(id); return n; }); }
+  }
+
+  function scrollBy(dir: number) {
+    scrollRef.current?.scrollBy({ left: dir * 200, behavior: 'smooth' });
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-3.5"
+        style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <Users size={14} style={{ color: 'var(--primary)' }} />
+          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Communautés</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => scrollBy(-1)}
+            className="p-1.5 rounded-lg transition-all"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <ChevronLeft size={14} />
+          </button>
+          <button onClick={() => scrollBy(1)}
+            className="p-1.5 rounded-lg transition-all"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <ChevronRight size={14} />
+          </button>
+          <button onClick={() => navigate('/communities')}
+            className="text-xs font-bold ml-1" style={{ color: 'var(--primary)' }}>
+            Voir tout
+          </button>
+        </div>
+      </div>
+
+      <div ref={scrollRef} className="flex gap-3 p-4 overflow-x-auto scrollbar-hide"
+        style={{ scrollSnapType: 'x mandatory' }}>
+        {communities.map(c => {
+          const [g1, g2] = commGradient(c.name);
+          const count    = c.members_count ?? c.member_count ?? 0;
+          const isJoined = joined.has(c.id);
+          const isJoining = joining.has(c.id);
+          return (
+            <div key={c.id}
+              className="flex flex-col rounded-2xl overflow-hidden cursor-pointer shrink-0 transition-transform hover:scale-[1.02]"
+              style={{ width: 160, scrollSnapAlign: 'start', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+              onClick={() => navigate(`/communities/${c.id}`)}>
+              {/* Bannière */}
+              <div className="relative" style={{ height: 72 }}>
+                {c.banner_url
+                  ? <img src={c.banner_url} className="w-full h-full object-cover" alt="" />
+                  : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }} />
+                }
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
+                <span className="absolute bottom-1.5 right-2 text-[9px] font-bold text-white flex items-center gap-0.5">
+                  <Users size={8} /> {fmtCommCount(count)}
+                </span>
+              </div>
+              {/* Avatar flottant */}
+              <div className="relative px-2.5 pb-2.5" style={{ marginTop: -14 }}>
+                {c.avatar_url
+                  ? <img src={c.avatar_url} className="w-7 h-7 rounded-lg object-cover"
+                      style={{ border: '2px solid var(--bg-secondary)' }} alt="" />
+                  : <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-xs"
+                      style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '2px solid var(--bg-secondary)' }}>
+                      {c.name[0]?.toUpperCase()}
+                    </div>
+                }
+                <p className="font-bold text-xs mt-1.5 truncate" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
+                {c.description && (
+                  <p className="text-[10px] mt-0.5 line-clamp-2 leading-tight" style={{ color: 'var(--text-tertiary)' }}>
+                    {c.description}
+                  </p>
+                )}
+                <button
+                  onClick={e => handleJoin(e, c.id)}
+                  disabled={isJoining || isJoined}
+                  className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-bold text-white transition-all disabled:opacity-60"
+                  style={{ background: isJoined ? '#22c55e' : `linear-gradient(90deg, ${g1}, ${g2})` }}>
+                  {isJoining ? <Spinner size="sm" /> : isJoined ? <><Check size={10} /> Rejoint</> : <><UserPlus size={10} /> Rejoindre</>}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Suggestions sidebar ───────────────────────────────────────────────────────
 function SuggestionsPanel() {
   const navigate = useNavigate();
@@ -1893,6 +2052,82 @@ function SuggestionsPanel() {
   );
 }
 
+// ── Communities sidebar panel ─────────────────────────────────────────────────
+function CommunitiesSidePanel() {
+  const navigate = useNavigate();
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [loading,     setLoading]     = useState(true);
+
+  useEffect(() => {
+    apiClient.get<any>(`${Endpoints.communities.discover}?limit=10`)
+      .then(res => {
+        const raw: Community[] = Array.isArray(res.data) ? res.data : res.data?.items ?? res.data?.data ?? [];
+        setCommunities([...raw].sort(() => Math.random() - 0.5).slice(0, 5));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (!loading && communities.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl overflow-hidden sticky top-4"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-3.5"
+        style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <Users size={14} style={{ color: 'var(--primary)' }} />
+          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Communautés</p>
+        </div>
+        <button onClick={() => navigate('/communities')}
+          className="text-xs font-bold" style={{ color: 'var(--primary)' }}>Voir tout</button>
+      </div>
+      {loading ? (
+        <div className="flex justify-center py-8"><Spinner size="sm" /></div>
+      ) : (
+        <>
+          {communities.map((c, i) => {
+            const [g1, g2] = commGradient(c.name);
+            const count    = c.members_count ?? c.member_count ?? 0;
+            return (
+              <button key={c.id}
+                onClick={() => navigate(`/communities/${c.id}`)}
+                className="w-full flex items-center gap-3 px-4 py-2.5 transition-all text-left"
+                style={{ borderBottom: i < communities.length - 1 ? '1px solid var(--border)' : 'none' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                {c.avatar_url
+                  ? <img src={c.avatar_url} className="w-9 h-9 rounded-xl object-cover shrink-0" alt="" />
+                  : <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-sm shrink-0"
+                      style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }}>
+                      {c.name[0]?.toUpperCase()}
+                    </div>
+                }
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                    {fmtCommCount(count)} membres
+                  </p>
+                </div>
+                {c.is_private && <Lock size={11} style={{ color: 'var(--text-tertiary)', shrink: 0 }} />}
+              </button>
+            );
+          })}
+          <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+            <button onClick={() => navigate('/communities')}
+              className="text-xs font-bold w-full text-center py-1.5 rounded-xl transition-all"
+              style={{ color: 'var(--primary)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.07)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              Voir toutes les communautés →
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Section header ────────────────────────────────────────────────────────────
 function SectionHead({ icon, title, onMore }: {
   icon: React.ReactNode; title: string; onMore?: () => void;
@@ -1938,10 +2173,11 @@ export default function FeedPage() {
         // /search/feed → { items: [{kind, ...fields}], total, page, limit }
         // /reels       → flat array  OR  { items: [...] }
         // /posts/feed  → flat array
-        const [feedRes, reelsRes, postsRes] = await Promise.all([
+        const [feedRes, reelsRes, postsRes, commRes] = await Promise.all([
           apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=40`).catch(() => null),
           apiClient.get<any>(`${Endpoints.reels.feed}?page=1&limit=20`).catch(() => null),
           apiClient.get<any>(`${Endpoints.posts.feed}?page=1&limit=20`).catch(() => null),
+          apiClient.get<any>(`${Endpoints.communities.discover}?limit=8`).catch(() => null),
         ]);
 
         // /search/feed: { items: [{kind, id, ...fields}] }
@@ -1981,6 +2217,15 @@ export default function FeedPage() {
         if (deduped.length > 0) {
           const pos = Math.min(Math.floor(Math.random() * 11) + 5, deduped.length);
           deduped.splice(pos, 0, { kind: 'suggestions', id: '__suggestions__', data: null });
+        }
+
+        // Inject communities block at random position 10–20
+        const commRaw: Community[] = commRes ? (Array.isArray(commRes.data) ? commRes.data : commRes.data?.items ?? commRes.data?.data ?? []) : [];
+        if (commRaw.length > 0) {
+          // Shuffle communities for random order each time
+          const shuffled = [...commRaw].sort(() => Math.random() - 0.5);
+          const cpos = Math.min(Math.floor(Math.random() * 11) + 10, deduped.length);
+          deduped.splice(cpos, 0, { kind: 'communities', id: '__communities__', data: shuffled });
         }
 
         setItems(deduped);
@@ -2115,6 +2360,9 @@ export default function FeedPage() {
                 if (item.kind === 'suggestions') {
                   return <SuggestionsInline key="__suggestions__" />;
                 }
+                if (item.kind === 'communities') {
+                  return <CommunitiesInline key="__communities__" communities={item.data} />;
+                }
                 if (item.kind === 'concert') {
                   return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
                 }
@@ -2134,8 +2382,9 @@ export default function FeedPage() {
         </div>
 
         {/* ── Sidebar (xl+) ── */}
-        <div className="w-64 shrink-0 hidden xl:block">
+        <div className="w-64 shrink-0 hidden xl:block space-y-4">
           <SuggestionsPanel />
+          <CommunitiesSidePanel />
         </div>
 
       </div>
