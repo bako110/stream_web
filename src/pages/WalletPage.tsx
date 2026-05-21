@@ -20,10 +20,10 @@ interface WalletBalance {
 }
 
 interface Transaction {
-  id: string;
-  type: 'purchase' | 'gift_sent' | 'gift_received' | 'withdrawal' | 'bonus' | 'refund';
-  amount: number;
-  description: string;
+  public_id: string;
+  transaction_type: string;
+  coins_amount: number;
+  description: string | null;
   created_at: string;
   status: 'completed' | 'pending' | 'failed';
 }
@@ -31,13 +31,19 @@ interface Transaction {
 const coinsToEur = (c: number) => ((c / 100) * 0.5).toFixed(2);
 
 const TX_CONFIG: Record<string, { icon: React.ReactNode; color: string; credit: boolean }> = {
-  purchase:      { icon: <ShoppingCart size={18} />, color: '#3B82F6',  credit: true  },
-  gift_sent:     { icon: <Gift size={18} />,         color: '#E85DAD',  credit: false },
-  gift_received: { icon: <Gift size={18} />,         color: '#3FEDB6',  credit: true  },
-  withdrawal:    { icon: <ArrowUpRight size={18} />, color: '#FF8C4A',  credit: false },
-  bonus:         { icon: <Star size={18} />,         color: '#FFD700',  credit: true  },
-  refund:        { icon: <RotateCcw size={18} />,    color: '#9B65F5',  credit: true  },
-  default:       { icon: <Circle size={18} />,       color: '#6B698A',  credit: false },
+  credit_purchase:      { icon: <ShoppingCart size={18} />, color: '#3B82F6',  credit: true  },
+  gift_sent:            { icon: <Gift size={18} />,         color: '#E85DAD',  credit: false },
+  gift_received:        { icon: <Gift size={18} />,         color: '#3FEDB6',  credit: true  },
+  transfer_sent:        { icon: <ArrowUpRight size={18} />, color: '#7B3FF2',  credit: false },
+  transfer_received:    { icon: <ArrowUpRight size={18} />, color: '#3FEDB6',  credit: true  },
+  withdrawal:           { icon: <ArrowUpRight size={18} />, color: '#FF8C4A',  credit: false },
+  subscription_revenue: { icon: <Star size={18} />,         color: '#A855F7',  credit: true  },
+  view_revenue:         { icon: <Star size={18} />,         color: '#14B8A6',  credit: true  },
+  bonus:                { icon: <Star size={18} />,         color: '#FFD700',  credit: true  },
+  refund:               { icon: <RotateCcw size={18} />,    color: '#9B65F5',  credit: true  },
+  boost_purchase:       { icon: <ArrowUpRight size={18} />, color: '#06B6D4',  credit: false },
+  referral_bonus:       { icon: <Star size={18} />,         color: '#84CC16',  credit: true  },
+  default:              { icon: <Circle size={18} />,       color: '#6B698A',  credit: false },
 };
 
 export default function WalletPage() {
@@ -184,24 +190,26 @@ export default function WalletPage() {
         ) : (
           <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             {txs.map((tx, i) => {
-              const cfg = TX_CONFIG[tx.type] ?? TX_CONFIG.default;
-              const sign = cfg.credit ? '+' : '-';
+              const cfg = TX_CONFIG[tx.transaction_type] ?? TX_CONFIG.default;
+              const isCredit = tx.coins_amount >= 0;
               return (
-                <div key={tx.id} className="flex items-center gap-3 px-4 py-3.5"
+                <div key={tx.public_id} className="flex items-center gap-3 px-4 py-3.5"
                   style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}>
                   <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
                     style={{ background: `${cfg.color}22`, color: cfg.color }}>
                     {cfg.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{tx.description}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                      {format(new Date(tx.created_at), 'd MMM yyyy', { locale: fr })}
+                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                      {tx.description ?? tx.transaction_type.replace(/_/g, ' ')}
+                    </p>
+                    <p className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                      {tx.public_id} · {format(new Date(tx.created_at), 'd MMM yyyy', { locale: fr })}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-black" style={{ color: cfg.credit ? '#22C55E' : '#F0365A' }}>
-                      {sign}{tx.amount} <span className="font-normal text-xs">coins</span>
+                    <p className="text-sm font-black" style={{ color: isCredit ? '#22C55E' : '#F0365A' }}>
+                      {isCredit ? '+' : ''}{tx.coins_amount.toLocaleString('fr-FR')} <span className="font-normal text-xs">coins</span>
                     </p>
                     {tx.status === 'pending' && <p className="text-[10px] font-medium" style={{ color: '#F59E0B' }}>En attente</p>}
                     {tx.status === 'failed'  && <p className="text-[10px] font-medium" style={{ color: '#F0365A' }}>Échoué</p>}
