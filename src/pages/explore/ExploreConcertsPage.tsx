@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Music2, MapPin, Calendar, Radio, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
-import type { Concert } from '../../types';
+import type { Concert, PaginatedResponse } from '../../types';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
 
 const FILTERS = ['Tous', 'À venir', 'En direct'];
@@ -14,32 +15,13 @@ const FILTERS = ['Tous', 'À venir', 'En direct'];
 export default function ExploreConcertsPage() {
   const [filter, setFilter] = useState('Tous');
   const [search, setSearch] = useState('');
-  const [items,   setItems]   = useState<Concert[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      publicClient.get<Concert[]>(Endpoints.concerts.live),
-      publicClient.get<Concert[]>(Endpoints.concerts.upcoming),
-    ])
-      .then(([liveRes, upcomingRes]) => {
-        const live     = Array.isArray(liveRes.data)     ? liveRes.data     : (liveRes.data     as any)?.items ?? [];
-        const upcoming = Array.isArray(upcomingRes.data) ? upcomingRes.data : (upcomingRes.data as any)?.items ?? [];
-        const seen = new Set<string>();
-        const merged: Concert[] = [];
-        for (const c of [...live, ...upcoming]) {
-          if (!seen.has(c.id)) { seen.add(c.id); merged.push(c); }
-        }
-        setItems(merged);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Impossible de charger les concerts.');
-        setLoading(false);
-      });
-  }, []);
+  const { data, loading, error } = useApi<PaginatedResponse<Concert>>(
+    () => publicClient.get<PaginatedResponse<Concert>>(Endpoints.concerts.list),
+    []
+  );
+
+  const items = data?.items ?? [];
 
   const now = new Date();
   const filtered = items.filter(concert => {
