@@ -131,12 +131,12 @@ export default function ConcertDetailPage() {
     finally { setStopping(false); }
   }
 
-  const allTiers: TicketTier[] = [
-    { key: 'simple', label: 'Simple', color: '#7B3FF2', price: c.ticket_price ?? 0,       sub: 'Accès standard' },
-    { key: 'vip',    label: 'VIP',    color: '#F59E0B', price: c.ticket_price_vip ?? 0,   sub: 'Accès prioritaire' },
-    { key: 'vvip',   label: 'VVIP',   color: '#8B5CF6', price: c.ticket_price_vvip ?? 0,  sub: 'Expérience premium' },
-    { key: 'vvvip',  label: 'VVVIP',  color: '#EF4444', price: c.ticket_price_vvvip ?? 0, sub: 'All-inclusive' },
-  ].filter(t => t.price > 0);
+  const allTiers = ([
+    { key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: c.ticket_price ?? 0,       sub: 'Accès standard' },
+    { key: 'vip'    as const, label: 'VIP',    color: '#F59E0B', price: c.ticket_price_vip ?? 0,   sub: 'Accès prioritaire' },
+    { key: 'vvip'   as const, label: 'VVIP',   color: '#8B5CF6', price: c.ticket_price_vvip ?? 0,  sub: 'Expérience premium' },
+    { key: 'vvvip'  as const, label: 'VVVIP',  color: '#EF4444', price: c.ticket_price_vvvip ?? 0, sub: 'All-inclusive' },
+  ] as TicketTier[]).filter(t => t.price > 0);
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
