@@ -394,11 +394,18 @@ export default function EventDetailPage() {
         </button>
 
         {isOwner ? (
-          <button onClick={() => navigate(`/events/${id}/edit`)}
-            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: 'var(--bg-secondary)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
-            <Edit3 size={15} /> Modifier
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={() => navigate(`/events/${id}/attendees`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: 'var(--bg-secondary)', color: '#10B981', border: '1px solid var(--border)' }}>
+              <Users size={15} /> Inscrits
+            </button>
+            <button onClick={() => navigate(`/events/${id}/edit`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
+              <Edit3 size={15} /> Modifier
+            </button>
+          </div>
         ) : ev.organizer && (
           <button onClick={toggleFollow}
             className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"

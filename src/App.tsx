@@ -46,7 +46,20 @@ const WalletBuyPage      = lazy(() => import('./pages/wallet/WalletBuyPage'));
 const WalletTransferPage = lazy(() => import('./pages/wallet/WalletTransferPage'));
 const WalletWithdrawPage = lazy(() => import('./pages/wallet/WalletWithdrawPage'));
 const WalletDashboardPage= lazy(() => import('./pages/wallet/WalletDashboardPage'));
-const WalletBoostPage    = lazy(() => import('./pages/wallet/WalletBoostPage'));
+const WalletBoostPage               = lazy(() => import('./pages/wallet/WalletBoostPage'));
+const WalletReferralPage            = lazy(() => import('./pages/wallet/WalletReferralPage'));
+const WalletCreatorDashboardPage    = lazy(() => import('./pages/wallet/WalletCreatorDashboardPage'));
+const WalletMonetisationPage        = lazy(() => import('./pages/wallet/WalletMonetisationPage'));
+const WalletMonetisationRequestPage = lazy(() => import('./pages/wallet/WalletMonetisationRequestPage'));
+const WalletSubscriptionPlansPage   = lazy(() => import('./pages/wallet/WalletSubscriptionPlansPage'));
+const WalletSubscriptionPaymentPage = lazy(() => import('./pages/wallet/WalletSubscriptionPaymentPage'));
+const WalletMySubscriptionPage      = lazy(() => import('./pages/wallet/WalletMySubscriptionPage'));
+const MyTicketsPage                 = lazy(() => import('./pages/MyTicketsPage'));
+const AttendeesPage                 = lazy(() => import('./pages/AttendeesPage'));
+const TrendingPage                  = lazy(() => import('./pages/TrendingPage'));
+const FavoritesPage                 = lazy(() => import('./pages/FavoritesPage'));
+const WatchHistoryPage              = lazy(() => import('./pages/WatchHistoryPage'));
+const FollowingPage                 = lazy(() => import('./pages/FollowingPage'));
 const SubscriptionsPage  = lazy(() => import('./pages/SubscriptionsPage'));
 const PrivacyPage        = lazy(() => import('./pages/PrivacyPage'));
 const BlockedUsersPage   = lazy(() => import('./pages/BlockedUsersPage'));
@@ -185,7 +198,21 @@ function AppShell() {
             <Route path="/wallet/transfer"   element={<WalletTransferPage />} />
             <Route path="/wallet/withdraw"   element={<WalletWithdrawPage />} />
             <Route path="/wallet/dashboard"  element={<WalletDashboardPage />} />
-            <Route path="/wallet/boost"      element={<WalletBoostPage />} />
+            <Route path="/wallet/boost"                     element={<WalletBoostPage />} />
+            <Route path="/wallet/referral"                  element={<WalletReferralPage />} />
+            <Route path="/wallet/creator"                   element={<WalletCreatorDashboardPage />} />
+            <Route path="/wallet/monetisation"              element={<WalletMonetisationPage />} />
+            <Route path="/wallet/monetisation/request"      element={<WalletMonetisationRequestPage />} />
+            <Route path="/wallet/subscription/plans"        element={<WalletSubscriptionPlansPage />} />
+            <Route path="/wallet/subscription/payment"      element={<WalletSubscriptionPaymentPage />} />
+            <Route path="/wallet/subscription/my"           element={<WalletMySubscriptionPage />} />
+            <Route path="/my-tickets"                       element={<MyTicketsPage />} />
+            <Route path="/events/:id/attendees"             element={<AttendeesPage />} />
+            <Route path="/trending"                         element={<TrendingPage />} />
+            <Route path="/favorites"                        element={<FavoritesPage />} />
+            <Route path="/watch-history"                    element={<WatchHistoryPage />} />
+            <Route path="/following"                        element={<FollowingPage />} />
+            <Route path="/following/:userId"                element={<FollowingPage />} />
             <Route path="/subscriptions"     element={<SubscriptionsPage />} />
             <Route path="/privacy"           element={<PrivacyPage />} />
             <Route path="/blocked-users"     element={<BlockedUsersPage />} />
