@@ -114,7 +114,7 @@ function StopModal({
   const totalSec   = Math.max(1, (new Date(boost.expires_at).getTime() - new Date(boost.activated_at).getTime()) / 1000);
   const elapsedSec = (Date.now() - new Date(boost.activated_at).getTime()) / 1000;
   const elapsedPct = elapsedSec / totalSec;
-  const refund     = elapsedPct < 0.5 ? Math.round(boost.coins_spent * 0.5) : 0;
+  const refund     = elapsedPct < 0.5 ? Math.round(Number(boost.coins_spent ?? 0) * 0.5) : 0;
 
   return (
     <>
@@ -212,10 +212,11 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
   const pct        = Math.min(1, Math.max(0, Number(boost.progress ?? 0)));
   const days       = daysLeft(boost.expires_at);
   const isActive   = boost.status === 'active';
-  const impressions = boost.impression_count ?? 0;
-  const delivered  = impressions > 0 ? impressions : (boost.delivered_quantity ?? 0);
-  const total      = boost.target_quantity ?? 0;
-  const mult       = boost.feed_multiplier ?? 1.0;
+  const impressions = Number(boost.impression_count ?? 0);
+  const delivered  = impressions > 0 ? impressions : Number(boost.delivered_quantity ?? 0);
+  const total      = Number(boost.target_quantity ?? 0);
+  const mult       = Number(boost.feed_multiplier ?? 1.0);
+  const coinsSpent = Number(boost.coins_spent ?? 0);
   const hasContent = !!boost.target_content_title;
   const unitLabel  = UNIT_LABELS[boost.target] ?? 'unités livrées';
 
@@ -357,7 +358,7 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
                 },
                 {
                   label: 'Coins dépensés',
-                  value: boost.coins_spent.toLocaleString('fr-FR'),
+                  value: coinsSpent.toLocaleString('fr-FR'),
                   icon: <Zap size={11} />,
                   color: g1,
                 },
