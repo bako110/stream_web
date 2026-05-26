@@ -512,7 +512,7 @@ function ConcertCard({ concert, onClick }: { concert: Concert; onClick: () => vo
       <div className="p-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--border)' }}>
         <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
           <Eye size={12} />
-          <span>{concert.current_viewers.toLocaleString()} spectateurs</span>
+          <span>{(concert.current_viewers ?? 0).toLocaleString()} spectateurs</span>
         </div>
         {concert.ticket_price != null && (
           <span className="text-sm font-bold" style={{ color: 'var(--primary)' }}>

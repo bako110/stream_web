@@ -155,10 +155,10 @@ function ConcertCard({ concert, isLive = false }: { concert: Concert; isLive?: b
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
           </div>
         )}
-        {concert.current_viewers > 0 && (
+        {(concert.current_viewers ?? 0) > 0 && (
           <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-semibold text-white px-2 py-1 rounded-full"
             style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-            <Users size={10} /> {concert.current_viewers.toLocaleString()}
+            <Users size={10} /> {(concert.current_viewers ?? 0).toLocaleString()}
           </div>
         )}
       </div>
