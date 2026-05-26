@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus, X, FileText, Calendar, Music2, Film,
   Smile, Send, MapPin, Globe, Lock, Tag, Image, Video, UploadCloud, CheckCircle,
@@ -911,22 +912,31 @@ function CreateConcertModal({ onClose, onDone }: { onClose: () => void; onDone: 
 
 // ── FAB principal ─────────────────────────────────────────────────────────────
 
-type Modal = 'post' | 'reel' | 'event' | 'concert' | null;
+type Modal = 'post' | 'reel' | null;
 
 const FAB_ACTIONS = [
-  { id: 'post'    as const, label: 'Post',      icon: FileText, color: '#7B3FF2' },
-  { id: 'reel'    as const, label: 'Reel',      icon: Film,     color: '#E0389A' },
-  { id: 'event'   as const, label: 'Événement', icon: Calendar, color: '#F59E0B' },
-  { id: 'concert' as const, label: 'Concert',   icon: Music2,   color: '#FF7A2F' },
+  { id: 'post'    as const, label: 'Post',      icon: FileText, color: '#7B3FF2', route: null           },
+  { id: 'reel'    as const, label: 'Reel',      icon: Film,     color: '#E0389A', route: null           },
+  { id: 'event'   as const, label: 'Événement', icon: Calendar, color: '#F59E0B', route: '/create/event'   },
+  { id: 'concert' as const, label: 'Concert',   icon: Music2,   color: '#FF7A2F', route: '/create/concert' },
 ];
 
 export function CreateFAB() {
+  const navigate = useNavigate();
   const [open,  setOpen]  = useState(false);
   const [modal, setModal] = useState<Modal>(null);
 
-  function openModal(id: Modal) { setOpen(false); setModal(id); }
-  function closeModal()         { setModal(null); }
-  function onDone()             { setModal(null); }
+  function handleAction(action: typeof FAB_ACTIONS[number]) {
+    setOpen(false);
+    if (action.route) {
+      navigate(action.route);
+    } else {
+      setModal(action.id as Modal);
+    }
+  }
+
+  function closeModal() { setModal(null); }
+  function onDone()     { setModal(null); }
 
   return (
     <>
@@ -938,7 +948,7 @@ export function CreateFAB() {
               style={{ background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
               {action.label}
             </span>
-            <button onClick={() => openModal(action.id)}
+            <button onClick={() => handleAction(action)}
               className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl transition-transform hover:scale-110 active:scale-95"
               style={{ background: action.color }}>
               <action.icon size={20} color="#fff" />
@@ -959,10 +969,8 @@ export function CreateFAB() {
 
       {open && <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />}
 
-      {modal === 'post'    && <CreatePostModal    onClose={closeModal} onDone={onDone} />}
-      {modal === 'reel'    && <CreateReelModal    onClose={closeModal} onDone={onDone} />}
-      {modal === 'event'   && <CreateEventModal   onClose={closeModal} onDone={onDone} />}
-      {modal === 'concert' && <CreateConcertModal onClose={closeModal} onDone={onDone} />}
+      {modal === 'post' && <CreatePostModal onClose={closeModal} onDone={onDone} />}
+      {modal === 'reel' && <CreateReelModal onClose={closeModal} onDone={onDone} />}
     </>
   );
 }

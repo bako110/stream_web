@@ -60,6 +60,10 @@ const TrendingPage                  = lazy(() => import('./pages/TrendingPage'))
 const FavoritesPage                 = lazy(() => import('./pages/FavoritesPage'));
 const WatchHistoryPage              = lazy(() => import('./pages/WatchHistoryPage'));
 const FollowingPage                 = lazy(() => import('./pages/FollowingPage'));
+const CreatePostPage     = lazy(() => import('./pages/create/CreatePostPage'));
+const CreateReelPage     = lazy(() => import('./pages/create/CreateReelPage'));
+const CreateConcertPage  = lazy(() => import('./pages/create/CreateConcertPage'));
+const CreateEventPage    = lazy(() => import('./pages/create/CreateEventPage'));
 const SubscriptionsPage  = lazy(() => import('./pages/SubscriptionsPage'));
 const PrivacyPage        = lazy(() => import('./pages/PrivacyPage'));
 const BlockedUsersPage   = lazy(() => import('./pages/BlockedUsersPage'));
@@ -213,6 +217,10 @@ function AppShell() {
             <Route path="/watch-history"                    element={<WatchHistoryPage />} />
             <Route path="/following"                        element={<FollowingPage />} />
             <Route path="/following/:userId"                element={<FollowingPage />} />
+            <Route path="/create/post"                      element={<CreatePostPage />} />
+            <Route path="/create/reel"                      element={<CreateReelPage />} />
+            <Route path="/create/concert"                   element={<CreateConcertPage />} />
+            <Route path="/create/event"                     element={<CreateEventPage />} />
             <Route path="/subscriptions"     element={<SubscriptionsPage />} />
             <Route path="/privacy"           element={<PrivacyPage />} />
             <Route path="/blocked-users"     element={<BlockedUsersPage />} />
