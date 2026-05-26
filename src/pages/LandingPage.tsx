@@ -5,7 +5,7 @@ import {
   ChevronRight, Zap, Globe, Shield, Sparkles,
   Star, TrendingUp, Eye, Sun, Moon, Menu, X,
 } from 'lucide-react';
-import { apiClient } from '../api';
+import { apiClient, publicClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import type { Concert, Content, Event } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -893,9 +893,20 @@ export default function LandingPage() {
       .then(r => setFilms(r.data?.items ?? [])).catch(() => {});
     apiClient.get<any>(`${Endpoints.content.series}?page=1&limit=12&status=published`)
       .then(r => setSeries(r.data?.items ?? [])).catch(() => {});
-    apiClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=10&status=published`)
-      .then(r => setConcerts(r.data?.items ?? [])).catch(() => {});
-    apiClient.get<any>(`${Endpoints.events.list}?page=1&limit=10&status=published`)
+    Promise.all([
+      publicClient.get<any>(Endpoints.concerts.live),
+      publicClient.get<any>(Endpoints.concerts.upcoming),
+    ]).then(([liveRes, upRes]) => {
+      const live = Array.isArray(liveRes.data) ? liveRes.data : (liveRes.data?.items ?? []);
+      const up   = Array.isArray(upRes.data)   ? upRes.data   : (upRes.data?.items   ?? []);
+      const seen = new Set<string>();
+      const merged: Concert[] = [];
+      for (const c of [...live, ...up]) {
+        if (!seen.has(c.id)) { seen.add(c.id); merged.push(c); }
+      }
+      setConcerts(merged.slice(0, 10));
+    }).catch(() => {});
+    publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=10&status=published`)
       .then(r => setEvents(r.data?.items ?? [])).catch(() => {});
   }, []);
 

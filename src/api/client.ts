@@ -194,6 +194,36 @@ async function upload<T>(
   }
 }
 
+// ── Client sans auth — pour les pages publiques (explore) ────────────────────
+async function requestPublic<T>(endpoint: string): Promise<ApiResponse<T>> {
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const json = await parseBody(response);
+    if (!response.ok) {
+      const msg = (json as any)?.detail ?? `Erreur ${response.status}`;
+      throw new ApiError(response.status, msg, json);
+    }
+    const data = (json as any)?.data ?? json;
+    return { data: data as T, status: response.status };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof ApiError) throw err;
+    const isAbort = (err as Error).name === 'AbortError';
+    throw new ApiError(isAbort ? 408 : 0, isAbort ? 'Requête expirée.' : 'Erreur réseau.');
+  }
+}
+
+export const publicClient = {
+  get: <T>(ep: string) => requestPublic<T>(ep),
+};
+
 // ── Public API client ─────────────────────────────────────────────────────────
 export const apiClient = {
   get:    <T>(ep: string, opts?: Omit<RequestOptions, 'method' | 'body'>) =>
