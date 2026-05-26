@@ -894,9 +894,9 @@ export default function LandingPage() {
     apiClient.get<any>(`${Endpoints.content.series}?page=1&limit=12&status=published`)
       .then(r => setSeries(r.data?.items ?? [])).catch(() => {});
     publicClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=10&status=published`)
-      .then(r => setConcerts(r.data?.items ?? [])).catch(() => {});
+      .then(r => setConcerts(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))).catch(() => {});
     publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=10&status=published`)
-      .then(r => setEvents(r.data?.items ?? [])).catch(() => {});
+      .then(r => setEvents(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))).catch(() => {});
   }, []);
 
   return (

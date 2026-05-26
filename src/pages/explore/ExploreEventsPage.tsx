@@ -24,12 +24,12 @@ const TYPE_COLORS: Record<string, string> = {
 export default function ExploreEventsPage() {
   const [search, setSearch] = useState('');
 
-  const { data, loading } = useApi<PaginatedResponse<Event>>(
-    () => publicClient.get<PaginatedResponse<Event>>(Endpoints.events.list),
+  const { data, loading } = useApi<PaginatedResponse<Event> | Event[]>(
+    () => publicClient.get<PaginatedResponse<Event> | Event[]>(Endpoints.events.list),
     []
   );
 
-  const items    = data?.items ?? [];
+  const items: Event[] = Array.isArray(data) ? data : (data?.items ?? []);
   const now      = new Date();
   const filtered = items.filter(ev =>
     !search || ev.title.toLowerCase().includes(search.toLowerCase())

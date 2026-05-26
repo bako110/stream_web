@@ -16,12 +16,12 @@ export default function ExploreConcertsPage() {
   const [filter, setFilter] = useState('Tous');
   const [search, setSearch] = useState('');
 
-  const { data, loading, error } = useApi<PaginatedResponse<Concert>>(
-    () => publicClient.get<PaginatedResponse<Concert>>(Endpoints.concerts.list),
+  const { data, loading, error } = useApi<PaginatedResponse<Concert> | Concert[]>(
+    () => publicClient.get<PaginatedResponse<Concert> | Concert[]>(Endpoints.concerts.list),
     []
   );
 
-  const items = data?.items ?? [];
+  const items: Concert[] = Array.isArray(data) ? data : (data?.items ?? []);
 
   const now = new Date();
   const filtered = items.filter(concert => {
