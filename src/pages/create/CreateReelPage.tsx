@@ -2,17 +2,33 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Video, Upload, X, Play } from 'lucide-react';
 import { apiClient } from '../../api';
-import { Endpoints } from '../../api/endpoints';
+import { Endpoints } from '../../api/endpoints'; // used for reels.feed
 import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 
-async function uploadVideo(file: File): Promise<{ url: string }> {
-  const form = new FormData();
-  form.append('file', file);
-  const res = await apiClient.post<{ url: string }>(Endpoints.upload.video('reels'), form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+function uploadVideoWithProgress(file: File, onProgress: (pct: number) => void): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const form  = new FormData();
+    form.append('file', file);
+    const token = (() => {
+      try { return JSON.parse(localStorage.getItem('folix-auth-tokens') ?? '{}').access ?? ''; }
+      catch { return ''; }
+    })();
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/v1/upload/video?folder=reels`);
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => {
+      try {
+        const json = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) resolve((json?.data ?? json)?.url ?? json?.url ?? '');
+        else reject(new Error(json?.detail ?? 'Upload échoué'));
+      } catch { reject(new Error('Réponse invalide')); }
+    };
+    xhr.onerror = () => reject(new Error('Erreur réseau'));
+    xhr.send(form);
   });
-  return res.data;
 }
 
 export default function CreateReelPage() {
@@ -57,18 +73,7 @@ export default function CreateReelPage() {
     setPublishing(true);
     setUploadPct(0);
     try {
-      const form = new FormData();
-      form.append('file', videoFile);
-      const uploadRes = await apiClient.post<{ url: string }>(
-        Endpoints.upload.video('reels'), form,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (e) => {
-            if (e.total) setUploadPct(Math.round((e.loaded / e.total) * 100));
-          },
-        },
-      );
-      const video_url = uploadRes.data.url;
+      const video_url = await uploadVideoWithProgress(videoFile, setUploadPct);
 
       await apiClient.post(Endpoints.reels.feed, {
         video_url,
@@ -78,7 +83,7 @@ export default function CreateReelPage() {
       toast.success('Reel publié !');
       navigate(-1);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Erreur lors de la publication');
+      toast.error(e?.message ?? 'Erreur lors de la publication');
     } finally {
       setPublishing(false);
     }

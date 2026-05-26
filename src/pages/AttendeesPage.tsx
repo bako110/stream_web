@@ -71,9 +71,17 @@ export default function AttendeesPage() {
     if (!id) return;
     setExporting(true);
     try {
-      const res = await apiClient.get(`/api/v1/events/${id}/attendees/pdf`, { responseType: 'blob' });
-      const url = URL.createObjectURL(res.data as Blob);
-      const a   = document.createElement('a');
+      const token = (() => {
+        try { return JSON.parse(localStorage.getItem('folix-auth-tokens') ?? '{}').access ?? ''; }
+        catch { return ''; }
+      })();
+      const res = await fetch(`/api/v1/events/${id}/attendees/pdf`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
       a.href = url; a.download = `inscrits_${id}.pdf`; a.click();
       URL.revokeObjectURL(url);
     } catch {
