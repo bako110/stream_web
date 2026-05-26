@@ -11,6 +11,7 @@ import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
+import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -224,9 +225,10 @@ export default function EventDetailPage() {
   const [isOwner,      setIsOwner]      = useState(false);
   const [following,    setFollowing]    = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [buying,       setBuying]       = useState(false);
   const [shareOk,      setShareOk]      = useState(false);
   const [lightbox,     setLightbox]     = useState<number | null>(null);
+  const [paySheet,     setPaySheet]     = useState(false);
+  const [selectedTier, setSelectedTier] = useState<TicketTier['key']>('simple');
 
   // Charge les reactions et l'etat follow au montage — meme pattern que le mobile
   useEffect(() => {
@@ -291,22 +293,24 @@ export default function EventDetailPage() {
     } catch { /* ignore */ }
   }, [event?.title]);
 
-  const buyTicket = useCallback(async () => {
-    setBuying(true);
-    try {
-      await apiClient.post(Endpoints.events.buyTicket(id!));
-      alert('Ticket acheté !');
-    } catch (e: any) {
-      alert(e?.message ?? 'Erreur lors de l\'achat');
-    } finally { setBuying(false); }
-  }, [id]);
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
   if (!event)  return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Événement introuvable.</div>;
 
-  const e     = event;
-  const color = TYPE_COLORS[e.event_type] ?? '#7B3FF2';
-  const label = TYPE_LABELS[e.event_type] ?? e.event_type;
+  const ev    = event;
+  const color = TYPE_COLORS[ev.event_type] ?? '#7B3FF2';
+  const label = TYPE_LABELS[ev.event_type] ?? ev.event_type;
+
+  const allTiers: TicketTier[] = [
+    { key: 'simple', label: 'Simple', color: '#7B3FF2', price: ev.ticket_price ?? 0,       sub: 'Accès standard' },
+    { key: 'vip',    label: 'VIP',    color: '#F59E0B', price: ev.ticket_price_vip ?? 0,   sub: 'Accès prioritaire' },
+    { key: 'vvip',   label: 'VVIP',   color: '#8B5CF6', price: ev.ticket_price_vvip ?? 0,  sub: 'Expérience premium' },
+    { key: 'vvvip',  label: 'VVVIP',  color: '#EF4444', price: ev.ticket_price_vvvip ?? 0, sub: 'All-inclusive' },
+  ].filter(t => t.price > 0);
+  const tierColor = allTiers.find(t => t.key === selectedTier)?.color ?? '#7B3FF2';
+  const safeTiers = allTiers.length > 0
+    ? allTiers
+    : [{ key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: ev.ticket_price ?? 0, sub: 'Accès standard' }];
 
   return (
     <div className="max-w-3xl mx-auto pb-16">
@@ -314,15 +318,15 @@ export default function EventDetailPage() {
       <button onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-4 py-4 text-sm transition-all"
         style={{ color: 'var(--text-secondary)' }}
-        onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
-        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
+        onMouseEnter={ev2 => (ev2.currentTarget.style.color = 'var(--primary)')}
+        onMouseLeave={ev2 => (ev2.currentTarget.style.color = 'var(--text-secondary)')}>
         <ArrowLeft size={16} /> Retour
       </button>
 
       {/* Hero */}
       <div className="relative overflow-hidden mx-4 rounded-2xl" style={{ aspectRatio: '16/9', background: 'var(--bg-tertiary)' }}>
-        {e.banner_url || e.thumbnail_url
-          ? <img src={e.banner_url ?? e.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={e.title} />
+        {ev.banner_url || ev.thumbnail_url
+          ? <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={ev.title} />
           : <div className="w-full h-full flex items-center justify-center">
               <Calendar size={56} style={{ color, opacity: 0.4 }} />
             </div>
@@ -334,7 +338,7 @@ export default function EventDetailPage() {
           style={{ background: color }}>
           {label}
         </span>
-        {e.access_type === 'free' && (
+        {ev.access_type === 'free' && (
           <span className="absolute top-4 right-4 text-xs font-semibold px-3 py-1.5 rounded-full"
             style={{ background: 'rgba(34,197,94,0.25)', color: '#22c55e', border: '1px solid #22c55e40' }}>
             Gratuit
@@ -344,18 +348,17 @@ export default function EventDetailPage() {
         {/* Title overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-5">
           <h1 className="text-2xl font-black text-white leading-tight" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
-            {e.title}
+            {ev.title}
           </h1>
           <div className="flex items-center gap-2 mt-2 text-white/70 text-sm">
             <Clock size={12} />
-            {format(new Date(e.starts_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+            {format(new Date(ev.starts_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
           </div>
         </div>
       </div>
 
       {/* Action bar */}
       <div className="flex items-center gap-2 px-4 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-        {/* Like */}
         <button onClick={toggleLike}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
           style={{
@@ -368,7 +371,6 @@ export default function EventDetailPage() {
           <span className="hidden sm:inline">J'aime</span>
         </button>
 
-        {/* Comment */}
         <button onClick={() => setShowComments(v => !v)}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
           style={{
@@ -380,7 +382,6 @@ export default function EventDetailPage() {
           <span className="hidden sm:inline">Commenter</span>
         </button>
 
-        {/* Share */}
         <button onClick={share}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
           style={{
@@ -392,15 +393,13 @@ export default function EventDetailPage() {
           <span className="hidden sm:inline">{shareOk ? 'Copié !' : 'Partager'}</span>
         </button>
 
-        {/* Follow organizer ou Modifier si owner */}
         {isOwner ? (
           <button onClick={() => navigate(`/events/${id}/edit`)}
             className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
             style={{ background: 'var(--bg-secondary)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
-            <Edit3 size={15} />
-            Modifier
+            <Edit3 size={15} /> Modifier
           </button>
-        ) : e.organizer && (
+        ) : ev.organizer && (
           <button onClick={toggleFollow}
             className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
             style={{
@@ -414,16 +413,15 @@ export default function EventDetailPage() {
         )}
       </div>
 
-
       <div className="px-4 pt-5 space-y-6">
         {/* Organizer */}
-        {e.organizer && (
+        {ev.organizer && (
           <div className="flex items-center gap-3 p-3 rounded-2xl" style={{ background: 'var(--bg-secondary)' }}>
-            <Avatar src={e.organizer.avatar_url} name={e.organizer.display_name ?? e.organizer.username} size="md" />
+            <Avatar src={ev.organizer.avatar_url} name={ev.organizer.display_name ?? ev.organizer.username} size="md" />
             <div className="flex-1 min-w-0">
               <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Organisé par</p>
               <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                {e.organizer.display_name ?? e.organizer.username}
+                {ev.organizer.display_name ?? ev.organizer.username}
               </p>
             </div>
           </div>
@@ -432,65 +430,58 @@ export default function EventDetailPage() {
         {/* Infos */}
         <div className="space-y-3">
           <div className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: `${color}18` }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}18` }}>
               <Calendar size={15} style={{ color }} />
             </div>
             <div>
               <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                {format(new Date(e.starts_at), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                {format(new Date(ev.starts_at), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
               </p>
-              {e.ends_at && <p className="text-xs mt-0.5">Jusqu'à {format(new Date(e.ends_at), 'HH:mm')}</p>}
+              {ev.ends_at && <p className="text-xs mt-0.5">Jusqu'à {format(new Date(ev.ends_at), 'HH:mm')}</p>}
             </div>
           </div>
 
-          {e.is_online ? (
+          {ev.is_online ? (
             <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(34,197,94,0.12)' }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
                 <Globe size={15} style={{ color: '#22c55e' }} />
               </div>
               <div>
                 <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>En ligne</p>
-                {e.online_url && (
-                  <a href={e.online_url} target="_blank" rel="noreferrer"
+                {ev.online_url && (
+                  <a href={ev.online_url} target="_blank" rel="noreferrer"
                     className="text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--primary)' }}>
                     Rejoindre <ExternalLink size={10} />
                   </a>
                 )}
               </div>
             </div>
-          ) : (e.venue_city || e.venue_name) && (
+          ) : (ev.venue_city || ev.venue_name) && (
             <div className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(239,68,68,0.12)' }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.12)' }}>
                 <MapPin size={15} style={{ color: '#ef4444' }} />
               </div>
               <div>
-                {e.venue_name && <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{e.venue_name}</p>}
+                {ev.venue_name && <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{ev.venue_name}</p>}
                 <p className="text-xs mt-0.5">
-                  {[e.venue_address, e.venue_city, e.venue_country].filter(Boolean).join(', ')}
+                  {[ev.venue_address, ev.venue_city, ev.venue_country].filter(Boolean).join(', ')}
                 </p>
               </div>
             </div>
           )}
 
-          {e.max_attendees != null && (
+          {ev.max_attendees != null && (
             <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(59,130,246,0.12)' }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
                 <Users size={15} style={{ color: '#3b82f6' }} />
               </div>
               <div className="flex-1">
                 <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {e.current_attendees ?? 0} / {e.max_attendees} participants
+                  {ev.current_attendees ?? 0} / {ev.max_attendees} participants
                 </p>
                 <div className="mt-1.5 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
                   <div className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(100, ((e.current_attendees ?? 0) / e.max_attendees) * 100)}%`,
-                      background: color,
-                    }} />
+                    style={{ width: `${Math.min(100, ((ev.current_attendees ?? 0) / ev.max_attendees) * 100)}%`, background: color }} />
                 </div>
               </div>
             </div>
@@ -498,19 +489,19 @@ export default function EventDetailPage() {
         </div>
 
         {/* Description */}
-        {e.description && (
+        {ev.description && (
           <div>
             <h3 className="font-bold mb-2" style={{ color: 'var(--text-primary)' }}>À propos</h3>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{e.description}</p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{ev.description}</p>
           </div>
         )}
 
         {/* Gallery */}
-        {e.gallery_urls && e.gallery_urls.length > 0 && (
+        {ev.gallery_urls && ev.gallery_urls.length > 0 && (
           <div>
             <h3 className="font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Galerie</h3>
             <div className="grid grid-cols-3 gap-2">
-              {e.gallery_urls.map((url, i) => (
+              {ev.gallery_urls.map((url, i) => (
                 <button key={i} onClick={() => setLightbox(i)}
                   className="relative group aspect-square rounded-xl overflow-hidden"
                   style={{ background: 'var(--bg-tertiary)' }}>
@@ -526,37 +517,81 @@ export default function EventDetailPage() {
         )}
 
         {/* CTA */}
-        {e.status === 'published' && (
-          <div className="p-4 rounded-2xl flex items-center justify-between gap-4"
+        {ev.status === 'published' && (
+          <div className="p-4 rounded-2xl space-y-3"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <div>
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Accès</p>
-              <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>
-                {e.access_type === 'free' ? 'Gratuit' : e.access_type === 'ticket' ? `${e.ticket_price ?? '?'}€` : 'Sur invitation'}
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Accès</p>
+                <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>
+                  {ev.access_type === 'free'
+                    ? 'Gratuit'
+                    : ev.access_type === 'ticket'
+                      ? `À partir de ${ev.ticket_price ?? '?'}€`
+                      : 'Sur invitation'}
+                </p>
+              </div>
+              {ev.access_type === 'free' && (
+                <span className="text-sm font-bold px-4 py-2 rounded-xl"
+                  style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}>
+                  Entrée libre
+                </span>
+              )}
             </div>
-            {e.access_type === 'ticket' && (
-              <button onClick={buyTicket} disabled={buying}
-                className="btn-primary flex items-center gap-2 px-6">
-                {buying ? <Spinner size="sm" /> : <Ticket size={16} />}
-                Acheter
+
+            {/* Sélecteur tiers rapide */}
+            {ev.access_type === 'ticket' && allTiers.length > 1 && (
+              <div className="flex flex-wrap gap-2">
+                {allTiers.map(tier => (
+                  <button key={tier.key} onClick={() => setSelectedTier(tier.key)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                    style={{
+                      background: selectedTier === tier.key ? tier.color + '18' : 'var(--bg-secondary)',
+                      border:     `1.5px solid ${selectedTier === tier.key ? tier.color : 'var(--border)'}`,
+                      color:      selectedTier === tier.key ? tier.color : 'var(--text-secondary)',
+                    }}>
+                    {tier.label} — {tier.price}€
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {ev.access_type === 'ticket' && (
+              <button onClick={() => setPaySheet(true)}
+                className="w-full py-3.5 rounded-xl font-black text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95"
+                style={{ background: `linear-gradient(135deg,${tierColor},${tierColor}BB)` }}>
+                <Ticket size={15} /> Acheter un billet
               </button>
             )}
-            {e.access_type === 'free' && (
-              <span className="text-sm font-bold px-4 py-2 rounded-xl"
-                style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}>
-                Entrée libre
-              </span>
+            {ev.access_type === 'free' && (
+              <button onClick={() => setPaySheet(true)}
+                className="w-full py-3.5 rounded-xl font-black text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95"
+                style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
+                <Ticket size={15} /> Je réserve ma place !
+              </button>
             )}
           </div>
         )}
-
       </div>
 
       {showComments && <CommentsModal targetId={id!} onClose={() => setShowComments(false)} />}
-      {lightbox !== null && e.gallery_urls && (
-        <LightboxModal urls={e.gallery_urls} index={lightbox} onClose={() => setLightbox(null)} />
+      {lightbox !== null && ev.gallery_urls && (
+        <LightboxModal urls={ev.gallery_urls} index={lightbox} onClose={() => setLightbox(null)} />
       )}
+
+      <TicketPaymentModal
+        open={paySheet}
+        onClose={() => setPaySheet(false)}
+        onSuccess={() => setPaySheet(false)}
+        itemId={ev.id}
+        title={ev.title}
+        thumbnail={ev.thumbnail_url}
+        kind="event"
+        accessType={ev.access_type as any}
+        tiers={safeTiers}
+        selectedTierKey={selectedTier}
+        onBuy={(tierKey) => apiClient.post(Endpoints.events.buyTicket(ev.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
+      />
     </div>
   );
 }

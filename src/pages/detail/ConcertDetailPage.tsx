@@ -7,6 +7,7 @@ import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
+import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -97,8 +98,9 @@ export default function ConcertDetailPage() {
 
   const [starting,     setStarting]     = useState(false);
   const [stopping,     setStopping]     = useState(false);
-  const [buying,       setBuying]       = useState(false);
   const [showBoost,    setShowBoost]    = useState(false);
+  const [paySheet,     setPaySheet]     = useState(false);
+  const [selectedTier, setSelectedTier] = useState<TicketTier['key']>('simple');
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
   if (!concert) return <div className="p-6 text-[var(--text-secondary)]">Concert introuvable.</div>;
@@ -129,14 +131,12 @@ export default function ConcertDetailPage() {
     finally { setStopping(false); }
   }
 
-  async function handleBuyTicket() {
-    setBuying(true);
-    try {
-      await apiClient.post(Endpoints.concerts.buyTicket(c.id));
-      navigate(`/live/${c.id}`);
-    } catch { /* error */ }
-    finally { setBuying(false); }
-  }
+  const allTiers: TicketTier[] = [
+    { key: 'simple', label: 'Simple', color: '#7B3FF2', price: c.ticket_price ?? 0,       sub: 'Accès standard' },
+    { key: 'vip',    label: 'VIP',    color: '#F59E0B', price: c.ticket_price_vip ?? 0,   sub: 'Accès prioritaire' },
+    { key: 'vvip',   label: 'VVIP',   color: '#8B5CF6', price: c.ticket_price_vvip ?? 0,  sub: 'Expérience premium' },
+    { key: 'vvvip',  label: 'VVVIP',  color: '#EF4444', price: c.ticket_price_vvvip ?? 0, sub: 'All-inclusive' },
+  ].filter(t => t.price > 0);
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -245,12 +245,31 @@ export default function ConcertDetailPage() {
           <div>
             <p className="text-xs text-[var(--text-tertiary)] font-medium uppercase tracking-wide">Accès</p>
             <p className="font-bold text-2xl text-[var(--text-primary)] mt-1">
-              {c.access_type === 'free'         ? 'Gratuit'
-               : c.access_type === 'ticket'     ? `${c.ticket_price != null ? c.ticket_price.toLocaleString() + ' FCFA' : '?'}`
+              {c.access_type === 'free'           ? 'Gratuit'
+               : c.access_type === 'ticket'       ? `À partir de ${c.ticket_price != null ? c.ticket_price + ' €' : '?'}`
                : c.access_type === 'subscription' ? 'Abonnement'
                : 'PPV'}
             </p>
           </div>
+
+          {/* Sélecteur tiers rapide (si plusieurs) */}
+          {(c.access_type === 'ticket' || c.access_type === 'ppv') && allTiers.length > 1 && !isLive && !isEnded && (
+            <div className="flex flex-wrap gap-2">
+              {allTiers.map(tier => (
+                <button
+                  key={tier.key}
+                  onClick={() => setSelectedTier(tier.key)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                  style={{
+                    background:  selectedTier === tier.key ? tier.color + '18' : 'var(--bg-secondary)',
+                    border:      `1.5px solid ${selectedTier === tier.key ? tier.color : 'var(--border)'}`,
+                    color:       selectedTier === tier.key ? tier.color : 'var(--text-secondary)',
+                  }}>
+                  {tier.label} — {tier.price}€
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* CTA principal */}
           {isLive ? (
@@ -266,11 +285,19 @@ export default function ConcertDetailPage() {
             </button>
           ) : isEnded ? (
             <div className="text-center text-sm text-[var(--text-tertiary)] py-2">Ce concert est terminé.</div>
-          ) : c.access_type === 'ticket' ? (
-            <button onClick={handleBuyTicket} disabled={buying}
-              className="btn-primary w-full flex items-center justify-center gap-2">
-              {buying ? <Spinner size="sm" /> : <Ticket size={16} />}
-              {buying ? 'Traitement...' : 'Acheter un ticket'}
+          ) : (c.access_type === 'ticket' || c.access_type === 'ppv') ? (
+            <button
+              onClick={() => setPaySheet(true)}
+              className="btn-primary w-full flex items-center justify-center gap-2"
+              style={{ background: `linear-gradient(135deg,${allTiers.find(t => t.key === selectedTier)?.color ?? 'var(--primary)'},${allTiers.find(t => t.key === selectedTier)?.color ?? 'var(--primary)'}BB)` }}>
+              <Ticket size={16} /> Acheter un billet
+            </button>
+          ) : c.access_type === 'free' ? (
+            <button
+              onClick={() => setPaySheet(true)}
+              className="btn-primary w-full flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
+              <Ticket size={16} /> Je réserve ma place !
             </button>
           ) : (
             <div className="text-center text-sm text-[var(--text-secondary)] py-2">
@@ -317,6 +344,25 @@ export default function ConcertDetailPage() {
           onDone={refetch}
         />
       )}
+
+      {/* Ticket payment modal */}
+      <TicketPaymentModal
+        open={paySheet}
+        onClose={() => setPaySheet(false)}
+        onSuccess={() => {
+          setPaySheet(false);
+          if (c.access_type === 'free') return;
+          navigate(`/live/${c.id}`);
+        }}
+        itemId={c.id}
+        title={c.title}
+        thumbnail={c.thumbnail_url}
+        kind="concert"
+        accessType={c.access_type as any}
+        tiers={allTiers.length > 0 ? allTiers : [{ key: 'simple', label: 'Simple', color: '#7B3FF2', price: c.ticket_price ?? 0, sub: 'Accès standard' }]}
+        selectedTierKey={selectedTier}
+        onBuy={(tierKey) => apiClient.post(Endpoints.concerts.buyTicket(c.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
+      />
     </div>
   );
 }

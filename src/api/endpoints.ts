@@ -51,10 +51,12 @@ export const Endpoints = {
   },
   concerts: {
     list:      `${V1}/concerts`,
+    public:    `${V1}/explore/concerts`,
     byUser:    (userId: string) => `${V1}/users/${userId}/concerts`,
     live:      `${V1}/concerts/live`,
     upcoming:  `${V1}/concerts/upcoming`,
     byId:      (id: string) => `${V1}/concerts/${id}`,
+    publicById:(id: string) => `${V1}/explore/concerts/${id}`,
     buyTicket: (concertId: string) => `${V1}/concerts/${concertId}/tickets`,
     myTickets: `${V1}/concerts/tickets/me`,
   },
@@ -68,8 +70,10 @@ export const Endpoints = {
   },
   events: {
     list:      `${V1}/events`,
+    public:    `${V1}/explore/events`,
     byUser:    (userId: string) => `${V1}/users/${userId}/events`,
     byId:      (id: string) => `${V1}/events/${id}`,
+    publicById:(id: string) => `${V1}/explore/events/${id}`,
     buyTicket: (eventId: string) => `${V1}/events/${eventId}/tickets`,
     myTickets: `${V1}/events/tickets/me`,
   },
@@ -165,6 +169,8 @@ export const Endpoints = {
     withdraw:       `${V1}/wallet/withdraw`,
     creatorStats: `${V1}/wallet/creator/stats`,
     boostsPurchase:`${V1}/wallet/boosts/purchase`,
+    gifts:        `${V1}/wallet/gifts`,
+    sendGift:     `${V1}/wallet/gifts/send`,
   },
   planning: {
     feed:    `${V1}/planning`,

@@ -12,6 +12,7 @@ import { Endpoints } from '../api/endpoints';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
+import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -695,6 +696,206 @@ function MyStoriesPage({
   );
 }
 
+// ── Story bubble (gère onError sur thumb + avatar overlay) ───────────────────
+function StoryBubble({ group, onClick }: { group: StoryGroup; onClick: () => void }) {
+  const u              = group.user;
+  const firstStory     = group.stories[0];
+  const rawThumb       = firstStory?.thumbnail_url ?? firstStory?.media_url ?? null;
+  const [thumbErr,  setThumbErr]  = useState(false);
+  const [avatarErr, setAvatarErr] = useState(false);
+  const thumb    = rawThumb && !thumbErr ? rawThumb : null;
+  const name     = (u.display_name ?? u.username ?? '').split(' ')[0];
+
+  const inner = thumb ? (
+    <div className="w-10 h-10 rounded-full overflow-hidden">
+      <img src={thumb} alt={name} className="w-full h-full object-cover"
+        onError={() => setThumbErr(true)} />
+    </div>
+  ) : (
+    <AvatarWithFallback src={u.avatar_url} name={u.display_name ?? u.username ?? ''} verified={u.is_verified} />
+  );
+
+  return (
+    <button onClick={onClick}
+      className="flex flex-col items-center gap-1.5 shrink-0 transition-transform hover:scale-105"
+      style={{ width: 58 }}>
+      <div className="relative">
+        {group.has_unseen ? (
+          <div className="rounded-full p-[2.5px]"
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
+              {inner}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-full p-[2px]" style={{ border: '2px solid var(--border)', opacity: 0.7 }}>
+            {inner}
+          </div>
+        )}
+        {/* Avatar overlay si thumbnail */}
+        {thumb && (
+          <div className="absolute -bottom-0.5 -left-0.5 w-[18px] h-[18px] rounded-full overflow-hidden"
+            style={{ border: '1.5px solid var(--surface)' }}>
+            {u.avatar_url && !avatarErr
+              ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover"
+                  onError={() => setAvatarErr(true)} />
+              : <div className="w-full h-full flex items-center justify-center text-white font-black text-[6px]"
+                  style={{ background: placeholderPalette(u.display_name ?? u.username ?? 'x')[1] }}>
+                  {(u.display_name ?? u.username ?? '?')[0].toUpperCase()}
+                </div>
+            }
+          </div>
+        )}
+        {group.stories.length > 1 && (
+          <div className="absolute -top-0.5 -right-0.5 rounded-full flex items-center justify-center text-white font-black"
+            style={{ background: 'var(--primary)', minWidth: 15, height: 15, fontSize: 8, paddingInline: 3, border: '1.5px solid var(--surface)' }}>
+            {group.stories.length}
+          </div>
+        )}
+      </div>
+      <span className="text-[10px] font-semibold text-center w-full truncate"
+        style={{ color: group.has_unseen ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+        {name}
+      </span>
+    </button>
+  );
+}
+
+// Avatar avec fallback onError → initiales colorées
+function AvatarWithFallback({ src, name, verified }: { src?: string | null; name: string; verified?: boolean }) {
+  const [err, setErr] = useState(false);
+  if (src && !err) {
+    return (
+      <div className="w-10 h-10 rounded-full overflow-hidden relative">
+        <img src={src} alt={name} className="w-full h-full object-cover" onError={() => setErr(true)} />
+        {verified && (
+          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full flex items-center justify-center"
+            style={{ background: 'var(--primary)', border: '1.5px solid var(--surface)' }}>
+            <svg width="7" height="7" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </span>
+        )}
+      </div>
+    );
+  }
+  const [c0, c1] = placeholderPalette(name);
+  const initials = name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+  return (
+    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-black text-white text-sm relative"
+      style={{ background: `linear-gradient(135deg,${c0},${c1})` }}>
+      {initials}
+      {verified && (
+        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full flex items-center justify-center"
+          style={{ background: 'var(--primary)', border: '1.5px solid var(--surface)' }}>
+          <svg width="7" height="7" viewBox="0 0 10 10" fill="none">
+            <path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ── Story cards (portrait WhatsApp style) ────────────────────────────────────
+function MyStoryCard({ user, myGroup, onClick }: { user: any; myGroup: StoryGroup | undefined; onClick: () => void }) {
+  const [imgErr, setImgErr] = useState(false);
+  const firstStory  = myGroup?.stories[0];
+  const bgUrl       = firstStory?.thumbnail_url ?? firstStory?.media_url ?? null;
+  const hasBg       = bgUrl && !imgErr;
+  const name        = (user?.display_name ?? user?.username ?? 'Moi').split(' ')[0];
+
+  return (
+    <button onClick={onClick}
+      className="relative shrink-0 rounded-2xl overflow-hidden transition-transform hover:scale-[1.03] active:scale-95 flex flex-col"
+      style={{ width: 100, height: 160, background: 'var(--bg-tertiary)' }}>
+      {hasBg
+        ? <img src={bgUrl!} className="absolute inset-0 w-full h-full object-cover" alt=""
+            onError={() => setImgErr(true)} />
+        : <div className="absolute inset-0">
+            <MediaPlaceholder title={user?.display_name ?? user?.username ?? 'story'} />
+          </div>
+      }
+      {/* Gradient bottom */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 35%, transparent 100%)' }} />
+      {/* Avatar + bouton + */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2">
+        <div className="relative">
+          <div className="rounded-full p-[2px]"
+            style={{ background: myGroup ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'var(--border)', border: myGroup ? 'none' : '2px dashed var(--border)' }}>
+            <div className="rounded-full p-[1.5px]" style={{ background: 'var(--surface)' }}>
+              <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
+            </div>
+          </div>
+          <div className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
+            style={{ background: 'var(--primary)', width: 18, height: 18, border: '2px solid var(--surface)' }}>
+            <Plus size={9} className="text-white" />
+          </div>
+        </div>
+      </div>
+      {/* Nom */}
+      <span className="absolute bottom-2 left-0 right-0 text-center text-[10px] font-bold text-white px-1 truncate">
+        {myGroup ? name : 'Ajouter'}
+      </span>
+    </button>
+  );
+}
+
+function StoryCard({ group, onClick }: { group: StoryGroup; onClick: () => void }) {
+  const u          = group.user;
+  const firstStory = group.stories[0];
+  const rawBg      = firstStory?.thumbnail_url ?? firstStory?.media_url ?? null;
+  const [bgErr,  setBgErr]  = useState(false);
+  const [avErr,  setAvErr]  = useState(false);
+  const hasBg   = rawBg && !bgErr;
+  const name    = (u.display_name ?? u.username ?? '').split(' ')[0];
+
+  return (
+    <button onClick={onClick}
+      className="relative shrink-0 rounded-2xl overflow-hidden transition-transform hover:scale-[1.03] active:scale-95"
+      style={{ width: 100, height: 160, background: 'var(--bg-tertiary)' }}>
+      {/* Background — photo de la story */}
+      {hasBg
+        ? <img src={rawBg!} className="absolute inset-0 w-full h-full object-cover" alt=""
+            onError={() => setBgErr(true)} />
+        : <div className="absolute inset-0">
+            <MediaPlaceholder title={u.display_name ?? u.username} />
+          </div>
+      }
+      {/* Gradient */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 35%, rgba(0,0,0,0.2) 100%)' }} />
+      {/* Anneau avatar en haut */}
+      <div className="absolute top-2.5 left-2.5">
+        <div className="rounded-full p-[2px]"
+          style={{ background: group.has_unseen ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'rgba(255,255,255,0.4)' }}>
+          <div className="rounded-full p-[1.5px]" style={{ background: 'rgba(0,0,0,0.3)' }}>
+            <div className="w-8 h-8 rounded-full overflow-hidden">
+              {u.avatar_url && !avErr
+                ? <img src={u.avatar_url} alt={name} className="w-full h-full object-cover"
+                    onError={() => setAvErr(true)} />
+                : <div className="w-full h-full flex items-center justify-center font-black text-white text-sm"
+                    style={{ background: placeholderPalette(u.display_name ?? u.username ?? 'x')[1] }}>
+                    {(u.display_name ?? u.username ?? '?')[0].toUpperCase()}
+                  </div>
+              }
+            </div>
+          </div>
+        </div>
+        {group.stories.length > 1 && (
+          <div className="absolute -top-1 -right-1 rounded-full flex items-center justify-center text-white font-black"
+            style={{ background: 'var(--primary)', minWidth: 14, height: 14, fontSize: 8, paddingInline: 2, border: '1.5px solid var(--surface)' }}>
+            {group.stories.length}
+          </div>
+        )}
+      </div>
+      {/* Nom en bas */}
+      <span className="absolute bottom-2 left-0 right-0 text-center text-[10px] font-bold text-white px-1 truncate drop-shadow">
+        {name}
+      </span>
+    </button>
+  );
+}
+
 // ── Stories bar ───────────────────────────────────────────────────────────────
 function StoriesBar() {
   const { user }     = useAuthStore();
@@ -752,105 +953,25 @@ function StoriesBar() {
     <>
       <div className="rounded-2xl overflow-hidden animate-reveal-up"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-        <div className="flex gap-3 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex gap-2.5 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
 
-          {/* Mon story / add */}
-          <button
+          {/* Ma story / ajouter — carte portrait */}
+          <MyStoryCard
+            user={user}
+            myGroup={myGroup}
             onClick={() => myGroup ? setMyStories(true) : setCreator(true)}
-            className="flex flex-col items-center gap-1.5 shrink-0 transition-transform hover:scale-105"
-            style={{ width: 58 }}>
-            <div className="relative">
-              {myGroup ? (
-                <div className="rounded-full p-[2.5px]"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
-                  <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
-                    <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-full p-[2px]" style={{ border: '2px dashed var(--border)' }}>
-                  <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
-                </div>
-              )}
-              <div className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
-                style={{ background: 'var(--primary)', width: 18, height: 18, border: '2px solid var(--surface)' }}>
-                <Plus size={9} className="text-white" />
-              </div>
-            </div>
-            <span className="text-[10px] font-semibold text-center w-full truncate"
-              style={{ color: 'var(--text-secondary)' }}>
-              {myGroup ? 'Ma story' : 'Ajouter'}
-            </span>
-          </button>
+          />
 
-          {(otherGroups.length > 0 || loading) && (
-            <div className="w-px self-stretch my-1 shrink-0" style={{ background: 'var(--border)' }} />
-          )}
-
-          {/* Autres stories */}
-          {otherGroups.map((group) => {
-            const idx        = allGroups.indexOf(group);
-            const u          = group.user;
-            const name       = (u.display_name ?? u.username ?? '').split(' ')[0];
-            const firstStory = group.stories[0];
-            const thumb      = firstStory?.thumbnail_url ?? firstStory?.media_url ?? null;
-            return (
-              <button key={u.id} onClick={() => setViewer(idx)}
-                className="flex flex-col items-center gap-1.5 shrink-0 transition-transform hover:scale-105"
-                style={{ width: 58 }}>
-                <div className="relative">
-                  {group.has_unseen ? (
-                    <div className="rounded-full p-[2.5px]"
-                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
-                      <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
-                        {thumb ? (
-                          <div className="w-10 h-10 rounded-full overflow-hidden">
-                            <img src={thumb} alt={name} className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? ''} size="sm" verified={u.is_verified} />
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-full p-[2px]" style={{ border: '2px solid var(--border)', opacity: 0.7 }}>
-                      {thumb ? (
-                        <div className="w-10 h-10 rounded-full overflow-hidden">
-                          <img src={thumb} alt={name} className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? ''} size="sm" verified={u.is_verified} />
-                      )}
-                    </div>
-                  )}
-                  {/* Avatar overlay en bas à gauche si thumbnail présent */}
-                  {thumb && u.avatar_url && (
-                    <div className="absolute -bottom-0.5 -left-0.5 w-[18px] h-[18px] rounded-full overflow-hidden"
-                      style={{ border: '1.5px solid var(--surface)' }}>
-                      <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  {group.stories.length > 1 && (
-                    <div className="absolute -top-0.5 -right-0.5 rounded-full flex items-center justify-center text-white font-black"
-                      style={{ background: 'var(--primary)', minWidth: 15, height: 15, fontSize: 8, paddingInline: 3, border: '1.5px solid var(--surface)' }}>
-                      {group.stories.length}
-                    </div>
-                  )}
-                </div>
-                <span className="text-[10px] font-semibold text-center w-full truncate"
-                  style={{ color: group.has_unseen ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                  {name}
-                </span>
-              </button>
-            );
-          })}
+          {/* Autres stories — cartes portrait */}
+          {otherGroups.map((group) => (
+            <StoryCard key={group.user.id} group={group}
+              onClick={() => setViewer(allGroups.indexOf(group))} />
+          ))}
 
           {/* Skeletons */}
           {loading && [0,1,2,3].map(i => (
-            <div key={i} className="flex flex-col items-center gap-1.5 shrink-0 animate-pulse" style={{ width: 58 }}>
-              <div className="w-10 h-10 rounded-full" style={{ background: 'var(--bg-tertiary)' }} />
-              <div className="w-8 h-2 rounded-full" style={{ background: 'var(--bg-secondary)' }} />
-            </div>
+            <div key={i} className="shrink-0 rounded-2xl overflow-hidden animate-pulse"
+              style={{ width: 100, height: 160, background: 'var(--bg-tertiary)' }} />
           ))}
         </div>
       </div>
@@ -894,6 +1015,7 @@ type FeedItem =
   | { kind: 'event';        id: string; data: Event }
   | { kind: 'post';         id: string; data: Post }
   | { kind: 'reel';         id: string; data: Reel }
+  | { kind: 'reel_row';     id: string; data: Reel[] }
   | { kind: 'suggestions';  id: string; data: null }
   | { kind: 'communities';  id: string; data: Community[] };
 
@@ -1353,11 +1475,8 @@ function LiveHero({ concert }: { concert: Concert }) {
         <img src={concert.thumbnail_url} alt={concert.title}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
       ) : (
-        <div className="absolute inset-0"
-          style={{ background: 'linear-gradient(135deg,#1a0533 0%,#7B3FF2 50%,#E0389A 100%)' }}>
-          <div className="absolute inset-0 flex items-center justify-center opacity-20">
-            <Music size={120} className="text-white" />
-          </div>
+        <div className="absolute inset-0">
+          <MediaPlaceholder title={concert.title} icon={<Music size={80} color="#fff" />} />
         </div>
       )}
       <div className="absolute inset-0"
@@ -1439,10 +1558,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
           <img src={concert.thumbnail_url} alt={concert.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#1a0533,#7B3FF2,#E0389A)' }}>
-            <Music size={40} className="text-white opacity-40" />
-          </div>
+          <MediaPlaceholder title={concert.title} icon={<Music size={36} color="#fff" />} />
         )}
         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {isLive && (
@@ -1511,10 +1627,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments }: 
           <img src={event.thumbnail_url} alt={event.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: `linear-gradient(135deg,${color}CC,${color}55)` }}>
-            <Calendar size={40} className="text-white opacity-40" />
-          </div>
+          <MediaPlaceholder title={event.title} icon={<Calendar size={36} color="#fff" />} />
         )}
         <div className="absolute top-2.5 left-2.5">
           <span className="text-[10px] font-black px-2.5 py-1 rounded-full text-white capitalize"
@@ -1665,10 +1778,7 @@ function ReelCard({ reel, delay = 0 }: {
       ) : reel.thumbnail_url ? (
         <img src={reel.thumbnail_url} alt="" className="w-full h-full object-contain pointer-events-none" />
       ) : (
-        <div className="w-full h-full flex items-center justify-center pointer-events-none"
-          style={{ background: 'linear-gradient(135deg,#0f0f1a,#1a0533,#2d1052)' }}>
-          <Play size={40} className="text-white opacity-40" />
-        </div>
+        <MediaPlaceholder title={reel.caption} icon={<Play size={36} color="#fff" />} className="pointer-events-none" />
       )}
 
       {/* Gradient overlay bottom */}
@@ -1698,19 +1808,124 @@ function ReelCard({ reel, delay = 0 }: {
   );
 }
 
-// ── Suggestions inline block ──────────────────────────────────────────────────
-function SuggestionsInline() {
+// ── Reel row — horizontal scroll strip of up to 5 reel thumbnails ────────────
+function ReelRowCard({ reels }: { reels: Reel[] }) {
   const navigate = useNavigate();
-  const [users,   setUsers]   = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <Film size={13} style={{ color: '#E0389A' }} />
+          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Reels</p>
+        </div>
+        <button onClick={() => navigate('/reels')}
+          className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
+          Voir tout
+        </button>
+      </div>
+      <div className="flex gap-3 px-4 pb-4 pt-3 overflow-x-auto" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+        {reels.map(reel => (
+          <button
+            key={reel.id}
+            onClick={() => navigate(`/reels?id=${reel.id}`)}
+            className="relative shrink-0 rounded-2xl overflow-hidden transition-transform hover:scale-[1.03] active:scale-95"
+            style={{ width: 'clamp(120px, 26vw, 180px)', aspectRatio: '9/16', background: '#000' }}>
+            {reel.thumbnail_url ? (
+              <img src={reel.thumbnail_url} alt={reel.caption ?? ''} className="w-full h-full object-cover" />
+            ) : (
+              <MediaPlaceholder title={reel.caption} icon={<Play size={24} color="#fff" />} />
+            )}
+            {/* Gradient haut — badge reel */}
+            <div className="absolute inset-x-0 top-0 h-14 pointer-events-none"
+              style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)' }} />
+            {/* Gradient bas */}
+            <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
+              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }} />
+            {/* Badge Reel */}
+            <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full text-white"
+              style={{ background: 'linear-gradient(135deg,#E0389A,#7B3FF2)' }}>
+              <Film size={9} /> Reel
+            </span>
+            {/* Caption */}
+            {reel.caption && (
+              <span className="absolute bottom-6 inset-x-2 text-[10px] text-white/80 font-medium line-clamp-2 text-left leading-snug">
+                {reel.caption}
+              </span>
+            )}
+            {/* Vues */}
+            {(reel.view_count ?? 0) > 0 && (
+              <span className="absolute bottom-2 left-2 flex items-center gap-0.5 text-[10px] text-white/70 font-semibold">
+                <Play size={8} fill="white" className="opacity-70" /> {fmtCount(reel.view_count)}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    apiClient.get<any>(`${Endpoints.users.suggestions}?limit=6`)
-      .then(res => setUsers(toArray(res.data)))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+// ── Suggestions inline block ──────────────────────────────────────────────────
+function SuggestionCard({ u, followed, onFollow, onNavigate }: {
+  u: any; followed: boolean; onFollow: () => void; onNavigate: () => void;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const showImg = u.avatar_url && !imgError;
+
+  return (
+    <div
+      className="flex flex-col shrink-0 rounded-2xl overflow-hidden transition-all cursor-pointer"
+      style={{ width: 160, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+      onClick={onNavigate}>
+
+      <div className="relative w-full overflow-hidden" style={{ height: 200, background: 'var(--bg-tertiary)' }}>
+        {showImg
+          ? <img src={u.avatar_url} alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={() => setImgError(true)} />
+          : <div className="absolute inset-0"><MediaPlaceholder title={u.display_name ?? u.username} /></div>
+        }
+        {u.is_verified && (
+          <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center z-10"
+            style={{ background: 'var(--primary)' }}>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </span>
+        )}
+        <div className="absolute bottom-0 left-0 right-0 h-16 z-10"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)' }} />
+        <div className="absolute bottom-2 left-0 right-0 px-2 text-center z-10">
+          <p className="text-xs font-bold leading-tight line-clamp-2 text-white drop-shadow">
+            {u.display_name ?? u.username}
+          </p>
+          {u.username && (
+            <p className="text-[9px] opacity-70 truncate text-white">@{u.username}</p>
+          )}
+        </div>
+      </div>
+
+      <button
+        className="text-xs font-bold py-2.5 w-full transition-all"
+        style={followed
+          ? { background: 'var(--surface)', color: 'var(--text-secondary)' }
+          : { background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}
+        onMouseEnter={e => { e.stopPropagation(); if (!followed) { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; } }}
+        onMouseLeave={e => { e.stopPropagation(); if (!followed) { e.currentTarget.style.background = 'rgba(123,63,242,0.15)'; e.currentTarget.style.color = 'var(--primary)'; } }}
+        onClick={e => { e.stopPropagation(); onFollow(); }}>
+        {followed ? 'Suivi' : 'Suivre'}
+      </button>
+    </div>
+  );
+}
+
+function SuggestionsInline({ users, loading }: { users: any[]; loading: boolean }) {
+  const navigate = useNavigate();
+  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
 
   async function follow(id: string) {
     const was = followedIds.has(id);
@@ -1741,30 +1956,15 @@ function SuggestionsInline() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-6"><Spinner size="sm" /></div>
+        <div className="flex justify-center py-8"><Spinner size="sm" /></div>
       ) : (
-        <div className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-none">
-          {users.map((u: any) => {
-            const followed = followedIds.has(u.id);
-            return (
-              <div key={u.id} className="flex flex-col items-center gap-2 shrink-0 w-20">
-                <button onClick={() => navigate(`/user/${u.id}`)}>
-                  <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} />
-                </button>
-                <p className="text-[11px] font-semibold text-center truncate w-full"
-                  style={{ color: 'var(--text-primary)' }}>
-                  {u.display_name ?? u.username}
-                </p>
-                <button onClick={() => follow(u.id)}
-                  className="text-[11px] font-bold px-3 py-1 rounded-lg w-full transition-all"
-                  style={followed
-                    ? { background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
-                    : { background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.25)' }}>
-                  {followed ? 'Suivi' : 'Suivre'}
-                </button>
-              </div>
-            );
-          })}
+        <div className="flex gap-3 px-4 py-4 overflow-x-auto scrollbar-none">
+          {users.map((u: any) => (
+            <SuggestionCard key={u.id} u={u}
+              followed={followedIds.has(u.id)}
+              onFollow={() => follow(u.id)}
+              onNavigate={() => navigate(`/user/${u.id}`)} />
+          ))}
         </div>
       )}
     </div>
@@ -1880,6 +2080,94 @@ function fmtCommCount(n: number): string {
   return String(n);
 }
 
+function CommunityCard({ c, isJoined, isJoining, onJoin, onClick }: {
+  c: Community;
+  isJoined: boolean;
+  isJoining: boolean;
+  onJoin: (e: React.MouseEvent) => void;
+  onClick: () => void;
+}) {
+  const [bannerErr, setBannerErr] = useState(false);
+  const count = c.members_count ?? c.member_count ?? 0;
+  const [g1, g2] = commGradient(c.name);
+  const showBanner = c.banner_url && !bannerErr;
+
+  return (
+    <div
+      className="flex flex-col shrink-0 rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]"
+      style={{
+        width: 160,
+        scrollSnapAlign: 'start',
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border)',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+      onClick={onClick}>
+
+      {/* Image zone */}
+      <div className="relative w-full overflow-hidden" style={{ height: 200, background: 'var(--bg-tertiary)' }}>
+        {showBanner
+          ? <img src={c.banner_url!} className="absolute inset-0 w-full h-full object-cover"
+              alt="" onError={() => setBannerErr(true)} />
+          : <div className="absolute inset-0"><MediaPlaceholder title={c.name} /></div>
+        }
+        {/* Membres badge */}
+        <span className="absolute top-2 right-2 flex items-center gap-1 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full z-10"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+          <Users size={8} /> {fmtCommCount(count)}
+        </span>
+        {/* Gradient footer */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 z-10"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)' }} />
+        {/* Avatar communauté */}
+        <div className="absolute bottom-9 left-2 z-20">
+          <CommAvatar c={c} g1={g1} g2={g2} />
+        </div>
+        {/* Nom + description */}
+        <div className="absolute bottom-2 left-0 right-0 px-2 z-20">
+          <p className="text-xs font-bold leading-tight line-clamp-1 text-white drop-shadow">{c.name}</p>
+          {c.description && (
+            <p className="text-[9px] opacity-60 line-clamp-1 text-white mt-0.5">{c.description}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Bouton rejoindre */}
+      <button
+        className="text-xs font-bold py-2.5 w-full flex items-center justify-center gap-1 transition-all disabled:opacity-60"
+        style={isJoined
+          ? { background: 'var(--surface)', color: 'var(--text-secondary)' }
+          : { background: `linear-gradient(90deg,${g1},${g2})`, color: '#fff' }}
+        disabled={isJoining || isJoined}
+        onClick={onJoin}>
+        {isJoining
+          ? <Spinner size="sm" />
+          : isJoined
+            ? <><Check size={10} /> Rejoint</>
+            : <><UserPlus size={10} /> Rejoindre</>}
+      </button>
+    </div>
+  );
+}
+
+function CommAvatar({ c, g1, g2 }: { c: Community; g1: string; g2: string }) {
+  const [err, setErr] = useState(false);
+  if (c.avatar_url && !err) {
+    return (
+      <img src={c.avatar_url} alt="" onError={() => setErr(true)}
+        className="w-7 h-7 rounded-lg object-cover"
+        style={{ border: '2px solid rgba(0,0,0,0.5)' }} />
+    );
+  }
+  return (
+    <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-xs"
+      style={{ background: `linear-gradient(135deg,${g1},${g2})`, border: '2px solid rgba(0,0,0,0.5)' }}>
+      {c.name[0]?.toUpperCase()}
+    </div>
+  );
+}
+
 function CommunitiesInline({ communities }: { communities: Community[] }) {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1931,56 +2219,15 @@ function CommunitiesInline({ communities }: { communities: Community[] }) {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex gap-3 p-4 overflow-x-auto scrollbar-hide"
+      <div ref={scrollRef} className="flex gap-3 px-4 py-4 overflow-x-auto scrollbar-hide"
         style={{ scrollSnapType: 'x mandatory' }}>
-        {communities.map(c => {
-          const [g1, g2] = commGradient(c.name);
-          const count    = c.members_count ?? c.member_count ?? 0;
-          const isJoined = joined.has(c.id);
-          const isJoining = joining.has(c.id);
-          return (
-            <div key={c.id}
-              className="flex flex-col rounded-2xl overflow-hidden cursor-pointer shrink-0 transition-transform hover:scale-[1.02]"
-              style={{ width: 160, scrollSnapAlign: 'start', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-              onClick={() => navigate(`/communities/${c.id}`)}>
-              {/* Bannière */}
-              <div className="relative" style={{ height: 72 }}>
-                {c.banner_url
-                  ? <img src={c.banner_url} className="w-full h-full object-cover" alt="" />
-                  : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }} />
-                }
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
-                <span className="absolute bottom-1.5 right-2 text-[9px] font-bold text-white flex items-center gap-0.5">
-                  <Users size={8} /> {fmtCommCount(count)}
-                </span>
-              </div>
-              {/* Avatar flottant */}
-              <div className="relative px-2.5 pb-2.5" style={{ marginTop: -14 }}>
-                {c.avatar_url
-                  ? <img src={c.avatar_url} className="w-7 h-7 rounded-lg object-cover"
-                      style={{ border: '2px solid var(--bg-secondary)' }} alt="" />
-                  : <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-xs"
-                      style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '2px solid var(--bg-secondary)' }}>
-                      {c.name[0]?.toUpperCase()}
-                    </div>
-                }
-                <p className="font-bold text-xs mt-1.5 truncate" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
-                {c.description && (
-                  <p className="text-[10px] mt-0.5 line-clamp-2 leading-tight" style={{ color: 'var(--text-tertiary)' }}>
-                    {c.description}
-                  </p>
-                )}
-                <button
-                  onClick={e => handleJoin(e, c.id)}
-                  disabled={isJoining || isJoined}
-                  className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-bold text-white transition-all disabled:opacity-60"
-                  style={{ background: isJoined ? '#22c55e' : `linear-gradient(90deg, ${g1}, ${g2})` }}>
-                  {isJoining ? <Spinner size="sm" /> : isJoined ? <><Check size={10} /> Rejoint</> : <><UserPlus size={10} /> Rejoindre</>}
-                </button>
-              </div>
-            </div>
-          );
-        })}
+        {communities.map(c => (
+          <CommunityCard key={c.id} c={c}
+            isJoined={joined.has(c.id)}
+            isJoining={joining.has(c.id)}
+            onJoin={e => handleJoin(e, c.id)}
+            onClick={() => navigate(`/communities/${c.id}`)} />
+        ))}
       </div>
     </div>
   );
@@ -2162,6 +2409,16 @@ export default function FeedPage() {
   const { followedIds, toggle: toggleFollow } = useFollow();
   const [commentTarget, setCommentTarget] = useState<{ id: string; kind: 'event'|'concert'|'post'|'reel'; count: number } | null>(null);
 
+  // Suggestions fetched once — shared across all SuggestionsInline instances
+  const [suggestUsers,   setSuggestUsers]   = useState<any[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(true);
+  useEffect(() => {
+    apiClient.get<any>(`${Endpoints.users.suggestions}?limit=6`)
+      .then(res => setSuggestUsers(toArray(res.data)))
+      .catch(() => {})
+      .finally(() => setSuggestLoading(false));
+  }, []);
+
   function openComments(id: string, kind: 'event'|'concert'|'post'|'reel', count: number) {
     setCommentTarget({ id, kind, count });
   }
@@ -2180,17 +2437,17 @@ export default function FeedPage() {
           apiClient.get<any>(`${Endpoints.communities.discover}?limit=8`).catch(() => null),
         ]);
 
-        // /search/feed: { items: [{kind, id, ...fields}] }
+        // /search/feed: events + concerts only (exclude reels — they have their own feed)
         const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
         const feedItems: FeedItem[] = feedRaw
-          .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'reel'))
-          .map((d: any) => ({ kind: d.kind as 'event' | 'concert' | 'reel', id: String(d.id), data: d }));
+          .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert'))
+          .map((d: any) => ({ kind: d.kind as 'event' | 'concert', id: String(d.id), data: d }));
 
         // /reels: flat array or { items: [...] }
         const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
         const reelItems: FeedItem[] = reelsRaw
           .filter((d: any) => d.id)
-          .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d }));
+          .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
 
         // /posts/feed: flat array
         const postsRaw: any[] = postsRes ? toArray<any>(postsRes.data) : [];
@@ -2198,37 +2455,76 @@ export default function FeedPage() {
           .filter((d: any) => d.id)
           .map((d: any) => ({ kind: 'post' as const, id: String(d.id), data: d }));
 
-        // Merge all, deduplicate by composite key
+        // Communities for inline injection
+        const commRaw: Community[] = commRes
+          ? (Array.isArray(commRes.data) ? commRes.data : commRes.data?.items ?? commRes.data?.data ?? [])
+          : [];
+        const commData = [...commRaw].sort(() => Math.random() - 0.5);
+
+        // Merge non-reel items, deduplicate by composite key
         const seen = new Set<string>();
-        const deduped = [...feedItems, ...reelItems, ...postItems].filter(item => {
+        const merged = [...feedItems, ...postItems].filter(item => {
           const key = `${item.kind}-${item.id}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
         });
 
-        // Fisher-Yates shuffle — truly random order every time
-        for (let i = deduped.length - 1; i > 0; i--) {
+        // Also deduplicate reels
+        const mergedReels = reelItems.filter(item => {
+          const key = `reel-${item.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        // Fisher-Yates shuffle on non-reel items
+        for (let i = merged.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [deduped[i], deduped[j]] = [deduped[j], deduped[i]];
+          [merged[i], merged[j]] = [merged[j], merged[i]];
         }
 
-        // Inject suggestions block at random position 5–15
-        if (deduped.length > 0) {
-          const pos = Math.min(Math.floor(Math.random() * 11) + 5, deduped.length);
-          deduped.splice(pos, 0, { kind: 'suggestions', id: '__suggestions__', data: null });
+        // Group reels into rows of 5
+        const REELS_PER_ROW = 5;
+        const reelRows: FeedItem[] = [];
+        for (let r = 0; r < mergedReels.length; r += REELS_PER_ROW) {
+          const chunk = mergedReels.slice(r, r + REELS_PER_ROW).map(ri => ri.data as Reel);
+          reelRows.push({ kind: 'reel_row', id: `__reel_row__${r}`, data: chunk });
         }
 
-        // Inject communities block at random position 10–20
-        const commRaw: Community[] = commRes ? (Array.isArray(commRes.data) ? commRes.data : commRes.data?.items ?? commRes.data?.data ?? []) : [];
-        if (commRaw.length > 0) {
-          // Shuffle communities for random order each time
-          const shuffled = [...commRaw].sort(() => Math.random() - 0.5);
-          const cpos = Math.min(Math.floor(Math.random() * 11) + 10, deduped.length);
-          deduped.splice(cpos, 0, { kind: 'communities', id: '__communities__', data: shuffled });
+        // Deterministic injection — same pattern as mobile
+        const REEL_ROW_EVERY = 5;
+        const SUGGEST_EVERY  = 8;
+        const COMM_EVERY     = 12;
+
+        let reelRowIdx    = 0;
+        let suggestCount  = 0;
+        let commCount     = 0;
+        const result: FeedItem[] = [];
+
+        merged.forEach((item, i) => {
+          result.push(item);
+
+          // reel_row: first at i===2, then every 5
+          if (reelRowIdx < reelRows.length && (i === 2 || (i > 2 && (i - 2) % REEL_ROW_EVERY === 0))) {
+            result.push(reelRows[reelRowIdx++]);
+          }
+          // suggestions: first at i===4, then every 8
+          if (i === 4 || (i > 4 && (i - 4) % SUGGEST_EVERY === 0)) {
+            result.push({ kind: 'suggestions', id: `__suggestions__${++suggestCount}`, data: null });
+          }
+          // communities: first at i===9, then every 12
+          if (commData.length > 0 && (i === 9 || (i > 9 && (i - 9) % COMM_EVERY === 0))) {
+            result.push({ kind: 'communities', id: `__communities__${++commCount}`, data: commData });
+          }
+        });
+
+        // Append remaining reel_rows at end
+        while (reelRowIdx < reelRows.length) {
+          result.push(reelRows[reelRowIdx++]);
         }
 
-        setItems(deduped);
+        setItems(result);
       } else {
         // Filter-specific — sorted by date, no shuffle
         const results: FeedItem[] = [];
@@ -2285,8 +2581,8 @@ export default function FeedPage() {
                 </span>{' '}👋
               </h1>
               <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                {items.filter(i => i.kind !== 'suggestions').length > 0
-                  ? `${items.filter(i => i.kind !== 'suggestions').length} éléments dans ton fil`
+                {items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length > 0
+                  ? `${items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length} éléments dans ton fil`
                   : 'Concerts, événements, reels et posts mélangés'}
               </p>
             </div>
@@ -2358,10 +2654,13 @@ export default function FeedPage() {
             <div className="flex flex-col gap-3 animate-reveal-up delay-300">
               {items.map((item, i) => {
                 if (item.kind === 'suggestions') {
-                  return <SuggestionsInline key="__suggestions__" />;
+                  return <SuggestionsInline key={item.id} users={suggestUsers} loading={suggestLoading} />;
                 }
                 if (item.kind === 'communities') {
-                  return <CommunitiesInline key="__communities__" communities={item.data} />;
+                  return <CommunitiesInline key={item.id} communities={item.data} />;
+                }
+                if (item.kind === 'reel_row') {
+                  return <ReelRowCard key={item.id} reels={item.data} />;
                 }
                 if (item.kind === 'concert') {
                   return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;

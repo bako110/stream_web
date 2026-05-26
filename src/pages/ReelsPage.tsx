@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Heart, MessageCircle, Share2,
   Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft, ChevronRight, ChevronLeft,
+  Gift,
 } from 'lucide-react';
 import type { Reel, Comment } from '../types';
 import { apiClient } from '../api';
@@ -13,6 +14,152 @@ import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+// ── Gift picker modal ─────────────────────────────────────────────────────────
+interface GiftType { id: string; name: string; emoji: string; coins_cost: number; }
+
+function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
+  reelId: string; receiverId: string; receiverName: string; onClose: () => void;
+}) {
+  const [gifts,    setGifts]    = useState<GiftType[]>([]);
+  const [selected, setSelected] = useState<GiftType | null>(null);
+  const [balance,  setBalance]  = useState(0);
+  const [loading,  setLoading]  = useState(true);
+  const [sending,  setSending]  = useState(false);
+  const [sent,     setSent]     = useState(false);
+  const [flyEmoji, setFlyEmoji] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      apiClient.get<GiftType[]>(Endpoints.wallet.gifts),
+      apiClient.get<{ coins_balance: number }>(Endpoints.wallet.balance),
+    ]).then(([g, w]) => {
+      setGifts(Array.isArray(g.data) ? g.data : []);
+      setBalance((w.data as any)?.coins_balance ?? 0);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  async function handleSend() {
+    if (!selected || sending) return;
+    setSending(true);
+    try {
+      await apiClient.post(Endpoints.wallet.sendGift, {
+        gift_type_id: selected.id,
+        receiver_id:  receiverId,
+        reel_id:      reelId,
+      });
+      setBalance(b => b - selected.coins_cost);
+      setFlyEmoji(selected.emoji);
+      setSent(true);
+      setTimeout(onClose, 1800);
+    } catch (e: any) {
+      alert(e?.message ?? 'Impossible d\'envoyer le cadeau');
+    } finally { setSending(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-lg rounded-t-3xl pb-8 relative overflow-hidden"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+
+        {/* handle */}
+        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-1" style={{ background: 'var(--border)' }} />
+
+        {/* header */}
+        <div className="flex items-center justify-between px-5 py-3">
+          <div>
+            <h3 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
+              Envoyer un cadeau
+            </h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              Pour <span className="font-semibold" style={{ color: '#FFD700' }}>{receiverName}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ background: 'rgba(255,215,0,0.12)', color: '#FFD700', border: '1px solid rgba(255,215,0,0.3)' }}>
+              <span>🪙</span> {balance.toLocaleString()} coins
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* gift grid */}
+        {loading ? (
+          <div className="flex justify-center py-10"><Spinner /></div>
+        ) : gifts.length === 0 ? (
+          <p className="text-center py-10 text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun cadeau disponible</p>
+        ) : (
+          <div className="px-4 pb-4 overflow-x-auto">
+            <div className="flex gap-3 pb-1" style={{ minWidth: 'max-content' }}>
+              {gifts.map(g => {
+                const isSelected = selected?.id === g.id;
+                return (
+                  <button key={g.id} onClick={() => setSelected(g)}
+                    className="flex flex-col items-center gap-1 p-3 rounded-2xl transition-all shrink-0"
+                    style={{
+                      width: 88,
+                      background: isSelected ? 'rgba(123,63,242,0.18)' : 'var(--bg-secondary)',
+                      border: isSelected ? '2px solid #7B3FF2' : '2px solid transparent',
+                      boxShadow: isSelected ? '0 0 16px rgba(123,63,242,0.35)' : 'none',
+                    }}>
+                    <span style={{ fontSize: 32 }}>{g.emoji}</span>
+                    <span className="text-xs font-semibold text-center leading-tight" style={{ color: 'var(--text-primary)' }}>{g.name}</span>
+                    <span className="text-xs font-bold" style={{ color: '#FFD700' }}>{g.coins_cost} 🪙</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* send button */}
+        <div className="px-5 pt-2">
+          <button
+            onClick={handleSend}
+            disabled={!selected || sending || sent || balance < (selected?.coins_cost ?? 0)}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+            style={{
+              background: (!selected || sending || sent || balance < (selected?.coins_cost ?? 0))
+                ? 'var(--bg-secondary)'
+                : 'linear-gradient(135deg,#FFD700,#FF8C00)',
+              color: (!selected || sending || sent || balance < (selected?.coins_cost ?? 0))
+                ? 'var(--text-tertiary)'
+                : '#fff',
+              boxShadow: (selected && !sending && !sent && balance >= (selected?.coins_cost ?? 0))
+                ? '0 4px 18px rgba(255,215,0,0.4)'
+                : 'none',
+            }}>
+            {sending ? <Spinner size="sm" /> : sent ? (
+              <><span>{flyEmoji}</span> Cadeau envoyé !</>
+            ) : selected ? (
+              <><Gift size={15} /> Envoyer {selected.emoji} · {selected.coins_cost} coins</>
+            ) : (
+              <><Gift size={15} /> Choisir un cadeau</>
+            )}
+          </button>
+          {selected && balance < selected.coins_cost && (
+            <p className="text-xs text-center mt-2" style={{ color: '#E53E3E' }}>
+              Solde insuffisant — rechargez votre wallet
+            </p>
+          )}
+        </div>
+
+        {/* flying emoji animation */}
+        {flyEmoji && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10"
+            style={{ animation: 'gift-fly 1.2s ease-out both' }}>
+            <span style={{ fontSize: 72 }}>{flyEmoji}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ── Comments sidebar ──────────────────────────────────────────────────────────
 function CommentsSidebar({ reelId, count }: { reelId: string; count: number }) {
@@ -206,6 +353,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute }: {
   const [followed,        setFollowed]       = useState(false);
   const [followLoading,   setFollowLoading]  = useState(false);
   const [captionExpanded, setCaptionExpanded]= useState(false);
+  const [showGiftPicker,  setShowGiftPicker] = useState(false);
 
   const authorId   = reel.author?.id;
   const authorName = reel.author?.display_name ?? reel.author?.username ?? 'Artiste';
@@ -452,8 +600,35 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute }: {
             </div>
             {(reel.share_count ?? 0) > 0 && <span className="text-[11px] font-semibold text-white">{fmt(reel.share_count ?? 0)}</span>}
           </button>
+
+          {/* Gift */}
+          {!isMine && (
+            <button onClick={e => { e.stopPropagation(); setShowGiftPicker(true); }} className="flex flex-col items-center gap-1">
+              <div className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+                style={{
+                  background: 'rgba(255,215,0,0.18)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1.5px solid rgba(255,215,0,0.5)',
+                  color: '#FFD700',
+                  boxShadow: '0 0 12px rgba(255,215,0,0.3)',
+                }}>
+                <Gift size={20} />
+              </div>
+              <span className="text-[11px] font-semibold" style={{ color: '#FFD700' }}>Cadeau</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Gift modal */}
+      {showGiftPicker && authorId && (
+        <GiftPickerModal
+          reelId={reel.id}
+          receiverId={String(authorId)}
+          receiverName={authorName}
+          onClose={() => setShowGiftPicker(false)}
+        />
+      )}
     </div>
   );
 }
@@ -471,30 +646,43 @@ function toArray<T>(raw: unknown): T[] {
 
 // ── Page shell ────────────────────────────────────────────────────────────────
 export default function ReelsPage() {
-  const [searchParams]                = useSearchParams();
-  const navigate                      = useNavigate();
-  const targetId                      = searchParams.get('id');
-  const [reels,       setReels]       = useState<Reel[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState<string | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [globalMuted, setGlobalMuted] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const containerRef                  = useRef<HTMLDivElement>(null);
+  const [searchParams]                  = useSearchParams();
+  const navigate                        = useNavigate();
+  const targetId                        = searchParams.get('id');
+  const [reels,         setReels]       = useState<Reel[]>([]);
+  const [loading,       setLoading]     = useState(true);
+  const [loadingMore,   setLoadingMore] = useState(false);
+  const [hasMore,       setHasMore]     = useState(true);
+  const [error,         setError]       = useState<string | null>(null);
+  const [activeIndex,   setActiveIndex] = useState(0);
+  const [globalMuted,   setGlobalMuted] = useState(true);
+  const [sidebarOpen,   setSidebarOpen] = useState(true);
+  const containerRef                    = useRef<HTMLDivElement>(null);
+  const pageRef                         = useRef(1);
+  const loadingMoreRef                  = useRef(false);
+  const hasMoreRef                      = useRef(true);
+  useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
+
+  const getHeaders = () => {
+    const h: Record<string, string> = { Accept: 'application/json' };
+    try { const t = localStorage.getItem('folix_access_token'); if (t) h.Authorization = `Bearer ${t}`; } catch {}
+    return h;
+  };
 
   const fetchReels = useCallback(() => {
     setLoading(true);
     setError(null);
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    try {
-      const raw = localStorage.getItem('folix_access_token');
-      if (raw) headers.Authorization = `Bearer ${raw}`;
-    } catch { /* ignore */ }
+    pageRef.current = 1;
+    loadingMoreRef.current = false;
+    const headers = getHeaders();
 
-    fetch(`${API_BASE_URL}/api/v1/reels?limit=30`, { headers })
+    fetch(`${API_BASE_URL}/api/v1/reels?limit=15&page=1`, { headers })
       .then(r => r.json())
       .then((json: unknown) => {
         let list = toArray<Reel>(json);
+        const more = (json as any)?.has_more ?? list.length >= 15;
+        setHasMore(more);
+        hasMoreRef.current = more;
         if (targetId) {
           const idx = list.findIndex(r => r.id === targetId);
           if (idx > 0) {
@@ -514,7 +702,31 @@ export default function ReelsPage() {
         setLoading(false);
       })
       .catch(() => { setError('Impossible de charger les reels'); setLoading(false); });
-  }, [targetId]);
+  }, [targetId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadMore = useCallback(() => {
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const nextPage = pageRef.current + 1;
+    const headers = getHeaders();
+
+    fetch(`${API_BASE_URL}/api/v1/reels?limit=15&page=${nextPage}`, { headers })
+      .then(r => r.json())
+      .then((json: unknown) => {
+        const newItems = toArray<Reel>(json);
+        const more = (json as any)?.has_more ?? newItems.length >= 15;
+        setHasMore(more);
+        hasMoreRef.current = more;
+        setReels(prev => {
+          const ids = new Set(prev.map(r => r.id));
+          return [...prev, ...newItems.filter(r => !ids.has(r.id))];
+        });
+        pageRef.current = nextPage;
+      })
+      .catch(() => {})
+      .finally(() => { setLoadingMore(false); loadingMoreRef.current = false; });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchReels(); }, [fetchReels]);
 
@@ -523,19 +735,24 @@ export default function ReelsPage() {
       containerRef.current.scrollTop = 0;
       setActiveIndex(0);
     }
-  }, [reels.length]);
+  }, [reels.length === 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (reels.length === 0) return;
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => {
-        if (e.isIntersecting) setActiveIndex(Number((e.target as HTMLElement).dataset.index));
+        if (e.isIntersecting) {
+          const idx = Number((e.target as HTMLElement).dataset.index);
+          setActiveIndex(idx);
+          // Charger plus quand on approche des 3 derniers reels
+          if (idx >= reels.length - 3) loadMore();
+        }
       }),
       { threshold: 0.6 },
     );
     document.querySelectorAll('[data-reel-item]').forEach(el => observer.observe(el));
     return () => observer.disconnect();
-  }, [reels]);
+  }, [reels, loadMore]);
 
   const activeReel = reels[activeIndex] ?? null;
 
@@ -608,6 +825,16 @@ export default function ReelsPage() {
                 globalMuted={globalMuted} onUnmute={() => setGlobalMuted(v => !v)} />
             </div>
           ))}
+          {/* Footer loadingMore */}
+          {loadingMore && (
+            <div className="w-full snap-start snap-always shrink-0 flex items-center justify-center bg-black"
+              style={{ height: '100dvh' }}>
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                <p className="text-white/50 text-sm font-medium">Chargement…</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Toggle sidebar button */}
