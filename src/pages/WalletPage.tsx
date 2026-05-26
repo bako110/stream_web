@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, Send, BarChart2, ArrowUpRight, RefreshCw,
-  WifiOff, Gift, Star, RotateCcw, Circle,
+  WifiOff, Gift, Star, RotateCcw, Circle, Zap,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -91,6 +91,7 @@ export default function WalletPage() {
   const ACTIONS = [
     { icon: <ShoppingCart size={20} />, label: 'Acheter',    color: '#3B82F6', path: '/wallet/buy' },
     { icon: <Send size={20} />,         label: 'Transférer', color: '#7B3FF2', path: '/wallet/transfer' },
+    { icon: <Zap size={20} />,          label: 'Booster',    color: '#F59E0B', path: '/wallet/boost' },
     { icon: <BarChart2 size={20} />,    label: 'Créateur',   color: '#E85DAD', path: '/wallet/dashboard' },
     { icon: <ArrowUpRight size={20} />, label: 'Retirer',    color: '#3FEDB6', path: '/wallet/withdraw' },
   ];
