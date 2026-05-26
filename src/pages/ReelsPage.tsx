@@ -115,7 +115,7 @@ function CommentsSidebar({ reelId, count }: { reelId: string; count: number }) {
                     className="shrink-0 flex items-center gap-1 transition-colors"
                     style={{ color: isLiked ? '#E0389A' : 'var(--text-tertiary)' }}>
                     <Heart size={12} fill={isLiked ? 'currentColor' : 'none'} />
-                    <span className="text-[10px] font-medium">{localLikes[c.id] ?? c.like_count || ''}</span>
+                    <span className="text-[10px] font-medium">{(localLikes[c.id] ?? c.like_count) || ''}</span>
                   </button>
                 </div>
                 <p className="text-sm mt-0.5 leading-relaxed" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
