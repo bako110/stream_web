@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Play, Radio, Music2, Calendar, Users, ArrowRight,
   ChevronRight, Zap, Globe, Shield, Sparkles,
-  Star, TrendingUp, Eye, Sun, Moon, Menu, X,
+  Star, TrendingUp, Eye, Sun, Moon, Menu, X, MapPin,
 } from 'lucide-react';
-import { apiClient, publicClient } from '../api';
+import { publicClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import type { Concert, Content, Event } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -425,13 +425,16 @@ function SectionHeader({ eyebrow, title, sub, seeAllHref }: {
 
 // ── Poster card (film / série) ────────────────────────────────────────────────
 function PosterCard({ item, onClick }: { item: Content; onClick: () => void }) {
+  const [imgErr, setImgErr] = useState(false);
+
   return (
     <div className="poster-card shrink-0 group" style={{ width: 160 }} onClick={onClick}>
       <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-xl"
         style={{ background: 'var(--bg-tertiary)' }}>
-        {item.thumbnail_url ? (
+        {item.thumbnail_url && !imgErr ? (
           <img src={item.thumbnail_url} alt={item.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            onError={() => setImgErr(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.25),rgba(224,56,154,0.15))' }}>
@@ -476,15 +479,17 @@ function PosterCard({ item, onClick }: { item: Content; onClick: () => void }) {
 
 // ── Concert card ──────────────────────────────────────────────────────────────
 function ConcertCard({ concert, onClick }: { concert: Concert; onClick: () => void }) {
+  const [imgErr, setImgErr] = useState(false);
   const isLive     = concert.status === 'live';
   const artistName = concert.artist?.display_name ?? concert.artist?.username;
 
   return (
     <div className="poster-card shrink-0 glass-card rounded-2xl overflow-hidden group" style={{ width: 280 }} onClick={onClick}>
       <div className="relative h-44 overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
-        {concert.thumbnail_url ? (
+        {concert.thumbnail_url && !imgErr ? (
           <img src={concert.thumbnail_url} alt={concert.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            onError={() => setImgErr(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.3),rgba(224,56,154,0.2))' }}>
@@ -526,10 +531,11 @@ function ConcertCard({ concert, onClick }: { concert: Concert; onClick: () => vo
 
 // ── Event card ────────────────────────────────────────────────────────────────
 function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
+  const [imgErr, setImgErr] = useState(false);
   const date     = new Date(event.starts_at);
   const dd       = date.getDate().toString().padStart(2, '0');
   const mo       = date.toLocaleString('fr', { month: 'short' }).toUpperCase();
-  const location = [event.venue_city, event.venue_country].filter(Boolean).join(', ');
+  const location = [event.venue_name, event.venue_city].filter(Boolean).join(', ');
 
   return (
     <div className="poster-card shrink-0 glass-card rounded-2xl overflow-hidden group flex" style={{ width: 300 }} onClick={onClick}>
@@ -545,10 +551,11 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
 
       {/* Content */}
       <div className="relative flex-1 overflow-hidden">
-        {event.thumbnail_url ? (
+        {event.thumbnail_url && !imgErr ? (
           <img src={event.thumbnail_url} alt={event.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            style={{ minHeight: 110 }} />
+            style={{ minHeight: 110 }}
+            onError={() => setImgErr(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
             style={{ minHeight: 110, background: 'linear-gradient(135deg,rgba(255,122,47,0.2),rgba(240,54,90,0.15))' }}>
@@ -560,7 +567,7 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
           <p className="font-bold text-white text-sm leading-tight line-clamp-2">{event.title}</p>
           {location && (
             <div className="flex items-center gap-1 text-xs mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              <TrendingUp size={10} /> {location}
+              <MapPin size={10} /> {location}
             </div>
           )}
           {event.ticket_price != null && (
@@ -602,7 +609,7 @@ function HScrollRow({ children }: { children: React.ReactNode }) {
 
 // ── Marquee banner ────────────────────────────────────────────────────────────
 function MarqueeBanner() {
-  const tags = ['🎬 Action','🎭 Drame','😂 Comédie','🎵 Concert Live','🏆 Sport','👻 Horreur','🚀 Sci-Fi','🎤 R&B','🌍 Documentaire','💃 Festival','🎼 Jazz','🎸 Rock','🎬 Thriller','🎵 Pop','🌈 Animation'];
+  const tags = ['Action','Drame','Comédie','Concert Live','Sport','Horreur','Sci-Fi','R&B','Documentaire','Festival','Jazz','Rock','Thriller','Pop','Animation'];
   const doubled = [...tags, ...tags];
 
   return (
@@ -678,10 +685,10 @@ function FeaturesSection() {
 // ── Reviews ───────────────────────────────────────────────────────────────────
 function SocialProof() {
   const reviews = [
-    { name: 'Amira K.',   avatar: '👩🏾', text: 'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment !',          rating: 5 },
-    { name: 'Lucas M.',   avatar: '👨🏻', text: 'Enfin une plateforme qui regroupe tout ! Films, concerts, events… Addictif.',            rating: 5 },
-    { name: 'Sarah D.',   avatar: '👩🏼', text: 'La communauté est vraiment sympa et le contenu est de qualité. J\'adore les reels.',     rating: 5 },
-    { name: 'Youssef B.', avatar: '👨🏽', text: 'Interface ultra fluide, les concerts live avec le chat c\'est une expérience unique.',   rating: 5 },
+    { name: 'Amira K.',   text: 'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment !',          rating: 5 },
+    { name: 'Lucas M.',   text: 'Enfin une plateforme qui regroupe tout ! Films, concerts, events… Addictif.',            rating: 5 },
+    { name: 'Sarah D.',   text: 'La communauté est vraiment sympa et le contenu est de qualité. J\'adore les reels.',     rating: 5 },
+    { name: 'Youssef B.', text: 'Interface ultra fluide, les concerts live avec le chat c\'est une expérience unique.',   rating: 5 },
   ];
 
   return (
@@ -710,7 +717,10 @@ function SocialProof() {
               </div>
               <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>"{r.text}"</p>
               <div className="flex items-center gap-2">
-                <span className="text-2xl">{r.avatar}</span>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  {r.name.charAt(0)}
+                </div>
                 <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{r.name}</span>
               </div>
             </div>
@@ -885,18 +895,21 @@ export default function LandingPage() {
   const [series,   setSeries]   = useState<Content[]>([]);
   const [concerts, setConcerts] = useState<Concert[]>([]);
   const [events,   setEvents]   = useState<Event[]>([]);
+  const [loading,  setLoading]  = useState(true);
 
   useScrollReveal();
 
   useEffect(() => {
-    apiClient.get<any>(`${Endpoints.content.films}?page=1&limit=12&status=published`)
-      .then(r => setFilms(r.data?.items ?? [])).catch(() => {});
-    apiClient.get<any>(`${Endpoints.content.series}?page=1&limit=12&status=published`)
-      .then(r => setSeries(r.data?.items ?? [])).catch(() => {});
-    publicClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=10&status=published`)
-      .then(r => setConcerts(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))).catch(() => {});
-    publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=10&status=published`)
-      .then(r => setEvents(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))).catch(() => {});
+    Promise.allSettled([
+      publicClient.get<any>(`${Endpoints.content.films}?page=1&limit=12&status=published`)
+        .then(r => setFilms(r.data?.items ?? [])),
+      publicClient.get<any>(`${Endpoints.content.series}?page=1&limit=12&status=published`)
+        .then(r => setSeries(r.data?.items ?? [])),
+      publicClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=10&status=published`)
+        .then(r => setConcerts(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))),
+      publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=10&status=published`)
+        .then(r => setEvents(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))),
+    ]).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -910,33 +923,45 @@ export default function LandingPage() {
         <section id="films">
           <SectionHeader eyebrow="Cinéma" title="Films en vedette"
             sub="Découvrez notre sélection sans inscription" seeAllHref="/explore/films" />
-          {films.length > 0
-            ? <HScrollRow>{films.map(f => <PosterCard key={f.id} item={f} onClick={() => navigate(`/explore/films/${f.id}`)} />)}</HScrollRow>
-            : <PlaceholderRow count={8} aspect="2/3" width={160} />}
+          {loading
+            ? <PlaceholderRow count={8} aspect="2/3" width={160} />
+            : films.length === 0
+              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
+              : <HScrollRow>{films.map(f => <PosterCard key={f.id} item={f} onClick={() => navigate(`/explore/films/${f.id}`)} />)}</HScrollRow>
+          }
         </section>
 
         <section>
           <SectionHeader eyebrow="Séries" title="Séries populaires"
             sub="Des saisons entières à explorer librement" seeAllHref="/explore/series" />
-          {series.length > 0
-            ? <HScrollRow>{series.map(s => <PosterCard key={s.id} item={s} onClick={() => navigate(`/explore/series/${s.id}`)} />)}</HScrollRow>
-            : <PlaceholderRow count={8} aspect="2/3" width={160} />}
+          {loading
+            ? <PlaceholderRow count={8} aspect="2/3" width={160} />
+            : series.length === 0
+              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
+              : <HScrollRow>{series.map(s => <PosterCard key={s.id} item={s} onClick={() => navigate(`/explore/series/${s.id}`)} />)}</HScrollRow>
+          }
         </section>
 
         <section id="concerts">
           <SectionHeader eyebrow="Live" title="Concerts & Lives"
             sub="Vivez la musique en temps réel" seeAllHref="/explore/concerts" />
-          {concerts.length > 0
-            ? <HScrollRow>{concerts.map(c => <ConcertCard key={c.id} concert={c} onClick={() => navigate(`/explore/concerts/${c.id}`)} />)}</HScrollRow>
-            : <PlaceholderRow count={5} aspect="16/9" width={280} />}
+          {loading
+            ? <PlaceholderRow count={5} aspect="16/9" width={280} />
+            : concerts.length === 0
+              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
+              : <HScrollRow>{concerts.map(c => <ConcertCard key={c.id} concert={c} onClick={() => navigate(`/explore/concerts/${c.id}`)} />)}</HScrollRow>
+          }
         </section>
 
         <section id="events">
           <SectionHeader eyebrow="Événements" title="À ne pas manquer"
             sub="Festivals, conférences, expositions" seeAllHref="/explore/events" />
-          {events.length > 0
-            ? <HScrollRow>{events.map(e => <EventCard key={e.id} event={e} onClick={() => navigate(`/explore/events/${e.id}`)} />)}</HScrollRow>
-            : <PlaceholderRow count={5} aspect="16/9" width={300} />}
+          {loading
+            ? <PlaceholderRow count={5} aspect="16/9" width={300} />
+            : events.length === 0
+              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
+              : <HScrollRow>{events.map(e => <EventCard key={e.id} event={e} onClick={() => navigate(`/explore/events/${e.id}`)} />)}</HScrollRow>
+          }
         </section>
       </div>
 
