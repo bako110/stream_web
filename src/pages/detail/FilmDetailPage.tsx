@@ -383,7 +383,7 @@ export default function FilmDetailPage() {
                     }}>
                     {!accessOk && <Lock size={11} />}
                     {isPlaying && <Play size={11} fill="currentColor" />}
-                    {v.label ?? v.quality_label ?? 'HD'}
+                    {v.label ?? (v as any).quality_label ?? 'HD'}
                     {v.is_free && <span className="text-[10px] font-bold" style={{ color: '#22C55E' }}>(gratuit)</span>}
                   </button>
                 );

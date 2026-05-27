@@ -84,7 +84,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             if (autoPlay) video.play().catch(() => {});
           });
-          hls.on(Hls.Events.ERROR, (_, data) => {
+          hls.on(Hls.Events.ERROR, (_: unknown, data: any) => {
             if (data.fatal) hls.destroy();
           });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {

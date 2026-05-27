@@ -414,7 +414,7 @@ function MediaControls({
       const current = localParticipant.getTrackPublication(Track.Source.Camera);
       const currentId = (current?.track as any)?.mediaStreamTrack?.getSettings?.()?.deviceId;
       const next = videoInputs.find(d => d.deviceId !== currentId) ?? videoInputs[0];
-      await localParticipant.switchActiveDevice('videoinput', next.deviceId);
+      await (localParticipant as any).switchActiveDevice('videoinput', next.deviceId);
     } catch { /* ignore */ }
   }
 
