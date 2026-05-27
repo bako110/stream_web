@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Clock, Users, Zap, Ticket, Music } from 'lucide-react';
 import type { Concert } from '../types';
@@ -222,6 +222,14 @@ export default function LiveListPage() {
   const [boostTarget, setBoostTarget] = useState<Concert | null>(null);
 
   const loading = livesApi.loading && upcomingApi.loading;
+
+  // Polling toutes les 15s comme le mobile
+  useEffect(() => {
+    const iv = setInterval(() => {
+      livesApi.refetch?.();
+    }, 15_000);
+    return () => clearInterval(iv);
+  }, [livesApi]);
 
   if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
 

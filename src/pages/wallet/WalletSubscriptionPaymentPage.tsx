@@ -87,8 +87,8 @@ const PLANS: Record<string, PlanConfig> = {
   },
 };
 
-// 1 coin = 0.01 EUR  →  price_EUR * 100 = coins needed
-const eurToCoins = (eur: number) => Math.ceil(eur * 100);
+// 1 EUR = 200 coins (same as mobile)
+const eurToCoins = (eur: number) => Math.ceil(eur * 200);
 
 // ---------------------------------------------------------------------------
 // Success Overlay
@@ -153,10 +153,11 @@ export default function WalletSubscriptionPaymentPage() {
     if (paying) return;
     setPaying(true);
     try {
-      await apiClient.post(Endpoints.subscriptions.subscribe, {
-        plan_id: plan.id,
-        payment_method: method,
-      });
+      if (method === 'coins') {
+        await apiClient.post(Endpoints.subscriptions.subscribeWallet(plan.id));
+      } else {
+        await apiClient.post(Endpoints.subscriptions.subscribe, { plan: plan.id });
+      }
       setSuccess(true);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;

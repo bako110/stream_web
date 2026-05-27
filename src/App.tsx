@@ -67,6 +67,13 @@ const CreateEventPage    = lazy(() => import('./pages/create/CreateEventPage'));
 const SubscriptionsPage  = lazy(() => import('./pages/SubscriptionsPage'));
 const PrivacyPage        = lazy(() => import('./pages/PrivacyPage'));
 const BlockedUsersPage   = lazy(() => import('./pages/BlockedUsersPage'));
+const OnboardingPage     = lazy(() => import('./pages/OnboardingPage'));
+const StoryViewersPage   = lazy(() => import('./pages/StoryViewersPage'));
+const PlanningPage       = lazy(() => import('./pages/PlanningPage'));
+const SupportPage        = lazy(() => import('./pages/SupportPage'));
+const CommunityChannelsPage     = lazy(() => import('./pages/community/CommunityChannelsPage'));
+const CommunityLeaderboardPage  = lazy(() => import('./pages/community/CommunityLeaderboardPage'));
+const CommunityJoinRequestsPage = lazy(() => import('./pages/community/CommunityJoinRequestsPage'));
 
 const SettingsVerificationPage  = lazy(() => import('./pages/settings/SettingsVerificationPage'));
 const SettingsAppearancePage    = lazy(() => import('./pages/settings/SettingsAppearancePage'));
@@ -139,6 +146,7 @@ function AppShell() {
         {/* Routes publiques uniquement — redirige vers /feed si connecté */}
         <Route element={<PublicOnlyRoute />}>
           <Route path="/"                     element={<LandingPage />} />
+          <Route path="/onboarding"           element={<OnboardingPage />} />
           <Route path="/auth/login"           element={<LoginPage />} />
           <Route path="/auth/register"        element={<RegisterPage />} />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
@@ -224,6 +232,12 @@ function AppShell() {
             <Route path="/subscriptions"     element={<SubscriptionsPage />} />
             <Route path="/privacy"           element={<PrivacyPage />} />
             <Route path="/blocked-users"     element={<BlockedUsersPage />} />
+            <Route path="/planning"          element={<PlanningPage />} />
+            <Route path="/support"           element={<SupportPage />} />
+            <Route path="/stories/:id/viewers"                    element={<StoryViewersPage />} />
+            <Route path="/communities/:id/channels"               element={<CommunityChannelsPage />} />
+            <Route path="/communities/:id/leaderboard"            element={<CommunityLeaderboardPage />} />
+            <Route path="/communities/:id/join-requests"          element={<CommunityJoinRequestsPage />} />
           </Route>
         </Route>
 

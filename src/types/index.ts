@@ -125,6 +125,7 @@ export interface LiveStream {
   status:          LiveStatus;
   current_viewers: number;
   peak_viewers:    number;
+  likes_count:     number;
   is_featured:     boolean;
   started_at:      string;
   ended_at:        string | null;

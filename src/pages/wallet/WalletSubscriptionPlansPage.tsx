@@ -131,16 +131,14 @@ export default function WalletSubscriptionPlansPage() {
   async function handleChoose(plan: PlanConfig) {
     setChecking(plan.id);
     try {
-      await apiClient.get(`/api/v1/subscriptions/plans/${plan.id}/wallet-check`);
-      navigate(`/wallet/subscription/payment?plan=${plan.id}`);
-    } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 402) {
-        toast.error('Solde insuffisant. Rechargez votre wallet.');
-        navigate(`/wallet/subscription/payment?plan=${plan.id}`);
-      } else {
-        toast.error('Impossible de vérifier le solde. Réessayez.');
+      const r = await apiClient.get<any>(Endpoints.subscriptions.walletCheck(plan.id));
+      const data = r.data?.data ?? r.data;
+      if (data?.sufficient === false) {
+        toast(`Solde insuffisant — il vous manque ${data.missing ?? ''} coins.`);
       }
+      navigate(`/wallet/subscription/payment?plan=${plan.id}`);
+    } catch {
+      navigate(`/wallet/subscription/payment?plan=${plan.id}`);
     } finally {
       setChecking(null);
     }

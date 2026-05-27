@@ -1,121 +1,434 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Play, Star, Crown, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Content, VideoMeta } from "../../types";
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Play, Star, Crown, ChevronDown, ChevronUp, Lock, Coins,
+  Check, AlertTriangle, X, Wallet,
+} from 'lucide-react';
+import type { Content, VideoMeta } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Spinner } from '../../components/ui/Spinner';
+import { VideoPlayer } from '../../components/ui/VideoPlayer';
+import toast from 'react-hot-toast';
 
-function VideoPlayer({ url, poster }: { url: string; poster?: string }) {
+// ── Conversion coins (même que mobile : 1 EUR = 200 coins) ───────────────────
+const COINS_PER_EUR = 200;
+const eurToCoins = (eur: number) => Math.ceil(eur * COINS_PER_EUR);
+
+// ── Paywall modal ─────────────────────────────────────────────────────────────
+
+function PaywallModal({ film, onClose, onPurchased }: {
+  film: Content; onClose: () => void; onPurchased: () => void;
+}) {
+  const navigate          = useNavigate();
+  const coinsRequired     = eurToCoins(film.price ?? 0);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [buying,  setBuying]  = useState(false);
+
+  useEffect(() => {
+    apiClient.get<any>(Endpoints.wallet.balance)
+      .then(r => setBalance(r.data?.coins_balance ?? r.data?.balance ?? r.data?.coins ?? 0))
+      .catch(() => setBalance(0));
+  }, []);
+
+  const sufficient = balance !== null && balance >= coinsRequired;
+
+  async function handleBuy() {
+    setBuying(true);
+    try {
+      await apiClient.post(Endpoints.content.filmPurchase(film.id));
+      toast.success('Accès accordé !');
+      onPurchased();
+      onClose();
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail;
+      toast.error(detail ?? 'Achat impossible. Réessayez.');
+    } finally { setBuying(false); }
+  }
+
   return (
-    <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden">
-      <video className="w-full h-full" src={url} controls autoPlay poster={poster} />
+    <>
+      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} onClick={onClose} />
+      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 rounded-3xl overflow-hidden max-w-sm mx-auto"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 32px 80px rgba(0,0,0,0.5)' }}>
+
+        {/* Header gradient */}
+        <div className="relative p-6 text-center"
+          style={{ background: 'linear-gradient(135deg,#1a0533,#2d0f5e)' }}>
+          <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}>
+            <X size={14} />
+          </button>
+          <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+            <Lock size={28} color="white" />
+          </div>
+          <p className="text-white font-black text-lg">Contenu Premium</p>
+          <p className="text-white/60 text-xs mt-1">{film.title}</p>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Prix */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-2">
+              <Coins size={18} style={{ color: 'var(--primary)' }} />
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Coins requis</span>
+            </div>
+            <span className="font-black text-lg" style={{ color: 'var(--primary)' }}>
+              {coinsRequired.toLocaleString('fr-FR')}
+            </span>
+          </div>
+
+          {/* Balance */}
+          {balance !== null && (
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Votre solde</span>
+              <span className="text-sm font-bold" style={{ color: sufficient ? '#22C55E' : '#EF4444' }}>
+                {balance.toLocaleString('fr-FR')} coins
+              </span>
+            </div>
+          )}
+
+          {/* Alerte solde insuffisant */}
+          {balance !== null && !sufficient && (
+            <div className="flex items-center gap-2 p-3 rounded-xl"
+              style={{ background: '#EF444410', border: '1px solid #EF444430' }}>
+              <AlertTriangle size={15} style={{ color: '#EF4444', flexShrink: 0 }} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold" style={{ color: '#EF4444' }}>
+                  Solde insuffisant — il vous manque {(coinsRequired - balance).toLocaleString('fr-FR')} coins
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Prix EUR info */}
+          {film.price && (
+            <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              Accès à vie · {film.price.toFixed(2)} € · {COINS_PER_EUR} coins = 1 €
+            </p>
+          )}
+
+          {/* Boutons */}
+          <button onClick={handleBuy}
+            disabled={buying || !sufficient}
+            className="w-full py-3.5 rounded-xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+            style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)', boxShadow: '0 6px 20px rgba(255,122,47,0.4)' }}>
+            {buying ? <Spinner size="sm" /> : <><Check size={16} /> Acheter l'accès</>}
+          </button>
+
+          {!sufficient && (
+            <button onClick={() => navigate('/wallet/buy')}
+              className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+              style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.3)' }}>
+              <Wallet size={15} /> Recharger le wallet
+            </button>
+          )}
+
+          <button onClick={() => navigate('/wallet/subscription/plans')}
+            className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+            style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+            <Crown size={15} /> Voir les abonnements Premium
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Player avec tracking progress (toutes les 15s comme le mobile) ─────────────
+
+function VideoPlayerWithTracking({ url, poster, videoId, contentId }: {
+  url: string; poster?: string; videoId?: string; contentId?: string;
+}) {
+  const lastSent  = useRef<number>(0);
+  const lastTime  = useRef<number>(0);
+  const lastTotal = useRef<number>(0);
+
+  const sendProgress = useCallback((currentTime: number, total: number) => {
+    if (!videoId) return;
+    const current = Math.floor(currentTime);
+    if (current === lastSent.current || current < 1) return;
+    lastSent.current = current;
+    const params = new URLSearchParams({
+      progress_sec: String(current),
+      total_seconds: String(Math.floor(total)),
+      ...(contentId ? { content_id: contentId, content_type: 'film' } : {}),
+    });
+    apiClient.post(`${Endpoints.streaming.progress(videoId)}?${params}`).catch(() => {});
+  }, [videoId, contentId]);
+
+  // Tick toutes les 15s
+  useEffect(() => {
+    const tick = setInterval(() => {
+      sendProgress(lastTime.current, lastTotal.current);
+    }, 15_000);
+    return () => {
+      clearInterval(tick);
+      sendProgress(lastTime.current, lastTotal.current);
+    };
+  }, [sendProgress]);
+
+  const handleTimeUpdate = useCallback((ct: number, dur: number) => {
+    lastTime.current  = ct;
+    lastTotal.current = dur;
+  }, []);
+
+  const handlePause = useCallback(() => {
+    sendProgress(lastTime.current, lastTotal.current);
+  }, [sendProgress]);
+
+  return (
+    <div className="w-full aspect-video rounded-2xl overflow-hidden" style={{ background: '#000' }}>
+      <VideoPlayer
+        url={url}
+        poster={poster}
+        autoPlay
+        className="w-full h-full"
+        onTimeUpdate={handleTimeUpdate}
+        onPause={handlePause}
+      />
     </div>
   );
 }
 
-export default function FilmDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const [playingUrl, setPlayingUrl] = useState<string | null>(null);
-  const [expandSynopsis, setExpandSynopsis] = useState(false);
+// ── Page principale ───────────────────────────────────────────────────────────
 
-  const film = useApi<Content>(() => apiClient.get<Content>(Endpoints.content.filmById(id!)), [id]);
+export default function FilmDetailPage() {
+  const { id }    = useParams<{ id: string }>();
+  const navigate  = useNavigate();
+
+  const [playingVideo,    setPlayingVideo]    = useState<VideoMeta | null>(null);
+  const [expandSynopsis,  setExpandSynopsis]  = useState(false);
+  const [hasAccess,       setHasAccess]       = useState<boolean | null>(null);
+  const [hasActiveSub,    setHasActiveSub]    = useState(false);
+  const [showPaywall,     setShowPaywall]      = useState(false);
+
+  const film   = useApi<Content>(() => apiClient.get<Content>(Endpoints.content.filmById(id!)), [id]);
   const videos = useApi<VideoMeta[]>(() => apiClient.get<VideoMeta[]>(Endpoints.videos.byContent(id!)), [id]);
 
-  if (film.loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-  if (!film.data) return <div className="p-6 text-[var(--text-secondary)]">Contenu introuvable.</div>;
+  // Vérifie l'accès exactement comme le mobile : /content/films/{id}/access
+  useEffect(() => {
+    if (!id || !film.data) return;
+    if (!film.data.is_premium) { setHasAccess(true); return; }
 
-  const f = film.data;
-  const freeVideo = videos.data?.find(v => v.is_free || !f.is_premium);
+    // Vérifier abonnement actif
+    apiClient.get<any>(Endpoints.subscriptions.me)
+      .then(r => {
+        const sub = r.data?.data ?? r.data;
+        if (sub?.status === 'active') { setHasActiveSub(true); setHasAccess(true); return; }
+        // Sinon vérifier accès individuel
+        return apiClient.get<any>(Endpoints.content.filmAccess(id))
+          .then(ar => setHasAccess(ar.data?.has_access === true))
+          .catch(() => setHasAccess(false));
+      })
+      .catch(() => {
+        // Pas d'abo, vérifie accès direct
+        apiClient.get<any>(Endpoints.content.filmAccess(id))
+          .then(ar => setHasAccess(ar.data?.has_access === true))
+          .catch(() => setHasAccess(false));
+      });
+  }, [id, film.data]);
+
+  if (film.loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (!film.data)   return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Contenu introuvable.</div>;
+
+  const f            = film.data;
+  const isPremium    = !!f.is_premium;
+  const accessOk     = !isPremium || hasAccess === true;
+  const loadingAccess = isPremium && hasAccess === null;
+
+  // Vidéo par défaut
   const defaultVideo = videos.data?.find(v => v.is_default) ?? videos.data?.[0];
 
+  function handlePlay(v?: VideoMeta) {
+    const target = v ?? defaultVideo;
+    if (!target?.hls_url) return;
+    if (!accessOk) { setShowPaywall(true); return; }
+    setPlayingVideo(target);
+  }
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Player */}
-      {playingUrl ? (
-        <VideoPlayer url={playingUrl} poster={f.thumbnail_url ?? undefined} />
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+
+      {/* ── Player ou bannière ── */}
+      {playingVideo ? (
+        <VideoPlayerWithTracking
+          url={playingVideo.hls_url!}
+          poster={f.thumbnail_url ?? undefined}
+          videoId={playingVideo.id}
+          contentId={f.id}
+        />
       ) : (
-        <div className="relative aspect-video rounded-2xl overflow-hidden bg-black cursor-pointer group"
-          onClick={() => { const url = freeVideo?.hls_url ?? defaultVideo?.hls_url; if (url) setPlayingUrl(url); }}>
-          {f.banner_url || f.thumbnail_url ? (
+        <div className="relative aspect-video rounded-2xl overflow-hidden cursor-pointer group"
+          style={{ background: 'var(--bg-tertiary)' }}
+          onClick={() => handlePlay()}>
+          {(f.banner_url || f.thumbnail_url) ? (
             <img src={f.banner_url ?? f.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={f.title} />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[var(--bg-tertiary)]"><Play size={48} /></div>
-          )}
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <div className="bg-white/20 backdrop-blur rounded-full p-5 group-hover:bg-white/30 transition-colors">
-              <Play size={32} className="text-white" fill="white" />
+            <div className="w-full h-full flex items-center justify-center">
+              <Play size={48} style={{ color: 'var(--text-tertiary)' }} />
             </div>
+          )}
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-all group-hover:bg-black/55">
+            {loadingAccess ? (
+              <Spinner size="lg" />
+            ) : !accessOk ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(255,122,47,0.9)', backdropFilter: 'blur(8px)' }}>
+                  <Lock size={28} color="white" />
+                </div>
+                <p className="text-white text-sm font-bold"
+                  style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                  {f.price ? `${eurToCoins(f.price).toLocaleString('fr-FR')} coins` : 'Contenu Premium'}
+                </p>
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform"
+                style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', border: '2px solid rgba(255,255,255,0.4)' }}>
+                <Play size={32} fill="white" color="white" />
+              </div>
+            )}
           </div>
-          {f.is_premium && (
-            <div className="absolute top-4 right-4 badge-premium flex items-center gap-1"><Crown size={12} /> Premium</div>
+
+          {/* Badge premium ou accès */}
+          {isPremium && (
+            <div className="absolute top-3 right-3">
+              {hasAccess ? (
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white"
+                  style={{ background: 'rgba(34,197,94,0.85)', backdropFilter: 'blur(4px)' }}>
+                  <Check size={11} /> Accès
+                </div>
+              ) : hasActiveSub ? (
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white"
+                  style={{ background: 'rgba(123,63,242,0.85)', backdropFilter: 'blur(4px)' }}>
+                  <Crown size={11} /> Abonné
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white"
+                  style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+                  <Crown size={11} /> Premium · {f.price ? `${f.price.toFixed(2)} €` : ''}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
 
-      {/* Info */}
+      {/* ── Infos ── */}
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">{f.title}</h1>
+            <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>{f.title}</h1>
             {f.original_title && f.original_title !== f.title && (
-              <p className="text-[var(--text-secondary)]">{f.original_title}</p>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{f.original_title}</p>
             )}
           </div>
           {f.average_rating && (
-            <div className="flex items-center gap-1 text-yellow-400 shrink-0">
+            <div className="flex items-center gap-1 shrink-0 text-yellow-400">
               <Star size={18} fill="currentColor" />
-              <span className="font-bold">{f.average_rating.toFixed(1)}</span>
+              <span className="font-black text-lg">{f.average_rating.toFixed(1)}</span>
             </div>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 text-sm text-[var(--text-secondary)]">
-          <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full">{f.year}</span>
-          <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full uppercase">{f.language}</span>
-          {f.country && <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full">{f.country}</span>}
-          {f.rating && <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full">{f.rating}</span>}
-          {f.view_count > 0 && <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full">{f.view_count.toLocaleString()} vues</span>}
+        <div className="flex flex-wrap gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+          {f.year > 0 && <span className="px-3 py-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>{f.year}</span>}
+          {f.language && <span className="px-3 py-1 rounded-full uppercase" style={{ background: 'var(--bg-secondary)' }}>{f.language}</span>}
+          {f.country  && <span className="px-3 py-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>{f.country}</span>}
+          {f.rating   && <span className="px-3 py-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>{f.rating}</span>}
+          {f.view_count > 0 && <span className="px-3 py-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>{f.view_count.toLocaleString()} vues</span>}
         </div>
 
-        {f.director && <p className="text-sm text-[var(--text-secondary)]"><span className="font-medium text-[var(--text-primary)]">Réalisateur :</span> {f.director}</p>}
+        {f.director && (
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Réalisateur :</span> {f.director}
+          </p>
+        )}
 
         {f.synopsis && (
           <div>
-            <p className={`text-sm text-[var(--text-secondary)] leading-relaxed ${!expandSynopsis ? 'line-clamp-3' : ''}`}>{f.synopsis}</p>
-            <button onClick={() => setExpandSynopsis(!expandSynopsis)} className="text-brand-primary text-sm flex items-center gap-1 mt-1">
+            <p className={`text-sm leading-relaxed ${!expandSynopsis ? 'line-clamp-3' : ''}`}
+              style={{ color: 'var(--text-secondary)' }}>{f.synopsis}</p>
+            <button onClick={() => setExpandSynopsis(v => !v)}
+              className="text-sm flex items-center gap-1 mt-1" style={{ color: 'var(--primary)' }}>
               {expandSynopsis ? <><ChevronUp size={14} /> Moins</> : <><ChevronDown size={14} /> Lire plus</>}
             </button>
           </div>
         )}
 
-        {/* Video quality selector */}
-        {videos.data && videos.data.length > 1 && (
+        {/* ── Qualités disponibles ── */}
+        {videos.data && videos.data.length > 0 && (
           <div>
-            <h3 className="font-semibold text-[var(--text-primary)] mb-2">Qualité disponible</h3>
+            <h3 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+              {accessOk ? 'Choisir la qualité' : 'Qualités disponibles'}
+            </h3>
             <div className="flex flex-wrap gap-2">
-              {videos.data.map(v => (
-                <button key={v.id} onClick={() => v.hls_url && setPlayingUrl(v.hls_url)}
-                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${playingUrl === v.hls_url ? 'border-brand-primary bg-brand-primary/10 text-brand-primary' : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-brand-primary'}`}>
-                  {v.label}
-                  {v.is_free && <span className="ml-1 text-xs text-brand-green">(gratuit)</span>}
-                </button>
-              ))}
+              {videos.data.map(v => {
+                const isPlaying = playingVideo?.id === v.id;
+                const canPlay   = accessOk && !!v.hls_url;
+                return (
+                  <button key={v.id}
+                    onClick={() => canPlay ? handlePlay(v) : setShowPaywall(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold border transition-all"
+                    style={{
+                      borderColor: isPlaying ? 'var(--primary)' : 'var(--border)',
+                      background:  isPlaying ? 'rgba(123,63,242,0.12)' : 'var(--surface)',
+                      color:       isPlaying ? 'var(--primary)' : 'var(--text-secondary)',
+                      cursor:      canPlay ? 'pointer' : 'not-allowed',
+                      opacity:     canPlay ? 1 : 0.6,
+                    }}>
+                    {!accessOk && <Lock size={11} />}
+                    {isPlaying && <Play size={11} fill="currentColor" />}
+                    {v.label ?? v.quality_label ?? 'HD'}
+                    {v.is_free && <span className="text-[10px] font-bold" style={{ color: '#22C55E' }}>(gratuit)</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Trailer */}
+        {/* ── CTA Achat si premium non acheté ── */}
+        {isPremium && !hasAccess && hasAccess !== null && (
+          <div className="p-4 rounded-2xl flex items-center justify-between gap-4"
+            style={{ background: 'linear-gradient(135deg,rgba(255,122,47,0.08),rgba(224,56,154,0.05))', border: '1px solid rgba(255,122,47,0.3)' }}>
+            <div>
+              <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Accès à vie</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                {f.price ? `${eurToCoins(f.price).toLocaleString('fr-FR')} coins · ${f.price.toFixed(2)} €` : 'Contenu premium'}
+              </p>
+            </div>
+            <button onClick={() => setShowPaywall(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-white text-sm shrink-0"
+              style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+              <Lock size={14} /> Débloquer
+            </button>
+          </div>
+        )}
+
+        {/* ── Trailer ── */}
         {f.trailer_url && (
           <div>
-            <h3 className="font-semibold text-[var(--text-primary)] mb-2">Bande-annonce</h3>
-            <div className="aspect-video rounded-xl overflow-hidden bg-black">
+            <h3 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Bande-annonce</h3>
+            <div className="aspect-video rounded-xl overflow-hidden" style={{ background: '#000' }}>
               <video src={f.trailer_url} controls className="w-full h-full" />
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Paywall modal ── */}
+      {showPaywall && f && (
+        <PaywallModal
+          film={f}
+          onClose={() => setShowPaywall(false)}
+          onPurchased={() => setHasAccess(true)}
+        />
+      )}
     </div>
   );
 }

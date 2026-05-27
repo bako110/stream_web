@@ -4,6 +4,7 @@ import {
   Users, Send, ArrowLeft, Settings, Globe, Lock, Shield,
   Star, User, UserX, BadgeCheck, Check, UserPlus, Trash2,
   Search, X, ChevronRight, Info, MoreVertical, Pencil, Smile, Reply, Forward,
+  Hash, Trophy, UserCheck,
 } from 'lucide-react';
 import type { Community } from '../../types';
 import { apiClient } from '../../api';
@@ -528,6 +529,29 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
         </button>
 
         <div className="flex items-center gap-1 shrink-0">
+          <button onClick={() => navigate(`/communities/${id}/channels`)}
+            className="p-1.5 rounded-xl transition-all" title="Channels"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <Hash size={18} />
+          </button>
+          <button onClick={() => navigate(`/communities/${id}/leaderboard`)}
+            className="p-1.5 rounded-xl transition-all" title="Classement"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <Trophy size={18} />
+          </button>
+          {canManage && (
+            <button onClick={() => navigate(`/communities/${id}/join-requests`)}
+              className="p-1.5 rounded-xl transition-all" title="Demandes d'adhesion"
+              style={{ color: 'var(--text-tertiary)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <UserCheck size={18} />
+            </button>
+          )}
           <button onClick={() => setShowInfo(v => !v)} className="p-1.5 rounded-xl transition-all"
             style={{ color: showInfo ? 'var(--primary)' : 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}

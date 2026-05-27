@@ -3,7 +3,7 @@ import { clsx } from 'clsx';
 import {
   Home, Play, Film, Radio, Calendar, Music2, Users, MessageCircle,
   Bell, Search, Settings, LogOut, Sun, Moon, Activity, Video,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, CalendarDays, HelpCircle,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -22,11 +22,13 @@ const mainLinks = [
 ];
 
 const secondaryLinks = [
-  { to: '/communities',    label: 'Communautés', icon: Users,          color: '#36D9A0' },
-  { to: '/messages',       label: 'Messages',    icon: MessageCircle,  color: '#3B82F6' },
-  { to: '/notifications',  label: 'Notifications',icon: Bell,          color: '#E0389A' },
-  { to: '/search',          label: 'Recherche',   icon: Search,         color: '#F59E0B' },
-  { to: '/activity',       label: 'Activité',    icon: Activity,       color: '#36D9A0' },
+  { to: '/communities',    label: 'Communautés',  icon: Users,          color: '#36D9A0' },
+  { to: '/messages',       label: 'Messages',     icon: MessageCircle,  color: '#3B82F6' },
+  { to: '/notifications',  label: 'Notifications',icon: Bell,           color: '#E0389A' },
+  { to: '/search',         label: 'Recherche',    icon: Search,         color: '#F59E0B' },
+  { to: '/activity',       label: 'Activité',     icon: Activity,       color: '#36D9A0' },
+  { to: '/planning',       label: 'Mon planning', icon: CalendarDays,   color: '#7B3FF2' },
+  { to: '/support',        label: 'Aide & Support',icon: HelpCircle,    color: '#3B82F6' },
 ];
 
 interface Props { collapsed?: boolean; onClose?: () => void; onCollapseToggle?: () => void; }

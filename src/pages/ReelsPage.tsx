@@ -162,7 +162,7 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
 }
 
 // ── Comments sidebar ──────────────────────────────────────────────────────────
-function CommentsSidebar({ reelId, count }: { reelId: string; count: number }) {
+function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: number; onClose?: () => void }) {
   const { user } = useAuthStore();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -229,6 +229,13 @@ function CommentsSidebar({ reelId, count }: { reelId: string; count: number }) {
             Commentaires{count > 0 ? ` · ${count}` : ''}
           </h3>
         </div>
+        {onClose && (
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+            style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {/* Comments list */}
@@ -294,7 +301,7 @@ function CommentsSidebar({ reelId, count }: { reelId: string; count: number }) {
       )}
 
       {/* Input */}
-      <div className="flex items-center gap-2.5 px-4 py-3 shrink-0"
+      <div className="flex items-center gap-2 px-3 py-2.5 shrink-0"
         style={{ borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
         <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
         <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-full"
@@ -337,8 +344,8 @@ function HeartBurst({ show }: { show: boolean }) {
 }
 
 // ── Single reel player ────────────────────────────────────────────────────────
-function ReelPlayer({ reel, active, globalMuted, onUnmute }: {
-  reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void;
+function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
+  reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void;
 }) {
   const { user: me } = useAuthStore();
   const videoRef     = useRef<HTMLVideoElement>(null);
@@ -439,7 +446,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute }: {
       <div className="absolute inset-0 flex items-center justify-center bg-black" onClick={handleTap}>
         {reel.video_url ? (
           <video ref={videoRef} src={reel.video_url}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
             loop playsInline poster={reel.thumbnail_url ?? undefined}
             onTimeUpdate={() => {
               const v = videoRef.current;
@@ -474,49 +481,53 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute }: {
           style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#7B3FF2,#E0389A)' }} />
       </div>
 
-      {/* Mute button */}
-      <div className="absolute top-4 right-4 z-20">
+      {/* Mute button — top right, taille réduite sur petit écran */}
+      <div className="absolute top-3 right-3 z-20">
         <button onClick={e => { e.stopPropagation(); onUnmute(); }}
-          className="w-9 h-9 rounded-full flex items-center justify-center"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
-          {globalMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          {globalMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
         </button>
       </div>
 
-      {/* Bottom: author + caption + actions */}
-      <div className="absolute bottom-0 inset-x-0 z-10 flex items-end gap-3 px-4 pb-8">
+      {/* Bottom: author + caption + actions
+          pb adaptatif : env(safe-area-inset-bottom) gère le notch/home bar iOS/Android */}
+      <div className="absolute bottom-0 inset-x-0 z-10 flex items-end gap-2 px-3 sm:px-4"
+        style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}>
 
         {/* Left: author + caption */}
-        <div className="flex-1 min-w-0 space-y-3">
-          <div className="flex items-center gap-2.5">
+        <div className="flex-1 min-w-0 space-y-2 pb-1">
+
+          {/* Author row */}
+          <div className="flex items-center gap-2">
             <div className="relative shrink-0">
-              <div className="w-10 h-10 rounded-full overflow-hidden"
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden"
                 style={{ border: '2px solid rgba(255,255,255,0.5)' }}>
                 {reel.author?.avatar_url
                   ? <img src={reel.author.avatar_url} alt={authorName} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
+                  : <div className="w-full h-full flex items-center justify-center text-white font-bold text-xs"
                       style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
                       {authorName[0]?.toUpperCase()}
                     </div>
                 }
               </div>
               {reel.author?.is_verified && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
                   style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
-                  <span className="text-white text-[9px] font-black">✓</span>
+                  <span className="text-white text-[8px] font-black">✓</span>
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-white font-bold text-sm leading-tight truncate"
+              <p className="text-white font-bold text-xs sm:text-sm leading-tight truncate"
                 style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>{authorName}</p>
               {reel.author?.username && (
-                <p className="text-white/55 text-xs">@{reel.author.username}</p>
+                <p className="text-white/55 text-[10px] sm:text-xs leading-none">@{reel.author.username}</p>
               )}
             </div>
             {!isMine && (
               <button onClick={handleFollow} disabled={followLoading}
-                className="shrink-0 text-xs font-bold px-4 py-1.5 rounded-full transition-all"
+                className="shrink-0 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full transition-all"
                 style={followed
                   ? { background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(255,255,255,0.3)' }
                   : { background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff', boxShadow: '0 2px 12px rgba(123,63,242,0.5)' }
@@ -526,13 +537,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute }: {
             )}
           </div>
 
+          {/* Caption */}
           {caption && (
             <div>
-              <p className={`text-white text-sm leading-relaxed ${captionExpanded ? '' : 'line-clamp-2'}`}
+              <p className={`text-white text-xs sm:text-sm leading-snug ${captionExpanded ? '' : 'line-clamp-2'}`}
                 style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{caption}</p>
-              {caption.length > 90 && (
+              {caption.length > 80 && (
                 <button onClick={e => { e.stopPropagation(); setCaptionExpanded(v => !v); }}
-                  className="text-white/50 text-xs mt-0.5 font-medium">
+                  className="text-white/50 text-[10px] mt-0.5 font-medium">
                   {captionExpanded ? 'Réduire' : 'Voir plus'}
                 </button>
               )}
@@ -540,14 +552,15 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute }: {
           )}
         </div>
 
-        {/* Right: actions */}
-        <div className="shrink-0 flex flex-col items-center gap-5 pb-1">
-          {/* Vinyl */}
-          <div className="w-10 h-10 rounded-full overflow-hidden"
+        {/* Right: actions — boutons plus petits sur mobile */}
+        <div className="shrink-0 flex flex-col items-center gap-3 sm:gap-4 pb-1">
+
+          {/* Vinyl tournant */}
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden"
             style={{
               border: '2px solid rgba(255,255,255,0.4)',
               animation: playing ? 'spin-slow 5s linear infinite' : 'none',
-              boxShadow: playing ? '0 0 18px rgba(123,63,242,0.7)' : 'none',
+              boxShadow: playing ? '0 0 14px rgba(123,63,242,0.7)' : 'none',
             }}>
             {reel.author?.avatar_url
               ? <img src={reel.author.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -556,65 +569,65 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute }: {
           </div>
 
           {/* Like */}
-          <button onClick={handleLike} className="flex flex-col items-center gap-1">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+          <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
               style={{
                 background: liked ? 'rgba(224,56,154,0.25)' : 'rgba(0,0,0,0.45)',
                 backdropFilter: 'blur(12px)',
                 border: `1.5px solid ${liked ? '#E0389A' : 'rgba(255,255,255,0.2)'}`,
                 color: liked ? '#E0389A' : '#fff',
-                boxShadow: liked ? '0 0 16px rgba(224,56,154,0.5)' : 'none',
+                boxShadow: liked ? '0 0 14px rgba(224,56,154,0.5)' : 'none',
               }}>
-              <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
+              <Heart size={17} fill={liked ? 'currentColor' : 'none'} />
             </div>
-            {likeCount > 0 && <span className="text-[11px] font-semibold text-white">{fmt(likeCount)}</span>}
+            {likeCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(likeCount)}</span>}
           </button>
 
-          {/* Comment — visible seulement sur mobile, caché sur desktop (sidebar toujours visible) */}
-          <button className="flex flex-col items-center gap-1 md:hidden">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center"
+          {/* Comment — mobile uniquement, ouvre le drawer */}
+          <button onClick={e => { e.stopPropagation(); onCommentOpen(); }} className="flex flex-col items-center gap-0.5 md:hidden">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <MessageCircle size={20} />
+              <MessageCircle size={17} />
             </div>
-            {(reel.comment_count ?? 0) > 0 && <span className="text-[11px] font-semibold text-white">{fmt(reel.comment_count ?? 0)}</span>}
+            {(reel.comment_count ?? 0) > 0 && <span className="text-[10px] font-semibold text-white">{fmt(reel.comment_count ?? 0)}</span>}
           </button>
 
           {/* Save */}
-          <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }} className="flex flex-col items-center gap-1">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+          <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }} className="flex flex-col items-center gap-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
               style={{
                 background: saved ? 'rgba(255,122,47,0.25)' : 'rgba(0,0,0,0.45)',
                 backdropFilter: 'blur(12px)',
                 border: `1.5px solid ${saved ? '#FF7A2F' : 'rgba(255,255,255,0.2)'}`,
                 color: saved ? '#FF7A2F' : '#fff',
               }}>
-              <Bookmark size={20} fill={saved ? 'currentColor' : 'none'} />
+              <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} />
             </div>
           </button>
 
           {/* Share */}
-          <button onClick={handleShare} className="flex flex-col items-center gap-1">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center"
+          <button onClick={handleShare} className="flex flex-col items-center gap-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <Share2 size={20} />
+              <Share2 size={17} />
             </div>
-            {(reel.share_count ?? 0) > 0 && <span className="text-[11px] font-semibold text-white">{fmt(reel.share_count ?? 0)}</span>}
+            {(reel.share_count ?? 0) > 0 && <span className="text-[10px] font-semibold text-white">{fmt(reel.share_count ?? 0)}</span>}
           </button>
 
           {/* Gift */}
           {!isMine && (
-            <button onClick={e => { e.stopPropagation(); setShowGiftPicker(true); }} className="flex flex-col items-center gap-1">
-              <div className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+            <button onClick={e => { e.stopPropagation(); setShowGiftPicker(true); }} className="flex flex-col items-center gap-0.5">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
                 style={{
                   background: 'rgba(255,215,0,0.18)',
                   backdropFilter: 'blur(12px)',
                   border: '1.5px solid rgba(255,215,0,0.5)',
                   color: '#FFD700',
-                  boxShadow: '0 0 12px rgba(255,215,0,0.3)',
+                  boxShadow: '0 0 10px rgba(255,215,0,0.3)',
                 }}>
-                <Gift size={20} />
+                <Gift size={17} />
               </div>
-              <span className="text-[11px] font-semibold" style={{ color: '#FFD700' }}>Cadeau</span>
+              <span className="text-[10px] font-semibold" style={{ color: '#FFD700' }}>Cadeau</span>
             </button>
           )}
         </div>
@@ -657,6 +670,7 @@ export default function ReelsPage() {
   const [activeIndex,   setActiveIndex] = useState(0);
   const [globalMuted,   setGlobalMuted] = useState(true);
   const [sidebarOpen,   setSidebarOpen] = useState(true);
+  const [drawerOpen,    setDrawerOpen]  = useState(false);
   const containerRef                    = useRef<HTMLDivElement>(null);
   const pageRef                         = useRef(1);
   const loadingMoreRef                  = useRef(false);
@@ -756,6 +770,9 @@ export default function ReelsPage() {
 
   const activeReel = reels[activeIndex] ?? null;
 
+  // Fermer le drawer mobile quand on change de reel — doit être avant tout return conditionnel
+  useEffect(() => { setDrawerOpen(false); }, [activeIndex]);
+
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading && reels.length === 0) {
     return (
@@ -801,62 +818,59 @@ export default function ReelsPage() {
 
   // ── Main layout ─────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 bg-black flex overflow-hidden" style={{ zIndex: 0 }}>
+    <div className="fixed inset-0 bg-black overflow-hidden flex" style={{ zIndex: 0 }}>
 
-      {/* Back button */}
-      <button onClick={() => navigate(-1)}
-        className="absolute top-4 left-4 z-40 w-9 h-9 rounded-full flex items-center justify-center"
-        style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
-        <ArrowLeft size={18} />
-      </button>
+      {/* ── Zone player : 100% mobile, réduite sur desktop si sidebar ouverte ── */}
+      <div className="relative h-full flex-1 min-w-0">
 
-      {/* ── LEFT: reel player ── */}
-      <div
-        className="relative flex-shrink-0 h-full transition-all duration-300"
-        style={{ width: sidebarOpen ? 'calc(100% - 380px)' : '100%' }}>
+        {/* Back button */}
+        <button onClick={() => navigate(-1)}
+          className="absolute top-3 left-3 z-40 w-9 h-9 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
+          <ArrowLeft size={18} />
+        </button>
+
+        {/* Scroll vertical snap */}
         <div ref={containerRef}
           className="w-full h-full overflow-y-scroll snap-y snap-mandatory"
-          style={{ scrollbarWidth: 'none' }}>
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {reels.map((reel, i) => (
             <div key={reel.id} data-reel-item data-index={i}
               className="w-full snap-start snap-always shrink-0"
               style={{ height: '100dvh' }}>
-              <ReelPlayer reel={reel} active={i === activeIndex}
-                globalMuted={globalMuted} onUnmute={() => setGlobalMuted(v => !v)} />
+              <ReelPlayer
+                reel={reel}
+                active={i === activeIndex}
+                globalMuted={globalMuted}
+                onUnmute={() => setGlobalMuted(v => !v)}
+                onCommentOpen={() => setDrawerOpen(true)}
+              />
             </div>
           ))}
-          {/* Footer loadingMore */}
           {loadingMore && (
             <div className="w-full snap-start snap-always shrink-0 flex items-center justify-center bg-black"
               style={{ height: '100dvh' }}>
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-                <p className="text-white/50 text-sm font-medium">Chargement…</p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-9 h-9 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                <p className="text-white/50 text-xs font-medium">Chargement…</p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Toggle sidebar button */}
+        {/* Toggle sidebar — desktop seulement */}
         <button
           onClick={() => setSidebarOpen(v => !v)}
-          className="absolute top-1/2 -translate-y-1/2 right-0 z-30 w-6 h-14 rounded-l-xl flex items-center justify-center transition-all hidden md:flex"
+          className="absolute top-1/2 -translate-y-1/2 right-0 z-30 w-6 h-14 rounded-l-xl items-center justify-center transition-all hidden md:flex"
           style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
           {sidebarOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
 
-      {/* ── RIGHT: comments sidebar ── */}
+      {/* ── Sidebar commentaires — desktop uniquement ── */}
       {sidebarOpen && activeReel && (
-        <div
-          className="hidden md:flex flex-col flex-shrink-0 h-full"
-          style={{
-            width: 380,
-            borderLeft: '1px solid var(--border)',
-            background: 'var(--bg)',
-          }}>
-
-          {/* Reel info header */}
+        <div className="hidden md:flex flex-col shrink-0 h-full"
+          style={{ width: 380, borderLeft: '1px solid var(--border)', background: 'var(--bg)' }}>
           <div className="flex items-center gap-3 px-4 py-3 shrink-0"
             style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
             <div className="w-8 h-8 rounded-full overflow-hidden shrink-0"
@@ -877,7 +891,6 @@ export default function ReelsPage() {
                 <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{activeReel.caption}</p>
               )}
             </div>
-            {/* Stats */}
             <div className="flex items-center gap-3 shrink-0">
               <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
                 <Heart size={12} /> {activeReel.like_count ?? 0}
@@ -887,12 +900,72 @@ export default function ReelsPage() {
               </span>
             </div>
           </div>
-
-          {/* Comments */}
           <div className="flex-1 min-h-0">
             <CommentsSidebar reelId={activeReel.id} count={activeReel.comment_count ?? 0} />
           </div>
         </div>
+      )}
+
+      {/* ── Drawer commentaires — mobile uniquement ── */}
+      {activeReel && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="md:hidden fixed inset-0 z-40 transition-opacity duration-300"
+            style={{
+              background: 'rgba(0,0,0,0.6)',
+              pointerEvents: drawerOpen ? 'auto' : 'none',
+              opacity: drawerOpen ? 1 : 0,
+            }}
+            onClick={() => setDrawerOpen(false)}
+          />
+
+          {/* Panel drawer */}
+          <div
+            className="md:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl overflow-hidden"
+            style={{
+              height: '72dvh',
+              background: 'var(--bg)',
+              borderTop: '1px solid var(--border)',
+              transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
+              transform: drawerOpen ? 'translateY(0)' : 'translateY(100%)',
+            }}>
+
+            {/* Handle */}
+            <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+              <div className="w-8 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+            </div>
+
+            {/* Mini info auteur */}
+            <div className="flex items-center gap-2 px-4 pb-2 shrink-0"
+              style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="w-6 h-6 rounded-full overflow-hidden shrink-0"
+                style={{ border: '1.5px solid var(--border)' }}>
+                {activeReel.author?.avatar_url
+                  ? <img src={activeReel.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-white text-[9px] font-bold"
+                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                      {(activeReel.author?.display_name ?? activeReel.author?.username ?? 'A')[0].toUpperCase()}
+                    </div>
+                }
+              </div>
+              <p className="text-xs font-bold truncate flex-1" style={{ color: 'var(--text-primary)' }}>
+                {activeReel.author?.display_name ?? activeReel.author?.username ?? 'Artiste'}
+              </p>
+              <span className="flex items-center gap-1 text-[10px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+                <Heart size={10} /> {activeReel.like_count ?? 0}
+              </span>
+            </div>
+
+            <div className="flex-1 min-h-0">
+              <CommentsSidebar
+                reelId={activeReel.id}
+                count={activeReel.comment_count ?? 0}
+                onClose={() => setDrawerOpen(false)}
+              />
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
