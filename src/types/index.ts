@@ -39,15 +39,17 @@ export interface UserPublic {
 }
 
 export interface UserPublicProfile extends UserPublic {
-  followers_count: number;
-  following_count: number;
-  is_followed: boolean;
-  banner_url?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-  location?: string | null;
-  website?: string | null;
-  created_at?: string | null;
+  followers_count:         number;
+  following_count:         number;
+  is_followed:             boolean;
+  banner_url?:             string | null;
+  first_name?:             string | null;
+  last_name?:              string | null;
+  location?:               string | null;
+  website?:                string | null;
+  created_at?:             string | null;
+  privacy_allow_messages?: boolean;
+  privacy_profile_public?: boolean;
 }
 
 export interface LoginRequest { identifier: string; password: string; }

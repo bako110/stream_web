@@ -346,14 +346,23 @@ export default function UserProfilePage() {
                 {isFollowed ? <><UserCheck size={15} /> Suivi</> : <><UserPlus size={15} /> Suivre</>}
               </button>
 
-              {/* Message */}
-              <button onClick={() => navigate('/messages', { state: { userId: id, userName: name } })}
-                className="flex items-center justify-center w-9 h-9 rounded-xl transition-all"
-                style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-                <MessageCircle size={17} />
-              </button>
+              {/* Message — masqué si l'utilisateur n'accepte pas les messages */}
+              {profile.privacy_allow_messages !== false ? (
+                <button onClick={() => navigate('/messages', { state: { userId: id, userName: name } })}
+                  className="flex items-center justify-center w-9 h-9 rounded-xl transition-all"
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                  <MessageCircle size={17} />
+                </button>
+              ) : (
+                <div
+                  className="flex items-center justify-center w-9 h-9 rounded-xl"
+                  title="Cet utilisateur n'accepte pas les messages privés"
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-disabled)', border: '1px solid var(--border)', opacity: 0.4, cursor: 'not-allowed' }}>
+                  <MessageCircle size={17} />
+                </div>
+              )}
 
               {/* Block */}
               <button onClick={toggleBlock}
