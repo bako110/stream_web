@@ -170,6 +170,7 @@ export type ReelStatus = 'processing' | 'published' | 'archived';
 
 export interface Reel {
   id: string; user_id: string; caption: string | null; video_url: string | null;
+  hls_url: string | null;
   thumbnail_url: string | null; duration_sec: number | null; status: ReelStatus;
   ref_content_id: string | null; ref_concert_id: string | null; ref_event_id: string | null;
   view_count: number; like_count: number; dislike_count: number; comment_count: number;
