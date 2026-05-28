@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, Bell, Radio } from 'lucide-react';
+import { Menu, Search, Bell, Radio, Sun, Moon } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -10,7 +10,7 @@ interface Props { onMenuClick: () => void; }
 
 export function Topbar({ onMenuClick }: Props) {
   const { user }  = useAuthStore();
-  const { isDark } = useThemeStore();
+  const { isDark, toggle } = useThemeStore();
   const navigate  = useNavigate();
   const location  = useLocation();
   const [query, setQuery] = useState('');
@@ -121,6 +121,18 @@ export function Topbar({ onMenuClick }: Props) {
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           <span className="hidden sm:inline">Go Live</span>
           <Radio size={14} className="sm:hidden" />
+        </button>
+
+        {/* Dark / Light toggle */}
+        <button
+          onClick={toggle}
+          title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          className="p-2 rounded-xl transition-all"
+          style={{ color: 'var(--text-secondary)' }}
+          onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
+          onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
+        >
+          {isDark ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
         {/* Notifications */}
