@@ -99,7 +99,7 @@ export default function LoginPage() {
       const msg = String(e?.message ?? '');
       if (!msg.includes('closed') && !msg.includes('cancelled') && !msg.includes('cancel')) {
         import('react-hot-toast').then(({ default: toast }) =>
-          toast.error(e?.response?.data?.detail ?? msg || 'Connexion Google impossible')
+          toast.error((e?.response?.data?.detail ?? msg) || 'Connexion Google impossible')
         );
       }
     } finally {
