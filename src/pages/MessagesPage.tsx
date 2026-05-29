@@ -291,8 +291,8 @@ const ConversationList = forwardRef<ConvoListHandle, {
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-function MessageBubble({ msg, isMe, onReply, onEdit, onDelete, onDeleteForMe, onPin, onReact, onForward, navigate }: {
-  msg: ExtMessage; isMe: boolean;
+function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteForMe, onPin, onReact, onForward, navigate }: {
+  msg: ExtMessage; isMe: boolean; peer: UserPublic | null;
   onReply: (msg: ExtMessage) => void;
   onEdit: (msg: ExtMessage) => void;
   onDelete: (id: string) => void;
@@ -304,6 +304,12 @@ function MessageBubble({ msg, isMe, onReply, onEdit, onDelete, onDeleteForMe, on
 }) {
   const [menuOpen,  setMenuOpen]  = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+
+  // Le backend ne retourne pas sender_display_name — on utilise peer (partenaire connu)
+  const senderName   = (msg as any).sender_display_name ?? (msg as any).sender_username
+    ?? (!isMe ? (peer?.display_name ?? peer?.username ?? '?') : '');
+  const senderAvatar = (msg as any).sender_avatar_url
+    ?? (!isMe ? peer?.avatar_url : null);
 
   const body = (msg.body ?? (msg as any).content ?? '').trim();
   if (msg.deleted) return (
@@ -318,11 +324,17 @@ function MessageBubble({ msg, isMe, onReply, onEdit, onDelete, onDeleteForMe, on
   return (
     <div className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : ''}`}>
       {!isMe && (
-        <div className="mt-1 shrink-0">
-          <Avatar src={(msg as any).sender_avatar_url} name={(msg as any).sender_display_name ?? ''} size="xs" />
-        </div>
+        <button className="mt-1 shrink-0" onClick={() => navigate(`/user/${msg.sender_id}`)}>
+          <Avatar src={senderAvatar} name={senderName} size="xs" />
+        </button>
       )}
       <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+        {/* Nom de l'expéditeur pour les messages reçus */}
+        {!isMe && senderName && (
+          <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>
+            {senderName}
+          </span>
+        )}
         <div className={`flex items-end gap-1 ${isMe ? 'flex-row-reverse' : ''}`}>
           <div className="relative">
             {/* Bulle */}
@@ -345,7 +357,9 @@ function MessageBubble({ msg, isMe, onReply, onEdit, onDelete, onDeleteForMe, on
                   <div className="flex items-center gap-1 mb-0.5">
                     <Reply size={9} style={{ opacity: 0.7 }} />
                     <span className="text-[10px] font-bold opacity-80">
-                      {msg.reply_to.sender_id === (isMe ? (msg as any).sender_id : (msg as any).receiver_id) ? 'Toi' : 'Eux'}
+                      {msg.reply_to.sender_id === msg.sender_id && isMe ? 'Toi'
+                        : msg.reply_to.sender_id === msg.sender_id ? senderName
+                        : peer?.display_name ?? peer?.username ?? 'Toi'}
                     </span>
                   </div>
                   <p className="text-[11px] opacity-70 truncate max-w-[200px]">{msg.reply_to.content}</p>
@@ -622,7 +636,10 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     if (showSpinner) setLoading(true);
     try {
       const res = await apiClient.get<unknown>(Endpoints.messages.conversation(userId));
-      const msgs = norm<Message>(res.data).map((m: any) => ({ ...m, body: m.body ?? m.content ?? '' }));
+      // Backend retourne du plus récent au plus ancien → inverser pour afficher chronologiquement
+      const msgs = norm<Message>(res.data)
+        .map((m: any) => ({ ...m, body: m.body ?? m.content ?? '' }))
+        .reverse();
       setMessages(msgs as ExtMessage[]);
       setError(null);
     } catch (e: any) { setError(e?.message ?? 'Erreur'); }
@@ -682,7 +699,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     setMessages(prev => [...prev, tempMsg]);
     setReplyTo(null);
     try {
-      const payload: any = { body, content: body, message_type: 'text' };
+      const payload: any = { content: body, message_type: 'text' };
       if (tempMsg.reply_to) payload.reply_to_id = tempMsg.reply_to.id;
       const res = await apiClient.post<unknown>(Endpoints.messages.conversation(userId), payload);
       const raw = res.data as any;
@@ -697,51 +714,82 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     } finally { setSending(false); setTimeout(() => inputRef.current?.focus(), 50); }
   }
 
+  // ── Upload via presigned URL (même approche que le mobile → bypass validation content_type) ──
+  async function uploadViaPresigned(file: File, folder: string): Promise<string> {
+    const ext = file.name.split('.').pop() ?? 'bin';
+    const r = await apiClient.post<{ upload_url: string; public_url: string; key: string }>(
+      '/api/v1/upload/presigned',
+      { folder, filename: file.name, content_type: file.type || 'application/octet-stream' },
+    );
+    const { upload_url, public_url } = r.data;
+    // PUT direct vers R2 — pas de validation FastAPI
+    await fetch(upload_url, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+    return public_url;
+  }
+
+  // ── Upload fichier via multipart (images, vidéos, fichiers) ──
+  async function uploadFile(file: File): Promise<{ url: string; msgType: string; preview: string; meta: Record<string, any> }> {
+    const isVideo = file.type.startsWith('video/');
+    const isAudio = file.type.startsWith('audio/');
+    const isDoc   = !isVideo && !isAudio && !file.type.startsWith('image/');
+
+    // Déterminer le folder presigned
+    let folder: string;
+    let msgType: string;
+    let preview: string;
+
+    if (isVideo)      { folder = 'messages'; msgType = 'video'; preview = '🎥 Vidéo'; }
+    else if (isAudio) { folder = 'messages'; msgType = 'voice'; preview = '🎤 Audio'; }
+    else if (isDoc)   { folder = 'messages'; msgType = 'file';  preview = `📎 ${file.name}`; }
+    else              { folder = 'messages'; msgType = 'image'; preview = '📷 Photo'; }
+
+    let url: string;
+    const meta: Record<string, any> = {};
+
+    try {
+      // 1. Essayer multipart backend (le plus simple si le serveur est à jour)
+      const form = new FormData();
+      form.append('file', file, file.name);
+
+      let endpoint: string;
+      if (isVideo)      endpoint = '/api/v1/upload/video?folder=messages';
+      else if (isAudio) endpoint = '/api/v1/upload/audio?folder=messages';
+      else if (isDoc)   endpoint = '/api/v1/upload/file?folder=messages';
+      else              endpoint = '/api/v1/upload/images?folder=messages';
+
+      const r = await apiClient.post<any>(endpoint, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      url = r.data?.uploaded?.[0]?.url ?? r.data?.url ?? r.data?.data?.url;
+      if (!url) throw new Error('no url');
+      if (r.data?.duration) meta.duration = r.data.duration;
+      if (r.data?.filename) meta.filename  = r.data.filename;
+      if (r.data?.size)     meta.size      = r.data.size;
+    } catch {
+      // 2. Fallback : presigned URL (bypass validation — même méthode que le mobile)
+      url = await uploadViaPresigned(file, folder);
+    }
+
+    if (isDoc && !meta.filename) meta.filename = file.name;
+    if (isDoc && !meta.size)     meta.size     = file.size;
+    if (isAudio)                 meta.duration = Math.ceil(file.size / 8000);
+
+    return { url, msgType, preview, meta };
+  }
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     setUploading(true);
     try {
       for (const file of files) {
-        const form = new FormData(); form.append('file', file);
-        const isVideo = file.type.startsWith('video/');
-        const isAudio = file.type.startsWith('audio/');
-        const isFile  = !isVideo && !isAudio && !file.type.startsWith('image/');
-
-        let endpoint: string;
-        let msgType: string;
-        let preview: string;
-
-        if (isVideo) {
-          endpoint = `/api/v1/upload/video?folder=messages`;
-          msgType  = 'video'; preview = '🎥 Vidéo';
-        } else if (isAudio) {
-          endpoint = `/api/v1/upload/audio?folder=messages`;
-          msgType  = 'voice'; preview = '🎤 Audio';
-        } else if (isFile) {
-          endpoint = `/api/v1/upload/file?folder=messages`;
-          msgType  = 'file'; preview = `📎 ${file.name}`;
-        } else {
-          endpoint = `/api/v1/upload/images?folder=messages`;
-          msgType  = 'image'; preview = '📷 Photo';
-        }
-
-        const r = await apiClient.post<any>(endpoint, form, { headers: { 'Content-Type': 'multipart/form-data' } });
-
-        // Lecture URL selon le type de réponse
-        // Images → { uploaded: [{url,...}], count }
-        // Vidéo/Audio/Fichier → { url, ... }
-        const url: string = r.data?.uploaded?.[0]?.url ?? r.data?.url ?? r.data?.data?.url;
-        if (!url) throw new Error(`URL introuvable pour ${file.name}`);
-
-        const meta: Record<string, any> = {};
-        if (r.data?.duration) meta.duration = r.data.duration;
-        if (r.data?.filename)  meta.filename  = r.data.filename;
-        if (r.data?.size)      meta.size       = r.data.size;
-        if (r.data?.mime_type) meta.mime_type  = r.data.mime_type;
-
+        const { url, msgType, preview, meta } = await uploadFile(file);
         await apiClient.post(Endpoints.messages.conversation(userId), {
-          content: '', body: '',
+          content: '',
           message_type: msgType,
           attachment_url: url,
           ...(Object.keys(meta).length > 0 ? { attachment_meta: meta } : {}),
@@ -758,7 +806,11 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/ogg;codecs=opus';
       const mr = new MediaRecorder(stream, { mimeType });
       mediaRecRef.current = mr;
       audioChunks.current = [];
@@ -786,21 +838,17 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     await new Promise<void>(res => { mr.onstop = () => res(); mr.stop(); });
     mr.stream.getTracks().forEach(t => t.stop());
 
-    const blob = new Blob(audioChunks.current, { type: mr.mimeType });
-    const ext = mr.mimeType.includes('ogg') ? 'ogg' : 'webm';
-    const file = new File([blob], `vocal_${Date.now()}.${ext}`, { type: mr.mimeType });
+    const rawMime = mr.mimeType.split(';')[0].trim() || 'audio/webm';
+    const blob    = new Blob(audioChunks.current, { type: rawMime });
+    const ext     = rawMime.includes('ogg') ? 'ogg' : 'webm';
+    const file    = new File([blob], `vocal_${Date.now()}.${ext}`, { type: rawMime });
+    const durationSec = recordTime || Math.ceil(blob.size / 8000);
 
     setUploading(true);
     try {
-      const form = new FormData(); form.append('file', file);
-      const r = await apiClient.post<any>(`/api/v1/upload/audio?folder=messages`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const url: string = r.data?.url ?? r.data?.data?.url;
-      if (!url) throw new Error('URL audio introuvable');
-      const durationSec = Math.ceil(blob.size / 8000); // estimation grossière
+      const { url } = await uploadFile(file);
       await apiClient.post(Endpoints.messages.conversation(userId), {
-        content: '', body: '',
+        content: '',
         message_type: 'voice',
         attachment_url: url,
         attachment_meta: { duration: durationSec },
@@ -996,7 +1044,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
                 </div>
               ) : (
                 <MessageBubble
-                  msg={msg} isMe={isMe}
+                  msg={msg} isMe={isMe} peer={peer}
                   onReply={m => { setReplyTo(m); inputRef.current?.focus(); }}
                   onEdit={m => { setEditingId(m.id); setEditText(m.body ?? ''); }}
                   onDelete={handleDelete}
