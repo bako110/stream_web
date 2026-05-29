@@ -75,9 +75,12 @@ const OnboardingPage     = lazy(() => import('./pages/OnboardingPage'));
 const StoryViewersPage   = lazy(() => import('./pages/StoryViewersPage'));
 const PlanningPage       = lazy(() => import('./pages/PlanningPage'));
 const SupportPage        = lazy(() => import('./pages/SupportPage'));
-const CommunityChannelsPage     = lazy(() => import('./pages/community/CommunityChannelsPage'));
-const CommunityLeaderboardPage  = lazy(() => import('./pages/community/CommunityLeaderboardPage'));
-const CommunityJoinRequestsPage = lazy(() => import('./pages/community/CommunityJoinRequestsPage'));
+const CommunityChannelsPage      = lazy(() => import('./pages/community/CommunityChannelsPage'));
+const CommunityLeaderboardPage   = lazy(() => import('./pages/community/CommunityLeaderboardPage'));
+const CommunityJoinRequestsPage  = lazy(() => import('./pages/community/CommunityJoinRequestsPage'));
+const CommunityEventsPage        = lazy(() => import('./pages/community/CommunityEventsPage'));
+const CommunityStatsPage         = lazy(() => import('./pages/community/CommunityStatsPage'));
+const CommunityMemberProfilePage = lazy(() => import('./pages/community/CommunityMemberProfilePage'));
 
 const SettingsVerificationPage  = lazy(() => import('./pages/settings/SettingsVerificationPage'));
 const SettingsAppearancePage    = lazy(() => import('./pages/settings/SettingsAppearancePage'));
@@ -246,6 +249,9 @@ function AppShell() {
             <Route path="/communities/:id/channels"               element={<CommunityChannelsPage />} />
             <Route path="/communities/:id/leaderboard"            element={<CommunityLeaderboardPage />} />
             <Route path="/communities/:id/join-requests"          element={<CommunityJoinRequestsPage />} />
+            <Route path="/communities/:id/events"                 element={<CommunityEventsPage />} />
+            <Route path="/communities/:id/stats"                  element={<CommunityStatsPage />} />
+            <Route path="/communities/:id/members/:userId"        element={<CommunityMemberProfilePage />} />
           </Route>
         </Route>
 

@@ -124,12 +124,47 @@ export const Endpoints = {
     list:     `${V1}/communities`,
     mine:     `${V1}/communities/me`,
     discover: `${V1}/communities/discover/list`,
+    create:   `${V1}/communities`,
     byId:     (id: string) => `${V1}/communities/${id}`,
     join:     (id: string) => `${V1}/communities/${id}/join`,
     leave:    (id: string) => `${V1}/communities/${id}/leave`,
+    role:     (id: string) => `${V1}/communities/${id}/my-role`,
+    // Messages
     messages:      (id: string)                    => `${V1}/communities/${id}/messages`,
+    message:       (id: string, msgId: string)     => `${V1}/communities/${id}/messages/${msgId}`,
     messageById:   (id: string, msgId: string)     => `${V1}/communities/${id}/messages/${msgId}`,
     messageReact:  (id: string, msgId: string)     => `${V1}/communities/${id}/messages/${msgId}/react`,
+    pinnedMessages:(id: string)                    => `${V1}/communities/${id}/messages/pinned`,
+    pinMessage:    (id: string, msgId: string)     => `${V1}/communities/${id}/messages/${msgId}/pin`,
+    // Members
+    members:       (id: string)                    => `${V1}/communities/${id}/members`,
+    member:        (id: string, userId: string)    => `${V1}/communities/${id}/members/${userId}`,
+    memberRole:    (id: string, userId: string)    => `${V1}/communities/${id}/members/${userId}/role`,
+    memberProfile: (id: string, userId: string)    => `${V1}/communities/${id}/members/${userId}/profile`,
+    memberCreatorStats: (id: string, userId: string) => `${V1}/communities/${id}/members/${userId}/creator-stats`,
+    block:         (id: string, userId: string)    => `${V1}/communities/${id}/members/${userId}/block`,
+    blocked:       (id: string)                    => `${V1}/communities/${id}/blocked`,
+    // Join requests
+    joinRequests:        (id: string)                             => `${V1}/communities/${id}/join-requests`,
+    approveJoinRequest:  (id: string, reqId: string)             => `${V1}/communities/${id}/join-requests/${reqId}/approve`,
+    rejectJoinRequest:   (id: string, reqId: string)             => `${V1}/communities/${id}/join-requests/${reqId}/reject`,
+    // Channels
+    channels:        (id: string)                                => `${V1}/communities/${id}/channels`,
+    channel:         (id: string, chId: string)                  => `${V1}/communities/${id}/channels/${chId}`,
+    channelMessages: (id: string, chId: string)                  => `${V1}/communities/${id}/channels/${chId}/messages`,
+    channelMessage:  (id: string, chId: string, msgId: string)   => `${V1}/communities/${id}/channels/${chId}/messages/${msgId}`,
+    channelMembers:  (id: string, chId: string)                  => `${V1}/communities/${id}/channels/${chId}/members`,
+    // Leaderboard
+    leaderboard:   (id: string) => `${V1}/communities/${id}/leaderboard`,
+    myLeaderboard: (id: string) => `${V1}/communities/${id}/leaderboard/me`,
+    // Stats
+    stats: (id: string) => `${V1}/communities/${id}/stats`,
+    // Events
+    events:    (id: string)                          => `${V1}/communities/${id}/events`,
+    event:     (id: string, evId: string)            => `${V1}/communities/${id}/events/${evId}`,
+    eventRsvp: (id: string, evId: string)            => `${V1}/communities/${id}/events/${evId}/rsvp`,
+    // Verification
+    verificationRequest: (id: string) => `${V1}/communities/${id}/verification-request`,
   },
   search: {
     query:    `${V1}/search`,

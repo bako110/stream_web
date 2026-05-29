@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Users, Send, ArrowLeft, Settings, Globe, Lock, Shield,
   Star, User, UserX, BadgeCheck, Check, UserPlus, Trash2,
-  Search, X, ChevronRight, Info, MoreVertical, Pencil, Smile, Reply, Forward,
-  Hash, Trophy, UserCheck,
+  Search, X, ChevronRight, Info, MoreVertical, Pencil, Smile, Reply,
+  Hash, Trophy, UserCheck, Pin, Image as ImageIcon, BarChart2,
+  Calendar, MessageCircle, Megaphone, Film as FilmIcon, Vote,
+  PinOff, UserMinus, Ban, Forward,
 } from 'lucide-react';
 import type { Community } from '../../types';
 import { apiClient } from '../../api';
@@ -14,23 +16,28 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import { WS_BASE_URL } from '../../utils/constants';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface MsgReaction { emoji: string; count: number; user_ids: string[]; }
+interface ReplyTo { id: string; sender_id: string; sender_display_name: string | null; sender_username: string | null; content: string | null; message_type: string; }
+
 interface CommunityMessage {
   id: string;
   sender_id: string;
   content: string | null;
   message_type: string;
   media_urls?: string[];
+  metadata?: Record<string, any> | null;
   sender_username?: string | null;
   sender_display_name?: string | null;
   sender_avatar_url?: string | null;
   is_pinned?: boolean;
   reactions?: MsgReaction[];
+  reply_to?: ReplyTo | null;
   created_at: string;
   edited_at?: string | null;
 }
@@ -39,9 +46,12 @@ interface CommunityMember {
   username?: string | null; display_name?: string | null; avatar_url?: string | null;
 }
 
+type ChatTab = 'discussion' | 'announcements' | 'media' | 'polls';
+type SettingsTab = 'info' | 'members' | 'security';
+
 const ROLE_LABELS: Record<string, string> = { admin: 'Admin', moderator: 'Modérateur', member: 'Membre' };
 const ROLE_COLORS: Record<string, string> = { admin: '#36D9A0', moderator: '#3B82F6', member: '#9390AB' };
-
+const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '😍'];
 const GRADIENTS = [
   ['#7B3FF2','#E0389A'],['#0EA5E9','#6366F1'],['#10B981','#0EA5E9'],
   ['#F59E0B','#EF4444'],['#EC4899','#8B5CF6'],['#14B8A6','#3B82F6'],
@@ -54,8 +64,6 @@ function fmtCount(n: number): string {
   return String(n);
 }
 
-type SettingsTab = 'info' | 'members' | 'security';
-
 // ── SettingsPanel ─────────────────────────────────────────────────────────────
 
 function SettingsPanel({ community, myRole, onClose, onSaved }: {
@@ -65,10 +73,15 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   const [editName,       setEditName]       = useState(community.name);
   const [editDesc,       setEditDesc]       = useState(community.description ?? '');
   const [editPrivate,    setEditPrivate]    = useState(community.is_private);
+  const [editApproval,   setEditApproval]   = useState((community as any).requires_approval ?? false);
+  const [editMembersOnly,setEditMembersOnly]= useState((community as any).members_only_chat ?? false);
+  const [editEntryPrice, setEditEntryPrice] = useState(String((community as any).entry_price_coins ?? 0));
   const [saving,         setSaving]         = useState(false);
   const [members,        setMembers]        = useState<CommunityMember[]>([]);
+  const [blockedMembers, setBlockedMembers] = useState<any[]>([]);
   const [memberSearch,   setMemberSearch]   = useState('');
   const [roleLoading,    setRoleLoading]    = useState<string | null>(null);
+  const [blockLoading,   setBlockLoading]   = useState<string | null>(null);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const isAdmin = myRole === 'admin';
   const isMod   = myRole === 'moderator';
@@ -77,10 +90,13 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   useEffect(() => {
     if (tab !== 'members') return;
     setLoadingMembers(true);
-    apiClient.get<any>(`/api/v1/communities/${community.id}/members`)
-      .then(r => setMembers(Array.isArray(r.data) ? r.data : r.data?.items ?? r.data?.data ?? []))
-      .catch(() => {})
-      .finally(() => setLoadingMembers(false));
+    Promise.all([
+      apiClient.get<any>(`/api/v1/communities/${community.id}/members`),
+      isAdmin ? apiClient.get<any>(Endpoints.communities.blocked(community.id)).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+    ]).then(([r, rb]) => {
+      setMembers(Array.isArray(r.data) ? r.data : r.data?.items ?? r.data?.data ?? []);
+      setBlockedMembers(Array.isArray(rb.data) ? rb.data : rb.data?.items ?? []);
+    }).catch(() => {}).finally(() => setLoadingMembers(false));
   }, [tab, community.id]);
 
   async function saveInfo() {
@@ -88,37 +104,62 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
     setSaving(true);
     try {
       await apiClient.patch(`/api/v1/communities/${community.id}`, { name: editName.trim(), description: editDesc.trim() || null });
-      onSaved(); onClose();
-    } catch { } finally { setSaving(false); }
+      toast.success('Communauté mise à jour'); onSaved(); onClose();
+    } catch { toast.error('Erreur lors de la sauvegarde'); } finally { setSaving(false); }
   }
 
   async function saveSecurity() {
     setSaving(true);
     try {
-      await apiClient.patch(`/api/v1/communities/${community.id}`, { is_private: editPrivate });
-      onSaved(); onClose();
-    } catch { } finally { setSaving(false); }
+      await apiClient.patch(`/api/v1/communities/${community.id}`, {
+        is_private: editPrivate,
+        requires_approval: editApproval,
+        members_only_chat: editMembersOnly,
+        entry_price_coins: Number(editEntryPrice) || 0,
+      });
+      toast.success('Paramètres mis à jour'); onSaved(); onClose();
+    } catch { toast.error('Erreur'); } finally { setSaving(false); }
   }
 
   async function changeRole(userId: string, role: string) {
     setRoleLoading(userId);
     try {
-      await apiClient.put(`/api/v1/communities/${community.id}/members/${userId}/role`, { role });
+      await apiClient.put(Endpoints.communities.memberRole(community.id, userId), { role });
       setMembers(prev => prev.map(m => m.user_id === userId ? { ...m, role } : m));
-    } catch { } finally { setRoleLoading(null); }
+      toast.success('Rôle modifié');
+    } catch { toast.error('Erreur'); } finally { setRoleLoading(null); }
   }
 
-  async function kick(userId: string) {
-    if (!confirm('Exclure ce membre ?')) return;
+  async function kick(userId: string, name: string) {
+    if (!confirm(`Exclure ${name} ?`)) return;
     try {
-      await apiClient.delete(`/api/v1/communities/${community.id}/members/${userId}`);
+      await apiClient.delete(Endpoints.communities.member(community.id, userId));
       setMembers(prev => prev.filter(m => m.user_id !== userId));
-    } catch { }
+      toast.success('Membre exclu');
+    } catch { toast.error('Erreur'); }
+  }
+
+  async function blockMember(userId: string, name: string) {
+    if (!confirm(`Bloquer ${name} de la communauté ?`)) return;
+    setBlockLoading(userId);
+    try {
+      await apiClient.post(Endpoints.communities.block(community.id, userId));
+      setMembers(prev => prev.filter(m => m.user_id !== userId));
+      toast.success('Membre bloqué');
+    } catch { toast.error('Erreur'); } finally { setBlockLoading(null); }
+  }
+
+  async function unblockMember(userId: string) {
+    try {
+      await apiClient.delete(Endpoints.communities.block(community.id, userId));
+      setBlockedMembers(prev => prev.filter(m => m.user_id !== userId));
+      toast.success('Membre débloqué');
+    } catch { toast.error('Erreur'); }
   }
 
   async function deleteCommunity() {
     if (!confirm('Supprimer définitivement cette communauté ? Action irréversible.')) return;
-    try { await apiClient.delete(`/api/v1/communities/${community.id}`); onClose(); onSaved(); } catch { }
+    try { await apiClient.delete(`/api/v1/communities/${community.id}`); onClose(); onSaved(); } catch { toast.error('Erreur'); }
   }
 
   const filtered = memberSearch.trim()
@@ -190,7 +231,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
               </p>
               {loadingMembers ? <div className="flex justify-center py-8"><Spinner /></div> : filtered.map(member => {
                 const isSelf    = member.user_id === me?.id;
-                const isLoading = roleLoading === member.user_id;
+                const isLoading = roleLoading === member.user_id || blockLoading === member.user_id;
                 const roleColor = ROLE_COLORS[member.role] ?? '#9390AB';
                 return (
                   <div key={member.id} className="flex items-start gap-3 px-4 py-3"
@@ -205,9 +246,9 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                         <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{ROLE_LABELS[member.role] ?? member.role}</p>
                       </div>
                     </div>
-                    {isLoading ? <Spinner size="sm" /> : isAdmin && !isSelf ? (
+                    {isLoading ? <Spinner size="sm" /> : (isAdmin || isMod) && !isSelf ? (
                       <div className="flex flex-wrap gap-1.5 justify-end">
-                        {member.role !== 'admin' && (
+                        {isAdmin && member.role !== 'admin' && (
                           <button onClick={() => changeRole(member.user_id, 'admin')}
                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
                             style={{ background: '#36D9A015', borderColor: '#36D9A040', color: '#36D9A0' }}>
@@ -228,27 +269,50 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                             <User size={10} /> Membre
                           </button>
                         )}
-                        <button onClick={() => kick(member.user_id)}
+                        <button onClick={() => kick(member.user_id, member.display_name ?? member.username ?? '')}
                           className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
                           style={{ background: '#EF444415', borderColor: '#EF444440', color: '#EF4444' }}>
                           <UserX size={10} /> Exclure
                         </button>
+                        {isAdmin && (
+                          <button onClick={() => blockMember(member.user_id, member.display_name ?? member.username ?? '')}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
+                            style={{ background: '#EF444410', borderColor: '#EF444430', color: '#EF4444' }}>
+                            <Ban size={10} /> Bloquer
+                          </button>
+                        )}
                       </div>
-                    ) : isMod && !isSelf && member.role === 'member' ? (
-                      <button onClick={() => kick(member.user_id)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
-                        style={{ background: '#EF444415', borderColor: '#EF444440', color: '#EF4444' }}>
-                        <UserX size={10} /> Exclure
-                      </button>
                     ) : null}
                   </div>
                 );
               })}
+              {/* Membres bloqués */}
+              {isAdmin && blockedMembers.length > 0 && (
+                <div className="mt-4">
+                  <p className="px-4 py-1 text-[10px] font-bold tracking-widest" style={{ color: '#EF4444' }}>
+                    MEMBRES BLOQUÉS ({blockedMembers.length})
+                  </p>
+                  {blockedMembers.map(m => (
+                    <div key={m.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                      <Avatar src={m.avatar_url} name={m.display_name ?? m.username ?? '?'} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{m.display_name ?? m.username}</p>
+                        {m.reason && <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{m.reason}</p>}
+                      </div>
+                      <button onClick={() => unblockMember(m.user_id)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
+                        style={{ background: '#36D9A015', borderColor: '#36D9A040', color: '#36D9A0' }}>
+                        Débloquer
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {tab === 'security' && (
-            <div className="p-5 space-y-3">
-              <p className="text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>VISIBILITE</p>
+            <div className="p-5 space-y-4">
+              <p className="text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>VISIBILITÉ</p>
               {[
                 { val: false, icon: <Globe size={18} />, color: '#3B82F6', label: 'Publique', sub: 'Tout le monde peut rejoindre' },
                 { val: true,  icon: <Lock size={18} />,  color: '#E0389A', label: 'Privée',   sub: 'Sur invitation uniquement' },
@@ -268,7 +332,45 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                   </div>
                 </button>
               ))}
-              <p className="text-[10px] font-bold tracking-widest pt-3" style={{ color: '#EF4444' }}>ZONE DE DANGER</p>
+
+              {/* Approbation requise */}
+              <div className="flex items-center justify-between p-3.5 rounded-2xl"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Approbation requise</p>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Les demandes doivent être approuvées</p>
+                </div>
+                <button onClick={() => setEditApproval(v => !v)}
+                  className="w-12 h-6 rounded-full relative transition-all"
+                  style={{ background: editApproval ? 'var(--primary)' : 'var(--border)' }}>
+                  <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                    style={{ left: editApproval ? 26 : 2 }} />
+                </button>
+              </div>
+
+              {/* Chat membres seulement */}
+              <div className="flex items-center justify-between p-3.5 rounded-2xl"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Chat membres uniquement</p>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Seuls les membres peuvent écrire</p>
+                </div>
+                <button onClick={() => setEditMembersOnly(v => !v)}
+                  className="w-12 h-6 rounded-full relative transition-all"
+                  style={{ background: editMembersOnly ? 'var(--primary)' : 'var(--border)' }}>
+                  <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                    style={{ left: editMembersOnly ? 26 : 2 }} />
+                </button>
+              </div>
+
+              {/* Prix d'entrée */}
+              <div>
+                <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'var(--text-tertiary)' }}>PRIX D'ENTRÉE (COINS)</p>
+                <input type="number" min="0" value={editEntryPrice} onChange={e => setEditEntryPrice(e.target.value)}
+                  className="input w-full" placeholder="0 = gratuit" />
+              </div>
+
+              <p className="text-[10px] font-bold tracking-widest pt-2" style={{ color: '#EF4444' }}>ZONE DE DANGER</p>
               <button onClick={deleteCommunity}
                 className="w-full flex items-center gap-3 p-3.5 rounded-2xl"
                 style={{ background: '#EF444410', border: '1px solid #EF444430' }}>
@@ -290,31 +392,88 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   );
 }
 
+// ── PinnedDrawer ──────────────────────────────────────────────────────────────
+
+function PinnedDrawer({ communityId, onClose, onJump }: {
+  communityId: string; onClose: () => void; onJump: (id: string) => void;
+}) {
+  const [pins, setPins] = useState<CommunityMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.get<any>(Endpoints.communities.pinnedMessages(communityId))
+      .then(r => setPins(Array.isArray(r.data) ? r.data : r.data?.items ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [communityId]);
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden flex flex-col"
+        style={{ background: 'var(--surface)', maxHeight: '60vh' }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-2">
+            <Pin size={16} style={{ color: 'var(--primary)' }} />
+            <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Messages épinglés</p>
+          </div>
+          <button onClick={onClose}><X size={18} style={{ color: 'var(--text-tertiary)' }} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {loading ? <div className="flex justify-center py-8"><Spinner /></div>
+            : pins.length === 0
+            ? <p className="text-center text-sm py-8" style={{ color: 'var(--text-tertiary)' }}>Aucun message épinglé</p>
+            : pins.map(p => (
+              <button key={p.id} onClick={() => { onJump(p.id); onClose(); }}
+                className="w-full text-left p-3 rounded-xl transition-all"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                <p className="text-xs font-bold mb-1" style={{ color: 'var(--primary)' }}>
+                  {p.sender_display_name ?? p.sender_username}
+                </p>
+                <p className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{p.content}</p>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                  {format(new Date(p.created_at), 'd MMM yyyy à HH:mm', { locale: fr })}
+                </p>
+              </button>
+            ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Vue non-membre (landing) ──────────────────────────────────────────────────
 
 function CommunityLanding({ community, onJoined }: { community: Community; onJoined: () => void }) {
   const [joining, setJoining] = useState(false);
   const [g1, g2] = gradientFor(community.name);
-  const count    = community.members_count ?? community.member_count ?? 0;
+  const count    = community.members_count ?? (community as any).member_count ?? 0;
 
   async function handleJoin() {
     setJoining(true);
     try {
-      await apiClient.post(Endpoints.communities.join(community.id));
-      onJoined();
-    } catch { } finally { setJoining(false); }
+      const r = await apiClient.post<any>(Endpoints.communities.join(community.id));
+      if (r.data?.pending) {
+        toast.success('Demande envoyée, en attente d\'approbation');
+      } else {
+        toast.success('Communauté rejointe !');
+        onJoined();
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail ?? 'Erreur');
+    } finally { setJoining(false); }
   }
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Bannière */}
       <div className="relative" style={{ height: 160 }}>
         {community.banner_url
           ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
           : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }} />
         }
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)' }} />
-        {/* Avatar flottant */}
         <div className="absolute" style={{ bottom: -32, left: '50%', transform: 'translateX(-50%)' }}>
           {community.avatar_url
             ? <img src={community.avatar_url} className="w-16 h-16 rounded-2xl object-cover"
@@ -326,14 +485,11 @@ function CommunityLanding({ community, onJoined }: { community: Community; onJoi
           }
         </div>
       </div>
-
-      {/* Infos */}
       <div className="flex flex-col items-center px-6 pt-12 pb-8 text-center">
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>{community.name}</h1>
           {community.is_verified && <BadgeCheck size={18} color="#1D9BF0" />}
         </div>
-
         <div className="flex items-center gap-2 mb-4">
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
             style={{ background: community.is_private ? '#E0389A20' : '#3B82F620', color: community.is_private ? '#E0389A' : '#3B82F6' }}>
@@ -345,26 +501,26 @@ function CommunityLanding({ community, onJoined }: { community: Community; onJoi
             <Users size={10} /> {fmtCount(count)} membres
           </span>
         </div>
-
         {community.description && (
           <p className="text-sm leading-relaxed mb-6 max-w-sm" style={{ color: 'var(--text-secondary)' }}>
             {community.description}
           </p>
         )}
-
-        {/* Bloc verrouillé */}
         <div className="w-full max-w-sm p-5 rounded-2xl mb-6 flex flex-col items-center gap-3"
           style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--bg-tertiary)' }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'var(--bg-tertiary)' }}>
             <Lock size={20} style={{ color: 'var(--text-tertiary)' }} />
           </div>
           <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Contenu réservé aux membres</p>
           <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
             Rejoignez la communauté pour accéder aux messages et aux membres.
           </p>
+          {(community as any).entry_price_coins > 0 && (
+            <p className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
+              {(community as any).entry_price_coins} coins requis
+            </p>
+          )}
         </div>
-
         <button onClick={handleJoin} disabled={joining}
           className="w-full max-w-sm flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white text-sm disabled:opacity-60 transition-all"
           style={{ background: `linear-gradient(90deg, ${g1}, ${g2})` }}>
@@ -375,38 +531,267 @@ function CommunityLanding({ community, onJoined }: { community: Community; onJoi
   );
 }
 
-// ── Vue membre (chat style WhatsApp) ─────────────────────────────────────────
+// ── MessageBubble ─────────────────────────────────────────────────────────────
+
+function MessageBubble({ msg, isMe, canManage, onReact, onReply, onEdit, onDelete, onPin, onBlockSender, navigate }: {
+  msg: CommunityMessage; isMe: boolean; canManage: boolean;
+  onReact: (id: string, emoji: string) => void;
+  onReply: (msg: CommunityMessage) => void;
+  onEdit: (msg: CommunityMessage) => void;
+  onDelete: (id: string) => void;
+  onPin: (id: string, pin: boolean) => void;
+  onBlockSender: (msg: CommunityMessage) => void;
+  navigate: (to: string) => void;
+}) {
+  const { user: me } = useAuthStore();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [editingText, setEditingText] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const canDelete = isMe || canManage;
+
+  function startEdit() { setEditingText(msg.content ?? ''); setIsEditing(true); setMenuOpen(false); }
+  function submitEdit() { if (editingText.trim()) { onEdit({ ...msg, content: editingText.trim() }); } setIsEditing(false); }
+
+  return (
+    <div className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : ''}`} id={`msg-${msg.id}`}>
+      {!isMe && (
+        <button className="mt-1 shrink-0" onClick={() => navigate(`/user/${msg.sender_id}`)}>
+          <Avatar src={msg.sender_avatar_url} name={msg.sender_display_name ?? msg.sender_username ?? '?'} size="xs" />
+        </button>
+      )}
+      <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+        {!isMe && (
+          <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>
+            {msg.sender_display_name ?? msg.sender_username}
+          </span>
+        )}
+        <div className={`flex items-end gap-1 ${isMe ? 'flex-row-reverse' : ''}`}>
+          <div className="relative">
+            {/* Mode édition */}
+            {isEditing ? (
+              <div className="flex gap-1.5 items-center">
+                <input autoFocus value={editingText} onChange={e => setEditingText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitEdit(); } if (e.key === 'Escape') setIsEditing(false); }}
+                  className="input text-sm rounded-2xl px-3.5 py-2" style={{ minWidth: 160 }} />
+                <button onClick={submitEdit} className="w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ background: 'var(--primary)', color: '#fff' }}><Check size={13} /></button>
+                <button onClick={() => setIsEditing(false)} className="w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}><X size={13} /></button>
+              </div>
+            ) : (
+              <div className={`rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+                style={isMe
+                  ? { background: 'var(--primary)', color: '#fff' }
+                  : { background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+
+                {/* Indicateur épinglé */}
+                {msg.is_pinned && (
+                  <div className="flex items-center gap-1 px-3 pt-1.5 pb-0.5 opacity-70">
+                    <Pin size={9} />
+                    <span className="text-[9px] font-bold">Épinglé</span>
+                  </div>
+                )}
+
+                {/* Preview reply */}
+                {msg.reply_to && (
+                  <div className="px-3 pt-2 pb-1.5"
+                    style={{ borderBottom: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'var(--border)'}` }}>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <Reply size={10} style={{ opacity: 0.7 }} />
+                      <span className="text-[10px] font-bold opacity-80">
+                        {msg.reply_to.sender_display_name ?? msg.reply_to.sender_username}
+                      </span>
+                    </div>
+                    <p className="text-[11px] opacity-70 truncate max-w-[200px]">{msg.reply_to.content}</p>
+                  </div>
+                )}
+
+                {/* Médias */}
+                {(msg.media_urls ?? []).length > 0 && (
+                  <div className={`grid gap-1 p-1.5 ${(msg.media_urls!).length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {msg.media_urls!.map((url, i) => (
+                      <img key={i} src={url} alt="" className="rounded-lg object-cover w-full"
+                        style={{ maxHeight: 200 }} />
+                    ))}
+                  </div>
+                )}
+
+                {/* Type annonce */}
+                {msg.message_type === 'announcement' && (
+                  <div className="flex items-center gap-1.5 px-3 pt-2 pb-0.5">
+                    <Megaphone size={12} style={{ opacity: 0.8 }} />
+                    <span className="text-[10px] font-bold opacity-80">Annonce</span>
+                  </div>
+                )}
+
+                {/* Contenu texte */}
+                {msg.content && (
+                  <div className="px-3.5 py-2">
+                    {msg.content}
+                    {msg.edited_at && <span className="text-[9px] ml-1.5 opacity-60">modifié</span>}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Réactions */}
+            {(msg.reactions ?? []).filter(r => r.count > 0).length > 0 && (
+              <div className={`flex flex-wrap gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                {(msg.reactions ?? []).filter(r => r.count > 0).map(r => {
+                  const reacted = r.user_ids.includes(me?.id ?? '');
+                  return (
+                    <button key={r.emoji} onClick={() => onReact(msg.id, r.emoji)}
+                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs transition-all"
+                      style={{ background: reacted ? 'rgba(123,63,242,0.15)' : 'var(--bg-secondary)', border: `1px solid ${reacted ? 'rgba(123,63,242,0.4)' : 'var(--border)'}`, color: reacted ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                      {r.emoji} <span className="font-semibold">{r.count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Picker emoji */}
+            {emojiOpen && (
+              <div className={`absolute z-20 flex gap-1 p-1.5 rounded-2xl shadow-xl ${isMe ? 'right-0' : 'left-0'}`}
+                style={{ bottom: '110%', background: 'var(--surface)', border: '1px solid var(--border)' }}
+                onClick={e => e.stopPropagation()}>
+                {QUICK_EMOJIS.map(em => (
+                  <button key={em} onClick={() => { onReact(msg.id, em); setEmojiOpen(false); }}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-lg transition-all hover:scale-125">
+                    {em}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions hover */}
+          {!isEditing && (
+            <div className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
+              <button onClick={() => setEmojiOpen(v => !v)}
+                className="w-6 h-6 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+                <Smile size={12} />
+              </button>
+              <button onClick={() => onReply(msg)}
+                className="w-6 h-6 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+                <Reply size={12} />
+              </button>
+              <div className="relative">
+                <button onClick={() => setMenuOpen(v => !v)}
+                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+                  <MoreVertical size={12} />
+                </button>
+                {menuOpen && (
+                  <div className={`absolute z-20 py-1 rounded-xl shadow-xl overflow-hidden ${isMe ? 'right-0' : 'left-0'}`}
+                    style={{ bottom: '110%', minWidth: 160, background: 'var(--surface)', border: '1px solid var(--border)' }}
+                    onClick={e => e.stopPropagation()}>
+                    {isMe && (
+                      <button onClick={startEdit}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
+                        style={{ color: 'var(--text-primary)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <Pencil size={12} /> Modifier
+                      </button>
+                    )}
+                    {canManage && (
+                      <button onClick={() => { onPin(msg.id, !msg.is_pinned); setMenuOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
+                        style={{ color: 'var(--text-primary)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        {msg.is_pinned ? <PinOff size={12} /> : <Pin size={12} />}
+                        {msg.is_pinned ? 'Désépingler' : 'Épingler'}
+                      </button>
+                    )}
+                    {canManage && !isMe && (
+                      <button onClick={() => { onBlockSender(msg); setMenuOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
+                        style={{ color: '#F59E0B' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F59E0B10')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <UserMinus size={12} /> Bloquer l'auteur
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button onClick={() => { onDelete(msg.id); setMenuOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
+                        style={{ color: '#EF4444' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#EF444410')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <Trash2 size={12} /> Supprimer
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <span className="text-[10px] px-1" style={{ color: 'var(--text-tertiary)' }}>
+          {formatDistanceToNow(new Date(msg.created_at), { locale: fr, addSuffix: true })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── CommunityChat ─────────────────────────────────────────────────────────────
 
 function CommunityChat({ community, myRole, members, onRefresh }: {
   community: Community; myRole: string | null;
   members: CommunityMember[]; onRefresh: () => void;
 }) {
   const navigate                       = useNavigate();
-  const { user: me, accessToken }      = useAuthStore();
+  const { user: me }                   = useAuthStore();
   const [messages,     setMessages]    = useState<CommunityMessage[]>([]);
   const [input,        setInput]       = useState('');
   const [showSettings, setShowSettings]= useState(false);
   const [showInfo,     setShowInfo]    = useState(false);
-  const [menuMsgId,    setMenuMsgId]   = useState<string | null>(null);
-  const [editingId,    setEditingId]   = useState<string | null>(null);
-  const [editText,     setEditText]    = useState('');
-  const [emojiMsgId,   setEmojiMsgId]  = useState<string | null>(null);
+  const [showPins,     setShowPins]    = useState(false);
   const [replyTo,      setReplyTo]     = useState<CommunityMessage | null>(null);
-  const [forwarding,   setForwarding]  = useState<CommunityMessage | null>(null);
-  const wsRef     = useRef<WebSocket | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef  = useRef<HTMLInputElement>(null);
+  const [tab,          setTab]         = useState<ChatTab>('discussion');
+  const [uploading,    setUploading]   = useState(false);
+  const [pendingCount, setPendingCount]= useState(0);
+  const wsRef       = useRef<WebSocket | null>(null);
+  const bottomRef   = useRef<HTMLDivElement>(null);
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const fileRef     = useRef<HTMLInputElement>(null);
+  const msgRefs     = useRef<Record<string, HTMLDivElement | null>>({});
   const id = community.id;
   const [g1, g2] = gradientFor(community.name);
-  const count    = community.members_count ?? community.member_count ?? 0;
+  const count    = community.members_count ?? (community as any).member_count ?? 0;
   const canManage = myRole === 'admin' || myRole === 'moderator';
 
-  // Charge messages + WebSocket
-  useEffect(() => {
-    apiClient.get<any>(Endpoints.communities.messages(id))
+  const loadMessages = useCallback((msgType?: string) => {
+    let url = Endpoints.communities.messages(id);
+    if (msgType && msgType !== 'discussion') url += `?message_type=${msgType === 'announcements' ? 'announcement' : msgType === 'media' ? 'image,video' : msgType === 'polls' ? 'poll' : ''}`;
+    apiClient.get<any>(url)
       .then(r => setMessages(Array.isArray(r.data) ? r.data : r.data?.items ?? r.data?.data ?? []))
       .catch(() => {});
+  }, [id]);
 
+  useEffect(() => {
+    loadMessages(tab);
+  }, [tab, loadMessages]);
+
+  // Pending join requests count
+  useEffect(() => {
+    if (!canManage) return;
+    apiClient.get<any>(Endpoints.communities.joinRequests(id))
+      .then(r => {
+        const list = Array.isArray(r.data) ? r.data : r.data?.items ?? [];
+        setPendingCount(list.length);
+      })
+      .catch(() => {});
+  }, [id, canManage]);
+
+  // WebSocket
+  useEffect(() => {
     const token = useAuthStore.getState().accessToken ?? '';
     const ws = new WebSocket(`${WS_BASE_URL}/api/v1/communities/${id}/ws?token=${encodeURIComponent(token)}`);
     wsRef.current = ws;
@@ -432,63 +817,80 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   }, [messages]);
 
   async function sendMessage() {
-    if (!input.trim()) return;
     const content = input.trim();
+    if (!content) return;
     setInput('');
-    const payload: Record<string, unknown> = { content, message_type: 'text' };
+    const payload: Record<string, unknown> = {
+      content,
+      message_type: tab === 'announcements' ? 'announcement' : 'text',
+    };
     if (replyTo) { payload.reply_to_id = replyTo.id; setReplyTo(null); }
-    try { await apiClient.post(Endpoints.communities.messages(id), payload); } catch { }
+    try { await apiClient.post(Endpoints.communities.messages(id), payload); }
+    catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); setInput(content); }
   }
 
-  async function forwardMessage(msg: CommunityMessage) {
-    setForwarding(null);
-    if (!msg.content?.trim()) return;
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).slice(0, 4);
+    if (!files.length) return;
+    setUploading(true);
     try {
+      const urls = await Promise.all(files.map(async f => {
+        const form = new FormData();
+        form.append('file', f);
+        const folder = f.type.startsWith('video') ? 'communities/videos' : 'communities/images';
+        const r = await apiClient.post<{ url: string }>(
+          f.type.startsWith('video') ? `/api/v1/upload/video?folder=${folder}` : `/api/v1/upload/images?folder=${folder}`,
+          form, { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        return r.data.url;
+      }));
       await apiClient.post(Endpoints.communities.messages(id), {
-        content: msg.content,
-        message_type: 'text',
+        content: input.trim() || null,
+        message_type: files[0].type.startsWith('video') ? 'video' : 'image',
+        media_urls: urls,
+        reply_to_id: replyTo?.id ?? null,
       });
-    } catch { }
+      setInput(''); setReplyTo(null);
+    } catch { toast.error('Erreur lors de l\'upload'); }
+    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   }
 
-  async function editMessage(msgId: string, content: string) {
-    if (!content.trim()) return;
+  async function handleEdit(msg: CommunityMessage) {
     try {
-      await apiClient.put(Endpoints.communities.messageById(id, msgId), { content: content.trim() });
-      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, content: content.trim(), edited_at: new Date().toISOString() } : m));
-    } catch { }
-    setEditingId(null);
+      await apiClient.put(Endpoints.communities.messageById(id, msg.id), { content: msg.content });
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, content: msg.content, edited_at: new Date().toISOString() } : m));
+    } catch { toast.error('Erreur'); }
   }
 
-  async function deleteMessage(msgId: string) {
+  async function handleDelete(msgId: string) {
     if (!confirm('Supprimer ce message ?')) return;
     try {
       await apiClient.delete(Endpoints.communities.messageById(id, msgId));
       setMessages(prev => prev.filter(m => m.id !== msgId));
-    } catch { }
-    setMenuMsgId(null);
+    } catch { toast.error('Erreur'); }
   }
 
-  async function reactMessage(msgId: string, emoji: string) {
-    setEmojiMsgId(null);
+  async function handlePin(msgId: string, pin: boolean) {
+    try {
+      if (pin) await apiClient.post(Endpoints.communities.pinMessage(id, msgId));
+      else await apiClient.delete(Endpoints.communities.pinMessage(id, msgId));
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_pinned: pin } : m));
+      toast.success(pin ? 'Message épinglé' : 'Message désépinglé');
+    } catch { toast.error('Erreur'); }
+  }
+
+  async function handleReact(msgId: string, emoji: string) {
     try {
       await apiClient.post(Endpoints.communities.messageReact(id, msgId), { emoji });
-      // Le WS va mettre à jour les réactions en temps réel
-      // Optimistic local update en attendant
       setMessages(prev => prev.map(m => {
         if (m.id !== msgId) return m;
         const reactions = [...(m.reactions ?? [])];
         const existing = reactions.find(r => r.emoji === emoji);
         const meId = me?.id ?? '';
         if (existing) {
-          const alreadyReacted = existing.user_ids.includes(meId);
-          if (alreadyReacted) {
-            existing.count = Math.max(0, existing.count - 1);
-            existing.user_ids = existing.user_ids.filter(uid => uid !== meId);
-          } else {
-            existing.count += 1;
-            existing.user_ids = [...existing.user_ids, meId];
-          }
+          const already = existing.user_ids.includes(meId);
+          if (already) { existing.count = Math.max(0, existing.count - 1); existing.user_ids = existing.user_ids.filter(u => u !== meId); }
+          else { existing.count += 1; existing.user_ids = [...existing.user_ids, meId]; }
           return { ...m, reactions: reactions.filter(r => r.count > 0) };
         }
         return { ...m, reactions: [...reactions, { emoji, count: 1, user_ids: [meId] }] };
@@ -496,14 +898,36 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
     } catch { }
   }
 
+  async function handleBlockSender(msg: CommunityMessage) {
+    if (!confirm(`Bloquer ${msg.sender_display_name ?? msg.sender_username} ?`)) return;
+    try {
+      await apiClient.post(Endpoints.communities.block(id, msg.sender_id));
+      toast.success('Utilisateur bloqué');
+    } catch { toast.error('Erreur'); }
+  }
+
   async function handleLeave() {
     if (!confirm('Quitter cette communauté ?')) return;
     try { await apiClient.post(Endpoints.communities.leave(id)); onRefresh(); } catch { }
   }
 
+  function jumpToMsg(msgId: string) {
+    const el = msgRefs.current[msgId];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  const TABS: { key: ChatTab; icon: React.FC<any>; label: string }[] = [
+    { key: 'discussion',   icon: MessageCircle, label: 'Discussion' },
+    { key: 'announcements',icon: Megaphone,     label: 'Annonces'  },
+    { key: 'media',        icon: ImageIcon,     label: 'Médias'    },
+    { key: 'polls',        icon: Vote,          label: 'Sondages'  },
+  ];
+
+  const canPost = tab !== 'announcements' || canManage;
+
   return (
     <>
-      {/* Header style WhatsApp */}
+      {/* Header */}
       <div className="flex items-center gap-3 px-3 py-2.5 shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <button onClick={() => navigate(-1)} className="p-1.5 rounded-xl shrink-0 transition-all"
@@ -512,8 +936,6 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
           <ArrowLeft size={20} />
         </button>
-
-        {/* Avatar + nom cliquable → info panel */}
         <button onClick={() => setShowInfo(v => !v)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
           {community.avatar_url
             ? <img src={community.avatar_url} className="w-9 h-9 rounded-xl object-cover shrink-0" alt="" />
@@ -523,34 +945,62 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               </div>
           }
           <div className="min-w-0">
-            <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
+            <div className="flex items-center gap-1">
+              <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
+              {community.is_verified && <BadgeCheck size={13} color="#1D9BF0" />}
+            </div>
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{fmtCount(count)} membres</p>
           </div>
         </button>
 
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => navigate(`/communities/${id}/channels`)}
-            className="p-1.5 rounded-xl transition-all" title="Channels"
+          {canManage && (
+            <button onClick={() => setShowPins(true)} className="p-1.5 rounded-xl transition-all" title="Épinglés"
+              style={{ color: 'var(--text-tertiary)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <Pin size={18} />
+            </button>
+          )}
+          <button onClick={() => navigate(`/communities/${id}/events`)} className="p-1.5 rounded-xl transition-all" title="Événements"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <Calendar size={18} />
+          </button>
+          <button onClick={() => navigate(`/communities/${id}/channels`)} className="p-1.5 rounded-xl transition-all" title="Canaux"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <Hash size={18} />
           </button>
-          <button onClick={() => navigate(`/communities/${id}/leaderboard`)}
-            className="p-1.5 rounded-xl transition-all" title="Classement"
+          <button onClick={() => navigate(`/communities/${id}/leaderboard`)} className="p-1.5 rounded-xl transition-all" title="Classement"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <Trophy size={18} />
           </button>
           {canManage && (
-            <button onClick={() => navigate(`/communities/${id}/join-requests`)}
-              className="p-1.5 rounded-xl transition-all" title="Demandes d'adhesion"
-              style={{ color: 'var(--text-tertiary)' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <UserCheck size={18} />
-            </button>
+            <>
+              <button onClick={() => navigate(`/communities/${id}/stats`)} className="p-1.5 rounded-xl transition-all" title="Statistiques"
+                style={{ color: 'var(--text-tertiary)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <BarChart2 size={18} />
+              </button>
+              <div className="relative">
+                <button onClick={() => navigate(`/communities/${id}/join-requests`)} className="p-1.5 rounded-xl transition-all" title="Demandes"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <UserCheck size={18} />
+                </button>
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black text-white flex items-center justify-center"
+                    style={{ background: '#F59E0B' }}>{pendingCount}</span>
+                )}
+              </div>
+            </>
           )}
           <button onClick={() => setShowInfo(v => !v)} className="p-1.5 rounded-xl transition-all"
             style={{ color: showInfo ? 'var(--primary)' : 'var(--text-tertiary)' }}
@@ -569,13 +1019,28 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
         </div>
       </div>
 
-      {/* Panel info latéral (slide depuis la droite) */}
+      {/* Tabs Discussion / Annonces / Médias / Sondages */}
+      <div className="flex shrink-0 overflow-x-auto scrollbar-hide"
+        style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+        {TABS.map(t => {
+          const Icon = t.icon;
+          return (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold whitespace-nowrap relative shrink-0"
+              style={{ color: tab === t.key ? 'var(--primary)' : 'var(--text-tertiary)' }}>
+              <Icon size={13} /> {t.label}
+              {tab === t.key && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: 'var(--primary)' }} />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Panel info latéral */}
       {showInfo && (
-        <div className="absolute inset-0 z-30 flex" style={{ top: 57 }}>
+        <div className="absolute inset-0 z-30 flex" style={{ top: 100 }}>
           <div className="flex-1" onClick={() => setShowInfo(false)} />
           <div className="w-72 h-full overflow-y-auto flex flex-col"
             style={{ background: 'var(--surface)', borderLeft: '1px solid var(--border)', boxShadow: '-8px 0 32px rgba(0,0,0,0.12)' }}>
-            {/* Header info */}
             <div className="relative" style={{ height: 100 }}>
               {community.banner_url
                 ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
@@ -593,15 +1058,13 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               {community.description && (
                 <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>{community.description}</p>
               )}
-
-              {/* Membres */}
               <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'var(--text-tertiary)' }}>
                 MEMBRES ({members.length})
               </p>
-              {members.slice(0, 10).map(m => (
+              {members.slice(0, 15).map(m => (
                 <button key={m.id}
-                  onClick={() => navigate(`/users/${m.user_id}`)}
-                  className="w-full flex items-center gap-2.5 py-2 text-left transition-all"
+                  onClick={() => navigate(`/communities/${id}/members/${m.user_id}`)}
+                  className="w-full flex items-center gap-2.5 py-2 px-1 text-left rounded-xl transition-all"
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <Avatar src={m.avatar_url} name={m.display_name ?? m.username ?? '?'} size="xs" />
@@ -618,8 +1081,27 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                   )}
                 </button>
               ))}
-
-              {/* Quitter */}
+              {/* Liens rapides */}
+              <div className="mt-4 space-y-2">
+                <button onClick={() => { setShowInfo(false); navigate(`/communities/${id}/events`); }}
+                  className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
+                  style={{ background: 'var(--bg-secondary)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+                  <Calendar size={15} style={{ color: 'var(--primary)' }} />
+                  <span style={{ color: 'var(--text-primary)' }}>Événements</span>
+                  <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+                <button onClick={() => { setShowInfo(false); navigate(`/communities/${id}/leaderboard`); }}
+                  className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
+                  style={{ background: 'var(--bg-secondary)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+                  <Trophy size={15} style={{ color: '#F59E0B' }} />
+                  <span style={{ color: 'var(--text-primary)' }}>Classement</span>
+                  <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+              </div>
               <button onClick={handleLeave}
                 className="w-full flex items-center justify-center gap-2 mt-4 py-3 rounded-xl text-sm font-bold transition-all"
                 style={{ background: '#EF444412', color: '#EF4444', border: '1px solid #EF444430' }}>
@@ -630,257 +1112,100 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
         </div>
       )}
 
-      {/* Messages — zone scrollable */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2"
-        style={{ background: 'var(--bg)' }}>
-        {messages.length === 0 && (
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2" style={{ background: 'var(--bg)' }}>
+        {messages.length === 0 && !uploading && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-16 opacity-50">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ background: 'var(--bg-secondary)' }}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
               <Users size={24} style={{ color: 'var(--text-tertiary)' }} />
             </div>
             <p className="text-sm font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-              Aucun message — démarrez la discussion !
+              {tab === 'discussion' ? 'Aucun message — démarrez la discussion !'
+                : tab === 'announcements' ? 'Aucune annonce'
+                : tab === 'media' ? 'Aucun média partagé'
+                : 'Aucun sondage'}
             </p>
           </div>
         )}
         {messages.map(msg => {
-          const isMe         = msg.sender_id === me?.id;
-          const canDelete    = isMe || canManage;
-          const authorName   = msg.sender_display_name ?? msg.sender_username ?? 'Utilisateur';
-          const isEditing    = editingId === msg.id;
-          const menuOpen     = menuMsgId === msg.id;
-          const emojiOpen    = emojiMsgId === msg.id;
-          const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
-
+          const isMe = msg.sender_id === me?.id;
           return (
-            <div key={msg.id} className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : ''}`}
-              onClick={() => { setMenuMsgId(null); setEmojiMsgId(null); }}>
-              {!isMe && (
-                <button className="mt-1 shrink-0" onClick={e => { e.stopPropagation(); navigate(`/users/${msg.sender_id}`); }}>
-                  <Avatar src={msg.sender_avatar_url} name={authorName} size="xs" />
-                </button>
-              )}
-              <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                {!isMe && (
-                  <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>{authorName}</span>
-                )}
-
-                {/* Bulle + actions inline */}
-                <div className={`flex items-end gap-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-                  <div className="relative">
-
-                    {/* Mode édition */}
-                    {isEditing ? (
-                      <div className="flex gap-1.5 items-center">
-                        <input autoFocus value={editText} onChange={e => setEditText(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); editMessage(msg.id, editText); }
-                            if (e.key === 'Escape') setEditingId(null);
-                          }}
-                          className="input text-sm rounded-2xl px-3.5 py-2" style={{ minWidth: 160 }} />
-                        <button onClick={() => editMessage(msg.id, editText)}
-                          className="w-7 h-7 rounded-full flex items-center justify-center"
-                          style={{ background: 'var(--primary)', color: '#fff' }}>
-                          <Check size={13} />
-                        </button>
-                        <button onClick={() => setEditingId(null)}
-                          className="w-7 h-7 rounded-full flex items-center justify-center"
-                          style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
-                          <X size={13} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className={`rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
-                        style={isMe
-                          ? { background: 'var(--primary)', color: '#fff' }
-                          : { background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }
-                        }>
-                        {/* Preview reply */}
-                        {(msg as any).reply_to && (
-                          <div className="px-3 pt-2 pb-1.5"
-                            style={{ borderBottom: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'var(--border)'}` }}>
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <Reply size={10} style={{ opacity: 0.7 }} />
-                              <span className="text-[10px] font-bold opacity-80">
-                                {(msg as any).reply_to.sender_display_name ?? (msg as any).reply_to.sender_username ?? 'Utilisateur'}
-                              </span>
-                            </div>
-                            <p className="text-[11px] opacity-70 truncate max-w-[200px]">
-                              {(msg as any).reply_to.content}
-                            </p>
-                          </div>
-                        )}
-                        {/* Contenu */}
-                        <div className="px-3.5 py-2">
-                          {msg.content}
-                          {msg.edited_at && <span className="text-[9px] ml-1.5 opacity-60">modifié</span>}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Réactions */}
-                    {(msg.reactions ?? []).filter(r => r.count > 0).length > 0 && (
-                      <div className={`flex flex-wrap gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                        {(msg.reactions ?? []).filter(r => r.count > 0).map(r => {
-                          const reacted = r.user_ids.includes(me?.id ?? '');
-                          return (
-                            <button key={r.emoji} onClick={e => { e.stopPropagation(); reactMessage(msg.id, r.emoji); }}
-                              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs transition-all"
-                              style={{
-                                background: reacted ? 'var(--primary)20' : 'var(--bg-secondary)',
-                                border: `1px solid ${reacted ? 'var(--primary)50' : 'var(--border)'}`,
-                                color: reacted ? 'var(--primary)' : 'var(--text-secondary)',
-                              }}>
-                              {r.emoji} <span className="font-semibold">{r.count}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Picker emoji */}
-                    {emojiOpen && (
-                      <div className={`absolute z-20 flex gap-1 p-1.5 rounded-2xl shadow-xl ${isMe ? 'right-0' : 'left-0'}`}
-                        style={{ bottom: '110%', background: 'var(--surface)', border: '1px solid var(--border)' }}
-                        onClick={e => e.stopPropagation()}>
-                        {QUICK_EMOJIS.map(em => (
-                          <button key={em} onClick={() => reactMessage(msg.id, em)}
-                            className="w-8 h-8 rounded-xl flex items-center justify-center text-lg transition-all hover:scale-125">
-                            {em}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Boutons actions au hover */}
-                  {!isEditing && (
-                    <div className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-                      <button onClick={e => { e.stopPropagation(); setEmojiMsgId(emojiOpen ? null : msg.id); setMenuMsgId(null); }}
-                        className="w-6 h-6 rounded-full flex items-center justify-center"
-                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
-                        <Smile size={12} />
-                      </button>
-                      <button onClick={e => { e.stopPropagation(); setReplyTo(msg); setMenuMsgId(null); setEmojiMsgId(null); inputRef.current?.focus(); }}
-                        className="w-6 h-6 rounded-full flex items-center justify-center"
-                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
-                        <Reply size={12} />
-                      </button>
-                      <div className="relative">
-                        <button onClick={e => { e.stopPropagation(); setMenuMsgId(menuOpen ? null : msg.id); setEmojiMsgId(null); }}
-                          className="w-6 h-6 rounded-full flex items-center justify-center"
-                          style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
-                          <MoreVertical size={12} />
-                        </button>
-                        {menuOpen && (
-                          <div className={`absolute z-20 py-1 rounded-xl shadow-xl overflow-hidden ${isMe ? 'right-0' : 'left-0'}`}
-                            style={{ bottom: '110%', minWidth: 150, background: 'var(--surface)', border: '1px solid var(--border)' }}
-                            onClick={e => e.stopPropagation()}>
-                            {/* Transférer */}
-                            <button onClick={() => { setForwarding(msg); setMenuMsgId(null); }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
-                              style={{ color: 'var(--text-primary)' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                              <Forward size={12} /> Transférer
-                            </button>
-                            {/* Modifier (seulement ses msgs) */}
-                            {isMe && (
-                              <button onClick={() => { setEditingId(msg.id); setEditText(msg.content ?? ''); setMenuMsgId(null); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
-                                style={{ color: 'var(--text-primary)' }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                                <Pencil size={12} /> Modifier
-                              </button>
-                            )}
-                            {/* Supprimer */}
-                            {canDelete && (
-                              <button onClick={() => deleteMessage(msg.id)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
-                                style={{ color: '#EF4444' }}
-                                onMouseEnter={e => (e.currentTarget.style.background = '#EF444410')}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                                <Trash2 size={12} /> Supprimer
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <span className="text-[10px] px-1" style={{ color: 'var(--text-tertiary)' }}>
-                  {formatDistanceToNow(new Date(msg.created_at), { locale: fr, addSuffix: true })}
-                </span>
-              </div>
+            <div key={msg.id} ref={el => { msgRefs.current[msg.id] = el; }}>
+              <MessageBubble
+                msg={msg}
+                isMe={isMe}
+                canManage={canManage}
+                onReact={handleReact}
+                onReply={setReplyTo}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onPin={handlePin}
+                onBlockSender={handleBlockSender}
+                navigate={navigate}
+              />
             </div>
           );
         })}
+        {uploading && (
+          <div className="flex items-center gap-2 justify-center py-4">
+            <Spinner size="sm" />
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Envoi en cours…</span>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Zone input : preview reply/forward + champ texte */}
-      <div className="shrink-0" style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
-
-        {/* Bandeau reply */}
-        {replyTo && (
-          <div className="flex items-center gap-2 px-3 pt-2 pb-1"
-            style={{ borderBottom: '1px solid var(--border)' }}>
-            <Reply size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold" style={{ color: 'var(--primary)' }}>
-                {replyTo.sender_display_name ?? replyTo.sender_username ?? 'Utilisateur'}
-              </p>
-              <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{replyTo.content}</p>
+      {/* Input */}
+      {canPost && (
+        <div className="shrink-0" style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+          {replyTo && (
+            <div className="flex items-center gap-2 px-3 pt-2 pb-1" style={{ borderBottom: '1px solid var(--border)' }}>
+              <Reply size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold" style={{ color: 'var(--primary)' }}>
+                  {replyTo.sender_display_name ?? replyTo.sender_username}
+                </p>
+                <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{replyTo.content}</p>
+              </div>
+              <button onClick={() => setReplyTo(null)} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}>
+                <X size={14} />
+              </button>
             </div>
-            <button onClick={() => setReplyTo(null)} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}>
-              <X size={14} />
+          )}
+          {tab === 'announcements' && canManage && (
+            <div className="flex items-center gap-2 px-3 pt-2 pb-0">
+              <Megaphone size={13} style={{ color: 'var(--primary)' }} />
+              <span className="text-[10px] font-bold" style={{ color: 'var(--primary)' }}>Mode annonce</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 px-3 py-2">
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+              <ImageIcon size={16} />
+            </button>
+            <input ref={fileRef} type="file" accept="image/*,video/*" multiple hidden onChange={handleUpload} />
+            <input ref={inputRef}
+              className="input flex-1 text-sm rounded-full px-4 py-2.5"
+              placeholder={tab === 'announcements' ? 'Écrire une annonce…' : 'Message…'}
+              value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            />
+            <button onClick={sendMessage} disabled={!input.trim() || uploading}
+              className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-40 transition-all shrink-0"
+              style={{ background: input.trim() ? 'var(--primary)' : 'var(--bg-secondary)' }}>
+              <Send size={16} style={{ color: input.trim() ? '#fff' : 'var(--text-tertiary)' }} />
             </button>
           </div>
-        )}
-
-        {/* Bandeau forward */}
-        {forwarding && (
-          <div className="flex items-center gap-2 px-3 pt-2 pb-1"
-            style={{ borderBottom: '1px solid var(--border)', background: '#3B82F608' }}>
-            <Forward size={13} style={{ color: '#3B82F6', flexShrink: 0 }} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold" style={{ color: '#3B82F6' }}>Transférer le message</p>
-              <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{forwarding.content}</p>
-            </div>
-            <button onClick={() => forwardMessage(forwarding)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
-              style={{ background: '#3B82F6', flexShrink: 0 }}>
-              <Send size={11} /> Envoyer
-            </button>
-            <button onClick={() => setForwarding(null)} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}>
-              <X size={14} />
-            </button>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 px-3 py-2">
-          <input ref={inputRef}
-            className="input flex-1 text-sm rounded-full px-4 py-2.5"
-            placeholder="Message…"
-            value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          />
-          <button onClick={sendMessage} disabled={!input.trim()}
-            className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-40 transition-all shrink-0"
-            style={{ background: input.trim() ? 'var(--primary)' : 'var(--bg-secondary)' }}>
-            <Send size={16} style={{ color: input.trim() ? '#fff' : 'var(--text-tertiary)' }} />
-          </button>
         </div>
-      </div>
+      )}
 
       {showSettings && (
         <SettingsPanel community={community} myRole={myRole}
-          onClose={() => setShowSettings(false)}
-          onSaved={onRefresh} />
+          onClose={() => setShowSettings(false)} onSaved={onRefresh} />
+      )}
+      {showPins && (
+        <PinnedDrawer communityId={id} onClose={() => setShowPins(false)} onJump={jumpToMsg} />
       )}
     </>
   );
@@ -911,7 +1236,6 @@ export default function CommunityDetailPage() {
       setIsMember(!!mine);
       setMyRole(mine?.role ?? null);
     } catch {
-      // Si 403 → pas membre
       setIsMember(false);
       setMyRole(null);
     }
@@ -919,10 +1243,7 @@ export default function CommunityDetailPage() {
 
   useEffect(() => { loadMeta(); }, [loadMeta]);
 
-  function handleJoined() {
-    refetch();
-    loadMeta();
-  }
+  function handleJoined() { refetch(); loadMeta(); }
 
   if (loading || isMember === null) {
     return (
@@ -933,9 +1254,7 @@ export default function CommunityDetailPage() {
             <ArrowLeft size={20} />
           </button>
         </div>
-        <div className="flex-1 flex items-center justify-center">
-          <Spinner size="lg" />
-        </div>
+        <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>
       </div>
     );
   }
@@ -958,7 +1277,6 @@ export default function CommunityDetailPage() {
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Header retour pour non-membres */}
       {!isMember && (
         <div className="flex items-center gap-3 px-3 py-2.5 shrink-0"
           style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
@@ -971,7 +1289,6 @@ export default function CommunityDetailPage() {
           <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
         </div>
       )}
-
       {isMember
         ? <CommunityChat community={community} myRole={myRole} members={members} onRefresh={() => { refetch(); loadMeta(); }} />
         : <CommunityLanding community={community} onJoined={handleJoined} />
