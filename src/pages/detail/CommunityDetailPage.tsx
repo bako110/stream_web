@@ -340,7 +340,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                   <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Approbation requise</p>
                   <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Les demandes doivent être approuvées</p>
                 </div>
-                <button onClick={() => setEditApproval(v => !v)}
+                <button onClick={() => setEditApproval((v: boolean) => !v)}
                   className="w-12 h-6 rounded-full relative transition-all"
                   style={{ background: editApproval ? 'var(--primary)' : 'var(--border)' }}>
                   <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
@@ -355,7 +355,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                   <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Chat membres uniquement</p>
                   <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Seuls les membres peuvent écrire</p>
                 </div>
-                <button onClick={() => setEditMembersOnly(v => !v)}
+                <button onClick={() => setEditMembersOnly((v: boolean) => !v)}
                   className="w-12 h-6 rounded-full relative transition-all"
                   style={{ background: editMembersOnly ? 'var(--primary)' : 'var(--border)' }}>
                   <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"

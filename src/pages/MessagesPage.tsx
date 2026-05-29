@@ -515,7 +515,7 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
             {formatMsgTime(msg.created_at)}
           </span>
           {isMe && (
-            msg.read
+            (msg as any).read
               ? <CheckCheck size={11} style={{ color: '#7B3FF2' }} />
               : <Check size={11} style={{ color: 'var(--text-tertiary)' }} />
           )}
@@ -1214,7 +1214,6 @@ export default function MessagesPage() {
             userId={selectedId}
             wsPayload={lastWsPayload}
             isWsConnected={isConnected}
-            onSendWs={sendWsMessage}
             onMessageSent={preview => convoListRef.current?.updatePreview(selectedId, preview)}
             onBack={handleBack}
           />

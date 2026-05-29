@@ -301,7 +301,7 @@ export default function SerieDetailPage() {
           // HLS qualité spécifique disponible
           setPlayingVideo({
             ...vid,
-            hls_url: vid.hls_1080p_url ?? vid.hls_720p_url ?? vid.hls_480p_url,
+            hls_url: vid.hls_1080p_url ?? vid.hls_720p_url ?? vid.hls_480p_url ?? null,
           });
         } else if ((ep as any).video_url) {
           // Fallback : video_url direct stocké sur l'épisode PostgreSQL

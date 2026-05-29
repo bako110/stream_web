@@ -831,7 +831,7 @@ export default function PlanningPage() {
         {FILTER_TABS.map(f => {
           const count = f.key === 'all' ? entries.length : counts[f.key as keyof typeof counts] ?? 0;
           return (
-            <button key={f.val || f.key} onClick={() => setFilter(f.key)}
+            <button key={f.key} onClick={() => setFilter(f.key)}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
               style={filter === f.key
                 ? { background: 'var(--primary)', color: '#fff' }
