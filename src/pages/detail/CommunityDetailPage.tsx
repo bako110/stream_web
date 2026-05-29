@@ -6,7 +6,7 @@ import {
   Search, X, ChevronRight, Info, MoreVertical, Pencil, Smile, Reply,
   Hash, Trophy, UserCheck, Pin, Image as ImageIcon, BarChart2,
   Calendar, MessageCircle, Megaphone, Film as FilmIcon, Vote,
-  PinOff, UserMinus, Ban, Forward,
+  PinOff, UserMinus, Ban, Forward, Clock,
 } from 'lucide-react';
 import type { Community } from '../../types';
 import { apiClient } from '../../api';
@@ -446,24 +446,47 @@ function PinnedDrawer({ communityId, onClose, onJump }: {
 
 // ── Vue non-membre (landing) ──────────────────────────────────────────────────
 
-function CommunityLanding({ community, onJoined }: { community: Community; onJoined: () => void }) {
+function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate }: {
+  community: Community;
+  joinStatus: 'none' | 'pending' | 'member';
+  onJoined: () => void;
+  onPendingUpdate: () => void;
+}) {
   const [joining, setJoining] = useState(false);
   const [g1, g2] = gradientFor(community.name);
   const count    = community.members_count ?? (community as any).member_count ?? 0;
 
   async function handleJoin() {
+    if (joining || joinStatus === 'pending') return;
     setJoining(true);
     try {
       const r = await apiClient.post<any>(Endpoints.communities.join(community.id));
-      if (r.data?.pending) {
-        toast.success('Demande envoyée, en attente d\'approbation');
-      } else {
+      if (r.data?.pending || r.data?.approval_required) {
+        onPendingUpdate();
+        toast.success('Demande envoyée — en attente d\'approbation');
+      } else if (r.data?.joined) {
         toast.success('Communauté rejointe !');
+        onJoined();
+      } else {
+        // Certains backends retournent juste 200 sans champ joined
         onJoined();
       }
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Erreur');
+      const detail = e?.response?.data?.detail ?? '';
+      if (detail.toLowerCase().includes('déjà') || detail.toLowerCase().includes('already')) {
+        onJoined();
+      } else {
+        toast.error(detail || 'Impossible de rejoindre la communauté');
+      }
     } finally { setJoining(false); }
+  }
+
+  async function handleCancelRequest() {
+    try {
+      await apiClient.delete(Endpoints.communities.join(community.id));
+      onPendingUpdate();
+      toast.success('Demande annulée');
+    } catch { toast.error('Erreur'); }
   }
 
   return (
@@ -521,11 +544,34 @@ function CommunityLanding({ community, onJoined }: { community: Community; onJoi
             </p>
           )}
         </div>
-        <button onClick={handleJoin} disabled={joining}
-          className="w-full max-w-sm flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white text-sm disabled:opacity-60 transition-all"
-          style={{ background: `linear-gradient(90deg, ${g1}, ${g2})` }}>
-          {joining ? <Spinner size="sm" /> : <><UserPlus size={16} /> Rejoindre la communauté</>}
-        </button>
+        {joinStatus === 'pending' ? (
+          <div className="w-full max-w-sm space-y-3">
+            <div className="flex items-center gap-3 p-4 rounded-2xl"
+              style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(245,158,11,0.2)' }}>
+                <Clock size={18} style={{ color: '#F59E0B' }} />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-sm" style={{ color: '#F59E0B' }}>Demande en attente</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                  En attente d'approbation par un admin
+                </p>
+              </div>
+            </div>
+            <button onClick={handleCancelRequest}
+              className="w-full py-3 rounded-2xl font-semibold text-sm transition-all"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+              Annuler la demande
+            </button>
+          </div>
+        ) : (
+          <button onClick={handleJoin} disabled={joining}
+            className="w-full max-w-sm flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white text-sm disabled:opacity-60 transition-all"
+            style={{ background: `linear-gradient(90deg, ${g1}, ${g2})` }}>
+            {joining ? <Spinner size="sm" /> : <><UserPlus size={16} /> Rejoindre la communauté</>}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1222,22 +1268,57 @@ export default function CommunityDetailPage() {
     () => apiClient.get<Community>(Endpoints.communities.byId(id!)), [id],
   );
 
-  const [isMember, setIsMember] = useState<boolean | null>(null);
-  const [myRole,   setMyRole]   = useState<string | null>(null);
-  const [members,  setMembers]  = useState<CommunityMember[]>([]);
+  const [isMember,   setIsMember]   = useState<boolean | null>(null);
+  const [joinStatus, setJoinStatus] = useState<'none' | 'pending' | 'member'>('none');
+  const [myRole,     setMyRole]     = useState<string | null>(null);
+  const [members,    setMembers]    = useState<CommunityMember[]>([]);
 
   const loadMeta = useCallback(async () => {
     if (!id) return;
     try {
-      const res = await apiClient.get<any>(`/api/v1/communities/${id}/members`);
-      const list: CommunityMember[] = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
-      setMembers(list);
-      const mine = list.find(m => m.user_id === me?.id);
-      setIsMember(!!mine);
-      setMyRole(mine?.role ?? null);
+      // Priorité 1 : join_status depuis l'endpoint communauté (comme le mobile)
+      const commRes = await apiClient.get<any>(Endpoints.communities.byId(id));
+      const c = commRes.data?.data ?? commRes.data;
+      const js: 'none' | 'pending' | 'member' = c?.join_status ?? 'none';
+      setJoinStatus(js);
+
+      if (js === 'member') {
+        setIsMember(true);
+        // Charger le rôle depuis la liste des membres
+        apiClient.get<any>(`/api/v1/communities/${id}/members`)
+          .then(res => {
+            const list: CommunityMember[] = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
+            setMembers(list);
+            const mine = list.find(m => m.user_id === me?.id);
+            setMyRole(mine?.role ?? null);
+          })
+          .catch(() => {
+            // Si /members est refusé, essayer /my-role
+            apiClient.get<any>(Endpoints.communities.role(id))
+              .then(r => setMyRole(r.data?.role ?? null))
+              .catch(() => setMyRole('member'));
+          });
+      } else {
+        setIsMember(false);
+        setMyRole(null);
+        setMembers([]);
+      }
     } catch {
-      setIsMember(false);
-      setMyRole(null);
+      // Fallback : tenter /members directement
+      try {
+        const res = await apiClient.get<any>(`/api/v1/communities/${id}/members`);
+        const list: CommunityMember[] = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
+        setMembers(list);
+        const mine = list.find(m => m.user_id === me?.id);
+        const member = !!mine;
+        setIsMember(member);
+        setJoinStatus(member ? 'member' : 'none');
+        setMyRole(mine?.role ?? null);
+      } catch {
+        setIsMember(false);
+        setJoinStatus('none');
+        setMyRole(null);
+      }
     }
   }, [id, me?.id]);
 
@@ -1291,7 +1372,7 @@ export default function CommunityDetailPage() {
       )}
       {isMember
         ? <CommunityChat community={community} myRole={myRole} members={members} onRefresh={() => { refetch(); loadMeta(); }} />
-        : <CommunityLanding community={community} onJoined={handleJoined} />
+        : <CommunityLanding community={community} joinStatus={joinStatus} onJoined={handleJoined} onPendingUpdate={() => setJoinStatus('pending')} />
       }
     </div>
   );
