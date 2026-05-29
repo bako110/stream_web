@@ -64,8 +64,10 @@ const CreatePostPage     = lazy(() => import('./pages/create/CreatePostPage'));
 const CreateReelPage     = lazy(() => import('./pages/create/CreateReelPage'));
 const CreateConcertPage  = lazy(() => import('./pages/create/CreateConcertPage'));
 const CreateEventPage    = lazy(() => import('./pages/create/CreateEventPage'));
-const SubscriptionsPage  = lazy(() => import('./pages/SubscriptionsPage'));
-const PrivacyPage        = lazy(() => import('./pages/PrivacyPage'));
+const SubscriptionsPage              = lazy(() => import('./pages/SubscriptionsPage'));
+const PrivacyPage                    = lazy(() => import('./pages/PrivacyPage'));
+const CGUPage                        = lazy(() => import('./pages/CGUPage'));
+const PolitiqueConfidentialitePage   = lazy(() => import('./pages/PolitiqueConfidentialitePage'));
 const BlockedUsersPage   = lazy(() => import('./pages/BlockedUsersPage'));
 const OnboardingPage     = lazy(() => import('./pages/OnboardingPage'));
 const StoryViewersPage   = lazy(() => import('./pages/StoryViewersPage'));
@@ -230,8 +232,10 @@ function AppShell() {
             <Route path="/create/concert"                   element={<CreateConcertPage />} />
             <Route path="/create/event"                     element={<CreateEventPage />} />
             <Route path="/subscriptions"     element={<SubscriptionsPage />} />
-            <Route path="/privacy"           element={<PrivacyPage />} />
-            <Route path="/blocked-users"     element={<BlockedUsersPage />} />
+            <Route path="/privacy"                        element={<PrivacyPage />} />
+            <Route path="/cgu"                            element={<CGUPage />} />
+            <Route path="/politique-confidentialite"      element={<PolitiqueConfidentialitePage />} />
+            <Route path="/blocked-users"                  element={<BlockedUsersPage />} />
             <Route path="/planning"          element={<PlanningPage />} />
             <Route path="/support"           element={<SupportPage />} />
             <Route path="/stories/:id/viewers"                    element={<StoryViewersPage />} />

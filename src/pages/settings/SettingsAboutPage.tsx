@@ -1,17 +1,52 @@
-import { ArrowLeft, Info, Shield, Link } from 'lucide-react';
+import { ArrowLeft, Info, Shield, FileText, Lock, Mail, ExternalLink, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function SettingsAboutPage() {
   const navigate = useNavigate();
 
   const rows = [
-    { icon: <Info size={16} />,   label: 'Version',                   value: '1.0.0 (web)' },
-    { icon: <Shield size={16} />, label: "Conditions d'utilisation",  onClick: () => window.open('https://folix.app/terms', '_blank') },
-    { icon: <Link size={16} />,   label: 'Aide & Support',            value: 'support@folix.app', onClick: () => window.open('mailto:support@folix.app') },
+    {
+      icon: <Info size={16} />,
+      label: 'Version',
+      value: '1.0.0 (web)',
+      onClick: undefined as (() => void) | undefined,
+    },
+    {
+      icon: <FileText size={16} />,
+      label: "Conditions d'utilisation",
+      value: 'CGU v2.0 · FoliX',
+      onClick: () => navigate('/cgu'),
+    },
+    {
+      icon: <Lock size={16} />,
+      label: 'Politique de confidentialité',
+      value: 'RGPD · Données personnelles',
+      onClick: () => navigate('/politique-confidentialite'),
+    },
+    {
+      icon: <Shield size={16} />,
+      label: 'Confidentialité du compte',
+      value: 'Gérer vos préférences',
+      onClick: () => navigate('/privacy'),
+    },
+    {
+      icon: <Mail size={16} />,
+      label: 'Aide & Support',
+      value: 'support@folix.app',
+      onClick: () => navigate('/support'),
+    },
+    {
+      icon: <ExternalLink size={16} />,
+      label: 'Site web FoliX',
+      value: 'folix.app',
+      onClick: () => window.open('https://folix.app', '_blank'),
+    },
   ];
 
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-5">
+
+      {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/settings')}
           className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
@@ -26,6 +61,21 @@ export default function SettingsAboutPage() {
         </div>
       </div>
 
+      {/* App identity card */}
+      <div className="rounded-2xl p-5 flex items-center gap-4"
+        style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(224,56,154,0.05))', border: '1px solid rgba(123,63,242,0.18)' }}>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 font-black text-xl"
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff' }}>
+          FX
+        </div>
+        <div>
+          <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>FoliX</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Version 1.0.0 (web) · © 2026</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Développé par Sahelys</p>
+        </div>
+      </div>
+
+      {/* Liens */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         {rows.map((row, i) => (
           <div key={i}
@@ -45,9 +95,21 @@ export default function SettingsAboutPage() {
               <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{row.label}</span>
               {row.value && <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{row.value}</p>}
             </div>
+            {row.onClick && <ChevronRight size={15} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />}
           </div>
         ))}
       </div>
+
+      {/* Badges légaux */}
+      <div className="flex flex-wrap gap-2">
+        {['RGPD', 'AES-256', 'TLS 1.3', 'Hébergement UE', 'PCI-DSS'].map(label => (
+          <span key={label} className="text-xs px-3 py-1 rounded-full font-semibold"
+            style={{ background: 'rgba(123,63,242,0.08)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.15)' }}>
+            {label}
+          </span>
+        ))}
+      </div>
+
     </div>
   );
 }
