@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, TrendingUp, Film, Music, Calendar, User } from 'lucide-react';
+import { Search, TrendingUp, Film, Music, Calendar, User, Play } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
@@ -64,22 +64,58 @@ export default function SearchPage() {
   }, [q]); // eslint-disable-line
 
   const total = results
-    ? (results.users?.length ?? 0)
-    + (results.films?.length ?? 0)
-    + (results.series?.length ?? 0)
+    ? (results.users?.length    ?? 0)
+    + (results.films?.length    ?? 0)
+    + (results.series?.length   ?? 0)
     + (results.concerts?.length ?? 0)
-    + (results.events?.length ?? 0)
-    + (results.reels?.length ?? 0)
+    + (results.events?.length   ?? 0)
+    + (results.reels?.length    ?? 0)
     : 0;
+
+  const hasResults = total > 0;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+      {/* Barre de recherche mobile (le Topbar desktop suffit) */}
+      <form onSubmit={e => { e.preventDefault(); if (q.trim()) navigate(`/search?q=${encodeURIComponent(q.trim())}`); }}
+        className="lg:hidden">
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: 'var(--text-tertiary)' }} />
+          <input
+            defaultValue={q}
+            key={q}
+            placeholder="Rechercher films, artistes, concerts…"
+            autoFocus
+            className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl focus:outline-none"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+            onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 3px rgba(123,63,242,0.12)'; }}
+            onBlur={e  => { e.target.style.borderColor = 'var(--border)';  e.target.style.boxShadow = 'none'; }}
+            onChange={e => {
+              const v = e.target.value;
+              if (v.trim()) navigate(`/search?q=${encodeURIComponent(v.trim())}`, { replace: true });
+              else navigate('/search', { replace: true });
+            }}
+          />
+        </div>
+      </form>
+
+      {/* Résumé des résultats */}
+      {q && !loading && results && (
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            {hasResults ? `${total} résultat${total > 1 ? 's' : ''} pour` : 'Aucun résultat pour'}
+            {' '}<span style={{ color: 'var(--primary)' }}>« {q} »</span>
+          </p>
+        </div>
+      )}
 
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center gap-3 py-12">
           <Spinner />
-          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Recherche…</span>
+          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Recherche en cours…</span>
         </div>
       )}
 
@@ -120,7 +156,7 @@ export default function SearchPage() {
         <div className="space-y-8">
 
           {/* Aucun résultat */}
-          {total === 0 && (
+          {!hasResults && (
             <div className="text-center py-16">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
                 style={{ background: 'var(--bg-secondary)' }}>
@@ -128,7 +164,7 @@ export default function SearchPage() {
               </div>
               <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Aucun résultat</p>
               <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                Aucun résultat pour « {q} »
+                Essayez un autre terme de recherche.
               </p>
             </div>
           )}
@@ -256,6 +292,35 @@ export default function SearchPage() {
                       </p>
                     </div>
                   </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Reels */}
+          {(results.reels?.length ?? 0) > 0 && (
+            <section>
+              <SectionHeader icon={<Play size={14} />} title="Reels" count={results.reels!.length} />
+              <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3">
+                {results.reels!.map((r: any) => (
+                  <div key={r.id} onClick={() => navigate('/reels')} className="cursor-pointer group">
+                    <div className="aspect-[9/16] rounded-xl overflow-hidden relative"
+                      style={{ background: 'var(--bg-tertiary)' }}>
+                      {r.thumbnail_url
+                        ? <img src={r.thumbnail_url} alt={r.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        : <div className="w-full h-full flex items-center justify-center">
+                            <Play size={20} style={{ color: 'var(--text-tertiary)' }} />
+                          </div>
+                      }
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ background: 'rgba(0,0,0,0.35)' }}>
+                        <Play size={22} color="#fff" fill="#fff" />
+                      </div>
+                    </div>
+                    <p className="mt-1.5 text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                      {r.title || r.creator?.display_name || r.creator?.username || ''}
+                    </p>
+                  </div>
                 ))}
               </div>
             </section>

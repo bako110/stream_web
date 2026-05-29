@@ -15,33 +15,33 @@ export function Topbar({ onMenuClick }: Props) {
   const location  = useLocation();
   const [query, setQuery] = useState('');
 
-  // Sync search bar with URL when navigating to/from /search
-  // Also cancels any pending debounce when leaving the search page
+  // Sync le champ avec le param URL quand on est sur /search
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const urlQ = params.get('q') ?? '';
-    if (location.pathname === '/search') setQuery(urlQ);
-    else setQuery('');
+    if (location.pathname === '/search') {
+      const urlQ = new URLSearchParams(location.search).get('q') ?? '';
+      setQuery(urlQ);
+    } else {
+      setQuery('');
+    }
   }, [location.pathname, location.search]);
 
-  // Debounce: navigate to /search ONLY when on /feed or /search, never elsewhere
+  // Debounce sur toutes les pages : dès qu'on tape, on navigue vers /search
   useEffect(() => {
-    if (location.pathname !== '/feed' && location.pathname !== '/search') return;
     if (!query.trim()) {
       if (location.pathname === '/search') navigate('/search', { replace: true });
       return;
     }
     const t = setTimeout(() => {
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`, { replace: location.pathname === '/search' });
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`, {
+        replace: location.pathname === '/search',
+      });
     }, 400);
     return () => clearTimeout(t);
   }, [query]); // eslint-disable-line
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (query.trim()) {
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-    }
+    if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
   }
 
   return (
