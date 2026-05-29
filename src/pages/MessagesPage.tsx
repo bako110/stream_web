@@ -362,18 +362,34 @@ function MessageBubble({ msg, isMe, onReply, onEdit, onDelete, onDeleteForMe, on
                 <video src={(msg as any).attachment_url} controls className="max-w-[240px] rounded-lg"
                   style={{ display: 'block', maxHeight: 240 }} />
               )}
-              {/* Vocal */}
-              {(msg as any).attachment_url && msg.message_type === 'voice' && (
-                <div className="px-3 py-2 flex items-center gap-2" style={{ minWidth: 180 }}>
-                  <Mic size={14} style={{ opacity: 0.7, flexShrink: 0 }} />
-                  <audio src={(msg as any).attachment_url} controls
-                    className="h-8" style={{ maxWidth: 200 }} />
+              {/* Audio / Vocal */}
+              {(msg as any).attachment_url && (msg.message_type === 'voice' || msg.message_type === 'audio') && (
+                <div className="px-3 py-2 flex items-center gap-2" style={{ minWidth: 200 }}>
+                  <Mic size={13} style={{ opacity: 0.7, flexShrink: 0 }} />
+                  <audio src={(msg as any).attachment_url} controls className="h-8" style={{ maxWidth: 200, flex: 1 }} />
                   {(msg as any).attachment_meta?.duration && (
                     <span className="text-[10px] opacity-60 shrink-0">
                       {Math.floor((msg as any).attachment_meta.duration)}s
                     </span>
                   )}
                 </div>
+              )}
+              {/* Fichier (PDF, doc…) */}
+              {(msg as any).attachment_url && msg.message_type === 'file' && (
+                <a href={(msg as any).attachment_url} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2 px-3 py-2.5 transition-all"
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                  onClick={e => e.stopPropagation()}>
+                  <Paperclip size={14} style={{ opacity: 0.8, flexShrink: 0 }} />
+                  <span className="text-xs font-medium truncate max-w-[180px]">
+                    {(msg as any).attachment_meta?.filename ?? 'Fichier'}
+                  </span>
+                  {(msg as any).attachment_meta?.size && (
+                    <span className="text-[10px] opacity-60 shrink-0">
+                      {((msg as any).attachment_meta.size / 1024).toFixed(0)}Ko
+                    </span>
+                  )}
+                </a>
               )}
 
               {/* Texte */}
@@ -682,30 +698,59 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
     setUploading(true);
     try {
-      const form = new FormData(); form.append('file', file);
-      const isVideo = file.type.startsWith('video');
-      // Folders corrects : 'messages' (pas 'messages/images')
-      const endpoint = isVideo
-        ? `/api/v1/upload/video?folder=messages`
-        : `/api/v1/upload/images?folder=messages`;
-      const r = await apiClient.post<any>(endpoint, form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      // Images → { uploaded: [{url,...}], count } / Vidéo → { url, ... }
-      const url: string = isVideo
-        ? (r.data?.url ?? r.data?.data?.url)
-        : (r.data?.uploaded?.[0]?.url ?? r.data?.url);
-      if (!url) throw new Error('URL introuvable');
-      await apiClient.post(Endpoints.messages.conversation(userId), {
-        content: '', body: '',
-        message_type: isVideo ? 'video' : 'image',
-        attachment_url: url,
-      });
+      for (const file of files) {
+        const form = new FormData(); form.append('file', file);
+        const isVideo = file.type.startsWith('video/');
+        const isAudio = file.type.startsWith('audio/');
+        const isFile  = !isVideo && !isAudio && !file.type.startsWith('image/');
+
+        let endpoint: string;
+        let msgType: string;
+        let preview: string;
+
+        if (isVideo) {
+          endpoint = `/api/v1/upload/video?folder=messages`;
+          msgType  = 'video'; preview = '🎥 Vidéo';
+        } else if (isAudio) {
+          endpoint = `/api/v1/upload/audio?folder=messages`;
+          msgType  = 'voice'; preview = '🎤 Audio';
+        } else if (isFile) {
+          endpoint = `/api/v1/upload/file?folder=messages`;
+          msgType  = 'file'; preview = `📎 ${file.name}`;
+        } else {
+          endpoint = `/api/v1/upload/images?folder=messages`;
+          msgType  = 'image'; preview = '📷 Photo';
+        }
+
+        const r = await apiClient.post<any>(endpoint, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+
+        // Lecture URL selon le type de réponse
+        // Images → { uploaded: [{url,...}], count }
+        // Vidéo/Audio/Fichier → { url, ... }
+        const url: string = r.data?.uploaded?.[0]?.url ?? r.data?.url ?? r.data?.data?.url;
+        if (!url) throw new Error(`URL introuvable pour ${file.name}`);
+
+        const meta: Record<string, any> = {};
+        if (r.data?.duration) meta.duration = r.data.duration;
+        if (r.data?.filename)  meta.filename  = r.data.filename;
+        if (r.data?.size)      meta.size       = r.data.size;
+        if (r.data?.mime_type) meta.mime_type  = r.data.mime_type;
+
+        await apiClient.post(Endpoints.messages.conversation(userId), {
+          content: '', body: '',
+          message_type: msgType,
+          attachment_url: url,
+          ...(Object.keys(meta).length > 0 ? { attachment_meta: meta } : {}),
+        });
+        onMessageSent(preview);
+      }
       await loadMessages(false);
-      onMessageSent(isVideo ? '🎥 Vidéo' : '📷 Photo');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Erreur lors de l\'upload');
+      toast.error(err?.response?.data?.detail ?? err?.message ?? 'Erreur lors de l\'upload');
     }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   }
@@ -1016,7 +1061,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
             title="Image / Vidéo">
             <ImageIcon size={16} />
           </button>
-          <input ref={fileRef} type="file" accept="image/*,video/*" hidden onChange={handleUpload} />
+          <input ref={fileRef} type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple hidden onChange={handleUpload} />
           {!recording && !input.trim() && (
             <button onClick={startRecording} disabled={uploading}
               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
