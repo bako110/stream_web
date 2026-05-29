@@ -942,7 +942,11 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
                 {peer.display_name ?? peer.username}
               </p>
               <p className="text-[11px]" style={{ color: peer.is_online ? '#22c55e' : 'var(--text-tertiary)' }}>
-                {peer.is_online ? 'En ligne' : formatLastSeen((peer as any).last_seen_at)}
+                {peer.is_online === true
+                  ? 'En ligne'
+                  : peer.is_online === false
+                    ? formatLastSeen((peer as any).last_seen_at)
+                    : `@${peer.username}`}
               </p>
             </div>
           </button>
