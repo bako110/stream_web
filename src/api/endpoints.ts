@@ -173,7 +173,10 @@ export const Endpoints = {
     ban:       (id: string, identity: string) => `${V1}/lives/${id}/ban/${identity}`,
     globalBan: (id: string, identity: string) => `${V1}/lives/${id}/global-ban/${identity}`,
   },
-  activity: { feed: `${V1}/activity/feed` },
+  activity: {
+    feed:   `${V1}/activity/feed`,
+    delete: (id: string) => `${V1}/activity/feed/${id}`,
+  },
   wallet: {
     balance:        `${V1}/wallet/me`,
     transfer:       `${V1}/wallet/transfer`,
