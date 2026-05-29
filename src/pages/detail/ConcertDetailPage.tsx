@@ -7,6 +7,7 @@ import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
+import { ExpandableText } from '../../components/ui/ExpandableText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
@@ -207,7 +208,7 @@ export default function ConcertDetailPage() {
           </div>
 
           {c.description && (
-            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{c.description}</p>
+            <ExpandableText text={c.description} limit={300} style={{ color: 'var(--text-secondary)' }} />
           )}
 
           <div className="space-y-2 text-sm text-[var(--text-secondary)]">

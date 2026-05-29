@@ -11,6 +11,7 @@ import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
+import { ExpandableText } from '../../components/ui/ExpandableText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
@@ -499,7 +500,7 @@ export default function EventDetailPage() {
         {ev.description && (
           <div>
             <h3 className="font-bold mb-2" style={{ color: 'var(--text-primary)' }}>À propos</h3>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{ev.description}</p>
+            <ExpandableText text={ev.description} limit={300} style={{ color: 'var(--text-secondary)' }} />
           </div>
         )}
 

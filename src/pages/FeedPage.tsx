@@ -12,6 +12,7 @@ import { Endpoints } from '../api/endpoints';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
+import { ExpandableText } from '../components/ui/ExpandableText';
 import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
@@ -1675,9 +1676,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments }: {
   const navigate   = useNavigate();
   const authorId   = post.author?.id;
   const isFollowed = authorId ? followedIds.has(authorId) : false;
-  const [expanded, setExpanded] = useState(false);
   const body = post.body ?? '';
-  const isLong = body.length > 200;
 
   return (
     <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
@@ -1696,17 +1695,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments }: {
       {/* Body */}
       {body && (
         <div className="px-3 pt-1 pb-2 cursor-pointer" onClick={() => navigate(`/posts/${post.id}`)}>
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-            {isLong && !expanded ? body.slice(0, 200) + '…' : body}
-          </p>
-          {isLong && (
-            <button
-              onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
-              className="text-xs font-semibold mt-1"
-              style={{ color: 'var(--primary)' }}>
-              {expanded ? 'Voir moins' : 'Voir plus'}
-            </button>
-          )}
+          <ExpandableText text={body} limit={280} style={{ color: 'var(--text-primary)' }} />
           {post.feeling && (
             <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
