@@ -1,7 +1,7 @@
 {
   "name": "FoliX",
   "short_name": "FoliX",
-  "description": "Concerts, films, événements, communautés — tout ce qui vous passionne en un seul endroit.",
+  "description": "Diffusez et regardez des concerts, événements et films en direct. Lancez un live avec vos amis sur FoliX.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07070F",
