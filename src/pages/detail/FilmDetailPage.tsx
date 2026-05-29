@@ -240,14 +240,32 @@ export default function FilmDetailPage() {
   const accessOk     = !isPremium || hasAccess === true;
   const loadingAccess = isPremium && hasAccess === null;
 
-  // Vidéo par défaut
-  const defaultVideo = videos.data?.find(v => v.is_default) ?? videos.data?.[0];
+  // Vidéo par défaut — cherche d'abord HLS, sinon toute URL disponible
+  const rawVideos = videos.data ?? [];
+  const defaultVideo = rawVideos.find(v => v.is_default && v.hls_url)
+    ?? rawVideos.find(v => v.hls_url)
+    ?? rawVideos[0];
+
+  // Résout l'URL de lecture : HLS > hls qualité > video_url direct > trailer
+  function resolveUrl(v?: VideoMeta): string | null {
+    if (!v) {
+      // Pas de video MongoDB → fallback sur les champs directs du content
+      return (f as any).video_url ?? (f as any).trailer_url ?? null;
+    }
+    return v.hls_url
+      ?? v.hls_1080p_url ?? v.hls_720p_url ?? v.hls_480p_url
+      ?? null;
+  }
 
   function handlePlay(v?: VideoMeta) {
-    const target = v ?? defaultVideo;
-    if (!target?.hls_url) return;
     if (!accessOk) { setShowPaywall(true); return; }
-    setPlayingVideo(target);
+    const target = v ?? defaultVideo;
+    const url = resolveUrl(target);
+    if (!url) { toast.error('Vidéo non encore disponible.'); return; }
+    setPlayingVideo(target
+      ? { ...target, hls_url: url }
+      : { id: f.id, hls_url: url, is_default: true, label: f.title, is_free: !f.is_premium } as VideoMeta,
+    );
   }
 
   return (

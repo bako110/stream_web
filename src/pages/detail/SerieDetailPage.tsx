@@ -290,12 +290,46 @@ export default function SerieDetailPage() {
     setPlayingEp(ep);
     apiClient.get<any>(Endpoints.videos.byEpisode(ep.id))
       .then(r => {
-        const list: VideoMeta[] = toArray<VideoMeta>(r);
+        // r.data peut être un tableau ou un objet enveloppé
+        const list: VideoMeta[] = toArray<VideoMeta>(r.data);
         const vid = list.find(v => v.is_default) ?? list[0];
-        if (vid?.hls_url) setPlayingVideo(vid);
-        else toast.error('Vidéo indisponible.');
+
+        if (vid?.hls_url) {
+          // Vidéo MongoDB avec HLS transcodé
+          setPlayingVideo(vid);
+        } else if (vid?.hls_480p_url ?? vid?.hls_720p_url ?? vid?.hls_1080p_url) {
+          // HLS qualité spécifique disponible
+          setPlayingVideo({
+            ...vid,
+            hls_url: vid.hls_1080p_url ?? vid.hls_720p_url ?? vid.hls_480p_url,
+          });
+        } else if ((ep as any).video_url) {
+          // Fallback : video_url direct stocké sur l'épisode PostgreSQL
+          setPlayingVideo({
+            id: ep.id,
+            hls_url: (ep as any).video_url,
+            is_default: true,
+            label: ep.title,
+            is_free: ep.is_free,
+          } as VideoMeta);
+        } else {
+          toast.error('Vidéo non encore disponible pour cet épisode.');
+        }
       })
-      .catch(() => toast.error('Impossible de charger la vidéo.'))
+      .catch(() => {
+        // Même en cas d'erreur API, tenter le fallback video_url
+        if ((ep as any).video_url) {
+          setPlayingVideo({
+            id: ep.id,
+            hls_url: (ep as any).video_url,
+            is_default: true,
+            label: ep.title,
+            is_free: ep.is_free,
+          } as VideoMeta);
+        } else {
+          toast.error('Impossible de charger la vidéo.');
+        }
+      })
       .finally(() => setEpVidLoading(false));
   }
 

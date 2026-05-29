@@ -91,9 +91,13 @@ export interface Episode {
 }
 
 export interface VideoMeta {
-  id: string; content_id: string | null; episode_id: string | null; label: string;
-  is_default: boolean; is_free: boolean; hls_url: string | null;
-  duration_sec: number | null; transcode_status: string; created_at: string;
+  id: string; content_id?: string | null; episode_id?: string | null; label: string;
+  is_default: boolean; is_free: boolean;
+  hls_url: string | null;
+  hls_480p_url?: string | null;
+  hls_720p_url?: string | null;
+  hls_1080p_url?: string | null;
+  duration_sec?: number | null; transcode_status?: string; created_at?: string;
 }
 
 // ── Concert ───────────────────────────────────────────────────────────────
