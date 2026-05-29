@@ -7,6 +7,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { Images } from '../../components/assets';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
+import { googleOAuthPopup } from '../../utils/googleOAuth';
 import QRLoginPanel from '../../components/auth/QRLoginPanel';
 
 declare global { interface Window { google?: any; } }
@@ -84,20 +85,26 @@ export default function LoginPage() {
   }
 
   async function handleGoogle() {
-    if (!window.google) return;
     setGLoading(true);
     try {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
-        callback: async (resp: any) => {
-          try {
-            const res = await apiClient.post<any>(Endpoints.auth.oauthGoogle, { access_token: resp.credential });
-            if (res.data?.access_token) navigate('/feed', { replace: true });
-          } catch { } finally { setGLoading(false); }
-        },
-      });
-      window.google.accounts.id.prompt();
-    } catch { setGLoading(false); }
+      const googleToken = await googleOAuthPopup();
+      const res = await apiClient.post<any>(Endpoints.auth.oauthGoogle, { access_token: googleToken });
+      const token = res.data;
+      if (token?.access_token) {
+        // Réutilise loginWithQR — même logique : setAuthToken + saveTokens + fetchMe
+        await useAuthStore.getState().loginWithQR(token.access_token, token.refresh_token);
+        navigate('/feed', { replace: true });
+      }
+    } catch (e: any) {
+      const msg = String(e?.message ?? '');
+      if (!msg.includes('closed') && !msg.includes('cancelled') && !msg.includes('cancel')) {
+        import('react-hot-toast').then(({ default: toast }) =>
+          toast.error(e?.response?.data?.detail ?? msg || 'Connexion Google impossible')
+        );
+      }
+    } finally {
+      setGLoading(false);
+    }
   }
 
   const inpStyle = (name: string) => ({
