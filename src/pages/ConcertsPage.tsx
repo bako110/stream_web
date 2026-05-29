@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, MapPin, Ticket, Music, Users } from 'lucide-react';
+import { Clock, MapPin, Ticket, Music, Users, Plus, Trash2 } from 'lucide-react';
 import type { Concert, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { Spinner } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
+import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
+// ── Badges ────────────────────────────────────────────────────────────────────
 function LiveBadge() {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full text-white"
@@ -19,13 +23,36 @@ function LiveBadge() {
   );
 }
 
-function ConcertCard({ concert, featured = false }: { concert: Concert; featured?: boolean }) {
+// ── ConcertCard ───────────────────────────────────────────────────────────────
+function ConcertCard({
+  concert, featured = false, mine, onDelete,
+}: {
+  concert: Concert;
+  featured?: boolean;
+  mine?: boolean;
+  onDelete?: (id: string) => void;
+}) {
   const navigate = useNavigate();
   const isLive   = concert.status === 'live';
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Supprimer ce concert ?')) return;
+    setDeleting(true);
+    try {
+      await apiClient.delete(Endpoints.concerts.byId(concert.id));
+      onDelete?.(concert.id);
+      toast.success('Concert supprimé');
+    } catch {
+      toast.error('Erreur lors de la suppression');
+      setDeleting(false);
+    }
+  };
 
   return (
     <div
-      className="cursor-pointer group overflow-hidden transition-all duration-300"
+      className="cursor-pointer group overflow-hidden transition-all duration-300 relative"
       style={{
         borderRadius: '1rem',
         border: '1px solid var(--border)',
@@ -55,8 +82,6 @@ function ConcertCard({ concert, featured = false }: { concert: Concert; featured
             <Music size={36} style={{ color: 'var(--text-tertiary)' }} />
           </div>
         )}
-
-        {/* Gradient overlay */}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)' }} />
 
         {/* Top badges */}
@@ -71,7 +96,7 @@ function ConcertCard({ concert, featured = false }: { concert: Concert; featured
         </div>
 
         {/* Access badge */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex items-center gap-2">
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
             style={{
               background: concert.access_type === 'free'
@@ -80,15 +105,22 @@ function ConcertCard({ concert, featured = false }: { concert: Concert; featured
                 ? 'rgba(255,122,47,0.2)'
                 : 'rgba(123,63,242,0.2)',
               color: concert.access_type === 'free'
-                ? '#22c55e'
-                : concert.access_type === 'ticket'
-                ? '#FF7A2F'
-                : 'var(--primary)',
+                ? '#22c55e' : concert.access_type === 'ticket'
+                ? '#FF7A2F' : 'var(--primary)',
               border: '1px solid currentColor',
             }}>
             {concert.access_type === 'free' ? 'Gratuit' : concert.access_type === 'ticket' ? `${concert.ticket_price ?? ''}€` : 'Abonnement'}
           </span>
         </div>
+
+        {/* Delete button for mine */}
+        {mine && (
+          <button onClick={handleDelete} disabled={deleting}
+            className="absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+            {deleting ? <Spinner size="sm" /> : <Trash2 size={14} color="white" />}
+          </button>
+        )}
       </div>
 
       {/* Info */}
@@ -111,10 +143,7 @@ function ConcertCard({ concert, featured = false }: { concert: Concert; featured
             </span>
           )}
           {concert.venue_city && (
-            <span className="flex items-center gap-1">
-              <MapPin size={11} />
-              {concert.venue_city}
-            </span>
+            <span className="flex items-center gap-1"><MapPin size={11} />{concert.venue_city}</span>
           )}
           {concert.genre && (
             <span className="px-2 py-0.5 rounded-full text-[11px] font-medium"
@@ -128,23 +157,17 @@ function ConcertCard({ concert, featured = false }: { concert: Concert; featured
   );
 }
 
-export default function ConcertsPage() {
+// ── All concerts tab ──────────────────────────────────────────────────────────
+function AllConcertsTab() {
   const live = useApi<Concert[]>(() => apiClient.get<Concert[]>(Endpoints.concerts.live));
   const { items, loading, loadMore, page, pages } = usePaginatedApi<Concert>(
     (p) => apiClient.get<PaginatedResponse<Concert>>(`${Endpoints.concerts.list}?page=${p}&limit=20&status=published`),
   );
 
   return (
-    <div className="p-6 space-y-10">
-
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Concerts</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Vivez la musique en direct ou à la demande</p>
-      </div>
-
+    <div className="space-y-10">
       {/* Live now */}
-      {live.loading ? null : (live.data && live.data.length > 0) && (
+      {!live.loading && live.data && live.data.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-4">
             <LiveBadge />
@@ -156,26 +179,22 @@ export default function ConcertsPage() {
         </section>
       )}
 
-      {/* All concerts */}
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Ticket size={18} style={{ color: 'var(--primary)' }} />
           <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Tous les concerts</h2>
         </div>
-
         {loading && items.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-20">
-            <Spinner />
+          <div className="flex flex-col items-center gap-3 py-20"><Spinner />
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{ background: 'var(--bg-secondary)' }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-secondary)' }}>
               <Music size={28} style={{ color: 'var(--text-tertiary)' }} />
             </div>
             <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Aucun concert disponible</p>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Revenez bientôt pour des événements à venir.</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Revenez bientôt.</p>
           </div>
         ) : (
           <>
@@ -192,6 +211,109 @@ export default function ConcertsPage() {
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+// ── My concerts tab ───────────────────────────────────────────────────────────
+function MyConcertsTab() {
+  const navigate  = useNavigate();
+  const { user }  = useAuthStore();
+  const [items, setItems] = useState<Concert[]>([]);
+
+  const { data, loading } = useApi<Concert[]>(
+    () => user ? apiClient.get<Concert[]>(Endpoints.concerts.byUser(user.id)) : Promise.resolve({ data: [] } as any),
+    [user?.id],
+  );
+
+  if (!loading && data && items.length === 0 && data.length > 0) setItems(data);
+
+  const handleDelete = (id: string) => setItems(prev => prev.filter(c => c.id !== id));
+
+  if (loading) return (
+    <div className="flex flex-col items-center gap-3 py-20"><Spinner />
+      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      {/* Section header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>MES CONCERTS</p>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            {items.length} concert{items.length !== 1 ? 's' : ''} créé{items.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <button onClick={() => navigate('/create/concert')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+          style={{ background: '#FF7A2F', color: '#fff' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+          <Plus size={16} /> Créer un concert
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="text-center py-20 rounded-2xl" style={{ border: '2px dashed var(--border)' }}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'rgba(255,122,47,0.1)' }}>
+            <Music size={28} style={{ color: '#FF7A2F' }} />
+          </div>
+          <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Aucun concert créé</p>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
+            Publiez votre premier concert et rejoignez votre audience.
+          </p>
+          <button onClick={() => navigate('/create/concert')}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold"
+            style={{ background: '#FF7A2F', color: '#fff' }}>
+            <Plus size={15} /> Créer un concert
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {items.map(c => <ConcertCard key={c.id} concert={c} mine onDelete={handleDelete} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+type Tab = 'all' | 'mine';
+
+export default function ConcertsPage() {
+  const [tab, setTab] = useState<Tab>('all');
+
+  const tabs: { val: Tab; label: string }[] = [
+    { val: 'all',  label: 'Tous les concerts' },
+    { val: 'mine', label: 'Mes concerts'       },
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Concerts</h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Vivez la musique en direct ou à la demande</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 rounded-2xl w-fit" style={{ background: 'var(--bg-secondary)' }}>
+        {tabs.map(t => (
+          <button key={t.val} onClick={() => setTab(t.val)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={tab === t.val
+              ? { background: 'var(--surface)', color: '#FF7A2F', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }
+              : { color: 'var(--text-secondary)' }}>
+            <Music size={15} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'all'  && <AllConcertsTab />}
+      {tab === 'mine' && <MyConcertsTab />}
     </div>
   );
 }

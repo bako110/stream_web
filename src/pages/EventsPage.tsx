@@ -1,13 +1,18 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, Globe, Ticket, Clock, Heart, Share2 } from 'lucide-react';
+import {
+  Calendar, MapPin, Users, Globe, Ticket, Clock,
+  Heart, Share2, Plus, Trash2, Music2,
+} from 'lucide-react';
 import type { Event, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { usePaginatedApi } from '../hooks/useApi';
+import { usePaginatedApi, useApi } from '../hooks/useApi';
 import { Spinner } from '../components/ui/Spinner';
+import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
 const TYPE_LABELS: Record<string, string> = {
   concert: 'Concert', birthday: 'Anniversaire', festival: 'Festival',
@@ -20,10 +25,18 @@ const TYPE_COLORS: Record<string, string> = {
   birthday: '#F59E0B', other: '#6B7280',
 };
 
-function EventCard({ event }: { event: Event }) {
-  const navigate  = useNavigate();
-  const [liked,     setLiked]     = useState(false);
-  const [shareOk,   setShareOk]   = useState(false);
+// ── EventCard ─────────────────────────────────────────────────────────────────
+function EventCard({
+  event, mine, onDelete,
+}: {
+  event: Event;
+  mine?: boolean;
+  onDelete?: (id: string) => void;
+}) {
+  const navigate     = useNavigate();
+  const [liked, setLiked]   = useState(false);
+  const [shareOk, setShareOk] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const color = TYPE_COLORS[event.event_type] ?? '#7B3FF2';
   const label = TYPE_LABELS[event.event_type] ?? event.event_type;
@@ -32,9 +45,7 @@ function EventCard({ event }: { event: Event }) {
     e.stopPropagation();
     setLiked(v => !v);
     try {
-      await apiClient.post(Endpoints.social.toggleReaction, {
-        event_id: event.id, reaction_type: 'like',
-      });
+      await apiClient.post(Endpoints.social.toggleReaction, { event_id: event.id, reaction_type: 'like' });
     } catch { setLiked(v => !v); }
   }, [event.id]);
 
@@ -49,8 +60,22 @@ function EventCard({ event }: { event: Event }) {
     } catch { /* ignore */ }
   }, [event.id, event.title]);
 
+  const handleDelete = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Supprimer cet événement ?')) return;
+    setDeleting(true);
+    try {
+      await apiClient.delete(Endpoints.events.byId(event.id));
+      onDelete?.(event.id);
+      toast.success('Événement supprimé');
+    } catch {
+      toast.error('Erreur lors de la suppression');
+      setDeleting(false);
+    }
+  }, [event.id, onDelete]);
+
   return (
-    <div className="group overflow-hidden transition-all duration-300 cursor-pointer"
+    <div className="group overflow-hidden transition-all duration-300 cursor-pointer relative"
       style={{ borderRadius: '1.25rem', border: '1px solid var(--border)', background: 'var(--surface)' }}
       onClick={() => navigate(`/events/${event.id}`)}
       onMouseEnter={e => {
@@ -76,23 +101,22 @@ function EventCard({ event }: { event: Event }) {
           </div>
         )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
-
-        {/* Type badge */}
         <span className="absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full text-white"
-          style={{ background: color }}>
-          {label}
-        </span>
-
-        {/* Free badge */}
+          style={{ background: color }}>{label}</span>
         {event.access_type === 'free' && (
           <span className="absolute top-3 right-3 text-[11px] font-semibold px-2.5 py-1 rounded-full"
             style={{ background: 'rgba(34,197,94,0.22)', color: '#22c55e', border: '1px solid #22c55e55' }}>
             Gratuit
           </span>
         )}
-
-        {/* Date overlay */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+        {mine && (
+          <button onClick={handleDelete} disabled={deleting}
+            className="absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+            {deleting ? <Spinner size="sm" /> : <Trash2 size={14} color="white" />}
+          </button>
+        )}
+        <div className="absolute bottom-3 left-3 right-12 flex items-center justify-between">
           <span className="text-xs text-white/80 font-medium flex items-center gap-1">
             <Clock size={11} />
             {event.starts_at && format(new Date(event.starts_at), 'd MMM yyyy', { locale: fr })}
@@ -111,7 +135,6 @@ function EventCard({ event }: { event: Event }) {
         <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
           {event.title}
         </p>
-
         <div className="space-y-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
           <div className="flex items-center gap-1.5">
             <Calendar size={11} />
@@ -131,35 +154,27 @@ function EventCard({ event }: { event: Event }) {
               <span>{event.current_attendees ?? 0}/{event.max_attendees}</span>
               <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
                 <div className="h-full rounded-full"
-                  style={{
-                    width: `${Math.min(100, ((event.current_attendees ?? 0) / event.max_attendees) * 100)}%`,
-                    background: color,
-                  }} />
+                  style={{ width: `${Math.min(100, ((event.current_attendees ?? 0) / event.max_attendees) * 100)}%`, background: color }} />
               </div>
             </div>
           )}
         </div>
 
-        {/* Quick actions */}
         <div className="flex items-center gap-2 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
-          <button onClick={toggleLike}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-            style={{
-              background: liked ? 'rgba(240,62,62,0.1)' : 'var(--bg-secondary)',
-              color: liked ? '#f03e3e' : 'var(--text-tertiary)',
-            }}>
-            <Heart size={13} fill={liked ? 'currentColor' : 'none'} />
-            J'aime
-          </button>
-          <button onClick={share}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-            style={{
-              background: shareOk ? 'rgba(34,197,94,0.1)' : 'var(--bg-secondary)',
-              color: shareOk ? '#22c55e' : 'var(--text-tertiary)',
-            }}>
-            <Share2 size={13} />
-            {shareOk ? 'Copié !' : 'Partager'}
-          </button>
+          {!mine && (
+            <>
+              <button onClick={toggleLike}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={{ background: liked ? 'rgba(240,62,62,0.1)' : 'var(--bg-secondary)', color: liked ? '#f03e3e' : 'var(--text-tertiary)' }}>
+                <Heart size={13} fill={liked ? 'currentColor' : 'none'} />J'aime
+              </button>
+              <button onClick={share}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={{ background: shareOk ? 'rgba(34,197,94,0.1)' : 'var(--bg-secondary)', color: shareOk ? '#22c55e' : 'var(--text-tertiary)' }}>
+                <Share2 size={13} />{shareOk ? 'Copié !' : 'Partager'}
+              </button>
+            </>
+          )}
           <button onClick={e => { e.stopPropagation(); navigate(`/events/${event.id}`); }}
             className="ml-auto text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
             style={{ background: `${color}18`, color }}>
@@ -171,18 +186,18 @@ function EventCard({ event }: { event: Event }) {
   );
 }
 
-const FILTERS = [
-  { key: '',           label: 'Tous'        },
-  { key: 'concert',   label: 'Concerts'    },
-  { key: 'festival',  label: 'Festivals'   },
-  { key: 'sport',     label: 'Sport'       },
-  { key: 'conference',label: 'Conférences' },
-  { key: 'theater',   label: 'Théâtre'     },
+// ── All events tab ─────────────────────────────────────────────────────────────
+const TYPE_FILTERS = [
+  { key: '',            label: 'Tous'        },
+  { key: 'concert',    label: 'Concerts'    },
+  { key: 'festival',   label: 'Festivals'   },
+  { key: 'sport',      label: 'Sport'       },
+  { key: 'conference', label: 'Conférences' },
+  { key: 'theater',    label: 'Théâtre'     },
 ];
 
-export default function EventsPage() {
+function AllEventsTab() {
   const [filter, setFilter] = useState('');
-
   const { items, loading, loadMore, page, pages } = usePaginatedApi<Event>(
     (p) => apiClient.get<PaginatedResponse<Event>>(
       `${Endpoints.events.list}?page=${p}&limit=20&status=published${filter ? `&event_type=${filter}` : ''}`
@@ -191,36 +206,24 @@ export default function EventsPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Événements</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Concerts, festivals, conférences et plus</p>
-      </div>
-
-      {/* Filters */}
+    <div className="space-y-5">
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {FILTERS.map(f => (
+        {TYPE_FILTERS.map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-            style={{
-              background: filter === f.key ? 'var(--primary)' : 'var(--bg-secondary)',
-              color: filter === f.key ? '#fff' : 'var(--text-secondary)',
-            }}>
+            style={{ background: filter === f.key ? 'var(--primary)' : 'var(--bg-secondary)', color: filter === f.key ? '#fff' : 'var(--text-secondary)' }}>
             {f.label}
           </button>
         ))}
       </div>
 
       {loading && items.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-20">
-          <Spinner />
+        <div className="flex flex-col items-center gap-3 py-20"><Spinner />
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
         </div>
       ) : items.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'var(--bg-secondary)' }}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-secondary)' }}>
             <Calendar size={28} style={{ color: 'var(--text-tertiary)' }} />
           </div>
           <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Aucun événement</p>
@@ -240,6 +243,126 @@ export default function EventsPage() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ── My events tab ─────────────────────────────────────────────────────────────
+function MyEventsTab() {
+  const navigate   = useNavigate();
+  const { user }   = useAuthStore();
+  const [items, setItems] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const { data, loading: apiLoading } = useApi<Event[]>(
+    () => user ? apiClient.get<Event[]>(Endpoints.events.byUser(user.id)) : Promise.resolve({ data: [] } as any),
+    [user?.id],
+  );
+
+  // Sync state so we can delete locally
+  useState(() => {
+    if (!apiLoading && data) setItems(data);
+  });
+
+  // Keep items in sync with API data
+  if (!apiLoading && data && items.length === 0 && data.length > 0) setItems(data);
+
+  const handleDelete = (id: string) => setItems(prev => prev.filter(e => e.id !== id));
+
+  if (loading || apiLoading) return (
+    <div className="flex flex-col items-center gap-3 py-20"><Spinner />
+      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      {/* Section header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
+            MES ÉVÉNEMENTS
+          </p>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            {items.length} événement{items.length !== 1 ? 's' : ''} créé{items.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <button onClick={() => navigate('/create/event')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+          style={{ background: 'var(--primary)', color: '#fff' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+          <Plus size={16} /> Créer un événement
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="text-center py-20 rounded-2xl" style={{ border: '2px dashed var(--border)' }}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'rgba(245,158,11,0.1)' }}>
+            <Calendar size={28} style={{ color: '#F59E0B' }} />
+          </div>
+          <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Aucun événement créé</p>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
+            Créez votre premier événement et invitez votre communauté.
+          </p>
+          <button onClick={() => navigate('/create/event')}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ background: 'var(--primary)', color: '#fff' }}>
+            <Plus size={15} /> Créer un événement
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map(ev => (
+            <EventCard key={ev.id} event={ev} mine onDelete={handleDelete} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+type Tab = 'all' | 'mine';
+
+export default function EventsPage() {
+  const [tab, setTab] = useState<Tab>('all');
+
+  const tabs: { val: Tab; label: string; icon: React.FC<any> }[] = [
+    { val: 'all',  label: 'Tous les événements', icon: Calendar },
+    { val: 'mine', label: 'Mes événements',       icon: Music2   },
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Événements</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Concerts, festivals, conférences et plus</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 rounded-2xl w-fit" style={{ background: 'var(--bg-secondary)' }}>
+        {tabs.map(t => {
+          const Icon = t.icon;
+          return (
+            <button key={t.val} onClick={() => setTab(t.val)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={tab === t.val
+                ? { background: 'var(--surface)', color: 'var(--primary)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }
+                : { color: 'var(--text-secondary)' }}>
+              <Icon size={15} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === 'all'  && <AllEventsTab />}
+      {tab === 'mine' && <MyEventsTab />}
     </div>
   );
 }

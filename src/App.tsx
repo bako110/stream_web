@@ -68,6 +68,8 @@ const SubscriptionsPage              = lazy(() => import('./pages/SubscriptionsP
 const PrivacyPage                    = lazy(() => import('./pages/PrivacyPage'));
 const CGUPage                        = lazy(() => import('./pages/CGUPage'));
 const PolitiqueConfidentialitePage   = lazy(() => import('./pages/PolitiqueConfidentialitePage'));
+const MyEventsPage                   = lazy(() => import('./pages/MyEventsPage'));
+const MyConcertsPage                 = lazy(() => import('./pages/MyConcertsPage'));
 const BlockedUsersPage   = lazy(() => import('./pages/BlockedUsersPage'));
 const OnboardingPage     = lazy(() => import('./pages/OnboardingPage'));
 const StoryViewersPage   = lazy(() => import('./pages/StoryViewersPage'));
@@ -233,6 +235,8 @@ function AppShell() {
             <Route path="/create/event"                     element={<CreateEventPage />} />
             <Route path="/subscriptions"     element={<SubscriptionsPage />} />
             <Route path="/privacy"                        element={<PrivacyPage />} />
+            <Route path="/my-events"                      element={<MyEventsPage />} />
+            <Route path="/my-concerts"                    element={<MyConcertsPage />} />
             <Route path="/cgu"                            element={<CGUPage />} />
             <Route path="/politique-confidentialite"      element={<PolitiqueConfidentialitePage />} />
             <Route path="/blocked-users"                  element={<BlockedUsersPage />} />

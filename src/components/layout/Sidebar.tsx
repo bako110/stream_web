@@ -11,23 +11,28 @@ import { Avatar } from '../ui/Avatar';
 import { Images } from '../assets';
 
 const mainLinks = [
-  { to: '/feed',     label: 'Accueil',    icon: Home,         color: '#7B3FF2' },
-  { to: '/reels',    label: 'Reels',      icon: Play,         color: '#E0389A' },
-  { to: '/films',    label: 'Films',      icon: Film,         color: '#3B82F6' },
-  { to: '/series',   label: 'Séries',     icon: Film,         color: '#9B65F5' },
-  { to: '/concerts', label: 'Concerts',   icon: Music2,       color: '#FF7A2F' },
-  { to: '/events',   label: 'Événements', icon: Calendar,     color: '#F59E0B' },
-  { to: '/live',     label: 'Live concerts', icon: Radio,  color: '#F0365A' },
-  { to: '/lives',    label: 'Lives',         icon: Video,  color: '#E0389A' },
+  { to: '/feed',        label: 'Accueil',         icon: Home,    color: '#7B3FF2' },
+  { to: '/reels',       label: 'Reels',           icon: Play,    color: '#E0389A' },
+  { to: '/films',       label: 'Films',           icon: Film,    color: '#3B82F6' },
+  { to: '/series',      label: 'Séries',          icon: Film,    color: '#9B65F5' },
+  { to: '/concerts',    label: 'Concerts',        icon: Music2,  color: '#FF7A2F' },
+  { to: '/events',      label: 'Événements',      icon: Calendar,color: '#F59E0B' },
+  { to: '/live',        label: 'Live concerts',   icon: Radio,   color: '#F0365A' },
+  { to: '/lives',       label: 'Lives',           icon: Video,   color: '#E0389A' },
+];
+
+const myContentLinks = [
+  { to: '/my-concerts', label: 'Mes Concerts',    icon: Music2,  color: '#FF7A2F' },
+  { to: '/my-events',   label: 'Mes Événements',  icon: Calendar,color: '#F59E0B' },
 ];
 
 const secondaryLinks = [
-  { to: '/communities',    label: 'Communautés',  icon: Users,          color: '#36D9A0' },
-  { to: '/messages',       label: 'Messages',     icon: MessageCircle,  color: '#3B82F6' },
-  { to: '/notifications',  label: 'Notifications',icon: Bell,           color: '#E0389A' },
-  { to: '/search',         label: 'Recherche',    icon: Search,         color: '#F59E0B' },
-  { to: '/activity',       label: 'Activité',     icon: Activity,       color: '#36D9A0' },
-  { to: '/planning',       label: 'Mon planning', icon: CalendarDays,   color: '#7B3FF2' },
+  { to: '/communities',    label: 'Communautés',   icon: Users,         color: '#36D9A0' },
+  { to: '/messages',       label: 'Messages',      icon: MessageCircle, color: '#3B82F6' },
+  { to: '/notifications',  label: 'Notifications', icon: Bell,          color: '#E0389A' },
+  { to: '/search',         label: 'Recherche',     icon: Search,        color: '#F59E0B' },
+  { to: '/activity',       label: 'Activité',      icon: Activity,      color: '#36D9A0' },
+  { to: '/planning',       label: 'Mon planning',  icon: CalendarDays,  color: '#7B3FF2' },
   { to: '/support',        label: 'Aide & Support',icon: HelpCircle,    color: '#3B82F6' },
 ];
 
@@ -116,6 +121,55 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
                 {isActive && !collapsed && (
                   <span className="ml-auto w-1.5 h-1.5 rounded-full shrink-0"
                     style={{ background: color }} />
+                )}
+              </>
+            )}
+          </NavLink>
+        ))}
+
+        <div className="mx-2 my-2" style={{ height: '1px', background: 'var(--border)' }} />
+
+        {/* ── Mes contenus ── */}
+        {!collapsed && (
+          <p className="px-3 pt-1 pb-0.5 text-[9px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
+            MES CONTENUS
+          </p>
+        )}
+        {myContentLinks.map(({ to, label, icon: Icon, color }) => (
+          <NavLink key={to} to={to} onClick={onClose}
+            title={collapsed ? label : undefined}
+            className={({ isActive }) => clsx(
+              'flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-150 cursor-pointer group',
+              isActive ? 'font-semibold' : 'font-normal',
+            )}
+            style={({ isActive }) => ({
+              background: isActive ? `${color}18` : 'transparent',
+              color:      isActive ? color : 'var(--text-secondary)',
+            })}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLAnchorElement;
+              if (!el.classList.contains('active')) {
+                el.style.background = 'var(--bg-secondary)';
+                el.style.color = 'var(--text-primary)';
+              }
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLAnchorElement;
+              if (!el.classList.contains('active')) {
+                el.style.background = 'transparent';
+                el.style.color = 'var(--text-secondary)';
+              }
+            }}>
+            {({ isActive }) => (
+              <>
+                <div className={clsx('w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-150',
+                  isActive ? 'scale-100' : 'scale-90 group-hover:scale-100')}
+                  style={{ background: isActive ? `${color}20` : 'transparent' }}>
+                  <Icon size={17} />
+                </div>
+                {!collapsed && <span className="text-sm truncate">{label}</span>}
+                {isActive && !collapsed && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
                 )}
               </>
             )}
