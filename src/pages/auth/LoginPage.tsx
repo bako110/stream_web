@@ -88,7 +88,7 @@ export default function LoginPage() {
     setGLoading(true);
     try {
       const googleToken = await googleOAuthPopup();
-      const res = await apiClient.post<any>(Endpoints.auth.oauthGoogle, { access_token: googleToken });
+      const res = await apiClient.post<any>(Endpoints.auth.oauthGoogle, { provider: 'google', access_token: googleToken });
       const token = res.data;
       if (token?.access_token) {
         // Réutilise loginWithQR — même logique : setAuthToken + saveTokens + fetchMe
