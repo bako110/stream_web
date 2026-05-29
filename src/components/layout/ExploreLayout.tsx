@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { Search, Sun, Moon, Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { Images } from '../assets';
 
 const NAV_LINKS = [
   { to: '/explore/films',    label: 'Films'       },
@@ -44,16 +45,8 @@ export function ExploreLayout() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-3">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="relative w-7 h-7">
-              <div className="absolute inset-0 rounded-lg rotate-12"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }} />
-              <div className="absolute inset-0.5 rounded-md flex items-center justify-center"
-                style={{ background: 'var(--bg)' }}>
-                <span className="text-[10px] font-black gradient-text">FX</span>
-              </div>
-            </div>
-            <span className="text-base font-black gradient-text tracking-tight">FoliX</span>
+          <Link to="/" className="flex items-center shrink-0">
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-9 w-auto" />
           </Link>
 
           {/* Desktop nav links */}
@@ -194,17 +187,9 @@ export function ExploreLayout() {
       {/* ── Footer ── */}
       <footer className="mt-20 pt-10 pb-8 px-4" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="relative w-7 h-7">
-              <div className="absolute inset-0 rounded-lg rotate-12"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }} />
-              <div className="absolute inset-0.5 rounded-md flex items-center justify-center"
-                style={{ background: 'var(--bg-secondary)' }}>
-                <span className="text-[10px] font-black gradient-text">FX</span>
-              </div>
-            </div>
-            <span className="font-black gradient-text">FoliX</span>
-            <span className="text-sm ml-2" style={{ color: 'var(--text-tertiary)' }}>© 2025 Tous droits réservés</span>
+          <div className="flex items-center gap-3">
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-8 w-auto" />
+            <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>© 2026 Tous droits réservés</span>
           </div>
 
           <nav className="flex items-center gap-5 text-sm flex-wrap justify-center">

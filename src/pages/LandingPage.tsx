@@ -10,6 +10,7 @@ import { Endpoints } from '../api/endpoints';
 import type { Concert, Content, Event } from '../types';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { Images } from '../components/assets';
 
 // ── Scroll reveal ─────────────────────────────────────────────────────────────
 function useScrollReveal() {
@@ -164,14 +165,8 @@ function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 shrink-0">
-          <div className="relative w-9 h-9">
-            <div className="absolute inset-0 rounded-xl rotate-12" style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }} />
-            <div className="absolute inset-0.5 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-              <span className="text-xs font-black gradient-text">FX</span>
-            </div>
-          </div>
-          <span className="text-xl font-black tracking-tight gradient-text">FoliX</span>
+        <Link to="/" className="flex items-center shrink-0">
+          <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop nav */}
@@ -826,13 +821,7 @@ function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="relative w-8 h-8">
-                <div className="absolute inset-0 rounded-lg rotate-12" style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }} />
-                <div className="absolute inset-0.5 rounded-md flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
-                  <span className="text-xs font-black gradient-text">FX</span>
-                </div>
-              </div>
-              <span className="text-lg font-black gradient-text">FoliX</span>
+              <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-9 w-auto" />
             </div>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
               La plateforme de streaming culturel qui réunit films, concerts, événements et communauté.
