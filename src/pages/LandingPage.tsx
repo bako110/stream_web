@@ -793,6 +793,7 @@ function CtaSection() {
 
 // ── Footer ────────────────────────────────────────────────────────────────────
 function Footer() {
+  const { isDark } = useThemeStore();
   const cols = [
     { title: 'Explorer', links: [
       { label: 'Films',       href: '/explore/films'    },
