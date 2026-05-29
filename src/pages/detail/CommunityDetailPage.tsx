@@ -446,11 +446,12 @@ function PinnedDrawer({ communityId, onClose, onJump }: {
 
 // ── Vue non-membre (landing) ──────────────────────────────────────────────────
 
-function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate }: {
+function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, onCancelRequest }: {
   community: Community;
   joinStatus: 'none' | 'pending' | 'member';
   onJoined: () => void;
   onPendingUpdate: () => void;
+  onCancelRequest: () => void;
 }) {
   const [joining, setJoining] = useState(false);
   const [g1, g2] = gradientFor(community.name);
@@ -484,9 +485,9 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate }: 
   async function handleCancelRequest() {
     try {
       await apiClient.delete(Endpoints.communities.join(community.id));
-      onPendingUpdate();
+      onCancelRequest();
       toast.success('Demande annulée');
-    } catch { toast.error('Erreur'); }
+    } catch { toast.error('Erreur lors de l\'annulation'); }
   }
 
   return (
@@ -1372,7 +1373,13 @@ export default function CommunityDetailPage() {
       )}
       {isMember
         ? <CommunityChat community={community} myRole={myRole} members={members} onRefresh={() => { refetch(); loadMeta(); }} />
-        : <CommunityLanding community={community} joinStatus={joinStatus} onJoined={handleJoined} onPendingUpdate={() => setJoinStatus('pending')} />
+        : <CommunityLanding
+            community={community}
+            joinStatus={joinStatus}
+            onJoined={handleJoined}
+            onPendingUpdate={() => setJoinStatus('pending')}
+            onCancelRequest={() => setJoinStatus('none')}
+          />
       }
     </div>
   );
