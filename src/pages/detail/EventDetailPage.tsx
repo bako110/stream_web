@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
   Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
-  ChevronLeft, ChevronRight, ZoomIn, Edit3,
+  ChevronLeft, ChevronRight, ZoomIn, Edit3, Bell, BellOff,
 } from 'lucide-react';
 import type { Event } from '../../types';
 import { apiClient } from '../../api';
@@ -225,6 +225,8 @@ export default function EventDetailPage() {
   const [likeCount,    setLikeCount]    = useState(0);
   const [isOwner,      setIsOwner]      = useState(false);
   const [following,    setFollowing]    = useState(false);
+  const [reminder,     setReminder]     = useState(false);
+  const [remindLoading,setRemindLoading]= useState(false);
   const [showComments, setShowComments] = useState(false);
   const [shareOk,      setShareOk]      = useState(false);
   const [lightbox,     setLightbox]     = useState<number | null>(null);
@@ -248,17 +250,24 @@ export default function EventDetailPage() {
       .catch(() => {});
   }, [id]);
 
-  // Detecte si l'utilisateur est l'organisateur une fois l'event charge
+  // Detecte si l'utilisateur est l'organisateur + etat rappel
   useEffect(() => {
     if (!event || !me) return;
-    setIsOwner(event.organizer?.id === me.id);
+    const owner = event.organizer?.id === me.id;
+    setIsOwner(owner);
     // Verifie si l'utilisateur suit deja l'organisateur
-    if (event.organizer?.id && event.organizer.id !== me.id) {
+    if (event.organizer?.id && !owner) {
       apiClient.get<any>(Endpoints.users.publicProfile(event.organizer.id))
         .then(r => setFollowing(r.data?.is_followed ?? false))
         .catch(() => {});
     }
-  }, [event, me]);
+    // Charge l'etat rappel (seulement si non-organisateur)
+    if (!owner && id) {
+      apiClient.get<any>(Endpoints.events.remind(id))
+        .then(r => setReminder(r.data?.active === true))
+        .catch(() => {});
+    }
+  }, [event, me, id]);
 
   const toggleLike = useCallback(async () => {
     // Lit l'etat courant via le setter fonctionnel pour eviter la closure stale
@@ -283,6 +292,19 @@ export default function EventDetailPage() {
       await apiClient.post(Endpoints.users.follow(event.organizer.id));
     } catch { setFollowing(v => !v); }
   }, [event?.organizer?.id]);
+
+  const toggleReminder = useCallback(async () => {
+    if (!id || remindLoading) return;
+    setRemindLoading(true);
+    try {
+      const r = await apiClient.post<any>(Endpoints.events.remind(id));
+      setReminder(r.data?.active === true);
+      import('react-hot-toast').then(({ default: toast }) => {
+        toast.success(r.data?.active ? 'Rappel activé !' : 'Rappel désactivé');
+      });
+    } catch { }
+    finally { setRemindLoading(false); }
+  }, [id, remindLoading]);
 
   const share = useCallback(async () => {
     const url = window.location.href;
@@ -393,6 +415,20 @@ export default function EventDetailPage() {
           <Share2 size={16} />
           <span className="hidden sm:inline">{shareOk ? 'Copié !' : 'Partager'}</span>
         </button>
+
+        {/* Rappel — masqué si organisateur */}
+        {!isOwner && (
+          <button onClick={toggleReminder} disabled={remindLoading}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: reminder ? 'rgba(245,158,11,0.12)' : 'var(--bg-secondary)',
+              color: reminder ? '#F59E0B' : 'var(--text-secondary)',
+              border: `1px solid ${reminder ? '#F59E0B40' : 'var(--border)'}`,
+            }}>
+            {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={16} /> : <Bell size={16} />}
+            <span className="hidden sm:inline">{reminder ? 'Rappel actif' : 'Me rappeler'}</span>
+          </button>
+        )}
 
         {isOwner ? (
           <div className="ml-auto flex items-center gap-2">

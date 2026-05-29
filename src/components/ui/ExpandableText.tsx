@@ -20,21 +20,32 @@ export function ExpandableText({ text, limit = 280, className = '', style, preWr
   const isLong = text.length > limit;
   const displayed = isLong && !expanded ? text.slice(0, limit).trimEnd() + '…' : text;
 
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLong) setExpanded(v => !v);
+  };
+
   return (
     <div>
       <p
-        className={`text-sm leading-relaxed ${className}`}
+        className={`text-sm leading-relaxed ${className} ${isLong ? 'cursor-pointer select-none' : ''}`}
         style={{ ...(preWrap ? { whiteSpace: 'pre-wrap' } : {}), ...style }}
+        onClick={toggle}
       >
         {displayed}
+        {isLong && !expanded && (
+          <span className="font-semibold ml-1" style={{ color: 'var(--primary)' }}>
+            Voir plus
+          </span>
+        )}
       </p>
-      {isLong && (
+      {isLong && expanded && (
         <button
-          onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
-          className="text-xs font-semibold mt-1.5 transition-opacity hover:opacity-70"
+          onClick={toggle}
+          className="text-xs font-semibold mt-1 transition-opacity hover:opacity-70"
           style={{ color: 'var(--primary)' }}
         >
-          {expanded ? 'Voir moins ↑' : 'Voir plus ↓'}
+          Voir moins ↑
         </button>
       )}
     </div>

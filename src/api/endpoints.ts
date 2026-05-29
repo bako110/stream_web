@@ -64,6 +64,7 @@ export const Endpoints = {
     publicById:(id: string) => `${V1}/explore/concerts/${id}`,
     buyTicket: (concertId: string) => `${V1}/concerts/${concertId}/tickets`,
     myTickets: `${V1}/concerts/tickets/me`,
+    remind:    (id: string) => `${V1}/concerts/${id}/remind`,
   },
   streaming: {
     token:     (concertId: string) => `${V1}/stream/${concertId}/token`,
@@ -81,6 +82,7 @@ export const Endpoints = {
     publicById:(id: string) => `${V1}/explore/events/${id}`,
     buyTicket: (eventId: string) => `${V1}/events/${eventId}/tickets`,
     myTickets: `${V1}/events/tickets/me`,
+    remind:    (id: string) => `${V1}/events/${id}/remind`,
   },
   reels: {
     feed:   `${V1}/reels`,

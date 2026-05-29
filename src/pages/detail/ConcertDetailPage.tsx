@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle } from 'lucide-react';
+import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff } from 'lucide-react';
 import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -102,6 +102,30 @@ export default function ConcertDetailPage() {
   const [showBoost,    setShowBoost]    = useState(false);
   const [paySheet,     setPaySheet]     = useState(false);
   const [selectedTier, setSelectedTier] = useState<TicketTier['key']>('simple');
+  const [reminder,     setReminder]     = useState(false);
+  const [remindLoading,setRemindLoading]= useState(false);
+
+  // Charge l'état rappel (seulement si non-artiste)
+  useEffect(() => {
+    if (!id || !concert || !user) return;
+    if (concert.artist_id === user.id) return; // artiste = pas de rappel
+    apiClient.get<any>(Endpoints.concerts.remind(id))
+      .then(r => setReminder(r.data?.active === true))
+      .catch(() => {});
+  }, [id, concert, user]);
+
+  const toggleReminder = useCallback(async () => {
+    if (!id || remindLoading) return;
+    setRemindLoading(true);
+    try {
+      const r = await apiClient.post<any>(Endpoints.concerts.remind(id));
+      setReminder(r.data?.active === true);
+      import('react-hot-toast').then(({ default: toast }) => {
+        toast.success(r.data?.active ? 'Rappel activé !' : 'Rappel désactivé');
+      });
+    } catch { }
+    finally { setRemindLoading(false); }
+  }, [id, remindLoading]);
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
   if (!concert) return <div className="p-6 text-[var(--text-secondary)]">Concert introuvable.</div>;
@@ -304,6 +328,20 @@ export default function ConcertDetailPage() {
             <div className="text-center text-sm text-[var(--text-secondary)] py-2">
               Le concert n'a pas encore commencé.
             </div>
+          )}
+
+          {/* Rappel — masqué si artiste */}
+          {!isArtist && !isEnded && (
+            <button onClick={toggleReminder} disabled={remindLoading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: reminder ? 'rgba(245,158,11,0.12)' : 'var(--bg-secondary)',
+                color: reminder ? '#F59E0B' : 'var(--text-secondary)',
+                border: `1px solid ${reminder ? '#F59E0B40' : 'var(--border)'}`,
+              }}>
+              {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={15} /> : <Bell size={15} />}
+              {reminder ? 'Rappel actif — cliquer pour désactiver' : 'Me rappeler pour ce concert'}
+            </button>
           )}
 
           {/* Actions artiste */}
