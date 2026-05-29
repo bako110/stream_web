@@ -1,14 +1,14 @@
 {
   "name": "FoliX",
   "short_name": "FoliX",
-  "description": "Concerts, films, événements, reels — tout ce qui vous passionne en un seul endroit.",
+  "description": "Concerts, films, événements, communautés — tout ce qui vous passionne en un seul endroit.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07070F",
   "theme_color": "#7B3FF2",
   "icons": [
     { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
-    { "src": "/og-image.png", "type": "image/png", "sizes": "192x192" },
-    { "src": "/og-image.png", "type": "image/png", "sizes": "512x512" }
+    { "src": "/logo-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/logo-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
   ]
 }
