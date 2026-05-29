@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, Check, Music, Star, Gift, Mic,
   Activity, Film, Image as ImageIcon, Calendar, Lock, Tag,
@@ -64,8 +64,13 @@ async function uploadVideo(file: File, folder: string): Promise<string> {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function CreateEventPage() {
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
+  const [params]      = useSearchParams();
+  const editId        = params.get('edit');
+  const isEdit        = !!editId;
+
   const [step, setStep] = useState(0);
+  const [loadingEdit, setLoadingEdit] = useState(isEdit);
 
   // Step 0
   const [title,           setTitle]           = useState('');
@@ -99,8 +104,50 @@ export default function CreateEventPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoFile,     setVideoFile]     = useState<File | null>(null);
   const [videoPreview,  setVideoPreview]  = useState<string | null>(null);
+  // Existing URLs conserves en mode edition
+  const [existingThumbnail, setExistingThumbnail] = useState<string | null>(null);
 
   const [publishing, setPublishing] = useState(false);
+
+  // ── Charger les donnees existantes en mode edition ─────────────────────────
+  useEffect(() => {
+    if (!editId) return;
+    apiClient.get<any>(Endpoints.events.byId(editId))
+      .then(r => {
+        const ev = r.data?.data ?? r.data;
+        setTitle(ev.title ?? '');
+        setDescription(ev.description ?? '');
+        setEventType((ev.event_type as EventType) ?? 'concert');
+        setAccessType((ev.access_type as EventAccessType) ?? 'free');
+        setPriceSimple(ev.ticket_price       != null ? String(ev.ticket_price)       : '');
+        setPriceVip   (ev.ticket_price_vip   != null ? String(ev.ticket_price_vip)   : '');
+        setPriceVvip  (ev.ticket_price_vvip  != null ? String(ev.ticket_price_vvip)  : '');
+        setPriceVvvip (ev.ticket_price_vvvip != null ? String(ev.ticket_price_vvvip) : '');
+        setMaxAttendees(ev.max_attendees != null ? String(ev.max_attendees) : '');
+        setIsOnline(ev.is_online ?? false);
+        setOnlineUrl(ev.online_url ?? '');
+        setVenueName(ev.venue_name ?? '');
+        setVenueAddr(ev.venue_address ?? '');
+        setVenueCity(ev.venue_city ?? '');
+        setCountry(ev.venue_country ?? 'Burkina Faso');
+        if (ev.starts_at) {
+          const d = new Date(ev.starts_at);
+          setStartDate(d.toISOString().slice(0, 10));
+          setStartTime(d.toISOString().slice(11, 16));
+        }
+        if (ev.ends_at) {
+          const d = new Date(ev.ends_at);
+          setEndDate(d.toISOString().slice(0, 10));
+          setEndTime(d.toISOString().slice(11, 16));
+        }
+        if (ev.thumbnail_url) {
+          setExistingThumbnail(ev.thumbnail_url);
+          setImagePreviews([ev.thumbnail_url]);
+        }
+      })
+      .catch(() => toast.error('Impossible de charger l\'événement'))
+      .finally(() => setLoadingEdit(false));
+  }, [editId]);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -172,7 +219,7 @@ export default function CreateEventPage() {
     if (publishing) return;
     setPublishing(true);
     try {
-      let thumbnail_url: string | undefined;
+      let thumbnail_url: string | undefined = existingThumbnail ?? undefined;
       let promo_video_url: string | undefined;
       const gallery_urls: string[] = [];
 
@@ -214,16 +261,21 @@ export default function CreateEventPage() {
         if (priceVvvip)  payload.ticket_price_vvvip = Number(priceVvvip);
       }
 
-      const res = await apiClient.post<{ id: string }>(Endpoints.events.list, payload);
-      const id  = res.data?.id;
-      if (id) {
-        await apiClient.patch(`${Endpoints.events.list}/${id}/publish`).catch(() => {});
+      if (isEdit && editId) {
+        await apiClient.patch(Endpoints.events.byId(editId), payload);
+        toast.success('Événement mis à jour !');
+        navigate('/my-events');
+      } else {
+        const res = await apiClient.post<{ id: string }>(Endpoints.events.list, payload);
+        const id  = res.data?.id;
+        if (id) {
+          await apiClient.patch(`${Endpoints.events.list}/${id}/publish`).catch(() => {});
+        }
+        toast.success('Événement créé !');
+        navigate('/my-events');
       }
-
-      toast.success('Événement créé !');
-      navigate('/events');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Erreur lors de la création');
+      toast.error(e?.response?.data?.detail ?? (isEdit ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création'));
     } finally {
       setPublishing(false);
     }
@@ -233,6 +285,15 @@ export default function CreateEventPage() {
 
   const inputCls  = "w-full px-4 py-3 rounded-xl text-sm outline-none";
   const inputStyle = { background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)' };
+
+  if (loadingEdit) return (
+    <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--bg)' }}>
+      <div className="flex flex-col items-center gap-3">
+        <Spinner size="lg" />
+        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement de l'événement…</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-2xl mx-auto" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
@@ -246,7 +307,9 @@ export default function CreateEventPage() {
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1">
-          <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>Créer un événement</p>
+          <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>
+            {isEdit ? 'Modifier l\'événement' : 'Créer un événement'}
+          </p>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{STEPS[step]}</p>
         </div>
         <span className="text-xs font-bold" style={{ color: 'var(--text-tertiary)' }}>{step + 1}/{STEPS.length}</span>
@@ -584,7 +647,7 @@ export default function CreateEventPage() {
           <button onClick={handlePublish} disabled={publishing}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
-            {publishing ? <Spinner size="sm" /> : <><Check size={16} /> Publier l'événement</>}
+            {publishing ? <Spinner size="sm" /> : <><Check size={16} /> {isEdit ? 'Enregistrer les modifications' : 'Publier l\'événement'}</>}
           </button>
         )}
       </div>

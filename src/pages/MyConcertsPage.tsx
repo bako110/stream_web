@@ -30,6 +30,8 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
   const isLive     = concert.status === 'live';
   const [deleting, setDeleting] = useState(false);
 
+  const goEdit = () => navigate(`/create/concert?edit=${concert.id}`);
+
   const handleDelete = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm('Supprimer ce concert définitivement ?')) return;
@@ -48,7 +50,7 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
     <div
       className="cursor-pointer group overflow-hidden transition-all duration-300"
       style={{ borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface)', borderLeft: '3px solid #FF7A2F' }}
-      onClick={() => navigate(`/concerts/${concert.id}`)}
+      onClick={goEdit}
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 32px rgba(255,122,47,0.15)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}>
 
@@ -127,10 +129,10 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
             {deleting ? <Spinner size="sm" /> : <Trash2 size={13} />}
             Supprimer
           </button>
-          <button onClick={e => { e.stopPropagation(); navigate(`/concerts/${concert.id}`); }}
+          <button onClick={e => { e.stopPropagation(); goEdit(); }}
             className="ml-auto text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
             style={{ background: 'rgba(255,122,47,0.12)', color: '#FF7A2F' }}>
-            Voir →
+            Modifier →
           </button>
         </div>
       </div>

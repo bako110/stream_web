@@ -31,6 +31,8 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: string) =
   const color = TYPE_COLORS[event.event_type] ?? '#7B3FF2';
   const label = TYPE_LABELS[event.event_type] ?? event.event_type;
 
+  const goEdit = () => navigate(`/create/event?edit=${event.id}`);
+
   const handleDelete = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm('Supprimer cet événement définitivement ?')) return;
@@ -48,7 +50,7 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: string) =
   return (
     <div className="group overflow-hidden transition-all duration-300 cursor-pointer"
       style={{ borderRadius: '1.25rem', border: '1px solid var(--border)', background: 'var(--surface)', borderLeft: `3px solid ${color}` }}
-      onClick={() => navigate(`/events/${event.id}`)}
+      onClick={goEdit}
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 12px 32px ${color}18`; }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}>
 
@@ -128,10 +130,10 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: string) =
             {deleting ? <Spinner size="sm" /> : <Trash2 size={13} />}
             Supprimer
           </button>
-          <button onClick={e => { e.stopPropagation(); navigate(`/events/${event.id}`); }}
-            className="ml-auto text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+          <button onClick={e => { e.stopPropagation(); goEdit(); }}
+            className="ml-auto flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
             style={{ background: `${color}18`, color }}>
-            Voir →
+            Modifier →
           </button>
         </div>
       </div>

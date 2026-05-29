@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, Check, Radio, Film, Layers,
   Gift, Star, Tag, Eye, MapPin, Upload, X, Image as ImageIcon,
@@ -61,8 +61,13 @@ async function uploadVideo(file: File, folder: string): Promise<string> {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function CreateConcertPage() {
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
+  const [params]    = useSearchParams();
+  const editId      = params.get('edit');
+  const isEdit      = !!editId;
+
   const [step, setStep] = useState(0);
+  const [loadingEdit, setLoadingEdit] = useState(isEdit);
 
   // Step 0
   const [title,       setTitle]       = useState('');
@@ -93,8 +98,44 @@ export default function CreateConcertPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoFile,     setVideoFile]     = useState<File | null>(null);
   const [videoPreview,  setVideoPreview]  = useState<string | null>(null);
+  const [existingThumbnail, setExistingThumbnail] = useState<string | null>(null);
 
   const [publishing, setPublishing] = useState(false);
+
+  // ── Charger les donnees existantes en mode edition ─────────────────────────
+  useEffect(() => {
+    if (!editId) return;
+    apiClient.get<any>(Endpoints.concerts.byId(editId))
+      .then(r => {
+        const c = r.data?.data ?? r.data;
+        setTitle(c.title ?? '');
+        setDescription(c.description ?? '');
+        setGenre(c.genre ?? '');
+        setConcertType((c.concert_type as ConcertType) ?? 'live');
+        setAccessType((c.access_type as AccessType) ?? 'free');
+        setPriceSimple(c.ticket_price       != null ? String(c.ticket_price)       : '');
+        setPriceVip   (c.ticket_price_vip   != null ? String(c.ticket_price_vip)   : '');
+        setPriceVvip  (c.ticket_price_vvip  != null ? String(c.ticket_price_vvip)  : '');
+        setPriceVvvip (c.ticket_price_vvvip != null ? String(c.ticket_price_vvvip) : '');
+        setPricePpv   (c.ppv_price          != null ? String(c.ppv_price)          : '');
+        setVenueCity(c.venue_city ?? '');
+        setVenueName(c.venue_name ?? '');
+        setCountry(c.venue_country ?? 'Burkina Faso');
+        setMaxViewers(c.max_viewers != null ? String(c.max_viewers) : '');
+        setDurationMin(c.duration_min != null ? String(c.duration_min) : '');
+        if (c.scheduled_at) {
+          const d = new Date(c.scheduled_at);
+          setSchedDate(d.toISOString().slice(0, 10));
+          setSchedTime(d.toISOString().slice(11, 16));
+        }
+        if (c.thumbnail_url) {
+          setExistingThumbnail(c.thumbnail_url);
+          setImagePreviews([c.thumbnail_url]);
+        }
+      })
+      .catch(() => toast.error('Impossible de charger le concert'))
+      .finally(() => setLoadingEdit(false));
+  }, [editId]);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -167,7 +208,7 @@ export default function CreateConcertPage() {
     if (publishing) return;
     setPublishing(true);
     try {
-      let thumbnail_url: string | undefined;
+      let thumbnail_url: string | undefined = existingThumbnail ?? undefined;
       let banner_url: string | undefined;
       let promo_video_url: string | undefined;
       const gallery_urls: string[] = [];
@@ -203,24 +244,29 @@ export default function CreateConcertPage() {
       };
 
       if (accessType === 'ticket') {
-        if (priceSimple) payload.ticket_price      = Number(priceSimple);
-        if (priceVip)    payload.ticket_price_vip  = Number(priceVip);
-        if (priceVvip)   payload.ticket_price_vvip = Number(priceVvip);
-        if (priceVvvip)  payload.ticket_price_vvvip= Number(priceVvvip);
+        if (priceSimple) payload.ticket_price       = Number(priceSimple);
+        if (priceVip)    payload.ticket_price_vip   = Number(priceVip);
+        if (priceVvip)   payload.ticket_price_vvip  = Number(priceVvip);
+        if (priceVvvip)  payload.ticket_price_vvvip = Number(priceVvvip);
       } else if (accessType === 'ppv') {
         if (pricePpv) payload.ticket_price = Number(pricePpv);
       }
 
-      const res = await apiClient.post<{ id: string }>(Endpoints.concerts.list, payload);
-      const id  = res.data?.id;
-      if (id) {
-        await apiClient.patch(`${Endpoints.concerts.list}/${id}/publish`).catch(() => {});
+      if (isEdit && editId) {
+        await apiClient.patch(Endpoints.concerts.byId(editId), payload);
+        toast.success('Concert mis à jour !');
+        navigate('/my-concerts');
+      } else {
+        const res = await apiClient.post<{ id: string }>(Endpoints.concerts.list, payload);
+        const id  = res.data?.id;
+        if (id) {
+          await apiClient.patch(`${Endpoints.concerts.list}/${id}/publish`).catch(() => {});
+        }
+        toast.success('Concert créé !');
+        navigate('/my-concerts');
       }
-
-      toast.success('Concert créé !');
-      navigate('/concerts');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Erreur lors de la création');
+      toast.error(e?.response?.data?.detail ?? (isEdit ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création'));
     } finally {
       setPublishing(false);
     }
@@ -230,6 +276,15 @@ export default function CreateConcertPage() {
 
   const inputCls = "w-full px-4 py-3 rounded-xl text-sm outline-none";
   const inputStyle = { background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)' };
+
+  if (loadingEdit) return (
+    <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--bg)' }}>
+      <div className="flex flex-col items-center gap-3">
+        <Spinner size="lg" />
+        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement du concert…</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-2xl mx-auto" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
@@ -243,7 +298,9 @@ export default function CreateConcertPage() {
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1">
-          <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>Créer un concert</p>
+          <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>
+            {isEdit ? 'Modifier le concert' : 'Créer un concert'}
+          </p>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{STEPS[step]}</p>
         </div>
         <span className="text-xs font-bold" style={{ color: 'var(--text-tertiary)' }}>{step + 1}/{STEPS.length}</span>
@@ -566,7 +623,7 @@ export default function CreateConcertPage() {
           <button onClick={handlePublish} disabled={publishing}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
-            {publishing ? <Spinner size="sm" /> : <><Check size={16} /> Publier le concert</>}
+            {publishing ? <Spinner size="sm" /> : <><Check size={16} /> {isEdit ? 'Enregistrer les modifications' : 'Publier le concert'}</>}
           </button>
         )}
       </div>

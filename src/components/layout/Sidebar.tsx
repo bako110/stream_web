@@ -15,8 +15,6 @@ const mainLinks = [
   { to: '/reels',       label: 'Reels',           icon: Play,    color: '#E0389A' },
   { to: '/films',       label: 'Films',           icon: Film,    color: '#3B82F6' },
   { to: '/series',      label: 'Séries',          icon: Film,    color: '#9B65F5' },
-  { to: '/concerts',    label: 'Concerts',        icon: Music2,  color: '#FF7A2F' },
-  { to: '/events',      label: 'Événements',      icon: Calendar,color: '#F59E0B' },
   { to: '/live',        label: 'Live concerts',   icon: Radio,   color: '#F0365A' },
   { to: '/lives',       label: 'Lives',           icon: Video,   color: '#E0389A' },
 ];
