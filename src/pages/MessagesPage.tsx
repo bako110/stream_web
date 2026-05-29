@@ -4,6 +4,7 @@ import {
   Send, ArrowLeft, MessageCircle, X, SquarePen, Search, RefreshCw,
   Wifi, WifiOff, MoreVertical, Reply, Pencil, Trash2, Forward, Pin,
   PinOff, Smile, Image as ImageIcon, Check, CheckCheck, Trash,
+  Mic, MicOff, Play, Square, Paperclip,
 } from 'lucide-react';
 import type { Conversation, Message, UserPublic } from '../types';
 import { apiClient } from '../api';
@@ -304,7 +305,7 @@ function MessageBubble({ msg, isMe, onReply, onEdit, onDelete, onDeleteForMe, on
   const [menuOpen,  setMenuOpen]  = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
 
-  const body = msg.body ?? (msg as any).content ?? '';
+  const body = (msg.body ?? (msg as any).content ?? '').trim();
   if (msg.deleted) return (
     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
       <div className="max-w-[72%] px-3.5 py-2 rounded-2xl text-xs italic opacity-40"
@@ -352,9 +353,27 @@ function MessageBubble({ msg, isMe, onReply, onEdit, onDelete, onDeleteForMe, on
               )}
 
               {/* Image */}
-              {(msg as any).attachment_url && (msg.message_type === 'image' || !(msg as any).content) && (
-                <img src={(msg as any).attachment_url} alt="" className="max-w-[240px] rounded-lg"
-                  style={{ display: 'block' }} />
+              {(msg as any).attachment_url && msg.message_type === 'image' && (
+                <img src={(msg as any).attachment_url} alt="" className="max-w-[240px] rounded-lg object-cover"
+                  style={{ display: 'block', maxHeight: 280 }} />
+              )}
+              {/* Vidéo */}
+              {(msg as any).attachment_url && msg.message_type === 'video' && (
+                <video src={(msg as any).attachment_url} controls className="max-w-[240px] rounded-lg"
+                  style={{ display: 'block', maxHeight: 240 }} />
+              )}
+              {/* Vocal */}
+              {(msg as any).attachment_url && msg.message_type === 'voice' && (
+                <div className="px-3 py-2 flex items-center gap-2" style={{ minWidth: 180 }}>
+                  <Mic size={14} style={{ opacity: 0.7, flexShrink: 0 }} />
+                  <audio src={(msg as any).attachment_url} controls
+                    className="h-8" style={{ maxWidth: 200 }} />
+                  {(msg as any).attachment_meta?.duration && (
+                    <span className="text-[10px] opacity-60 shrink-0">
+                      {Math.floor((msg as any).attachment_meta.duration)}s
+                    </span>
+                  )}
+                </div>
               )}
 
               {/* Texte */}
@@ -572,7 +591,12 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   const [searchQuery,setSearchQuery]= useState('');
   const [searchResults,setSearchResults]= useState<ExtMessage[]>([]);
   const [forwardMsg,setForwardMsg]= useState<ExtMessage | null>(null);
-  const [uploading,setUploading]= useState(false);
+  const [uploading,   setUploading]   = useState(false);
+  const [recording,   setRecording]   = useState(false);
+  const [recordTime,  setRecordTime]  = useState(0);
+  const mediaRecRef   = useRef<MediaRecorder | null>(null);
+  const audioChunks   = useRef<Blob[]>([]);
+  const recordTimer   = useRef<ReturnType<typeof setInterval> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLInputElement>(null);
   const fileRef   = useRef<HTMLInputElement>(null);
@@ -662,19 +686,84 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     setUploading(true);
     try {
       const form = new FormData(); form.append('file', file);
-      const folder = file.type.startsWith('video') ? 'messages/videos' : 'messages/images';
-      const r = await apiClient.post<{ url: string }>(
-        file.type.startsWith('video') ? `/api/v1/upload/video?folder=${folder}` : `/api/v1/upload/images?folder=${folder}`,
-        form, { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
+      const isVideo = file.type.startsWith('video');
+      // Folders corrects : 'messages' (pas 'messages/images')
+      const endpoint = isVideo
+        ? `/api/v1/upload/video?folder=messages`
+        : `/api/v1/upload/images?folder=messages`;
+      const r = await apiClient.post<any>(endpoint, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      // Images → { uploaded: [{url,...}], count } / Vidéo → { url, ... }
+      const url: string = isVideo
+        ? (r.data?.url ?? r.data?.data?.url)
+        : (r.data?.uploaded?.[0]?.url ?? r.data?.url);
+      if (!url) throw new Error('URL introuvable');
       await apiClient.post(Endpoints.messages.conversation(userId), {
-        content: '', message_type: file.type.startsWith('video') ? 'video' : 'image',
-        attachment_url: r.data.url,
+        content: '', body: '',
+        message_type: isVideo ? 'video' : 'image',
+        attachment_url: url,
       });
       await loadMessages(false);
-      onMessageSent(file.type.startsWith('video') ? '🎥 Vidéo' : '📷 Photo');
-    } catch { toast.error('Erreur upload'); }
+      onMessageSent(isVideo ? '🎥 Vidéo' : '📷 Photo');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail ?? 'Erreur lors de l\'upload');
+    }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const mr = new MediaRecorder(stream, { mimeType });
+      mediaRecRef.current = mr;
+      audioChunks.current = [];
+      mr.ondataavailable = e => { if (e.data.size > 0) audioChunks.current.push(e.data); };
+      mr.start(100);
+      setRecording(true); setRecordTime(0);
+      recordTimer.current = setInterval(() => setRecordTime(t => t + 1), 1000);
+    } catch { toast.error('Microphone non disponible'); }
+  }
+
+  async function stopRecording(send = true) {
+    if (!mediaRecRef.current) return;
+    if (recordTimer.current) { clearInterval(recordTimer.current); recordTimer.current = null; }
+    setRecording(false); setRecordTime(0);
+
+    const mr = mediaRecRef.current;
+    mediaRecRef.current = null;
+
+    if (!send) {
+      mr.stream.getTracks().forEach(t => t.stop());
+      mr.stop(); audioChunks.current = [];
+      return;
+    }
+
+    await new Promise<void>(res => { mr.onstop = () => res(); mr.stop(); });
+    mr.stream.getTracks().forEach(t => t.stop());
+
+    const blob = new Blob(audioChunks.current, { type: mr.mimeType });
+    const ext = mr.mimeType.includes('ogg') ? 'ogg' : 'webm';
+    const file = new File([blob], `vocal_${Date.now()}.${ext}`, { type: mr.mimeType });
+
+    setUploading(true);
+    try {
+      const form = new FormData(); form.append('file', file);
+      const r = await apiClient.post<any>(`/api/v1/upload/audio?folder=messages`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url: string = r.data?.url ?? r.data?.data?.url;
+      if (!url) throw new Error('URL audio introuvable');
+      const durationSec = Math.ceil(blob.size / 8000); // estimation grossière
+      await apiClient.post(Endpoints.messages.conversation(userId), {
+        content: '', body: '',
+        message_type: 'voice',
+        attachment_url: url,
+        attachment_meta: { duration: durationSec },
+      });
+      await loadMessages(false);
+      onMessageSent('🎤 Vocal');
+    } catch { toast.error('Erreur envoi vocal'); }
+    finally { setUploading(false); audioChunks.current = []; }
   }
 
   async function handleEdit() {
@@ -900,21 +989,51 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
             <button onClick={() => setReplyTo(null)} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}><X size={14} /></button>
           </div>
         )}
+        {/* Barre enregistrement vocal */}
+        {recording && (
+          <div className="flex items-center gap-3 px-4 py-2"
+            style={{ borderBottom: '1px solid var(--border)', background: 'rgba(239,68,68,0.06)' }}>
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#EF4444' }} />
+            <span className="text-sm font-semibold flex-1" style={{ color: '#EF4444' }}>
+              Enregistrement… {Math.floor(recordTime / 60)}:{String(recordTime % 60).padStart(2, '0')}
+            </span>
+            <button onClick={() => stopRecording(false)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+              <X size={12} /> Annuler
+            </button>
+            <button onClick={() => stopRecording(true)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-white"
+              style={{ background: '#EF4444' }}>
+              <Send size={12} /> Envoyer
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2 px-3 py-2">
-          <button onClick={() => fileRef.current?.click()} disabled={uploading}
+          <button onClick={() => fileRef.current?.click()} disabled={uploading || recording}
             className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
-            style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+            style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}
+            title="Image / Vidéo">
             <ImageIcon size={16} />
           </button>
           <input ref={fileRef} type="file" accept="image/*,video/*" hidden onChange={handleUpload} />
+          {!recording && !input.trim() && (
+            <button onClick={startRecording} disabled={uploading}
+              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}
+              title="Message vocal">
+              <Mic size={16} />
+            </button>
+          )}
           <input ref={inputRef}
             className="input flex-1 text-sm rounded-full px-4 py-2.5"
-            placeholder="Écrire un message…"
+            placeholder={recording ? '' : 'Écrire un message…'}
             value={input}
+            disabled={recording}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
           />
-          <button onClick={sendMessage} disabled={!input.trim() || sending}
+          <button onClick={sendMessage} disabled={(!input.trim() && !recording) || sending}
             className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-40 transition-all shrink-0"
             style={{ background: input.trim() ? 'var(--primary)' : 'var(--bg-secondary)' }}>
             {sending ? <Spinner size="sm" /> : <Send size={16} style={{ color: input.trim() ? '#fff' : 'var(--text-tertiary)' }} />}
