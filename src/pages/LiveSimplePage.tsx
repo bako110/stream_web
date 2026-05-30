@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Radio, Eye, MessageCircle, Send, X, StopCircle, ChevronLeft,
   Mic, MicOff, VideoIcon, VideoOff, Gift, Hand, FlipHorizontal,
-  ShieldOff, Ban, Lock,
+  ShieldOff, Ban, Lock, Users, Trash2, Slash, RefreshCw,
 } from 'lucide-react';
 import {
   LiveKitRoom,
@@ -39,19 +39,25 @@ import {
 
 // ── Types internes ─────────────────────────────────────────────────────────────
 
-interface ChatMsg { id: string; user: string; avatar?: string | null; text: string; }
-interface EmojiFloat { id: number; emoji: string; x: number; size: number; }
-interface HandRaiseRequest { identity: string; name: string; }
+interface ChatMsg {
+  id:      string;
+  user:    string;
+  userId?: string;
+  avatar?: string | null;
+  text:    string;
+  isSys?:  boolean;
+  isGift?: boolean;
+}
+interface EmojiFloat  { id: number; emoji: string; x: number; size: number; }
+interface HandRequest { identity: string; name: string; avatar?: string | null; }
+interface GiftTick    { id: string; emoji: string; senderName: string; giftName: string; coins: number; }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
 
 function LiveChat({
-  liveId,
-  accessToken,
-  onWsEvent,
+  liveId, accessToken, isHost, onWsEvent,
 }: {
-  liveId: string;
-  accessToken: string | null;
+  liveId: string; accessToken: string | null; isHost: boolean;
   onWsEvent: (d: any) => void;
 }) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -59,6 +65,7 @@ function LiveChat({
   const [sending,  setSending]  = useState(false);
   const wsRef     = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { user }  = useAuthStore();
 
   useEffect(() => {
     if (!accessToken) return;
@@ -73,11 +80,19 @@ function LiveChat({
           setMessages(prev => [...prev.slice(-149), {
             id:     c.id ?? String(Date.now()),
             user:   c.author?.display_name ?? c.author?.username ?? 'Anonyme',
+            userId: c.author?.id ?? null,
             avatar: c.author?.avatar_url ?? null,
             text:   c.body,
           }]);
         }
-        // Propagate all events to parent
+        if (d.type === 'gift_received' && d.gift) {
+          setMessages(prev => [...prev.slice(-149), {
+            id:     `gift-${Date.now()}`,
+            user:   d.gift.sender?.display_name ?? 'Quelqu\'un',
+            text:   `🎁 ${d.gift.sender?.display_name ?? 'Quelqu\'un'} a envoyé ${d.gift.emoji} ${d.gift.name}`,
+            isGift: true,
+          }]);
+        }
         onWsEvent(d);
       } catch { /* ignore */ }
     };
@@ -92,12 +107,35 @@ function LiveChat({
   async function send() {
     if (!input.trim() || sending) return;
     const body = input.trim();
+    // Affichage local immédiat
+    setMessages(prev => [...prev.slice(-149), {
+      id: `local-${Date.now()}`, user: user?.display_name ?? user?.username ?? 'Moi',
+      userId: user?.id, avatar: user?.avatar_url ?? null, text: body,
+    }]);
     setInput('');
     setSending(true);
-    try {
-      await apiClient.post(Endpoints.social.comments, { body, live_id: liveId });
-    } catch { /* silencieux */ }
+    try { await apiClient.post(Endpoints.social.comments, { body, live_id: liveId }); }
+    catch { /* silencieux */ }
     finally { setSending(false); }
+  }
+
+  function addSysMsg(text: string) {
+    setMessages(prev => [...prev.slice(-149), { id: `sys-${Date.now()}`, user: '', text, isSys: true }]);
+  }
+
+  // Exposer addSysMsg via ref-like callback
+  (LiveChat as any).__addSysMsg = addSysMsg;
+
+  async function deleteMsg(msgId: string) {
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+    try { await apiClient.delete(Endpoints.social.commentById(msgId)); } catch { /* ignore */ }
+  }
+
+  async function banFromMsg(identity: string, name: string) {
+    if (!window.confirm(`Exclure ${name} du live ?`)) return;
+    try { await apiClient.post(Endpoints.lives.ban(liveId, identity)); }
+    catch { /* ignore */ }
+    addSysMsg(`${name} a été exclu du live`);
   }
 
   return (
@@ -106,86 +144,195 @@ function LiveChat({
         {messages.length === 0 && (
           <p className="text-center text-xs text-[var(--text-tertiary)] pt-8">Aucun message pour l'instant</p>
         )}
-        {messages.map(m => (
-          <div key={m.id} className="flex gap-2 items-start">
-            <Avatar src={m.avatar} name={m.user} size="xs" className="shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <span className="text-xs font-semibold text-brand-primary">{m.user} </span>
-              <span className="text-xs text-[var(--text-primary)] break-words">{m.text}</span>
+        {messages.map(m => {
+          if (m.isSys) return (
+            <div key={m.id} className="text-center text-[10px] text-white/40 py-0.5">{m.text}</div>
+          );
+          if (m.isGift) return (
+            <div key={m.id} className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs"
+              style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)' }}>
+              <span className="text-base">🎁</span>
+              <span className="text-yellow-300 font-medium">{m.text}</span>
             </div>
-          </div>
-        ))}
+          );
+          const isMe = m.userId && user && m.userId === user.id;
+          const canMod = isHost && m.userId && !isMe;
+          return (
+            <div key={m.id} className="group flex gap-2 items-start">
+              <Avatar src={m.avatar} name={m.user} size="xs" className="shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <span className="text-xs font-semibold text-brand-primary">{m.user} </span>
+                <span className="text-xs text-[var(--text-primary)] break-words">{m.text}</span>
+                {canMod && (
+                  <div className="flex gap-2 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => deleteMsg(m.id)}
+                      className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300">
+                      <Trash2 size={9} /> Supprimer
+                    </button>
+                    <button onClick={() => banFromMsg(m.userId!, m.user)}
+                      className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300">
+                      <Slash size={9} /> Exclure
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
         <div ref={bottomRef} />
       </div>
-      <div className="p-3 border-t border-[var(--border)] flex gap-2 shrink-0">
+      <div className="p-3 border-t border-white/10 flex gap-2 shrink-0">
         <input
-          className="input text-sm py-1.5 flex-1 min-w-0"
+          className="flex-1 min-w-0 bg-white/10 text-white text-sm rounded-xl px-3 py-2 placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-brand-primary"
           placeholder="Commenter..."
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') send(); }}
         />
-        <button onClick={send} className="btn-primary p-2 aspect-square shrink-0">
-          <Send size={14} />
+        <button onClick={send} disabled={!input.trim() || sending}
+          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
+          style={{ background: input.trim() ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'rgba(255,255,255,0.1)' }}>
+          <Send size={13} className="text-white" />
         </button>
       </div>
     </div>
   );
 }
 
-// ── Panel demandes de prise de parole (host) ──────────────────────────────────
+// ── Panel demandes de prise de parole ─────────────────────────────────────────
 
 function HandRequestsPanel({
-  liveId,
-  requests,
-  onInvite,
-  onDismiss,
+  liveId, requests, onInvite, onDismiss, onClose,
 }: {
   liveId: string;
-  requests: HandRaiseRequest[];
+  requests: HandRequest[];
   onInvite: (identity: string) => void;
   onDismiss: (identity: string) => void;
+  onClose: () => void;
 }) {
-  if (requests.length === 0) return null;
   return (
-    <div className="absolute top-16 left-3 z-30 space-y-2 max-w-[200px]">
-      {requests.map(r => (
-        <div key={r.identity}
-          className="flex items-center gap-2 px-3 py-2 rounded-2xl text-xs text-white"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)' }}>
-          <Hand size={12} className="text-yellow-400 shrink-0" />
-          <span className="truncate flex-1">{r.name}</span>
-          <button
-            onClick={() => onInvite(r.identity)}
-            className="px-2 py-0.5 rounded-lg font-semibold text-[10px] text-white shrink-0"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#A855F7)' }}>
-            Inviter
-          </button>
-          <button onClick={() => onDismiss(r.identity)} className="text-white/40 hover:text-white shrink-0">
-            <X size={10} />
-          </button>
+    <div className="absolute top-16 left-3 z-40 w-56"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.12)' }}>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+          <span className="text-base">✋</span> Demandes ({requests.length})
+        </span>
+        <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+          <X size={13} />
+        </button>
+      </div>
+      {requests.length === 0 ? (
+        <p className="text-xs text-white/40 px-3 py-4 text-center">Aucune demande</p>
+      ) : (
+        <div className="p-2 space-y-2 max-h-48 overflow-y-auto">
+          {requests.map(r => (
+            <div key={r.identity} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
+              style={{ background: 'rgba(255,255,255,0.05)' }}>
+              <Avatar src={r.avatar} name={r.name} size="xs" className="shrink-0" />
+              <span className="text-xs text-white truncate flex-1">{r.name}</span>
+              <button onClick={() => onInvite(r.identity)}
+                className="px-2 py-0.5 rounded-lg text-[10px] font-bold text-white shrink-0"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#A855F7)' }}>
+                Inviter
+              </button>
+              <button onClick={() => onDismiss(r.identity)} className="text-white/30 hover:text-white shrink-0">
+                <X size={10} />
+              </button>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
 
-// ── Menu modération sur vignette ───────────────────────────────────────────────
+// ── Panel participants sur scène ──────────────────────────────────────────────
+
+function OnStagePanel({
+  liveId, identities, names, onDemote, onClose,
+}: {
+  liveId: string;
+  identities: Set<string>;
+  names: Map<string, string>;
+  onDemote: (identity: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute top-16 left-3 z-40 w-56"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderRadius: '1rem', border: '1px solid rgba(74,222,128,0.3)' }}>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-green-500/20">
+        <span className="text-xs font-bold text-green-400 flex items-center gap-1.5">
+          <Users size={12} /> Sur scène ({identities.size})
+        </span>
+        <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+          <X size={13} />
+        </button>
+      </div>
+      <div className="p-2 space-y-2 max-h-48 overflow-y-auto">
+        {[...identities].map(id => (
+          <div key={id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
+            style={{ background: 'rgba(74,222,128,0.08)' }}>
+            <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+            <span className="text-xs text-white truncate flex-1">{names.get(id) ?? id}</span>
+            <button onClick={() => onDemote(id)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-orange-300"
+              style={{ background: 'rgba(251,146,60,0.15)' }}>
+              <ShieldOff size={9} /> Retirer
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Panel cadeaux reçus (host) ────────────────────────────────────────────────
+
+function GiftHistoryPanel({
+  history, onClose,
+}: {
+  history: GiftTick[];
+  onClose: () => void;
+}) {
+  const total = history.reduce((s, t) => s + t.coins, 0);
+  return (
+    <div className="absolute top-16 right-3 z-40 w-64"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderRadius: '1rem', border: '1px solid rgba(255,215,0,0.25)' }}>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-yellow-500/20">
+        <span className="text-xs font-bold text-yellow-400 flex items-center gap-1.5">
+          <Gift size={12} /> Cadeaux reçus ({history.length})
+        </span>
+        <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+          <X size={13} />
+        </button>
+      </div>
+      <div className="px-3 py-1.5 border-b border-yellow-500/10">
+        <span className="text-xs font-bold text-yellow-300">Total : {total.toLocaleString()} 🪙</span>
+      </div>
+      <div className="p-2 space-y-2 max-h-56 overflow-y-auto">
+        {history.slice(0, 20).map((t, i) => (
+          <div key={`${t.id}-${i}`} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
+            style={{ background: 'rgba(255,215,0,0.06)' }}>
+            <span className="text-xl shrink-0">{t.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-white font-semibold truncate">{t.senderName}</p>
+              <p className="text-[10px] text-white/50">{t.giftName}</p>
+            </div>
+            <span className="text-[10px] font-bold text-yellow-400 shrink-0">{t.coins} 🪙</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Menu modération vignette ──────────────────────────────────────────────────
 
 function ParticipantContextMenu({
-  identity,
-  name,
-  liveId,
-  isHost,
-  isOnStage,
-  onDone,
+  identity, name, liveId, isHost, isOnStage, onDone,
 }: {
-  identity: string;
-  name: string;
-  liveId: string;
-  isHost: boolean;
-  isOnStage: boolean;
-  onDone: () => void;
+  identity: string; name: string; liveId: string;
+  isHost: boolean; isOnStage: boolean; onDone: () => void;
 }) {
   if (!isHost) return null;
 
@@ -198,53 +345,55 @@ function ParticipantContextMenu({
   }
 
   return (
-    <div className="absolute inset-0 bg-black/80 rounded-2xl flex flex-col items-center justify-center gap-2 z-10 p-2">
-      <p className="text-[10px] text-white/70 text-center truncate w-full">{name}</p>
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 z-10 p-2"
+      style={{ background: 'rgba(0,0,0,0.82)', borderRadius: '1rem' }}>
+      <p className="text-[10px] text-white/70 truncate w-full text-center mb-0.5">{name}</p>
       {isOnStage ? (
         <button onClick={() => act(Endpoints.lives.demote(liveId, identity))}
-          className="flex items-center gap-1 text-[10px] text-orange-300 bg-orange-400/20 px-2 py-1 rounded-lg w-full justify-center">
-          <ShieldOff size={10} /> Retirer
+          className="flex items-center gap-1 text-[10px] text-orange-300 px-2 py-1 rounded-lg w-full justify-center"
+          style={{ background: 'rgba(251,146,60,0.2)' }}>
+          <ShieldOff size={10} /> Retirer de scène
         </button>
       ) : (
         <button onClick={() => act(Endpoints.lives.invite(liveId, identity))}
-          className="flex items-center gap-1 text-[10px] text-purple-300 bg-purple-400/20 px-2 py-1 rounded-lg w-full justify-center">
-          <Hand size={10} /> Inviter
+          className="flex items-center gap-1 text-[10px] text-purple-300 px-2 py-1 rounded-lg w-full justify-center"
+          style={{ background: 'rgba(167,139,250,0.2)' }}>
+          <Hand size={10} /> Monter sur scène
         </button>
       )}
       <button onClick={() => act(Endpoints.lives.ban(liveId, identity))}
-        className="flex items-center gap-1 text-[10px] text-red-300 bg-red-400/20 px-2 py-1 rounded-lg w-full justify-center">
+        className="flex items-center gap-1 text-[10px] text-red-300 px-2 py-1 rounded-lg w-full justify-center"
+        style={{ background: 'rgba(248,113,113,0.2)' }}>
         <Ban size={10} /> Exclure ce live
       </button>
       <button onClick={() => act(Endpoints.lives.globalBan(liveId, identity))}
-        className="flex items-center gap-1 text-[10px] text-red-400 bg-red-500/25 px-2 py-1 rounded-lg w-full justify-center">
+        className="flex items-center gap-1 text-[10px] text-red-400 px-2 py-1 rounded-lg w-full justify-center"
+        style={{ background: 'rgba(239,68,68,0.2)' }}>
         <Ban size={10} /> Bannir (tous lives)
       </button>
       <button onClick={() => act(Endpoints.lives.blockUser(identity))}
-        className="flex items-center gap-1 text-[10px] text-purple-300 bg-purple-500/20 px-2 py-1 rounded-lg w-full justify-center">
+        className="flex items-center gap-1 text-[10px] text-purple-300 px-2 py-1 rounded-lg w-full justify-center"
+        style={{ background: 'rgba(139,92,246,0.2)' }}>
         <Lock size={10} /> Bloquer de mes lives
       </button>
-      <button onClick={onDone} className="text-[10px] text-white/40 mt-1">Annuler</button>
+      <button onClick={onDone} className="text-[10px] text-white/30 hover:text-white/60 mt-0.5">Annuler</button>
     </div>
   );
 }
 
-// ── Zone vidéo multi-participants ─────────────────────────────────────────────
+// ── Zone vidéo ────────────────────────────────────────────────────────────────
 
 function LiveKitViewer({
-  isHost,
-  liveId,
-  stageIdentities,
-  onGiftClick,
+  isHost, liveId, stageIdentities, participantNames, onGiftClick,
 }: {
-  isHost: boolean;
-  liveId: string;
-  stageIdentities: Set<string>;
+  isHost: boolean; liveId: string; stageIdentities: Set<string>;
+  participantNames: Map<string, string>;
   onGiftClick: (identity: string, name: string) => void;
 }) {
   const tracks       = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const participants = useParticipants();
-  const [spotlightId,    setSpotlightId]    = useState<string | null>(null);
-  const [contextMenuId,  setContextMenuId]  = useState<string | null>(null);
+  const [spotlightId,   setSpotlightId]   = useState<string | null>(null);
+  const [contextMenuId, setContextMenuId] = useState<string | null>(null);
 
   const activeTracks = tracks.filter(t => !t.publication?.isMuted);
 
@@ -256,10 +405,7 @@ function LiveKitViewer({
   const thumbnailTracks = activeTracks.filter(t => t !== spotlightTrack);
   const localTrack      = activeTracks.find(t => t.participant.isLocal) ?? null;
 
-  const showHostPip = isHost
-    && spotlightTrack
-    && !spotlightTrack.participant.isLocal
-    && localTrack != null;
+  const showHostPip = isHost && spotlightTrack && !spotlightTrack.participant.isLocal && localTrack != null;
 
   if (activeTracks.length === 0) {
     return (
@@ -288,10 +434,11 @@ function LiveKitViewer({
           {stageIdentities.has(spotlightTrack.participant.identity) && (
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
           )}
-          {spotlightTrack.participant.isLocal ? 'Toi' : (spotlightTrack.participant.name || spotlightTrack.participant.identity)}
+          {spotlightTrack.participant.isLocal ? 'Toi' : (participantNames.get(spotlightTrack.participant.identity) ?? spotlightTrack.participant.name ?? spotlightTrack.participant.identity)}
         </div>
       )}
 
+      {/* PiP host */}
       {showHostPip && localTrack && (
         <div
           className="absolute bottom-20 right-4 w-28 h-40 rounded-2xl overflow-hidden border-2 border-white/40 shadow-2xl cursor-pointer z-20 hover:border-brand-primary transition-all"
@@ -299,19 +446,18 @@ function LiveKitViewer({
           title="Revenir sur ta vue"
         >
           <VideoTrack trackRef={localTrack} className="w-full h-full object-cover" />
-          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-1">
-            Toi
-          </div>
+          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-1">Toi</div>
         </div>
       )}
 
+      {/* Vignettes secondaires */}
       {thumbnailTracks.length > 0 && (
         <div className="absolute bottom-20 left-3 flex flex-col gap-2 z-20">
           {thumbnailTracks.map(t => {
-            const identity  = t.participant.identity;
-            const name      = t.participant.isLocal ? 'Toi' : (t.participant.name || identity);
-            const onStage   = stageIdentities.has(identity);
-            const showMenu  = contextMenuId === identity;
+            const identity = t.participant.identity;
+            const name     = t.participant.isLocal ? 'Toi' : (participantNames.get(identity) ?? t.participant.name ?? identity);
+            const onStage  = stageIdentities.has(identity);
+            const showMenu = contextMenuId === identity;
             return (
               <div
                 key={identity}
@@ -322,7 +468,7 @@ function LiveKitViewer({
                   if (isHost && !t.participant.isLocal) { setContextMenuId(identity); return; }
                   setSpotlightId(identity);
                 }}
-                title={isHost && !t.participant.isLocal ? 'Options modération' : 'Mettre en plein écran'}
+                title={isHost && !t.participant.isLocal ? 'Options modération' : 'Mettre en avant'}
               >
                 <VideoTrack trackRef={t} className="w-full h-full object-cover" />
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate text-center py-1 px-1 flex items-center justify-center gap-1">
@@ -339,17 +485,47 @@ function LiveKitViewer({
                 )}
                 {showMenu && (
                   <ParticipantContextMenu
-                    identity={identity}
-                    name={name}
-                    liveId={liveId}
-                    isHost={isHost}
-                    isOnStage={onStage}
+                    identity={identity} name={name} liveId={liveId}
+                    isHost={isHost} isOnStage={onStage}
                     onDone={() => setContextMenuId(null)}
                   />
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Avatars viewers empilés ───────────────────────────────────────────────────
+
+function ViewerAvatars({ onGiftClick }: { onGiftClick: (identity: string, name: string) => void }) {
+  const participants = useParticipants();
+  const remotes      = participants.filter(p => !p.isLocal).slice(0, 6);
+  const extra        = Math.max(0, participants.filter(p => !p.isLocal).length - 6);
+  if (remotes.length === 0) return null;
+  return (
+    <div className="flex items-center">
+      {remotes.map((p, i) => {
+        const name = p.name || p.identity || '?';
+        return (
+          <button
+            key={p.identity}
+            onClick={() => onGiftClick(p.identity, name)}
+            title={`Envoyer un cadeau à ${name}`}
+            style={{ marginLeft: i === 0 ? 0 : -8, zIndex: 10 - i }}
+            className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[10px] font-bold border-2 border-black/60 hover:scale-110 transition-transform"
+          >
+            {name[0].toUpperCase()}
+          </button>
+        );
+      })}
+      {extra > 0 && (
+        <div style={{ marginLeft: -8 }}
+          className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white text-[9px] font-bold border-2 border-black/60">
+          +{extra}
         </div>
       )}
     </div>
@@ -367,24 +543,19 @@ function ViewerCount() {
   );
 }
 
-// ── Contrôles media ───────────────────────────────────────────────────────────
+// ── Contrôles média latéraux ──────────────────────────────────────────────────
 
 function MediaControls({
-  isHost,
-  liveId,
-  onStop,
-  stopping,
-  onLeave,
-  onHandRaise,
-  handRaised,
+  isHost, liveId, onStop, stopping, onLeave, onHandRaise, handRaised,
+  onToggleRequests, pendingCount, onToggleOnStage, onStageCount,
+  onToggleGifts, giftsCount,
 }: {
-  isHost: boolean;
-  liveId: string;
-  onStop: () => void;
-  stopping: boolean;
-  onLeave: () => void;
-  onHandRaise: () => void;
-  handRaised: boolean;
+  isHost: boolean; liveId: string;
+  onStop: () => void; stopping: boolean; onLeave: () => void;
+  onHandRaise: () => void; handRaised: boolean;
+  onToggleRequests: () => void; pendingCount: number;
+  onToggleOnStage: () => void; onStageCount: number;
+  onToggleGifts: () => void; giftsCount: number;
 }) {
   const { localParticipant } = useLocalParticipant();
   const [camOn, setCamOn] = useState(false);
@@ -418,55 +589,105 @@ function MediaControls({
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoInputs = devices.filter(d => d.kind === 'videoinput');
       if (videoInputs.length < 2) return;
-      const current = localParticipant.getTrackPublication(Track.Source.Camera);
+      const current   = localParticipant.getTrackPublication(Track.Source.Camera);
       const currentId = (current?.track as any)?.mediaStreamTrack?.getSettings?.()?.deviceId;
-      const next = videoInputs.find(d => d.deviceId !== currentId) ?? videoInputs[0];
+      const next      = videoInputs.find(d => d.deviceId !== currentId) ?? videoInputs[0];
       await (localParticipant as any).switchActiveDevice('videoinput', next.deviceId);
     } catch { /* ignore */ }
   }
 
+  function SideBtn({ icon, label, onClick, active, color, badge }: {
+    icon: React.ReactNode; label: string; onClick?: () => void;
+    active?: boolean; color?: string; badge?: number;
+  }) {
+    return (
+      <button
+        onClick={onClick}
+        className="flex flex-col items-center gap-1 relative"
+        style={{ minWidth: 48 }}
+      >
+        <div className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+          style={{
+            background: active ? `${color ?? '#7B3FF2'}25` : 'rgba(255,255,255,0.12)',
+            border:     active ? `1.5px solid ${color ?? '#7B3FF2'}` : '1.5px solid rgba(255,255,255,0.15)',
+            color:      active ? (color ?? '#7B3FF2') : '#fff',
+          }}>
+          {icon}
+        </div>
+        {badge !== undefined && badge > 0 && (
+          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+            style={{ background: color ?? '#7B3FF2' }}>
+            {badge}
+          </div>
+        )}
+        <span className="text-[10px] font-semibold" style={{ color: active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)' }}>
+          {label}
+        </span>
+      </button>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-end gap-3 flex-wrap justify-center">
       {isHost && (
         <>
-          <button onClick={toggleCam}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${camOn ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/60'}`}>
-            {camOn ? <VideoIcon size={13} /> : <VideoOff size={13} />}
-            {camOn ? 'Cam ON' : 'Cam OFF'}
-          </button>
-          <button onClick={toggleMic}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${micOn ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/60'}`}>
-            {micOn ? <Mic size={13} /> : <MicOff size={13} />}
-            {micOn ? 'Micro ON' : 'Micro OFF'}
-          </button>
-          <button onClick={flipCam}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/10 text-white/60 hover:bg-white/20 transition-all"
-            title="Retourner la caméra">
-            <FlipHorizontal size={13} />
-          </button>
+          <SideBtn icon={camOn ? <VideoIcon size={18} /> : <VideoOff size={18} />}
+            label={camOn ? 'Cam' : 'Cam off'}
+            onClick={toggleCam}
+            active={camOn} color="#10B981" />
+
+          <SideBtn icon={micOn ? <Mic size={18} /> : <MicOff size={18} />}
+            label={micOn ? 'Micro' : 'Muet'}
+            onClick={toggleMic}
+            active={micOn} color="#10B981" />
+
+          <SideBtn icon={<RefreshCw size={18} />}
+            label="Flip"
+            onClick={flipCam}
+            active={false} />
+
+          <SideBtn icon={<span className="text-base">✋</span>}
+            label={pendingCount > 0 ? `${pendingCount} dem.` : 'Demandes'}
+            onClick={onToggleRequests}
+            active={pendingCount > 0} color="#FFD700"
+            badge={pendingCount} />
+
+          {onStageCount > 0 && (
+            <SideBtn icon={<Users size={18} />}
+              label="Scène"
+              onClick={onToggleOnStage}
+              active color="#22c55e"
+              badge={onStageCount} />
+          )}
+
+          {giftsCount > 0 && (
+            <SideBtn icon={<Gift size={18} />}
+              label="Cadeaux"
+              onClick={onToggleGifts}
+              active color="#FFD700"
+              badge={giftsCount} />
+          )}
+
+          <SideBtn icon={<StopCircle size={18} />}
+            label={stopping ? '...' : 'Terminer'}
+            onClick={onStop}
+            active color="#F0365A" />
         </>
       )}
 
       {!isHost && (
-        <button onClick={onHandRaise}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${handRaised ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-white/60'}`}>
-          <Hand size={13} />
-          {handRaised ? 'Main levée' : 'Lever la main'}
-        </button>
-      )}
+        <>
+          <SideBtn
+            icon={<Hand size={18} />}
+            label={handRaised ? 'Main levée' : 'Lever main'}
+            onClick={onHandRaise}
+            active={handRaised} color="#FFD700" />
 
-      {isHost ? (
-        <button onClick={onStop} disabled={stopping}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all">
-          {stopping ? <Spinner size="sm" /> : <StopCircle size={13} />}
-          {stopping ? 'Arrêt...' : 'Terminer le live'}
-        </button>
-      ) : (
-        <button onClick={onLeave}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/10 text-white/70 hover:bg-white/20 transition-all">
-          <ChevronLeft size={13} />
-          Quitter
-        </button>
+          <SideBtn
+            icon={<ChevronLeft size={18} />}
+            label="Quitter"
+            onClick={onLeave} />
+        </>
       )}
     </div>
   );
@@ -488,18 +709,27 @@ export default function LiveSimplePage() {
   const [showChat, setShowChat] = useState(true);
   const [stopping, setStopping] = useState(false);
 
-  // Likes / réactions / emojis flottants
+  // Emojis flottants
   const [emojiFloats, setEmojiFloats] = useState<EmojiFloat[]>([]);
 
   // Cadeaux
-  const [giftNotifs,   setGiftNotifs]   = useState<GiftNotif[]>([]);
-  const [activeToast,  setActiveToast]  = useState<GiftNotif | null>(null);
-  const [giftTarget,   setGiftTarget]   = useState<{ id: string; name: string } | null>(null);
+  const [giftNotifs,  setGiftNotifs]  = useState<GiftNotif[]>([]);
+  const [activeToast, setActiveToast] = useState<GiftNotif | null>(null);
+  const [giftTarget,  setGiftTarget]  = useState<{ id: string; name: string } | null>(null);
+  const [giftHistory, setGiftHistory] = useState<GiftTick[]>([]);
 
   // Modération
-  const [handRequests,    setHandRequests]    = useState<HandRaiseRequest[]>([]);
+  const [handRequests,    setHandRequests]    = useState<HandRequest[]>([]);
   const [stageIdentities, setStageIdentities] = useState<Set<string>>(new Set());
+  const [participantNames, setParticipantNames] = useState<Map<string, string>>(new Map());
   const [handRaised,      setHandRaised]      = useState(false);
+
+  // Panels
+  const [showRequests, setShowRequests] = useState(false);
+  const [showOnStage,  setShowOnStage]  = useState(false);
+  const [showGifts,    setShowGifts]    = useState(false);
+
+  const chatAddSysRef = useRef<((text: string) => void) | null>(null);
 
   const liveApi = useApi<LiveStream>(() => apiClient.get<LiveStream>(Endpoints.lives.byId(id!)), [id]);
   const { lastLiveEnded } = useWs();
@@ -520,7 +750,6 @@ export default function LiveSimplePage() {
     liveApi.refetch();
   }, [lastLiveEnded, id]);
 
-  // Gestion des événements WS live
   const handleWsEvent = useCallback((d: any) => {
     switch (d.type) {
       case 'gift_received': {
@@ -532,20 +761,16 @@ export default function LiveSimplePage() {
           coins:      d.gift?.coins_cost ?? 0,
         };
         setGiftNotifs(prev => [...prev.slice(-9), n]);
+        setGiftHistory(prev => [...prev, { ...n }]);
         if (isHost) setActiveToast(n);
         break;
       }
-      case 'like_added':
-        // remote heart already tracked by LiveLikeButton via initialCount
-        break;
       case 'reaction_added': {
-        const emoji = d.reaction?.emoji ?? '❤️';
+        const emoji = d.reaction?.emoji ?? d.emoji ?? '❤️';
         const floatId = Date.now();
         const items: EmojiFloat[] = Array.from({ length: 5 }, (_, i) => ({
-          id:    floatId + i,
-          emoji,
-          x:     Math.random() * 80 + 10,
-          size:  Math.random() * 16 + 24,
+          id: floatId + i, emoji,
+          x: Math.random() * 80 + 10, size: Math.random() * 16 + 24,
         }));
         setEmojiFloats(prev => [...prev.slice(-30), ...items]);
         items.forEach(f => {
@@ -555,9 +780,11 @@ export default function LiveSimplePage() {
       }
       case 'live_hand_raise': {
         const identity = d.identity ?? d.user?.identity;
-        const name     = d.user?.display_name ?? d.user?.username ?? identity;
+        const name     = d.display_name ?? d.user?.display_name ?? d.user?.username ?? identity;
+        const avatar   = d.avatar_url ?? d.user?.avatar_url ?? null;
         if (!identity) break;
-        setHandRequests(prev => prev.some(r => r.identity === identity) ? prev : [...prev, { identity, name }]);
+        setHandRequests(prev => prev.some(r => r.identity === identity) ? prev : [...prev, { identity, name, avatar }]);
+        setParticipantNames(prev => new Map(prev).set(identity, name));
         break;
       }
       case 'live_guest_invited': {
@@ -565,12 +792,14 @@ export default function LiveSimplePage() {
         if (!identity) break;
         setStageIdentities(prev => new Set([...prev, identity]));
         setHandRequests(prev => prev.filter(r => r.identity !== identity));
+        chatAddSysRef.current?.(`${participantNames.get(identity) ?? identity} est monté sur scène`);
         break;
       }
       case 'live_guest_demoted': {
         const identity = d.identity ?? d.user?.identity;
         if (!identity) break;
         setStageIdentities(prev => { const s = new Set(prev); s.delete(identity); return s; });
+        chatAddSysRef.current?.(`${participantNames.get(identity) ?? identity} a quitté la scène`);
         break;
       }
       case 'viewer_kicked':
@@ -580,10 +809,11 @@ export default function LiveSimplePage() {
         break;
       }
     }
-  }, [isHost, user, navigate]);
+  }, [isHost, user, navigate, participantNames]);
 
   const handleStop = useCallback(async () => {
     if (!id) return;
+    if (!window.confirm('Terminer le live ? Tous les viewers seront déconnectés.')) return;
     setStopping(true);
     try {
       await apiClient.post(Endpoints.lives.stop(id));
@@ -592,14 +822,13 @@ export default function LiveSimplePage() {
     finally { setStopping(false); }
   }, [id, liveApi]);
 
-  const handleLeave = useCallback(() => { navigate(-1); }, [navigate]);
+  const handleLeave  = useCallback(() => navigate(-1), [navigate]);
 
   const handleHandRaise = useCallback(async () => {
     if (!id || !user) return;
     setHandRaised(true);
-    try {
-      await apiClient.post(Endpoints.lives.handRaise(id, user.id));
-    } catch { /* silencieux */ }
+    try { await apiClient.post(Endpoints.lives.handRaise(id, user.id)); }
+    catch { /* silencieux */ }
   }, [id, user]);
 
   const handleInvite = useCallback(async (identity: string) => {
@@ -607,9 +836,17 @@ export default function LiveSimplePage() {
     try { await apiClient.post(Endpoints.lives.invite(id, identity)); } catch { /* silencieux */ }
     setStageIdentities(prev => new Set([...prev, identity]));
     setHandRequests(prev => prev.filter(r => r.identity !== identity));
-  }, [id]);
+    chatAddSysRef.current?.(`${participantNames.get(identity) ?? identity} a été invité sur scène`);
+  }, [id, participantNames]);
 
-  const handleDismissHandRaise = useCallback((identity: string) => {
+  const handleDemote = useCallback(async (identity: string) => {
+    if (!id) return;
+    try { await apiClient.post(Endpoints.lives.demote(id, identity)); } catch { /* silencieux */ }
+    setStageIdentities(prev => { const s = new Set(prev); s.delete(identity); return s; });
+    chatAddSysRef.current?.(`${participantNames.get(identity) ?? identity} a quitté la scène`);
+  }, [id, participantNames]);
+
+  const handleDismiss = useCallback((identity: string) => {
     setHandRequests(prev => prev.filter(r => r.identity !== identity));
   }, []);
 
@@ -623,25 +860,24 @@ export default function LiveSimplePage() {
       <div className="flex h-[calc(100vh-57px)] overflow-hidden bg-black">
         <div className="flex-1 flex flex-col min-w-0">
           {isActive && lkToken && lkUrl ? (
-            <LiveKitRoom
-              token={lkToken}
-              serverUrl={lkUrl}
-              connect
-              className="flex-1 flex flex-col min-w-0 min-h-0"
-            >
+            <LiveKitRoom token={lkToken} serverUrl={lkUrl} connect className="flex-1 flex flex-col min-w-0 min-h-0">
               <RoomAudioRenderer />
 
-              {/* Header */}
-              <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0">
+              {/* ── Header ───────────────────────────────────────────────── */}
+              <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0 flex-wrap gap-y-2">
                 <button onClick={handleLeave} className="text-white/60 hover:text-white transition-colors">
                   <ChevronLeft size={20} />
                 </button>
                 <Avatar src={live.user?.avatar_url} name={live.user?.display_name ?? live.user?.username} size="sm" />
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold text-white text-sm truncate">{live.title}</p>
                   <p className="text-xs text-white/50 truncate">{live.user?.display_name ?? live.user?.username}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+
+                {/* Avatars viewers empilés */}
+                <ViewerAvatars onGiftClick={(id, name) => setGiftTarget({ id, name })} />
+
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
                   <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
                     style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
@@ -660,43 +896,73 @@ export default function LiveSimplePage() {
                 </button>
               </div>
 
-              {/* Player + overlays */}
+              {/* ── Player + overlays ─────────────────────────────────── */}
               <div className="flex-1 relative bg-black overflow-hidden">
                 <LiveKitViewer
-                  isHost={isHost}
-                  liveId={id!}
+                  isHost={isHost} liveId={id!}
                   stageIdentities={stageIdentities}
+                  participantNames={participantNames}
                   onGiftClick={(identity, name) => setGiftTarget({ id: identity, name })}
                 />
 
-                {/* Hand requests panel (host) */}
-                <HandRequestsPanel
-                  liveId={id!}
-                  requests={handRequests}
-                  onInvite={handleInvite}
-                  onDismiss={handleDismissHandRaise}
-                />
+                {/* Panels modération */}
+                {showRequests && (
+                  <HandRequestsPanel
+                    liveId={id!} requests={handRequests}
+                    onInvite={handleInvite} onDismiss={handleDismiss}
+                    onClose={() => setShowRequests(false)}
+                  />
+                )}
+                {showOnStage && stageIdentities.size > 0 && (
+                  <OnStagePanel
+                    liveId={id!} identities={stageIdentities}
+                    names={participantNames}
+                    onDemote={handleDemote}
+                    onClose={() => setShowOnStage(false)}
+                  />
+                )}
+                {showGifts && giftHistory.length > 0 && (
+                  <GiftHistoryPanel history={giftHistory} onClose={() => setShowGifts(false)} />
+                )}
 
-                {/* Floating emoji overlay */}
+                {/* Emojis flottants */}
                 <FloatingEmojiOverlay floats={emojiFloats} />
 
-                {/* Gift ticker — bottom left */}
-                <div className="absolute bottom-20 left-3 z-30">
+                {/* Gift ticker bas gauche */}
+                <div className="absolute bottom-24 left-3 z-30">
                   <GiftTicker notifs={giftNotifs} />
                 </div>
 
-                {/* Gift toast pour le host */}
+                {/* Gift toast host */}
                 {isHost && activeToast && (
                   <div className="absolute top-16 right-3 z-30">
                     <GiftToast notif={activeToast} onDone={() => setActiveToast(null)} />
                   </div>
                 )}
 
-                {/* Barre controls + interactions */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-30">
-                  <div className="flex items-end gap-3">
-                    {/* Interactions verticales — droite */}
-                    <div className="flex flex-col gap-3 ml-auto">
+                {/* ── Barre bas ────────────────────────────────────────── */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 z-20"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }}>
+                  <div className="flex items-end gap-4">
+
+                    {/* Contrôles media */}
+                    <div className="flex-1 min-w-0">
+                      <MediaControls
+                        isHost={isHost} liveId={id!}
+                        onStop={handleStop} stopping={stopping}
+                        onLeave={handleLeave}
+                        onHandRaise={handleHandRaise} handRaised={handRaised}
+                        onToggleRequests={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); }}
+                        pendingCount={handRequests.length}
+                        onToggleOnStage={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); }}
+                        onStageCount={stageIdentities.size}
+                        onToggleGifts={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); }}
+                        giftsCount={giftHistory.length}
+                      />
+                    </div>
+
+                    {/* Interactions droite */}
+                    <div className="flex flex-col gap-3 shrink-0">
                       <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} />
                       <LiveReactionPicker
                         liveId={id!}
@@ -711,31 +977,19 @@ export default function LiveSimplePage() {
                         <button
                           onClick={() => setGiftTarget({ id: live.user!.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
                           className="flex flex-col items-center gap-1">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
-                            style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}>
+                          <div className="w-11 h-11 rounded-full flex items-center justify-center text-xl"
+                            style={{ background: 'rgba(245,158,11,0.15)', border: '1.5px solid rgba(245,158,11,0.35)' }}>
                             🎁
                           </div>
                           <span className="text-white text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>Cadeau</span>
                         </button>
                       )}
                     </div>
-
-                    {/* Controles media — gauche */}
-                    <div className="flex-1 min-w-0">
-                      <MediaControls
-                        isHost={isHost}
-                        liveId={id!}
-                        onStop={handleStop}
-                        stopping={stopping}
-                        onLeave={handleLeave}
-                        onHandRaise={handleHandRaise}
-                        handRaised={handRaised}
-                      />
-                    </div>
                   </div>
                 </div>
               </div>
 
+              {/* Description */}
               {live.description && (
                 <div className="shrink-0 px-4 py-2.5 border-t border-white/10 bg-black/80">
                   <p className="text-xs text-white/60 line-clamp-1">{live.description}</p>
@@ -785,25 +1039,34 @@ export default function LiveSimplePage() {
           )}
         </div>
 
-        {/* Chat */}
+        {/* ── Chat ────────────────────────────────────────────────────── */}
         {showChat && (
-          <div className="w-80 border-l border-white/10 bg-[var(--surface)] flex flex-col hidden lg:flex shrink-0">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] shrink-0">
-              <h3 className="font-semibold text-[var(--text-primary)] text-sm flex items-center gap-2">
-                <MessageCircle size={15} className="text-brand-primary" /> Chat
+          <div className="w-80 border-l border-white/10 bg-black flex flex-col hidden lg:flex shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
+              <h3 className="font-semibold text-white text-sm flex items-center gap-2">
+                <MessageCircle size={15} className="text-brand-primary" /> Chat live
               </h3>
-              <button onClick={() => setShowChat(false)} className="btn-ghost p-1 text-[var(--text-tertiary)]">
+              <button onClick={() => setShowChat(false)} className="text-white/40 hover:text-white/70 transition-colors p-1">
                 <X size={15} />
               </button>
             </div>
             <div className="flex-1 min-h-0">
-              <LiveChat liveId={id!} accessToken={accessToken} onWsEvent={handleWsEvent} />
+              <LiveChat
+                liveId={id!} accessToken={accessToken}
+                isHost={isHost}
+                onWsEvent={e => {
+                  handleWsEvent(e);
+                  // Récupère la fonction addSysMsg injectée
+                  const fn = (LiveChat as any).__addSysMsg;
+                  if (typeof fn === 'function') chatAddSysRef.current = fn;
+                }}
+              />
             </div>
           </div>
         )}
       </div>
 
-      {/* Gift modal */}
+      {/* ── Gift modal ────────────────────────────────────────────────── */}
       {giftTarget && live.user?.id && (
         <LiveGiftModal
           liveId={id!}
@@ -812,6 +1075,7 @@ export default function LiveSimplePage() {
           onClose={() => setGiftTarget(null)}
           onSent={notif => {
             setGiftNotifs(prev => [...prev.slice(-9), notif]);
+            setGiftHistory(prev => [...prev, { ...notif }]);
             setGiftTarget(null);
           }}
         />
