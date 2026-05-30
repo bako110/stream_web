@@ -345,11 +345,11 @@ function StoryViewer({
   })();
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
+    <div className="fixed inset-0 z-[100]"
+      style={{ background: '#000' }}
       onClick={onClose}>
-      <div className="relative"
-        style={{ width: 'min(100vw, 420px)', height: 'min(100dvh, 750px)', borderRadius: 16, overflow: 'hidden', background: '#000' }}
+      <div className="relative w-full h-full"
+        style={{ overflow: 'hidden', background: '#000' }}
         onClick={e => e.stopPropagation()}>
 
         {/* ── Progress bars ── */}
@@ -387,9 +387,9 @@ function StoryViewer({
           onMouseDown={() => setPaused(true)} onMouseUp={() => setPaused(false)}
           onTouchStart={() => setPaused(true)} onTouchEnd={() => setPaused(false)}>
           {story.media_type === 'video' && story.media_url ? (
-            <video src={story.media_url} className="w-full h-full object-contain" autoPlay loop={false} playsInline />
+            <video src={story.media_url} className="w-full h-full object-cover" autoPlay loop={false} playsInline />
           ) : story.media_url ? (
-            <img src={story.media_url} alt="" className="w-full h-full object-contain" />
+            <img src={story.media_url} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center"
               style={{ background: story.background_color ?? '#7B3FF2' }}>
