@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Radio, Eye, MessageCircle, Send, X, StopCircle, ChevronLeft,
@@ -54,12 +54,14 @@ interface GiftTick    { id: string; emoji: string; senderName: string; giftName:
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
 
-function LiveChat({
-  liveId, accessToken, isHost, onWsEvent,
-}: {
+interface LiveChatHandle { addSysMsg: (text: string) => void; }
+
+const LiveChat = forwardRef<LiveChatHandle, {
   liveId: string; accessToken: string | null; isHost: boolean;
   onWsEvent: (d: any) => void;
-}) {
+}>(function LiveChatInner({
+  liveId, accessToken, isHost, onWsEvent,
+}, ref) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input,    setInput]    = useState('');
   const [sending,  setSending]  = useState(false);
@@ -119,12 +121,12 @@ function LiveChat({
     finally { setSending(false); }
   }
 
-  function addSysMsg(text: string) {
+  const addSysMsg = useCallback((text: string) => {
     setMessages(prev => [...prev.slice(-149), { id: `sys-${Date.now()}`, user: '', text, isSys: true }]);
-  }
+  }, []);
 
-  // Exposer addSysMsg via ref-like callback
-  (LiveChat as any).__addSysMsg = addSysMsg;
+  // Expose addSysMsg au parent via forwardRef
+  useImperativeHandle(ref, () => ({ addSysMsg }), [addSysMsg]);
 
   async function deleteMsg(msgId: string) {
     setMessages(prev => prev.filter(m => m.id !== msgId));
@@ -197,7 +199,7 @@ function LiveChat({
       </div>
     </div>
   );
-}
+});
 
 // ── Panel demandes de prise de parole ─────────────────────────────────────────
 
@@ -729,7 +731,11 @@ export default function LiveSimplePage() {
   const [showOnStage,  setShowOnStage]  = useState(false);
   const [showGifts,    setShowGifts]    = useState(false);
 
-  const chatAddSysRef = useRef<((text: string) => void) | null>(null);
+  const chatRef            = useRef<LiveChatHandle>(null);
+  const participantNamesRef = useRef<Map<string, string>>(new Map());
+
+  // Synchronise le ref à chaque update du state pour éviter les closures stales
+  useEffect(() => { participantNamesRef.current = participantNames; }, [participantNames]);
 
   const liveApi = useApi<LiveStream>(() => apiClient.get<LiveStream>(Endpoints.lives.byId(id!)), [id]);
   const { lastLiveEnded } = useWs();
@@ -792,14 +798,14 @@ export default function LiveSimplePage() {
         if (!identity) break;
         setStageIdentities(prev => new Set([...prev, identity]));
         setHandRequests(prev => prev.filter(r => r.identity !== identity));
-        chatAddSysRef.current?.(`${participantNames.get(identity) ?? identity} est monté sur scène`);
+        chatRef.current?.addSysMsg(`${participantNamesRef.current.get(identity) ?? identity} est monté sur scène`);
         break;
       }
       case 'live_guest_demoted': {
         const identity = d.identity ?? d.user?.identity;
         if (!identity) break;
         setStageIdentities(prev => { const s = new Set(prev); s.delete(identity); return s; });
-        chatAddSysRef.current?.(`${participantNames.get(identity) ?? identity} a quitté la scène`);
+        chatRef.current?.addSysMsg(`${participantNamesRef.current.get(identity) ?? identity} a quitté la scène`);
         break;
       }
       case 'viewer_kicked':
@@ -809,7 +815,7 @@ export default function LiveSimplePage() {
         break;
       }
     }
-  }, [isHost, user, navigate, participantNames]);
+  }, [isHost, user, navigate]);
 
   const handleStop = useCallback(async () => {
     if (!id) return;
@@ -836,15 +842,15 @@ export default function LiveSimplePage() {
     try { await apiClient.post(Endpoints.lives.invite(id, identity)); } catch { /* silencieux */ }
     setStageIdentities(prev => new Set([...prev, identity]));
     setHandRequests(prev => prev.filter(r => r.identity !== identity));
-    chatAddSysRef.current?.(`${participantNames.get(identity) ?? identity} a été invité sur scène`);
-  }, [id, participantNames]);
+    chatRef.current?.addSysMsg(`${participantNamesRef.current.get(identity) ?? identity} a été invité sur scène`);
+  }, [id]);
 
   const handleDemote = useCallback(async (identity: string) => {
     if (!id) return;
     try { await apiClient.post(Endpoints.lives.demote(id, identity)); } catch { /* silencieux */ }
     setStageIdentities(prev => { const s = new Set(prev); s.delete(identity); return s; });
-    chatAddSysRef.current?.(`${participantNames.get(identity) ?? identity} a quitté la scène`);
-  }, [id, participantNames]);
+    chatRef.current?.addSysMsg(`${participantNamesRef.current.get(identity) ?? identity} a quitté la scène`);
+  }, [id]);
 
   const handleDismiss = useCallback((identity: string) => {
     setHandRequests(prev => prev.filter(r => r.identity !== identity));
@@ -1052,14 +1058,10 @@ export default function LiveSimplePage() {
             </div>
             <div className="flex-1 min-h-0">
               <LiveChat
+                ref={chatRef}
                 liveId={id!} accessToken={accessToken}
                 isHost={isHost}
-                onWsEvent={e => {
-                  handleWsEvent(e);
-                  // Récupère la fonction addSysMsg injectée
-                  const fn = (LiveChat as any).__addSysMsg;
-                  if (typeof fn === 'function') chatAddSysRef.current = fn;
-                }}
+                onWsEvent={handleWsEvent}
               />
             </div>
           </div>
