@@ -1343,14 +1343,21 @@ function ActionBar({
   titleForShare?: string;
   onOpenComments: (id: string, kind: 'event' | 'concert' | 'post' | 'reel', count: number) => void;
 }) {
-  const [liked,        setLiked]        = useState(initialLiked);
-  const [likeCount,    setLikeCount]    = useState(initialLikeCount);
+  const [liked,      setLiked]      = useState(initialLiked);
+  const [likeCount,  setLikeCount]  = useState(initialLikeCount);
   const commentCount = commentCountOverride ?? initialCommentCount ?? 0;
-  const [saved,        setSaved]        = useState(false);
-  const [shareToast,   setShareToast]   = useState(false);
+  const [saved,      setSaved]      = useState(false);
+  const [shareToast, setShareToast] = useState(false);
+  const inFlight = useRef(false);
+
+  // Resync si les données de la card changent (refresh feed, navigation)
+  useEffect(() => { setLiked(initialLiked); },    [initialLiked]);
+  useEffect(() => { setLikeCount(initialLikeCount); }, [initialLikeCount]);
 
   async function handleLike(e: React.MouseEvent) {
     e.stopPropagation();
+    if (inFlight.current) return;
+    inFlight.current = true;
     const was = liked;
     setLiked(!was);
     setLikeCount(n => n + (was ? -1 : 1));
@@ -1368,6 +1375,8 @@ function ActionBar({
     } catch {
       setLiked(was);
       setLikeCount(n => n + (was ? 1 : -1));
+    } finally {
+      inFlight.current = false;
     }
   }
 

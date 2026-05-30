@@ -58,7 +58,7 @@ export default function PostDetailPage() {
     setLiked(newLiked);
     setLikes(l => l + (newLiked ? 1 : -1));
     try {
-      await apiClient.post(Endpoints.posts.react(id), { reaction: newLiked ? 'like' : null });
+      await apiClient.post(`${Endpoints.posts.react(id)}?reaction_type=like`);
     } catch {
       setLiked(!newLiked);
       setLikes(l => l + (newLiked ? -1 : 1));
