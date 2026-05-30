@@ -125,10 +125,9 @@ export default function LiveSimpleListPage() {
 
   useEffect(() => {
     if (!lastLiveStarted) return;
-    setLives(prev => {
-      if (prev.some(l => l.id === lastLiveStarted.live.id)) return prev;
-      return [lastLiveStarted.live as unknown as LiveStream, ...prev];
-    });
+    // Refetch depuis l'API — le backend applique les filtres is_private + follow
+    // Ne pas injecter directement le live WS qui ignore ces règles
+    refetch();
   }, [lastLiveStarted]);
 
   useEffect(() => {
