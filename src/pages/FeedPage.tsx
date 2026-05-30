@@ -822,12 +822,16 @@ function MyStoryCard({ user, myGroup, onClick }: { user: any; myGroup: StoryGrou
       {/* Avatar + bouton + */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2">
         <div className="relative">
-          <div className="rounded-full p-[2px]"
-            style={{ background: myGroup ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'var(--border)', border: myGroup ? 'none' : '2px dashed var(--border)' }}>
-            <div className="rounded-full p-[1.5px]" style={{ background: 'var(--surface)' }}>
-              <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
+          {myGroup ? (
+            <div className="rounded-full p-[2px]"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              <div className="rounded-full p-[1.5px]" style={{ background: 'var(--surface)' }}>
+                <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
+              </div>
             </div>
-          </div>
+          ) : (
+            <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
+          )}
           <div className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
             style={{ background: 'var(--primary)', width: 18, height: 18, border: '2px solid var(--surface)' }}>
             <Plus size={9} className="text-white" />
