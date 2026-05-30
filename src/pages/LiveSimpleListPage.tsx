@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Eye, Plus, Zap } from 'lucide-react';
+import { Radio, Eye, Plus, Zap, Lock } from 'lucide-react';
 import type { LiveStream } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -48,7 +48,7 @@ function LiveCard({ live }: { live: LiveStream }) {
           </div>
         )}
 
-        {/* Live badge */}
+        {/* Live badge + viewers */}
         <div className="absolute top-3 left-3 flex items-center gap-2">
           <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
             style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
@@ -59,6 +59,14 @@ function LiveCard({ live }: { live: LiveStream }) {
             <Eye size={10} /> {live.current_viewers.toLocaleString()}
           </span>
         </div>
+
+        {/* Badge privé */}
+        {live.is_private && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
+            style={{ background: 'rgba(123,63,242,0.85)', backdropFilter: 'blur(4px)', border: '1px solid rgba(123,63,242,0.5)' }}>
+            <Lock size={10} /> Abonnés
+          </div>
+        )}
 
         {/* Boost badge */}
         {live.is_featured && (

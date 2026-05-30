@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Video, Calendar, Zap, ChevronRight, Clock, Music } from 'lucide-react';
+import { Radio, Video, Calendar, Zap, ChevronRight, Clock, Music, Globe, Lock } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Spinner } from '../components/ui/Spinner';
@@ -63,11 +63,12 @@ function ChoiceCard({
 // ── Formulaire live spontané ──────────────────────────────────────────────────
 
 function QuickLiveForm({ onBack }: { onBack: () => void }) {
-  const navigate  = useNavigate();
-  const [title,   setTitle]   = useState('');
-  const [desc,    setDesc]    = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const navigate    = useNavigate();
+  const [title,     setTitle]     = useState('');
+  const [desc,      setDesc]      = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
 
   async function handleStart() {
     if (!title.trim()) { setError('Donne un titre à ton live'); return; }
@@ -77,6 +78,7 @@ function QuickLiveForm({ onBack }: { onBack: () => void }) {
       const r = await apiClient.post<LiveStartResponse>(Endpoints.lives.start, {
         title:       title.trim(),
         description: desc.trim() || null,
+        is_private:  isPrivate,
       });
       // Redirige vers la page live avec le token publisher en state
       navigate(`/lives/${r.data.live.id}`, {
@@ -128,6 +130,58 @@ function QuickLiveForm({ onBack }: { onBack: () => void }) {
             rows={3}
             maxLength={300}
           />
+        </div>
+      </div>
+
+      {/* Sélecteur visibilité */}
+      <div>
+        <label className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2 block">
+          Visibilité
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setIsPrivate(false)}
+            className="flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all"
+            style={{
+              borderColor:   !isPrivate ? '#10B981'                    : 'var(--border)',
+              background:    !isPrivate ? 'rgba(16,185,129,0.08)'      : 'var(--bg-secondary)',
+              boxShadow:     !isPrivate ? '0 0 0 3px rgba(16,185,129,0.15)' : 'none',
+            }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: !isPrivate ? 'rgba(16,185,129,0.15)' : 'var(--bg-tertiary)' }}>
+              <Globe size={16} style={{ color: !isPrivate ? '#10B981' : 'var(--text-tertiary)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-bold" style={{ color: !isPrivate ? '#10B981' : 'var(--text-primary)' }}>Public</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Tout le monde</p>
+            </div>
+            {!isPrivate && <div className="ml-auto w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#10B981' }}>
+              <span className="text-white text-[9px] font-black">✓</span>
+            </div>}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPrivate(true)}
+            className="flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all"
+            style={{
+              borderColor:   isPrivate ? '#7B3FF2'                    : 'var(--border)',
+              background:    isPrivate ? 'rgba(123,63,242,0.08)'      : 'var(--bg-secondary)',
+              boxShadow:     isPrivate ? '0 0 0 3px rgba(123,63,242,0.15)' : 'none',
+            }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: isPrivate ? 'rgba(123,63,242,0.15)' : 'var(--bg-tertiary)' }}>
+              <Lock size={16} style={{ color: isPrivate ? '#7B3FF2' : 'var(--text-tertiary)' }} />
+            </div>
+            <div>
+              <p className="text-sm font-bold" style={{ color: isPrivate ? '#7B3FF2' : 'var(--text-primary)' }}>Abonnés</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Tes abonnés seulement</p>
+            </div>
+            {isPrivate && <div className="ml-auto w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#7B3FF2' }}>
+              <span className="text-white text-[9px] font-black">✓</span>
+            </div>}
+          </button>
         </div>
       </div>
 

@@ -133,6 +133,7 @@ export interface LiveStream {
   peak_viewers:    number;
   likes_count:     number;
   is_featured:     boolean;
+  is_private:      boolean;
   started_at:      string;
   ended_at:        string | null;
   user:            User | null;

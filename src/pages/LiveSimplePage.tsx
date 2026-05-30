@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Radio, Eye, MessageCircle, Send, X, StopCircle, ChevronLeft,
   Mic, MicOff, VideoIcon, VideoOff, Gift, Hand, FlipHorizontal,
-  ShieldOff, Ban,
+  ShieldOff, Ban, Lock,
 } from 'lucide-react';
 import {
   LiveKitRoom,
@@ -189,8 +189,11 @@ function ParticipantContextMenu({
 }) {
   if (!isHost) return null;
 
-  async function act(endpoint: string) {
-    try { await apiClient.post(endpoint); } catch { /* silencieux */ }
+  async function act(endpoint: string, method: 'post' | 'delete' = 'post') {
+    try {
+      if (method === 'delete') await apiClient.delete(endpoint);
+      else await apiClient.post(endpoint);
+    } catch { /* silencieux */ }
     onDone();
   }
 
@@ -210,11 +213,15 @@ function ParticipantContextMenu({
       )}
       <button onClick={() => act(Endpoints.lives.ban(liveId, identity))}
         className="flex items-center gap-1 text-[10px] text-red-300 bg-red-400/20 px-2 py-1 rounded-lg w-full justify-center">
-        <Ban size={10} /> Ban session
+        <Ban size={10} /> Exclure ce live
       </button>
       <button onClick={() => act(Endpoints.lives.globalBan(liveId, identity))}
         className="flex items-center gap-1 text-[10px] text-red-400 bg-red-500/25 px-2 py-1 rounded-lg w-full justify-center">
-        <Ban size={10} /> Ban global
+        <Ban size={10} /> Bannir (tous lives)
+      </button>
+      <button onClick={() => act(Endpoints.lives.blockUser(identity))}
+        className="flex items-center gap-1 text-[10px] text-purple-300 bg-purple-500/20 px-2 py-1 rounded-lg w-full justify-center">
+        <Lock size={10} /> Bloquer de mes lives
       </button>
       <button onClick={onDone} className="text-[10px] text-white/40 mt-1">Annuler</button>
     </div>
@@ -639,6 +646,12 @@ export default function LiveSimplePage() {
                     style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
                   </span>
+                  {live.is_private && (
+                    <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
+                      style={{ background: 'rgba(123,63,242,0.85)', border: '1px solid rgba(123,63,242,0.5)' }}>
+                      <Lock size={10} /> Abonnés
+                    </span>
+                  )}
                   <LiveTimer startedAt={live.started_at} />
                   <ViewerCount />
                 </div>

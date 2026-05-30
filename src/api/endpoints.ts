@@ -216,8 +216,10 @@ export const Endpoints = {
     handRaise: (id: string, identity: string) => `${V1}/lives/${id}/hand-raise/${identity}`,
     invite:    (id: string, identity: string) => `${V1}/lives/${id}/invite/${identity}`,
     demote:    (id: string, identity: string) => `${V1}/lives/${id}/demote/${identity}`,
-    ban:       (id: string, identity: string) => `${V1}/lives/${id}/ban/${identity}`,
-    globalBan: (id: string, identity: string) => `${V1}/lives/${id}/global-ban/${identity}`,
+    ban:         (id: string, identity: string) => `${V1}/lives/${id}/ban/${identity}`,
+    globalBan:   (id: string, identity: string) => `${V1}/lives/${id}/global-ban/${identity}`,
+    blockUser:   (userId: string)               => `${V1}/lives/block/${userId}`,
+    listBlocks:  `${V1}/lives/blocks`,
   },
   activity: {
     feed:   `${V1}/activity/feed`,
