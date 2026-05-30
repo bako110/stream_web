@@ -550,7 +550,8 @@ function ViewerCount() {
 function MediaControls({
   isHost, liveId, onStop, stopping, onLeave, onHandRaise, handRaised,
   onToggleRequests, pendingCount, onToggleOnStage, onStageCount,
-  onToggleGifts, giftsCount,
+  onToggleGifts, giftsCount, onGiftToHost, hostName,
+  isOnStage, onLeaveStage, guestCamOn, guestMicOn, onToggleGuestCam, onToggleGuestMic,
 }: {
   isHost: boolean; liveId: string;
   onStop: () => void; stopping: boolean; onLeave: () => void;
@@ -558,6 +559,10 @@ function MediaControls({
   onToggleRequests: () => void; pendingCount: number;
   onToggleOnStage: () => void; onStageCount: number;
   onToggleGifts: () => void; giftsCount: number;
+  onGiftToHost?: () => void; hostName?: string;
+  isOnStage?: boolean; onLeaveStage?: () => void;
+  guestCamOn?: boolean; guestMicOn?: boolean;
+  onToggleGuestCam?: () => void; onToggleGuestMic?: () => void;
 }) {
   const { localParticipant } = useLocalParticipant();
   const [camOn, setCamOn] = useState(false);
@@ -598,22 +603,17 @@ function MediaControls({
     } catch { /* ignore */ }
   }
 
-  function SideBtn({ icon, label, onClick, active, color, badge }: {
+  function SideBtn({ icon, label, onClick, active, color, badge, danger }: {
     icon: React.ReactNode; label: string; onClick?: () => void;
-    active?: boolean; color?: string; badge?: number;
+    active?: boolean; color?: string; badge?: number; danger?: boolean;
   }) {
+    const bg     = danger ? 'rgba(240,54,90,0.2)' : active ? `${color ?? '#7B3FF2'}25` : 'rgba(255,255,255,0.12)';
+    const border = danger ? '#F0365A' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.15)';
+    const txt    = danger ? '#F0365A' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)';
     return (
-      <button
-        onClick={onClick}
-        className="flex flex-col items-center gap-1 relative"
-        style={{ minWidth: 48 }}
-      >
-        <div className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
-          style={{
-            background: active ? `${color ?? '#7B3FF2'}25` : 'rgba(255,255,255,0.12)',
-            border:     active ? `1.5px solid ${color ?? '#7B3FF2'}` : '1.5px solid rgba(255,255,255,0.15)',
-            color:      active ? (color ?? '#7B3FF2') : '#fff',
-          }}>
+      <button onClick={onClick} className="flex flex-col items-center gap-1 relative" style={{ minWidth: 52 }}>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center transition-all"
+          style={{ background: bg, border: `1.5px solid ${border}`, color: danger ? '#F0365A' : active ? (color ?? '#7B3FF2') : '#fff' }}>
           {icon}
         </div>
         {badge !== undefined && badge > 0 && (
@@ -622,73 +622,74 @@ function MediaControls({
             {badge}
           </div>
         )}
-        <span className="text-[10px] font-semibold" style={{ color: active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)' }}>
-          {label}
-        </span>
+        <span className="text-[10px] font-semibold" style={{ color: txt }}>{label}</span>
       </button>
     );
   }
 
   return (
-    <div className="flex items-end gap-3 flex-wrap justify-center">
+    <div className="flex items-end gap-4 flex-wrap justify-center py-2">
+
+      {/* ── HOST ── */}
       {isHost && (
         <>
-          <SideBtn icon={camOn ? <VideoIcon size={18} /> : <VideoOff size={18} />}
-            label={camOn ? 'Cam' : 'Cam off'}
-            onClick={toggleCam}
-            active={camOn} color="#10B981" />
-
-          <SideBtn icon={micOn ? <Mic size={18} /> : <MicOff size={18} />}
-            label={micOn ? 'Micro' : 'Muet'}
-            onClick={toggleMic}
-            active={micOn} color="#10B981" />
-
-          <SideBtn icon={<RefreshCw size={18} />}
-            label="Flip"
-            onClick={flipCam}
-            active={false} />
-
-          <SideBtn icon={<span className="text-base">✋</span>}
+          <SideBtn icon={camOn ? <VideoIcon size={19} /> : <VideoOff size={19} />}
+            label={camOn ? 'Cam' : 'Cam off'} onClick={toggleCam} active={camOn} color="#10B981" />
+          <SideBtn icon={micOn ? <Mic size={19} /> : <MicOff size={19} />}
+            label={micOn ? 'Micro' : 'Muet'} onClick={toggleMic} active={micOn} color="#10B981" />
+          <SideBtn icon={<RefreshCw size={19} />} label="Flip" onClick={flipCam} />
+          <SideBtn icon={<span className="text-lg">✋</span>}
             label={pendingCount > 0 ? `${pendingCount} dem.` : 'Demandes'}
-            onClick={onToggleRequests}
-            active={pendingCount > 0} color="#FFD700"
-            badge={pendingCount} />
-
+            onClick={onToggleRequests} active={pendingCount > 0} color="#FFD700" badge={pendingCount} />
           {onStageCount > 0 && (
-            <SideBtn icon={<Users size={18} />}
-              label="Scène"
-              onClick={onToggleOnStage}
-              active color="#22c55e"
-              badge={onStageCount} />
+            <SideBtn icon={<Users size={19} />} label="Scène"
+              onClick={onToggleOnStage} active color="#22c55e" badge={onStageCount} />
           )}
-
           {giftsCount > 0 && (
-            <SideBtn icon={<Gift size={18} />}
-              label="Cadeaux"
-              onClick={onToggleGifts}
-              active color="#FFD700"
-              badge={giftsCount} />
+            <SideBtn icon={<Gift size={19} />} label="Cadeaux"
+              onClick={onToggleGifts} active color="#FFD700" badge={giftsCount} />
           )}
-
-          <SideBtn icon={<StopCircle size={18} />}
-            label={stopping ? '...' : 'Terminer'}
-            onClick={onStop}
-            active color="#F0365A" />
+          <SideBtn icon={<StopCircle size={19} />}
+            label={stopping ? '...' : 'Terminer'} onClick={onStop} danger />
         </>
       )}
 
-      {!isHost && (
+      {/* ── VIEWER sur scène ── */}
+      {!isHost && isOnStage && (
         <>
           <SideBtn
-            icon={<Hand size={18} />}
-            label={handRaised ? 'Main levée' : 'Lever main'}
-            onClick={onHandRaise}
-            active={handRaised} color="#FFD700" />
-
+            icon={guestCamOn ? <VideoIcon size={19} /> : <VideoOff size={19} />}
+            label={guestCamOn ? 'Cam' : 'Cam off'}
+            onClick={onToggleGuestCam} active={guestCamOn} color="#10B981" />
           <SideBtn
-            icon={<ChevronLeft size={18} />}
-            label="Quitter"
-            onClick={onLeave} />
+            icon={guestMicOn ? <Mic size={19} /> : <MicOff size={19} />}
+            label={guestMicOn ? 'Micro' : 'Muet'}
+            onClick={onToggleGuestMic} active={guestMicOn} color="#10B981" />
+          <SideBtn
+            icon={<Gift size={19} />} label="Cadeau"
+            onClick={onGiftToHost} color="#FFD700" active />
+          <SideBtn
+            icon={<ChevronLeft size={19} />} label="Descendre"
+            onClick={onLeaveStage} danger />
+          <SideBtn
+            icon={<X size={19} />} label="Quitter"
+            onClick={onLeave} danger />
+        </>
+      )}
+
+      {/* ── VIEWER normal (pas sur scène) ── */}
+      {!isHost && !isOnStage && (
+        <>
+          <SideBtn
+            icon={<Gift size={19} />} label="Cadeau"
+            onClick={onGiftToHost} color="#FFD700" active />
+          <SideBtn
+            icon={<Hand size={19} />}
+            label={handRaised ? 'En attente...' : 'Lever main'}
+            onClick={onHandRaise} active={handRaised} color="#FFD700" />
+          <SideBtn
+            icon={<X size={19} />} label="Quitter"
+            onClick={onLeave} danger />
         </>
       )}
     </div>
@@ -725,6 +726,11 @@ export default function LiveSimplePage() {
   const [stageIdentities, setStageIdentities] = useState<Set<string>>(new Set());
   const [participantNames, setParticipantNames] = useState<Map<string, string>>(new Map());
   const [handRaised,      setHandRaised]      = useState(false);
+
+  // Guest sur scène (viewer invité)
+  const [isOnStage,    setIsOnStage]    = useState(false);
+  const [guestCamOn,   setGuestCamOn]   = useState(false);
+  const [guestMicOn,   setGuestMicOn]   = useState(false);
 
   // Panels
   const [showRequests, setShowRequests] = useState(false);
@@ -799,6 +805,11 @@ export default function LiveSimplePage() {
         setStageIdentities(prev => new Set([...prev, identity]));
         setHandRequests(prev => prev.filter(r => r.identity !== identity));
         chatRef.current?.addSysMsg(`${participantNamesRef.current.get(identity) ?? identity} est monté sur scène`);
+        // Si c'est moi qui suis invité → monter sur scène
+        if (user && identity === user.id) {
+          setIsOnStage(true);
+          setHandRaised(false);
+        }
         break;
       }
       case 'live_guest_demoted': {
@@ -806,6 +817,12 @@ export default function LiveSimplePage() {
         if (!identity) break;
         setStageIdentities(prev => { const s = new Set(prev); s.delete(identity); return s; });
         chatRef.current?.addSysMsg(`${participantNamesRef.current.get(identity) ?? identity} a quitté la scène`);
+        // Si c'est moi qui suis redescendu
+        if (user && identity === user.id) {
+          setIsOnStage(false);
+          setGuestCamOn(false);
+          setGuestMicOn(false);
+        }
         break;
       }
       case 'viewer_kicked':
@@ -964,6 +981,17 @@ export default function LiveSimplePage() {
                         onStageCount={stageIdentities.size}
                         onToggleGifts={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); }}
                         giftsCount={giftHistory.length}
+                        onGiftToHost={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Host' })}
+                        hostName={live?.user?.display_name ?? live?.user?.username ?? 'Host'}
+                        isOnStage={isOnStage}
+                        onLeaveStage={async () => {
+                          try { await apiClient.post(Endpoints.lives.demote(id!, user?.id ?? '')); } catch {}
+                          setIsOnStage(false); setGuestCamOn(false); setGuestMicOn(false);
+                        }}
+                        guestCamOn={guestCamOn}
+                        guestMicOn={guestMicOn}
+                        onToggleGuestCam={() => setGuestCamOn(v => !v)}
+                        onToggleGuestMic={() => setGuestMicOn(v => !v)}
                       />
                     </div>
 
