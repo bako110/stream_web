@@ -345,11 +345,18 @@ function StoryViewer({
   })();
 
   return (
-    <div className="fixed inset-0 z-[100]"
-      style={{ background: '#000' }}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.95)' }}
       onClick={onClose}>
-      <div className="relative w-full h-full"
-        style={{ overflow: 'hidden', background: '#000' }}
+      {/* Conteneur portrait 9:16 centré — comme Instagram */}
+      <div className="relative flex-shrink-0"
+        style={{
+          width: 'min(100vw, calc(100dvh * 9 / 16))',
+          height: '100dvh',
+          background: '#000',
+          borderRadius: window.innerWidth > 768 ? 12 : 0,
+          overflow: 'hidden',
+        }}
         onClick={e => e.stopPropagation()}>
 
         {/* ── Progress bars ── */}
@@ -903,13 +910,11 @@ function StoryCard({ group, onClick }: { group: StoryGroup; onClick: () => void 
 
 // ── Stories bar ───────────────────────────────────────────────────────────────
 function StoriesBar() {
-  const { user }     = useAuthStore();
-  const [groups,     setGroups]     = useState<StoryGroup[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [viewer,          setViewer]          = useState<number | null>(null);
-  const [initialStoryIdx, setInitialStoryIdx] = useState(0);
-  const [creator,         setCreator]         = useState(false);
-  const [myStories,       setMyStories]       = useState(false);
+  const { user }               = useAuthStore();
+  const navigate               = useNavigate();
+  const [groups,   setGroups]  = useState<StoryGroup[]>([]);
+  const [loading,  setLoading] = useState(true);
+  const [creator,  setCreator] = useState(false);
 
   function load() {
     apiClient.get<StoryGroup[]>(Endpoints.stories.feed)
@@ -958,17 +963,20 @@ function StoriesBar() {
         style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex gap-2.5 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
 
-          {/* Ma story / ajouter — carte portrait */}
+          {/* Ma story / ajouter — navigue vers page dédiée */}
           <MyStoryCard
             user={user}
             myGroup={myGroup}
-            onClick={() => myGroup ? setMyStories(true) : setCreator(true)}
+            onClick={() => myGroup
+              ? navigate(`/stories?userId=${user?.id}&index=${allGroups.indexOf(myGroup)}`)
+              : setCreator(true)
+            }
           />
 
-          {/* Autres stories — cartes portrait */}
+          {/* Autres stories — navigue vers page dédiée */}
           {otherGroups.map((group) => (
             <StoryCard key={group.user.id} group={group}
-              onClick={() => setViewer(allGroups.indexOf(group))} />
+              onClick={() => navigate(`/stories?userId=${group.user.id}&index=${allGroups.indexOf(group)}`)} />
           ))}
 
           {/* Skeletons */}
@@ -978,32 +986,6 @@ function StoriesBar() {
           ))}
         </div>
       </div>
-
-      {viewer !== null && allGroups.length > 0 && (
-        <StoryViewer
-          groups={allGroups}
-          initialIndex={viewer}
-          initialStoryIndex={initialStoryIdx}
-          currentUserId={user?.id}
-          onClose={() => { setViewer(null); setInitialStoryIdx(0); load(); }}
-          onReload={load}
-        />
-      )}
-
-      {myStories && (
-        <MyStoriesPage
-          myGroup={myGroup}
-          user={user}
-          onClose={() => setMyStories(false)}
-          onViewStory={(idx) => {
-            setInitialStoryIdx(idx);
-            setMyStories(false);
-            if (myGroup) setViewer(allGroups.indexOf(myGroup));
-          }}
-          onNewStory={() => { setMyStories(false); setCreator(true); }}
-          onReload={() => { load(); }}
-        />
-      )}
 
       {creator && (
         <StoryCreator onClose={() => setCreator(false)} onCreated={() => { setCreator(false); load(); }} />
