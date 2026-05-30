@@ -42,52 +42,41 @@ export function LiveLikeButton({
   initialCount?: number;
 }) {
   const [count,   setCount]   = useState(initialCount);
+  const [liked,   setLiked]   = useState(false);
   const [hearts,  setHearts]  = useState<HeartItem[]>([]);
   const [bumping, setBumping] = useState(false);
-  const heartId   = useRef(0);
-  const batchRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const batchCnt  = useRef(0);
-  const colorIdx  = useRef(0);
+  const heartId  = useRef(0);
+  const colorIdx = useRef(0);
+  const inFlight = useRef(false);
 
-  // Réception depuis WS
-  const triggerRemote = useCallback(() => {
-    setCount(c => c + 1);
-    spawnHeart();
-  }, []);
-
-  // Expose sur ref si besoin — on retourne juste triggerRemote
-  useEffect(() => {
-    // Reset count si initialCount change
-    setCount(initialCount);
-  }, [initialCount]);
+  useEffect(() => { setCount(initialCount); }, [initialCount]);
 
   function spawnHeart() {
-    const id    = ++heartId.current;
-    const idx   = colorIdx.current % HEART_COLORS.length;
+    const id  = ++heartId.current;
+    const idx = colorIdx.current % HEART_COLORS.length;
     colorIdx.current++;
-    const item: HeartItem = {
-      id,
-      color: HEART_COLORS[idx],
-      emoji: HEART_EMOJIS[idx],
-      x: (Math.random() - 0.5) * 60,
-    };
-    setHearts(prev => [...prev.slice(-12), item]);
+    setHearts(prev => [...prev.slice(-12), { id, color: HEART_COLORS[idx], emoji: HEART_EMOJIS[idx], x: (Math.random() - 0.5) * 60 }]);
     setTimeout(() => setHearts(prev => prev.filter(h => h.id !== id)), 1300);
   }
 
-  function handleLike() {
-    setCount(c => c + 1);
+  async function handleLike() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setCount(c => c + (wasLiked ? -1 : 1));
     setBumping(true);
     setTimeout(() => setBumping(false), 300);
-    spawnHeart();
-
-    // Batch les appels API — envoie toutes les 500ms
-    batchCnt.current++;
-    if (batchRef.current) clearTimeout(batchRef.current);
-    batchRef.current = setTimeout(() => {
-      apiClient.post(Endpoints.lives.like(liveId)).catch(() => {});
-      batchCnt.current = 0;
-    }, 500);
+    if (!wasLiked) spawnHeart();
+    try {
+      await apiClient.post(Endpoints.lives.like(liveId));
+    } catch {
+      // Rollback
+      setLiked(wasLiked);
+      setCount(c => c + (wasLiked ? 1 : -1));
+    } finally {
+      inFlight.current = false;
+    }
   }
 
   return (
@@ -96,9 +85,13 @@ export function LiveLikeButton({
       <button onClick={handleLike}
         className="flex flex-col items-center gap-1 transition-all"
         style={{ transform: bumping ? 'scale(1.4)' : 'scale(1)', transition: 'transform 0.15s' }}>
-        <div className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
-          <Heart size={18} style={{ color: '#EF4444' }} fill="#EF4444" />
+        <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+          style={{
+            background: liked ? 'rgba(224,56,154,0.25)' : 'rgba(239,68,68,0.15)',
+            border: `1px solid ${liked ? '#E0389A' : 'rgba(239,68,68,0.3)'}`,
+            boxShadow: liked ? '0 0 12px rgba(224,56,154,0.4)' : 'none',
+          }}>
+          <Heart size={18} style={{ color: liked ? '#E0389A' : '#EF4444' }} fill={liked ? '#E0389A' : 'none'} />
         </div>
         <span className="text-white text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
           {count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count}

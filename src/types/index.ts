@@ -112,9 +112,11 @@ export interface Concert {
   concert_type: ConcertType; access_type: AccessType; status: ConcertStatus;
   ticket_price: number | null; ticket_price_vip: number | null; ticket_price_vvip: number | null; ticket_price_vvvip: number | null;
   max_viewers: number | null; current_viewers: number;
-  view_count: number; thumbnail_url: string | null; banner_url: string | null;
+  view_count: number; like_count: number; comment_count: number;
+  thumbnail_url: string | null; banner_url: string | null;
   video_url: string | null; is_featured: boolean; published_at: string | null;
   created_at: string; updated_at: string; artist?: User;
+  user_reaction?: 'like' | 'dislike' | null;
 }
 
 export interface StreamToken { token: string; room_name: string; livekit_url: string; }
@@ -165,9 +167,11 @@ export interface Event {
   starts_at: string; ends_at: string | null; ticket_price: number | null;
   ticket_price_vip: number | null; ticket_price_vvip: number | null; ticket_price_vvvip: number | null;
   max_attendees: number | null; current_attendees: number;
+  like_count: number; comment_count: number;
   thumbnail_url: string | null; banner_url: string | null; gallery_urls: string[] | null;
   video_url: string | null; is_featured: boolean; published_at: string | null;
   created_at: string; updated_at: string; organizer?: User;
+  user_reaction?: 'like' | 'dislike' | null;
 }
 
 // ── Reel ──────────────────────────────────────────────────────────────────

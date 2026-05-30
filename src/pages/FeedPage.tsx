@@ -1329,7 +1329,8 @@ function ShareToast({ onDone }: { onDone: () => void }) {
 
 // ── Action bar — per-card state ───────────────────────────────────────────────
 function ActionBar({
-  id, kind, initialLiked, initialLikeCount, initialCommentCount = 0, shareCount = 0,
+  id, kind, initialLiked, initialLikeCount, initialCommentCount = 0,
+  commentCountOverride, shareCount = 0,
   titleForShare, onOpenComments,
 }: {
   id: string;
@@ -1337,13 +1338,14 @@ function ActionBar({
   initialLiked: boolean;
   initialLikeCount: number;
   initialCommentCount?: number;
+  commentCountOverride?: number;
   shareCount?: number;
   titleForShare?: string;
   onOpenComments: (id: string, kind: 'event' | 'concert' | 'post' | 'reel', count: number) => void;
 }) {
   const [liked,        setLiked]        = useState(initialLiked);
   const [likeCount,    setLikeCount]    = useState(initialLikeCount);
-  const [commentCount] = useState(initialCommentCount ?? 0);
+  const commentCount = commentCountOverride ?? initialCommentCount ?? 0;
   const [saved,        setSaved]        = useState(false);
   const [shareToast,   setShareToast]   = useState(false);
 
@@ -1528,10 +1530,10 @@ function LiveHero({ concert }: { concert: Concert }) {
 // ── Concert card ──────────────────────────────────────────────────────────────
 type OpenCommentsFn = (id: string, kind: 'event'|'concert'|'post'|'reel', count: number) => void;
 
-function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments }: {
+function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride }: {
   concert: Concert; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
-  onOpenComments: OpenCommentsFn;
+  onOpenComments: OpenCommentsFn; commentCountOverride?: number;
 }) {
   const navigate   = useNavigate();
   const isLive     = concert.status === 'live';
@@ -1588,7 +1590,10 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
 
       <ActionBar
         id={concert.id} kind="concert"
-        initialLiked={false} initialLikeCount={0}
+        initialLiked={concert.user_reaction === 'like'}
+        initialLikeCount={concert.like_count ?? 0}
+        initialCommentCount={concert.comment_count ?? 0}
+        commentCountOverride={commentCountOverride}
         titleForShare={concert.title}
         onOpenComments={onOpenComments}
       />
@@ -1597,10 +1602,10 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
 }
 
 // ── Event card ────────────────────────────────────────────────────────────────
-function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments }: {
+function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride }: {
   event: Event; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
-  onOpenComments: OpenCommentsFn;
+  onOpenComments: OpenCommentsFn; commentCountOverride?: number;
 }) {
   const navigate   = useNavigate();
   const color      = EVENT_COLORS[event.event_type ?? 'other'] ?? EVENT_COLORS.other;
@@ -1659,7 +1664,10 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments }: 
 
       <ActionBar
         id={event.id} kind="event"
-        initialLiked={false} initialLikeCount={0}
+        initialLiked={event.user_reaction === 'like'}
+        initialLikeCount={event.like_count ?? 0}
+        initialCommentCount={event.comment_count ?? 0}
+        commentCountOverride={commentCountOverride}
         titleForShare={event.title}
         onOpenComments={onOpenComments}
       />
@@ -1668,10 +1676,10 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments }: 
 }
 
 // ── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments }: {
+function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride }: {
   post: Post; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
-  onOpenComments: OpenCommentsFn;
+  onOpenComments: OpenCommentsFn; commentCountOverride?: number;
 }) {
   const navigate   = useNavigate();
   const authorId   = post.author?.id;
@@ -1719,6 +1727,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments }: {
         initialLiked={post.user_reaction === 'like'}
         initialLikeCount={post.like_count ?? 0}
         initialCommentCount={post.comment_count ?? 0}
+        commentCountOverride={commentCountOverride}
         shareCount={post.share_count ?? 0}
         titleForShare={post.body?.slice(0, 60)}
         onOpenComments={onOpenComments}
@@ -2396,7 +2405,8 @@ export default function FeedPage() {
   const [live,  setLive]    = useState<Concert[]>([]);
   const [loading, setLoading]  = useState(true);
   const { followedIds, toggle: toggleFollow } = useFollow();
-  const [commentTarget, setCommentTarget] = useState<{ id: string; kind: 'event'|'concert'|'post'|'reel'; count: number } | null>(null);
+  const [commentTarget,   setCommentTarget]   = useState<{ id: string; kind: 'event'|'concert'|'post'|'reel'; count: number } | null>(null);
+  const [commentCounts,   setCommentCounts]   = useState<Record<string, number>>({});
 
   // Suggestions fetched once — shared across all SuggestionsInline instances
   const [suggestUsers,   setSuggestUsers]   = useState<any[]>([]);
@@ -2652,13 +2662,13 @@ export default function FeedPage() {
                   return <ReelRowCard key={item.id} reels={item.data} />;
                 }
                 if (item.kind === 'concert') {
-                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
+                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]} />;
                 }
                 if (item.kind === 'event') {
-                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
+                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]} />;
                 }
                 if (item.kind === 'post') {
-                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} />;
+                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]} />;
                 }
                 if (item.kind === 'reel') {
                   return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;
@@ -2684,7 +2694,10 @@ export default function FeedPage() {
         targetKind={commentTarget?.kind ?? 'event'}
         targetId={commentTarget?.id ?? ''}
         initialCount={commentTarget?.count ?? 0}
-        onCountChange={n => setCommentTarget(prev => prev ? { ...prev, count: n } : null)}
+        onCountChange={n => {
+          setCommentTarget(prev => prev ? { ...prev, count: n } : null);
+          if (commentTarget) setCommentCounts(prev => ({ ...prev, [commentTarget.id]: n }));
+        }}
       />
     </div>
   );
