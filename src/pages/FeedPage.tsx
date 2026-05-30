@@ -935,9 +935,7 @@ function StoriesBar() {
             <button onClick={() => setCreator(true)}
               className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 58 }}>
               <div className="relative">
-                <div className="rounded-full p-[2px]" style={{ border: '2px dashed var(--border)' }}>
-                  <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
-                </div>
+                <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
                 <div className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
                   style={{ background: 'var(--primary)', width: 18, height: 18, border: '2px solid var(--surface)' }}>
                   <Plus size={9} className="text-white" />
