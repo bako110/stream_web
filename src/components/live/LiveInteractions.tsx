@@ -213,6 +213,10 @@ export const LIVE_ANIMATIONS_CSS = `
   0%,100% { box-shadow: 0 0 0 0 rgba(240,54,90,0.4); }
   50%     { box-shadow: 0 0 0 6px rgba(240,54,90,0); }
 }
+@keyframes fadeInDown {
+  from { transform: translate(-50%, -12px); opacity: 0; }
+  to   { transform: translate(-50%, 0);    opacity: 1; }
+}
 `;
 
 // ── LiveTimer ─────────────────────────────────────────────────────────────────

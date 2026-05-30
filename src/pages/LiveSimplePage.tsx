@@ -213,32 +213,38 @@ function HandRequestsPanel({
   onClose: () => void;
 }) {
   return (
-    <div className="absolute top-16 left-3 z-40 w-56"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.12)' }}>
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
-        <span className="text-xs font-bold text-white flex items-center gap-1.5">
-          <span className="text-base">✋</span> Demandes ({requests.length})
+    <div className="absolute top-14 left-1/2 -translate-x-1/2 z-40 w-72"
+      style={{
+        background: 'rgba(10,10,25,0.95)', backdropFilter: 'blur(20px)',
+        borderRadius: '1.25rem', border: '1px solid rgba(255,215,0,0.3)',
+        boxShadow: '0 8px 40px rgba(255,215,0,0.15)',
+        animation: 'fadeInDown 0.25s ease-out',
+      }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-yellow-500/20">
+        <span className="text-sm font-bold text-yellow-400 flex items-center gap-2">
+          <span className="text-lg">✋</span>
+          {requests.length} demande{requests.length > 1 ? 's' : ''} de scène
         </span>
-        <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
-          <X size={13} />
+        <button onClick={onClose} className="text-white/40 hover:text-white/70 transition-colors p-1">
+          <X size={14} />
         </button>
       </div>
       {requests.length === 0 ? (
-        <p className="text-xs text-white/40 px-3 py-4 text-center">Aucune demande</p>
+        <p className="text-xs text-white/40 px-4 py-5 text-center">Aucune demande en attente</p>
       ) : (
-        <div className="p-2 space-y-2 max-h-48 overflow-y-auto">
+        <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
           {requests.map(r => (
-            <div key={r.identity} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
-              style={{ background: 'rgba(255,255,255,0.05)' }}>
-              <Avatar src={r.avatar} name={r.name} size="xs" className="shrink-0" />
-              <span className="text-xs text-white truncate flex-1">{r.name}</span>
+            <div key={r.identity} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+              style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)' }}>
+              <Avatar src={r.avatar} name={r.name} size="sm" className="shrink-0" />
+              <span className="text-sm text-white truncate flex-1 font-semibold">{r.name}</span>
               <button onClick={() => onInvite(r.identity)}
-                className="px-2 py-0.5 rounded-lg text-[10px] font-bold text-white shrink-0"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#A855F7)' }}>
-                Inviter
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shrink-0 transition-all hover:scale-105"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#A855F7)', boxShadow: '0 2px 10px rgba(123,63,242,0.4)' }}>
+                Inviter ↑
               </button>
-              <button onClick={() => onDismiss(r.identity)} className="text-white/30 hover:text-white shrink-0">
-                <X size={10} />
+              <button onClick={() => onDismiss(r.identity)} className="text-white/30 hover:text-red-400 shrink-0 transition-colors">
+                <X size={13} />
               </button>
             </div>
           ))}
@@ -797,6 +803,12 @@ export default function LiveSimplePage() {
         if (!identity) break;
         setHandRequests(prev => prev.some(r => r.identity === identity) ? prev : [...prev, { identity, name, avatar }]);
         setParticipantNames(prev => new Map(prev).set(identity, name));
+        // Ouvrir automatiquement le panel demandes pour le host
+        if (isHost) {
+          setShowRequests(true);
+          setShowOnStage(false);
+          setShowGifts(false);
+        }
         break;
       }
       case 'live_guest_invited': {
