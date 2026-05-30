@@ -351,10 +351,10 @@ function StoryViewer({
       {/* Conteneur portrait 9:16 centré — comme Instagram */}
       <div className="relative flex-shrink-0"
         style={{
-          width: 'min(100vw, calc(100dvh * 9 / 16))',
           height: '100dvh',
+          width: 'calc(100dvh * 9 / 16)',
+          maxWidth: '100vw',
           background: '#000',
-          borderRadius: window.innerWidth > 768 ? 12 : 0,
           overflow: 'hidden',
         }}
         onClick={e => e.stopPropagation()}>
