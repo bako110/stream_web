@@ -361,6 +361,13 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
   const [followLoading,   setFollowLoading]  = useState(false);
   const [captionExpanded, setCaptionExpanded]= useState(false);
   const [showGiftPicker,  setShowGiftPicker] = useState(false);
+  const likeInFlight = useRef(false);
+
+  // Resync si le reel change (navigation, refresh)
+  useEffect(() => {
+    setLiked(reel.user_reaction === 'like');
+    setLikeCount(reel.like_count ?? 0);
+  }, [reel.id, reel.user_reaction, reel.like_count]);
 
   const authorId   = reel.author?.id;
   const authorName = reel.author?.display_name ?? reel.author?.username ?? 'Artiste';
@@ -398,9 +405,13 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     if (tapTimer.current) {
       clearTimeout(tapTimer.current);
       tapTimer.current = null;
-      if (!liked) {
+      // Double-tap : like seulement si pas déjà liké
+      if (!liked && !likeInFlight.current) {
+        likeInFlight.current = true;
         setLiked(true); setLikeCount(c => c + 1);
-        apiClient.post(Endpoints.social.toggleReaction, { reel_id: reel.id, reaction_type: 'like' }).catch(() => {});
+        apiClient.post(Endpoints.social.toggleReaction, { reel_id: reel.id, reaction_type: 'like' })
+          .catch(() => { setLiked(false); setLikeCount(c => Math.max(0, c - 1)); })
+          .finally(() => { likeInFlight.current = false; });
       }
       setShowHeart(true);
       setTimeout(() => setShowHeart(false), 750);
@@ -411,9 +422,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
 
   function handleLike(e: React.MouseEvent) {
     e.stopPropagation();
-    if (liked) { setLiked(false); setLikeCount(c => Math.max(0, c - 1)); }
-    else       { setLiked(true);  setLikeCount(c => c + 1); }
-    apiClient.post(Endpoints.social.toggleReaction, { reel_id: reel.id, reaction_type: 'like' }).catch(() => {});
+    if (likeInFlight.current) return;
+    likeInFlight.current = true;
+    const was = liked;
+    setLiked(!was);
+    setLikeCount(c => c + (was ? -1 : 1));
+    apiClient.post(Endpoints.social.toggleReaction, { reel_id: reel.id, reaction_type: 'like' })
+      .catch(() => { setLiked(was); setLikeCount(c => c + (was ? 1 : -1)); })
+      .finally(() => { likeInFlight.current = false; });
   }
 
   async function handleFollow(e: React.MouseEvent) {
