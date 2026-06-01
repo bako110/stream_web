@@ -87,8 +87,8 @@ const PLANS: Record<string, PlanConfig> = {
   },
 };
 
-// 1 EUR = 200 coins (same as mobile)
-const eurToCoins = (eur: number) => Math.ceil(eur * 200);
+// 1 EUR = 100 coins (taux unifié plateforme)
+const eurToCoins = (eur: number) => Math.ceil(eur * 100);
 
 // ---------------------------------------------------------------------------
 // Success Overlay

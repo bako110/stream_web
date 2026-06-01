@@ -12,8 +12,8 @@ import { Spinner } from '../../components/ui/Spinner';
 import { VideoPlayer } from '../../components/ui/VideoPlayer';
 import toast from 'react-hot-toast';
 
-// ── Conversion coins (même que mobile : 1 EUR = 200 coins) ───────────────────
-const COINS_PER_EUR = 200;
+// ── Conversion coins : 1 EUR = 100 coins ─────────────────────────────────────
+const COINS_PER_EUR = 100;
 const eurToCoins = (eur: number) => Math.ceil(eur * COINS_PER_EUR);
 
 // ── Paywall modal ─────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ function PaywallModal({ film, onClose, onPurchased }: {
           {/* Prix EUR info */}
           {film.price && (
             <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              Accès à vie · {film.price.toFixed(2)} € · {COINS_PER_EUR} coins = 1 €
+              Accès à vie · {film.price.toFixed(2)} € · 1 € = {COINS_PER_EUR} coins
             </p>
           )}
 

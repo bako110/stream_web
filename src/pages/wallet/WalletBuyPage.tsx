@@ -6,7 +6,7 @@ import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 
-const COINS_PER_EUR = 100 / 0.99;
+const COINS_PER_EUR = 100; // 1 EUR = 100 coins
 
 interface CoinPackage {
   id: string;
@@ -19,13 +19,12 @@ interface CoinPackage {
   popular?: boolean;
 }
 
+// Fallback si le backend est indisponible — aligné avec seed_default_data (1€ = 100 coins)
 const MOCK_PACKAGES: CoinPackage[] = [
-  { id: '1', name: 'Starter',  coins: 100,  bonus: 0,    price_eur: 0.99,  is_popular: false },
-  { id: '2', name: 'Basic',    coins: 500,  bonus: 50,   price_eur: 4.49,  is_popular: false },
-  { id: '3', name: 'Popular',  coins: 1000, bonus: 150,  price_eur: 7.99,  is_popular: true  },
-  { id: '4', name: 'Premium',  coins: 2500, bonus: 500,  price_eur: 17.99, is_popular: false },
-  { id: '5', name: 'Pro',      coins: 5000, bonus: 1200, price_eur: 32.99, is_popular: false },
-  { id: '6', name: 'Ultimate', coins:10000, bonus: 3000, price_eur: 59.99, is_popular: false },
+  { id: '1', name: 'Starter', coins: 100,  bonus_coins: 0,   price_eur: 0.99,  is_popular: false },
+  { id: '2', name: 'Popular', coins: 500,  bonus_coins: 75,  price_eur: 3.99,  is_popular: true  },
+  { id: '3', name: 'Pro',     coins: 1000, bonus_coins: 200, price_eur: 7.99,  is_popular: false },
+  { id: '4', name: 'Elite',   coins: 2500, bonus_coins: 750, price_eur: 17.99, is_popular: false },
 ];
 
 const PACK_ICONS = [Zap, Star, Sparkles, Crown, Crown, Crown];

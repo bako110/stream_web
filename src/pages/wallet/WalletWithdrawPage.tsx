@@ -11,8 +11,9 @@ interface WalletBalance {
   pending_withdrawal: number;
 }
 
-const coinsToEur = (c: number) => ((c / 100) * 0.5).toFixed(2);
-const MIN_WITHDRAW = 200;
+// Taux retrait : 100 coins = 0.35 € | Minimum : 500 coins = 1.75 €
+const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
+const MIN_WITHDRAW = 500;
 
 export default function WalletWithdrawPage() {
   const navigate = useNavigate();
@@ -91,7 +92,7 @@ export default function WalletWithdrawPage() {
         style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
         <Info size={15} style={{ color: '#F59E0B', flexShrink: 0, marginTop: 2 }} />
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-          Minimum {MIN_WITHDRAW} coins ({coinsToEur(MIN_WITHDRAW)} €). Taux : 100 coins = 0,50 €. Délai : 3-5 jours ouvrés.
+          Minimum {MIN_WITHDRAW} coins ({coinsToEur(MIN_WITHDRAW)} €). Taux : 100 coins = 0,35 €. Délai : 3-5 jours ouvrés.
         </p>
       </div>
 

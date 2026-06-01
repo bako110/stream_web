@@ -12,7 +12,8 @@ import { Spinner } from '../../components/ui/Spinner';
 import { VideoPlayer } from '../../components/ui/VideoPlayer';
 import toast from 'react-hot-toast';
 
-const COINS_PER_EUR = 200;
+// 1 EUR = 100 coins (taux unifié plateforme)
+const COINS_PER_EUR = 100;
 const eurToCoins = (eur: number) => Math.ceil(eur * COINS_PER_EUR);
 
 function toArray<T>(raw: unknown): T[] {
@@ -116,7 +117,7 @@ function PaywallModal({ serie, onClose, onPurchased }: {
 
           {serie.price && (
             <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              Accès à toute la série · {serie.price.toFixed(2)} € · {COINS_PER_EUR} coins = 1 €
+              Accès à toute la série · {serie.price.toFixed(2)} € · 1 € = {COINS_PER_EUR} coins
             </p>
           )}
 

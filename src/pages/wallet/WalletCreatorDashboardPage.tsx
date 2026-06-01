@@ -60,8 +60,9 @@ interface GiftReceived {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+// Taux retrait : 100 coins = 0.35 €
 const coinsToEur = (coins: number | string) =>
-  ((parseFloat(String(coins ?? 0)) / 100) * 0.5).toFixed(2);
+  ((parseFloat(String(coins ?? 0)) / 100) * 0.35).toFixed(2);
 
 const fmtNum = (n: number) =>
   n >= 1_000_000
@@ -200,7 +201,7 @@ export default function WalletCreatorDashboardPage() {
   };
 
   const availableBalance = stats?.available_balance ?? 0;
-  const canWithdraw = availableBalance >= 1000;
+  const canWithdraw = availableBalance >= 500; // minimum retrait : 500 coins
 
   if (loading) {
     return (
@@ -500,7 +501,7 @@ export default function WalletCreatorDashboardPage() {
 
         {!canWithdraw && (
           <p className="text-xs text-center" style={{ color: 'var(--text-secondary)' }}>
-            Minimum 1 000 coins ({coinsToEur(1000)} €) requis
+            Minimum 500 coins ({coinsToEur(500)} €) requis
           </p>
         )}
       </div>
