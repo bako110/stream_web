@@ -7,6 +7,7 @@ import {
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
+import { uploadVideoHls } from '../../api/uploadVideo';
 import toast from 'react-hot-toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -44,15 +45,6 @@ async function uploadImage(file: File, folder: string): Promise<string> {
   const form = new FormData();
   form.append('file', file);
   const res = await apiClient.post<{ url: string }>(Endpoints.upload.images(folder), form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data.url;
-}
-
-async function uploadVideo(file: File, folder: string): Promise<string> {
-  const form = new FormData();
-  form.append('file', file);
-  const res = await apiClient.post<{ url: string }>(Endpoints.upload.video(folder), form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data.url;
@@ -220,7 +212,8 @@ export default function CreateConcertPage() {
         gallery_urls.push(...urls);
       }
       if (videoFile) {
-        promo_video_url = await uploadVideo(videoFile, 'concerts');
+        const uploaded = await uploadVideoHls(videoFile, 'concerts');
+        promo_video_url = uploaded.hls_url ?? uploaded.url;
       }
 
       const scheduled_at = schedDate && schedTime ? `${schedDate}T${schedTime}:00` : undefined;

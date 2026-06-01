@@ -28,6 +28,17 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/r2': {
+        target: 'https://pub-6359d54251d74e879f64e6dc3afdb145.r2.dev',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/r2/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+          });
+        },
+      },
     },
   },
 })

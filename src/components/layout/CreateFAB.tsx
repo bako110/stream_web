@@ -9,11 +9,13 @@ import { Endpoints } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../ui/Avatar';
 import { Spinner } from '../ui/Spinner';
+import { uploadVideoHls } from '../../api/uploadVideo';
 
 // ── Upload helpers (browser) ──────────────────────────────────────────────────
 
 interface UploadedImage { url: string; public_id: string; width?: number; height?: number; }
-interface UploadedVideo { url: string; public_id: string; duration?: number; thumbnail_url?: string; }
+
+const uploadVideo = uploadVideoHls;
 
 async function uploadImages(files: File[], folder: string): Promise<UploadedImage[]> {
   const results: UploadedImage[] = [];
@@ -27,41 +29,6 @@ async function uploadImages(files: File[], folder: string): Promise<UploadedImag
     results.push(...uploaded);
   }
   return results;
-}
-
-async function uploadVideo(
-  file: File,
-  folder: string,
-  onProgress?: (pct: number) => void,
-): Promise<UploadedVideo> {
-  return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    fd.append('file', file);
-
-    const token = (() => {
-      try { return JSON.parse(localStorage.getItem('folix-auth-tokens') ?? '{}').access ?? ''; }
-      catch { return ''; }
-    })();
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/v1/upload/video?folder=${folder}`);
-    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.setRequestHeader('Accept', 'application/json');
-
-    xhr.upload.onprogress = e => {
-      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 90));
-    };
-    xhr.onload = () => {
-      onProgress?.(100);
-      try {
-        const json = JSON.parse(xhr.responseText);
-        if (xhr.status >= 200 && xhr.status < 300) resolve((json?.data ?? json) as UploadedVideo);
-        else reject(new Error(json?.detail ?? json?.message ?? 'Upload vidéo échoué'));
-      } catch { reject(new Error('Réponse invalide du serveur')); }
-    };
-    xhr.onerror = () => reject(new Error('Erreur réseau pendant l\'upload'));
-    xhr.send(fd);
-  });
 }
 
 // ── Shared UI ─────────────────────────────────────────────────────────────────
@@ -354,10 +321,10 @@ function CreateReelModal({ onClose, onDone }: { onClose: () => void; onDone: () 
       const dur = videoRef.current?.duration;
 
       await apiClient.post(Endpoints.reels.feed, {
-        video_url:     uploaded.url,
+        hls_url:       uploaded.hls_url,
         caption:       caption.trim() || undefined,
         thumbnail_url: uploaded.thumbnail_url,
-        duration_sec:  dur ? Math.round(dur) : undefined,
+        duration_sec:  uploaded.duration ? Math.round(uploaded.duration) : (dur ? Math.round(dur) : undefined),
       });
 
       setStep('done');

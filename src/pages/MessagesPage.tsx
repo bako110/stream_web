@@ -9,6 +9,7 @@ import {
 import type { Conversation, Message, UserPublic } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
+import { uploadVideoHls } from '../api/uploadVideo';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
@@ -372,9 +373,12 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
                   style={{ display: 'block', maxHeight: 280 }} />
               )}
               {/* Vidéo */}
-              {(msg as any).attachment_url && msg.message_type === 'video' && (
-                <video src={(msg as any).attachment_url} controls className="max-w-[240px] rounded-lg"
-                  style={{ display: 'block', maxHeight: 240 }} />
+              {msg.message_type === 'video' && ((msg as any).attachment_url || (msg as any).attachment_meta?.hls_url) && (
+                <video
+                  src={(msg as any).attachment_meta?.hls_url ?? (msg as any).attachment_url}
+                  controls className="max-w-[240px] rounded-lg"
+                  style={{ display: 'block', maxHeight: 240 }}
+                />
               )}
               {/* Audio / Vocal */}
               {(msg as any).attachment_url && (msg.message_type === 'voice' || msg.message_type === 'audio') && (
@@ -755,20 +759,26 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       const form = new FormData();
       form.append('file', file, file.name);
 
-      let endpoint: string;
-      if (isVideo)      endpoint = '/api/v1/upload/video?folder=messages';
-      else if (isAudio) endpoint = '/api/v1/upload/audio?folder=messages';
-      else if (isDoc)   endpoint = '/api/v1/upload/file?folder=messages';
-      else              endpoint = '/api/v1/upload/images?folder=messages';
-
-      const r = await apiClient.post<any>(endpoint, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      url = r.data?.uploaded?.[0]?.url ?? r.data?.url ?? r.data?.data?.url;
-      if (!url) throw new Error('no url');
-      if (r.data?.duration) meta.duration = r.data.duration;
-      if (r.data?.filename) meta.filename  = r.data.filename;
-      if (r.data?.size)     meta.size      = r.data.size;
+      if (isVideo) {
+        const uploaded = await uploadVideoHls(file, 'messages');
+        url = uploaded.hls_url ?? uploaded.url;
+        if (uploaded.hls_url)       meta.hls_url      = uploaded.hls_url;
+        if (uploaded.duration)      meta.duration      = uploaded.duration;
+        if (uploaded.thumbnail_url) meta.thumbnail_url = uploaded.thumbnail_url;
+      } else {
+        let endpoint: string;
+        if (isAudio) endpoint = '/api/v1/upload/audio?folder=messages';
+        else if (isDoc) endpoint = '/api/v1/upload/file?folder=messages';
+        else endpoint = '/api/v1/upload/images?folder=messages';
+        const r = await apiClient.post<any>(endpoint, form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        url = r.data?.uploaded?.[0]?.url ?? r.data?.url ?? r.data?.data?.url;
+        if (!url) throw new Error('no url');
+        if (r.data?.duration) meta.duration = r.data.duration;
+        if (r.data?.filename) meta.filename  = r.data.filename;
+        if (r.data?.size)     meta.size      = r.data.size;
+      }
     } catch {
       // 2. Fallback : presigned URL (bypass validation — même méthode que le mobile)
       url = await uploadViaPresigned(file, folder);

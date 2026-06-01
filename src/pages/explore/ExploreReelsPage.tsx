@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import Hls from 'hls.js';
 import { Link } from 'react-router-dom';
 import { Play, Heart, MessageCircle, Eye, Volume2, VolumeX } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
@@ -6,6 +7,7 @@ import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
+import { toProxiedUrl } from '../../utils/constants';
 import type { Reel, PaginatedResponse } from '../../types';
 
 export default function ExploreReelsPage() {
@@ -75,13 +77,27 @@ function ReelCard({ reel }: { reel: Reel }) {
   }
 
   const hasPoster = reel.thumbnail_url && !thumbErr;
+  const videoSrc  = toProxiedUrl(reel.hls_url ?? '');
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !videoSrc) return;
+    if (Hls.isSupported()) {
+      const hls = new Hls({ autoStartLoad: true });
+      hls.loadSource(videoSrc);
+      hls.attachMedia(v);
+      return () => hls.destroy();
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = videoSrc;
+    }
+  }, [videoSrc]);
 
   return (
     <div className="break-inside-avoid mb-3 group relative rounded-xl overflow-hidden cursor-pointer"
       style={{ background: 'var(--bg-secondary)' }}
       onClick={togglePlay}>
-      {reel.video_url ? (
-        <video ref={videoRef} src={reel.video_url}
+      {videoSrc ? (
+        <video ref={videoRef}
           poster={hasPoster ? reel.thumbnail_url! : undefined}
           loop muted={muted} playsInline className="w-full object-cover"
           onError={() => setThumbErr(true)} />
@@ -106,7 +122,7 @@ function ReelCard({ reel }: { reel: Reel }) {
         </div>
       )}
 
-      {reel.video_url && (
+      {videoSrc && (
         <button onClick={toggleMute}
           className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
           style={{ background: 'rgba(0,0,0,0.5)' }}>

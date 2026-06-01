@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
+import { uploadVideoHls } from '../api/uploadVideo';
+import { toProxiedUrl } from '../utils/constants';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
@@ -79,11 +81,10 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
           media_url = uploaded?.url ?? uploaded;
           thumbnail_url = media_url;
         } else {
-          const res = await apiClient.upload<any>(Endpoints.upload.video('stories'), fd);
-          const d = res.data as any;
-          media_url = d?.url ?? d;
-          thumbnail_url = d?.thumbnail_url;
-          duration_sec = d?.duration ? Math.min(Math.ceil(d.duration), 30) : 10;
+          const uploaded = await uploadVideoHls(mediaFile, 'stories');
+          media_url = uploaded.hls_url ?? uploaded.url;
+          thumbnail_url = uploaded.thumbnail_url;
+          duration_sec = uploaded.duration ? Math.min(Math.ceil(uploaded.duration), 30) : 10;
         }
       }
 
@@ -1736,6 +1737,23 @@ function ReelCard({ reel, delay = 0 }: {
   const navigate  = useNavigate();
   const videoRef  = useRef<HTMLVideoElement>(null);
   const cardRef   = useRef<HTMLDivElement>(null);
+  const videoSrc  = toProxiedUrl(reel.hls_url ?? '');
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !videoSrc) return;
+    let hlsInstance: import('hls.js').default | null = null;
+    import('hls.js').then(({ default: Hls }) => {
+      if (Hls.isSupported()) {
+        hlsInstance = new Hls({ autoStartLoad: true });
+        hlsInstance.loadSource(videoSrc);
+        hlsInstance.attachMedia(v);
+      } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+        v.src = videoSrc;
+      }
+    });
+    return () => { hlsInstance?.destroy(); };
+  }, [videoSrc]);
 
   // Autoplay when visible, pause when out of view
   useEffect(() => {
@@ -1756,10 +1774,9 @@ function ReelCard({ reel, delay = 0 }: {
       onClick={() => navigate(`/reels?id=${reel.id}`)}>
 
       {/* Video autoplay muted — pointer-events-none so clicks go to the wrapper */}
-      {reel.video_url ? (
+      {videoSrc ? (
         <video
           ref={videoRef}
-          src={reel.video_url}
           poster={reel.thumbnail_url ?? undefined}
           muted
           loop

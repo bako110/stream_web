@@ -6,6 +6,7 @@ import { AppLayout }       from './components/layout/AppLayout';
 import { ExploreLayout }   from './components/layout/ExploreLayout';
 import { ProtectedRoute }  from './components/layout/ProtectedRoute';
 import { PublicOnlyRoute } from './components/layout/PublicOnlyRoute';
+import { MobileGate }      from './components/layout/MobileGate';
 import { bootstrapAuth, useAuthStore } from './store/authStore';
 import { WebSocketProvider } from './context/WebSocketContext';
 
@@ -267,19 +268,21 @@ function AppShell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <WebSocketProvider>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: 'var(--surface)',
-              color:      'var(--text-primary)',
-              border:     '1px solid var(--border)',
-            },
-          }}
-        />
-        <AppShell />
-      </WebSocketProvider>
+      <MobileGate>
+        <WebSocketProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: 'var(--surface)',
+                color:      'var(--text-primary)',
+                border:     '1px solid var(--border)',
+              },
+            }}
+          />
+          <AppShell />
+        </WebSocketProvider>
+      </MobileGate>
     </BrowserRouter>
   );
 }

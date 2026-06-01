@@ -5,10 +5,11 @@ import {
   Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft, ChevronRight, ChevronLeft,
   Gift,
 } from 'lucide-react';
+import Hls from 'hls.js';
 import type { Reel, Comment } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { API_BASE_URL } from '../utils/constants';
+import { API_BASE_URL, toProxiedUrl } from '../utils/constants';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
@@ -379,19 +380,57 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     if (v) v.muted = globalMuted;
   }, [globalMuted]);
 
+  const videoSrc = toProxiedUrl(reel.hls_url ?? '');
+
   useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
-    if (active) {
+    if (!v || !videoSrc) return;
+
+    let hls: Hls | null = null;
+
+    const playWhenReady = () => {
+      if (!active) return;
       v.currentTime = 0;
       v.muted = globalMuted;
       v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
-    } else {
+    };
+
+    if (Hls.isSupported()) {
+      hls = new Hls({ autoStartLoad: true });
+      hls.loadSource(videoSrc);
+      hls.attachMedia(v);
+      hls.once(Hls.Events.MANIFEST_PARSED, playWhenReady);
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari native HLS
+      v.src = videoSrc;
+      v.addEventListener('loadedmetadata', playWhenReady, { once: true });
+    }
+
+    return () => {
+      hls?.destroy();
+      v.pause();
+      v.removeAttribute('src');
+      v.load();
+      setPlaying(false);
+      setProgress(0);
+    };
+  }, [videoSrc]); // eslint-disable-line
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!active) {
       v.pause();
       v.currentTime = 0;
       setPlaying(false);
       setProgress(0);
+    } else if (v.readyState >= 3) {
+      // HLS déjà chargé (reel revisité) — on joue directement
+      v.muted = globalMuted;
+      v.currentTime = 0;
+      v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     }
+    // Sinon : MANIFEST_PARSED dans le useEffect HLS s'occupe du premier play
   }, [active]); // eslint-disable-line
 
   function togglePlay() {
@@ -460,8 +499,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
 
       {/* Video */}
       <div className="absolute inset-0 flex items-center justify-center bg-black" onClick={handleTap}>
-        {reel.video_url ? (
-          <video ref={videoRef} src={reel.video_url}
+        {videoSrc ? (
+          <video ref={videoRef}
             className="w-full h-full object-cover"
             loop playsInline poster={reel.thumbnail_url ?? undefined}
             onTimeUpdate={() => {

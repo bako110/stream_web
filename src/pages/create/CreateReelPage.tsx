@@ -4,32 +4,8 @@ import { ArrowLeft, Video, Upload, X, Play } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints'; // used for reels.feed
 import { Spinner } from '../../components/ui/Spinner';
+import { uploadVideoHls } from '../../api/uploadVideo';
 import toast from 'react-hot-toast';
-
-function uploadVideoWithProgress(file: File, onProgress: (pct: number) => void): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const form  = new FormData();
-    form.append('file', file);
-    const token = (() => {
-      try { return JSON.parse(localStorage.getItem('folix-auth-tokens') ?? '{}').access ?? ''; }
-      catch { return ''; }
-    })();
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/v1/upload/video?folder=reels`);
-    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.setRequestHeader('Accept', 'application/json');
-    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
-    xhr.onload = () => {
-      try {
-        const json = JSON.parse(xhr.responseText);
-        if (xhr.status >= 200 && xhr.status < 300) resolve((json?.data ?? json)?.url ?? json?.url ?? '');
-        else reject(new Error(json?.detail ?? 'Upload échoué'));
-      } catch { reject(new Error('Réponse invalide')); }
-    };
-    xhr.onerror = () => reject(new Error('Erreur réseau'));
-    xhr.send(form);
-  });
-}
 
 export default function CreateReelPage() {
   const navigate = useNavigate();
@@ -73,11 +49,13 @@ export default function CreateReelPage() {
     setPublishing(true);
     setUploadPct(0);
     try {
-      const video_url = await uploadVideoWithProgress(videoFile, setUploadPct);
+      const uploaded = await uploadVideoHls(videoFile, 'reels', setUploadPct);
 
       await apiClient.post(Endpoints.reels.feed, {
-        video_url,
-        caption: caption.trim() || undefined,
+        hls_url:       uploaded.hls_url,
+        thumbnail_url: uploaded.thumbnail_url,
+        duration_sec:  uploaded.duration ? Math.round(uploaded.duration) : undefined,
+        caption:       caption.trim() || undefined,
       });
 
       toast.success('Reel publié !');

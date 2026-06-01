@@ -4,6 +4,7 @@ import { ArrowLeft, Image, Video, Smile, X, Globe, Upload } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
+import { uploadVideoHls } from '../../api/uploadVideo';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 
@@ -19,15 +20,6 @@ async function uploadFile(file: File, folder: string): Promise<string> {
   const form = new FormData();
   form.append('file', file);
   const res = await apiClient.post<{ url: string }>(Endpoints.upload.images(folder), form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data.url;
-}
-
-async function uploadVideo(file: File, folder: string): Promise<string> {
-  const form = new FormData();
-  form.append('file', file);
-  const res = await apiClient.post<{ url: string }>(Endpoints.upload.video(folder), form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data.url;
@@ -98,7 +90,8 @@ export default function CreatePostPage() {
         image_url  = image_urls[0];
       }
       if (video) {
-        video_url = await uploadVideo(video, 'posts');
+        const uploaded = await uploadVideoHls(video, 'posts');
+        video_url = uploaded.hls_url ?? uploaded.url;
       }
 
       await apiClient.post(Endpoints.posts.create, {
