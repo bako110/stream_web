@@ -1,9 +1,53 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 
-const BREAKPOINT = 768; // px — en-dessous = mobile bloqué
+// ── Config ────────────────────────────────────────────────────────────────────
 
-const PLAY_STORE_URL  = 'https://play.google.com/store/apps/details?id=com.sahelys.folix';
-const APP_STORE_URL   = 'https://apps.apple.com/app/folix/id0000000000';
+const BREAKPOINT     = 768;
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.sahelys.folix';
+const APP_STORE_URL  = 'https://apps.apple.com/app/folix/id0000000000';
+
+/**
+ * Routes accessibles sur mobile (lecture seule, navigation, auth).
+ * Tout le reste est bloqué et redirige vers l'écran de téléchargement.
+ */
+const MOBILE_ALLOWED_PREFIXES = [
+  '/',
+  '/auth/',
+  '/onboarding',
+  '/explore/',
+  '/feed',
+  '/films',
+  '/series',
+  '/concerts',
+  '/events',
+  '/posts/',
+  '/profile',
+  '/user/',
+  '/trending',
+  '/favorites',
+  '/watch-history',
+  '/notifications',
+  '/wallet',
+  '/subscriptions',
+  '/settings',
+  '/privacy',
+  '/cgu',
+  '/politique-confidentialite',
+  '/support',
+  '/planning',
+  '/communities',
+];
+
+function isAllowedOnMobile(pathname: string): boolean {
+  // Exact match /
+  if (pathname === '/') return true;
+  return MOBILE_ALLOWED_PREFIXES.some(prefix =>
+    prefix !== '/' && pathname.startsWith(prefix),
+  );
+}
+
+// ── Hooks ─────────────────────────────────────────────────────────────────────
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < BREAKPOINT);
@@ -16,200 +60,265 @@ function useIsMobile() {
   return isMobile;
 }
 
-export function MobileGate({ children }: { children: React.ReactNode }) {
-  const isMobile = useIsMobile();
-  if (!isMobile) return <>{children}</>;
-  return <MobileDownloadScreen />;
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-function MobileDownloadScreen() {
+// ── Gate principal ────────────────────────────────────────────────────────────
+
+export function MobileGate({ children }: { children: ReactNode }) {
+  const isMobile = useIsMobile();
+  const { pathname } = useLocation();
+
+  if (!isMobile) return <>{children}</>;
+
+  if (!isAllowedOnMobile(pathname)) {
+    return <MobileBlockedPage ios={isIOS()} />;
+  }
+
   return (
-    <div
-      className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden"
-      style={{ background: '#0a0a0a', fontFamily: 'system-ui, sans-serif' }}
-    >
-      {/* Fond dégradé animé */}
-      <div className="absolute inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(123,63,242,0.35) 0%, transparent 70%)',
-      }} />
-      <div className="absolute inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse 60% 40% at 50% 110%, rgba(224,56,154,0.25) 0%, transparent 70%)',
-      }} />
+    <>
+      {children}
+      <AppBanner ios={isIOS()} />
+    </>
+  );
+}
 
-      {/* Logo + nom */}
-      <div className="relative z-10 flex flex-col items-center pt-16 gap-4">
-        <div className="relative w-20 h-20">
-          <div
-            className="absolute inset-0 rounded-3xl"
-            style={{
-              background: 'linear-gradient(135deg,#7B3FF2,#E0389A)',
-              transform: 'rotate(12deg)',
-            }}
-          />
-          <div
-            className="absolute inset-1 rounded-2xl flex items-center justify-center"
-            style={{ background: '#0a0a0a' }}
-          >
-            <span style={{
-              fontSize: 28,
-              fontWeight: 900,
-              background: 'linear-gradient(135deg,#7B3FF2,#E0389A)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>FX</span>
-          </div>
-        </div>
-        <span style={{ color: '#fff', fontSize: 28, fontWeight: 900, letterSpacing: '-0.5px' }}>
-          FoliX
-        </span>
-        <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, fontWeight: 500, textAlign: 'center', maxWidth: 260, lineHeight: 1.5 }}>
-          La plateforme de streaming live, reels & communautés
+// ── Page de blocage (routes non dispo sur mobile) ─────────────────────────────
+
+function MobileBlockedPage({ ios }: { ios: boolean }) {
+  const storeUrl = ios ? APP_STORE_URL : PLAY_STORE_URL;
+
+  return (
+    <div style={{
+      position:   'fixed',
+      inset:      0,
+      background: '#0a0a0a',
+      display:    'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      overflow:   'hidden',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+    }}>
+      {/* Halos */}
+      <div style={{ position:'absolute', inset:0, pointerEvents:'none',
+        background:'radial-gradient(ellipse 90% 50% at 50% -5%, rgba(123,63,242,0.4) 0%, transparent 65%)' }} />
+      <div style={{ position:'absolute', inset:0, pointerEvents:'none',
+        background:'radial-gradient(ellipse 70% 40% at 50% 105%, rgba(224,56,154,0.3) 0%, transparent 65%)' }} />
+
+      {/* Logo */}
+      <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:12, paddingTop:72 }}>
+        <AppLogo size={72} />
+        <span style={{ color:'#fff', fontSize:30, fontWeight:900, letterSpacing:'-0.5px' }}>FoliX</span>
+        <span style={{ color:'rgba(255,255,255,0.4)', fontSize:13, textAlign:'center', maxWidth:240, lineHeight:1.5 }}>
+          Films · Concerts · Live · Reels · Communautés
         </span>
       </div>
 
-      {/* Illustration centrale — mockup téléphone stylisé */}
-      <div className="relative z-10 flex items-center justify-center" style={{ flex: 1 }}>
-        <div style={{ position: 'relative', width: 180 }}>
-          {/* Téléphone */}
-          <div style={{
-            width: 180,
-            height: 320,
-            borderRadius: 32,
-            background: 'linear-gradient(160deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%)',
-            border: '1.5px solid rgba(255,255,255,0.12)',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            overflow: 'hidden',
-            position: 'relative',
-          }}>
-            {/* Encoche */}
-            <div style={{
-              width: 60, height: 6, borderRadius: 4,
-              background: 'rgba(255,255,255,0.15)',
-              marginTop: 14,
-            }} />
-            {/* Contenu écran simulé */}
-            <div style={{ flex: 1, width: '100%', padding: '12px 10px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[0.9, 0.7, 0.8, 0.6].map((w, i) => (
-                <div key={i} style={{
-                  height: i === 0 ? 90 : 36,
-                  borderRadius: 10,
-                  background: i === 0
-                    ? 'linear-gradient(135deg,rgba(123,63,242,0.4),rgba(224,56,154,0.4))'
-                    : 'rgba(255,255,255,0.06)',
-                  width: `${w * 100}%`,
-                }} />
-              ))}
-            </div>
-            {/* Barre nav bas */}
-            <div style={{
-              width: '100%', height: 48,
-              background: 'rgba(255,255,255,0.04)',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-around',
-              padding: '0 16px',
-            }}>
-              {['●', '▲', '■', '◆'].map((s, i) => (
-                <span key={i} style={{ fontSize: i === 1 ? 14 : 10, opacity: i === 1 ? 1 : 0.3, color: i === 1 ? '#7B3FF2' : '#fff' }}>{s}</span>
-              ))}
-            </div>
-          </div>
-          {/* Halo derrière */}
-          <div style={{
-            position: 'absolute', inset: -20, zIndex: -1,
-            borderRadius: 48,
-            background: 'radial-gradient(circle, rgba(123,63,242,0.3) 0%, transparent 70%)',
-            filter: 'blur(20px)',
-          }} />
-        </div>
+      {/* Illustration */}
+      <div style={{ position:'relative', zIndex:1, flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <PhoneMockup />
       </div>
 
-      {/* Boutons téléchargement */}
-      <div className="relative z-10 w-full flex flex-col items-center gap-3 px-6 pb-12">
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 4, letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>
-          Disponible sur
-        </p>
+      {/* Message + CTA */}
+      <div style={{ position:'relative', zIndex:1, width:'100%', padding:'0 24px 48px', display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+        <div style={{ textAlign:'center', marginBottom:4 }}>
+          <p style={{ color:'#fff', fontWeight:700, fontSize:16, margin:0, lineHeight:1.4 }}>
+            Cette page est disponible dans l'application
+          </p>
+          <p style={{ color:'rgba(255,255,255,0.45)', fontSize:13, margin:'6px 0 0', lineHeight:1.5 }}>
+            Télécharge FoliX pour profiter de toutes les fonctionnalités
+          </p>
+        </div>
 
-        {/* Google Play */}
-        <a
-          href={PLAY_STORE_URL}
-          target="_blank"
-          rel="noreferrer"
-          style={{
-            width: '100%',
-            maxWidth: 320,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            padding: '14px 20px',
-            borderRadius: 16,
-            background: '#fff',
-            textDecoration: 'none',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          }}
-        >
-          <GooglePlayIcon />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: 11, color: '#333', fontWeight: 500, lineHeight: 1 }}>Disponible sur</span>
-            <span style={{ fontSize: 18, color: '#000', fontWeight: 800, lineHeight: 1.3 }}>Google Play</span>
+        <a href={storeUrl} target="_blank" rel="noreferrer" style={{
+          width:'100%', maxWidth:320,
+          display:'flex', alignItems:'center', gap:14,
+          padding:'15px 22px',
+          borderRadius:18,
+          background: ios ? '#000' : '#fff',
+          border: ios ? '1.5px solid rgba(255,255,255,0.15)' : 'none',
+          textDecoration:'none',
+          boxShadow:'0 8px 32px rgba(0,0,0,0.4)',
+        }}>
+          {ios ? <AppleIcon /> : <GooglePlayIcon />}
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            <span style={{ fontSize:11, color: ios ? 'rgba(255,255,255,0.55)' : '#555', fontWeight:500, lineHeight:1 }}>
+              {ios ? 'Télécharger sur' : 'Disponible sur'}
+            </span>
+            <span style={{ fontSize:19, color: ios ? '#fff' : '#000', fontWeight:800, lineHeight:1.3 }}>
+              {ios ? 'App Store' : 'Google Play'}
+            </span>
           </div>
         </a>
 
-        {/* App Store */}
-        <a
-          href={APP_STORE_URL}
-          target="_blank"
-          rel="noreferrer"
-          style={{
-            width: '100%',
-            maxWidth: 320,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            padding: '14px 20px',
-            borderRadius: 16,
-            background: '#000',
-            border: '1.5px solid rgba(255,255,255,0.15)',
-            textDecoration: 'none',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          }}
-        >
-          <AppleIcon />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 500, lineHeight: 1 }}>Télécharger sur</span>
-            <span style={{ fontSize: 18, color: '#fff', fontWeight: 800, lineHeight: 1.3 }}>App Store</span>
-          </div>
+        {/* Lien vers l'autre store */}
+        <a href={ios ? PLAY_STORE_URL : APP_STORE_URL} target="_blank" rel="noreferrer"
+          style={{ color:'rgba(255,255,255,0.35)', fontSize:12, textDecoration:'underline', textUnderlineOffset:3 }}>
+          {ios ? 'Aussi sur Google Play' : 'Aussi sur App Store'}
         </a>
       </div>
     </div>
   );
 }
 
+// ── Bannière flottante (routes autorisées sur mobile) ─────────────────────────
+
+function AppBanner({ ios }: { ios: boolean }) {
+  const [dismissed, setDismissed] = useState(
+    () => sessionStorage.getItem('folix_banner_dismissed') === '1',
+  );
+
+  if (dismissed) return null;
+
+  const storeUrl = ios ? APP_STORE_URL : PLAY_STORE_URL;
+
+  function dismiss() {
+    sessionStorage.setItem('folix_banner_dismissed', '1');
+    setDismissed(true);
+  }
+
+  return (
+    <div style={{
+      position:   'fixed',
+      bottom:     0, left:0, right:0,
+      zIndex:     9999,
+      background: 'rgba(10,10,10,0.96)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderTop:  '1px solid rgba(255,255,255,0.1)',
+      padding:    '12px 16px 28px',
+      display:    'flex',
+      alignItems: 'center',
+      gap:        12,
+      boxShadow:  '0 -8px 40px rgba(0,0,0,0.5)',
+      animation:  'folix-slide-up 0.35s cubic-bezier(.16,1,.3,1) both',
+    }}>
+      <style>{`
+        @keyframes folix-slide-up {
+          from { transform:translateY(100%); opacity:0; }
+          to   { transform:translateY(0);    opacity:1; }
+        }
+      `}</style>
+
+      <button onClick={dismiss} aria-label="Fermer" style={{
+        flexShrink:0, width:26, height:26, borderRadius:13,
+        background:'rgba(255,255,255,0.1)', border:'none',
+        color:'rgba(255,255,255,0.55)', fontSize:14, cursor:'pointer',
+        display:'flex', alignItems:'center', justifyContent:'center',
+      }}>✕</button>
+
+      <AppLogo size={38} />
+
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ color:'#fff', fontWeight:700, fontSize:14, lineHeight:1.2 }}>FoliX</div>
+        <div style={{ color:'rgba(255,255,255,0.45)', fontSize:11, marginTop:1 }}>
+          Meilleure expérience sur l'app
+        </div>
+      </div>
+
+      <a href={storeUrl} target="_blank" rel="noreferrer" style={{
+        flexShrink:0,
+        padding:'9px 18px',
+        borderRadius:20,
+        background:'linear-gradient(135deg,#7B3FF2,#E0389A)',
+        color:'#fff', fontWeight:700, fontSize:13,
+        textDecoration:'none', whiteSpace:'nowrap',
+        boxShadow:'0 4px 16px rgba(123,63,242,0.45)',
+      }}>
+        {ios ? 'App Store' : 'Play Store'}
+      </a>
+    </div>
+  );
+}
+
+// ── Composants visuels ────────────────────────────────────────────────────────
+
+function AppLogo({ size }: { size: number }) {
+  const inner = size * 0.72;
+  const offset = (size - inner) / 2;
+  return (
+    <div style={{ position:'relative', width:size, height:size, flexShrink:0 }}>
+      <div style={{
+        position:'absolute', inset:0, borderRadius:size * 0.28,
+        background:'linear-gradient(135deg,#7B3FF2,#E0389A)',
+        transform:'rotate(10deg)',
+      }} />
+      <div style={{
+        position:'absolute', top:offset, left:offset, width:inner, height:inner,
+        borderRadius:inner * 0.25,
+        background:'#0a0a0a',
+        display:'flex', alignItems:'center', justifyContent:'center',
+      }}>
+        <span style={{
+          fontSize:size * 0.32, fontWeight:900,
+          background:'linear-gradient(135deg,#7B3FF2,#E0389A)',
+          WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+        }}>FX</span>
+      </div>
+    </div>
+  );
+}
+
+function PhoneMockup() {
+  return (
+    <div style={{ position:'relative', width:160 }}>
+      <div style={{
+        width:160, height:290, borderRadius:28,
+        background:'linear-gradient(160deg,rgba(255,255,255,0.09) 0%,rgba(255,255,255,0.03) 100%)',
+        border:'1.5px solid rgba(255,255,255,0.11)',
+        boxShadow:'0 24px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
+        display:'flex', flexDirection:'column', alignItems:'center', overflow:'hidden',
+      }}>
+        <div style={{ width:52, height:5, borderRadius:3, background:'rgba(255,255,255,0.15)', marginTop:12 }} />
+        <div style={{ flex:1, width:'100%', padding:'10px 10px 0', display:'flex', flexDirection:'column', gap:6 }}>
+          <div style={{ height:80, borderRadius:10, background:'linear-gradient(135deg,rgba(123,63,242,0.45),rgba(224,56,154,0.45))' }} />
+          {[0.85,0.65,0.75].map((w,i) => (
+            <div key={i} style={{ height:30, borderRadius:8, background:'rgba(255,255,255,0.06)', width:`${w*100}%` }} />
+          ))}
+        </div>
+        <div style={{
+          width:'100%', height:44,
+          background:'rgba(255,255,255,0.04)', borderTop:'1px solid rgba(255,255,255,0.07)',
+          display:'flex', alignItems:'center', justifyContent:'space-around', padding:'0 14px',
+        }}>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{
+              width:i===1?22:16, height:i===1?22:16, borderRadius:'50%',
+              background: i===1 ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'rgba(255,255,255,0.15)',
+            }} />
+          ))}
+        </div>
+      </div>
+      <div style={{
+        position:'absolute', inset:-24, zIndex:-1, borderRadius:52,
+        background:'radial-gradient(circle, rgba(123,63,242,0.28) 0%, transparent 70%)',
+        filter:'blur(18px)',
+      }} />
+    </div>
+  );
+}
+
 function GooglePlayIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-      <path d="M4 3.5L18.5 16L4 28.5V3.5Z" fill="url(#gp1)" />
-      <path d="M4 3.5L18.5 16L23.5 11L8 3L4 3.5Z" fill="url(#gp2)" />
-      <path d="M4 28.5L18.5 16L23.5 21L8 29L4 28.5Z" fill="url(#gp3)" />
-      <path d="M23.5 11L28 13.5C29.2 14.2 29.2 17.8 28 18.5L23.5 21L18.5 16L23.5 11Z" fill="url(#gp4)" />
+    <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
+      <path d="M4 3.5L18.5 16L4 28.5V3.5Z" fill="url(#gp1)"/>
+      <path d="M4 3.5L18.5 16L23.5 11L8 3L4 3.5Z" fill="url(#gp2)"/>
+      <path d="M4 28.5L18.5 16L23.5 21L8 29L4 28.5Z" fill="url(#gp3)"/>
+      <path d="M23.5 11L28 13.5C29.2 14.2 29.2 17.8 28 18.5L23.5 21L18.5 16L23.5 11Z" fill="url(#gp4)"/>
       <defs>
         <linearGradient id="gp1" x1="4" y1="3.5" x2="18.5" y2="28.5" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#00D2FF" />
-          <stop offset="1" stopColor="#0088FF" />
+          <stop stopColor="#00D2FF"/><stop offset="1" stopColor="#0088FF"/>
         </linearGradient>
         <linearGradient id="gp2" x1="4" y1="3.5" x2="23.5" y2="11" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#00E676" />
-          <stop offset="1" stopColor="#00BCD4" />
+          <stop stopColor="#00E676"/><stop offset="1" stopColor="#00BCD4"/>
         </linearGradient>
         <linearGradient id="gp3" x1="4" y1="28.5" x2="23.5" y2="21" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FF6D00" />
-          <stop offset="1" stopColor="#FF1744" />
+          <stop stopColor="#FF6D00"/><stop offset="1" stopColor="#FF1744"/>
         </linearGradient>
         <linearGradient id="gp4" x1="18.5" y1="11" x2="28" y2="18.5" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FF1744" />
-          <stop offset="1" stopColor="#FF6D00" />
+          <stop stopColor="#FF1744"/><stop offset="1" stopColor="#FF6D00"/>
         </linearGradient>
       </defs>
     </svg>
@@ -218,8 +327,8 @@ function GooglePlayIcon() {
 
 function AppleIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="white">
-      <path d="M23.5 17.1c0-3.2 2.6-4.8 2.7-4.8-1.5-2.1-3.7-2.4-4.5-2.4-1.9-.2-3.8 1.1-4.7 1.1-1 0-2.5-1.1-4.1-1.1-2.1 0-4 1.2-5.1 3.1-2.2 3.7-.6 9.3 1.5 12.3 1 1.5 2.2 3.1 3.8 3.1 1.5-.1 2.1-1 3.9-1s2.4 1 4 .9c1.6 0 2.7-1.5 3.7-3 1.2-1.7 1.6-3.4 1.7-3.5-.1 0-3.9-1.5-3.9-5.7zM20.4 7.6c.8-1 1.4-2.4 1.2-3.8-1.2.1-2.6.8-3.5 1.8-.8.9-1.4 2.3-1.2 3.6 1.3.1 2.6-.6 3.5-1.6z" />
+    <svg width="34" height="34" viewBox="0 0 32 32" fill="white">
+      <path d="M23.5 17.1c0-3.2 2.6-4.8 2.7-4.8-1.5-2.1-3.7-2.4-4.5-2.4-1.9-.2-3.8 1.1-4.7 1.1-1 0-2.5-1.1-4.1-1.1-2.1 0-4 1.2-5.1 3.1-2.2 3.7-.6 9.3 1.5 12.3 1 1.5 2.2 3.1 3.8 3.1 1.5-.1 2.1-1 3.9-1s2.4 1 4 .9c1.6 0 2.7-1.5 3.7-3 1.2-1.7 1.6-3.4 1.7-3.5-.1 0-3.9-1.5-3.9-5.7zM20.4 7.6c.8-1 1.4-2.4 1.2-3.8-1.2.1-2.6.8-3.5 1.8-.8.9-1.4 2.3-1.2 3.6 1.3.1 2.6-.6 3.5-1.6z"/>
     </svg>
   );
 }
