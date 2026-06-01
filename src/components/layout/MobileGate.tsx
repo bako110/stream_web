@@ -8,43 +8,33 @@ const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.sahely
 const APP_STORE_URL  = 'https://apps.apple.com/app/folix/id0000000000';
 
 /**
- * Routes accessibles sur mobile (lecture seule, navigation, auth).
- * Tout le reste est bloqué et redirige vers l'écran de téléchargement.
+ * Routes BLOQUÉES sur mobile → affiche l'écran de téléchargement.
+ * Tout ce qui nécessite une interaction native que le web mobile gère mal :
+ * création de contenu, messagerie, reels/stories plein écran, live, go-live.
  */
-const MOBILE_ALLOWED_PREFIXES = [
-  '/',
-  '/auth/',
-  '/onboarding',
-  '/explore/',
-  '/feed',
-  '/films',
-  '/series',
-  '/concerts',
-  '/events',
-  '/posts/',
-  '/profile',
-  '/user/',
-  '/trending',
-  '/favorites',
-  '/watch-history',
-  '/notifications',
-  '/wallet',
-  '/subscriptions',
-  '/settings',
-  '/privacy',
-  '/cgu',
-  '/politique-confidentialite',
-  '/support',
-  '/planning',
-  '/communities',
+const MOBILE_BLOCKED_PREFIXES = [
+  // Création de contenu
+  '/create/',
+  // Messagerie directe
+  '/messages',
+  // Reels plein écran
+  '/reels',
+  // Stories
+  '/stories',
+  // Live
+  '/live',
+  '/lives',
+  '/go-live',
+  // Pages admin/modération communauté
+  '/communities/',   // sous-pages : channels, join-requests, stats, leaderboard
 ];
 
-function isAllowedOnMobile(pathname: string): boolean {
-  // Exact match /
-  if (pathname === '/') return true;
-  return MOBILE_ALLOWED_PREFIXES.some(prefix =>
-    prefix !== '/' && pathname.startsWith(prefix),
-  );
+function isBlockedOnMobile(pathname: string): boolean {
+  // /communities et /communities/:id (sans sous-page) → autorisés
+  if (pathname === '/communities') return false;
+  if (/^\/communities\/[^/]+$/.test(pathname)) return false;
+
+  return MOBILE_BLOCKED_PREFIXES.some(prefix => pathname.startsWith(prefix));
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
@@ -72,7 +62,7 @@ export function MobileGate({ children }: { children: ReactNode }) {
 
   if (!isMobile) return <>{children}</>;
 
-  if (!isAllowedOnMobile(pathname)) {
+  if (isBlockedOnMobile(pathname)) {
     return <MobileBlockedPage ios={isIOS()} />;
   }
 
