@@ -6,7 +6,7 @@ import {
   Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft,
   Gift, Zap, ExternalLink, Eye, Search, User, Film,
   Calendar, Music, MoreVertical, Edit3, Trash2, TrendingUp,
-  ChevronRight,
+  ChevronRight, ChevronLeft,
 } from 'lucide-react';
 import Hls from 'hls.js';
 import type { Reel, Comment } from '../types';

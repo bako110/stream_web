@@ -1010,19 +1010,19 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               <Pin size={18} />
             </button>
           )}
-          <button onClick={() => navigate(`/communities/${slug}/events`)} className="p-1.5 rounded-xl transition-all" title="Événements"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/events`)} className="p-1.5 rounded-xl transition-all" title="Événements"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <Calendar size={18} />
           </button>
-          <button onClick={() => navigate(`/communities/${slug}/channels`)} className="p-1.5 rounded-xl transition-all" title="Canaux"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/channels`)} className="p-1.5 rounded-xl transition-all" title="Canaux"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <Hash size={18} />
           </button>
-          <button onClick={() => navigate(`/communities/${slug}/leaderboard`)} className="p-1.5 rounded-xl transition-all" title="Classement"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/leaderboard`)} className="p-1.5 rounded-xl transition-all" title="Classement"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -1030,14 +1030,14 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
           </button>
           {canManage && (
             <>
-              <button onClick={() => navigate(`/communities/${slug}/stats`)} className="p-1.5 rounded-xl transition-all" title="Statistiques"
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/stats`)} className="p-1.5 rounded-xl transition-all" title="Statistiques"
                 style={{ color: 'var(--text-tertiary)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <BarChart2 size={18} />
               </button>
               <div className="relative">
-                <button onClick={() => navigate(`/communities/${slug}/join-requests`)} className="p-1.5 rounded-xl transition-all" title="Demandes"
+                <button onClick={() => navigate(`/communities/${encodeId(community.id)}/join-requests`)} className="p-1.5 rounded-xl transition-all" title="Demandes"
                   style={{ color: 'var(--text-tertiary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -1111,7 +1111,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               </p>
               {members.slice(0, 15).map(m => (
                 <button key={m.id}
-                  onClick={() => navigate(`/communities/${slug}/members/${encodeId(m.user_id)}`)}
+                  onClick={() => navigate(`/communities/${encodeId(community.id)}/members/${encodeId(m.user_id)}`)}
                   className="w-full flex items-center gap-2.5 py-2 px-1 text-left rounded-xl transition-all"
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -1131,7 +1131,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               ))}
               {/* Liens rapides */}
               <div className="mt-4 space-y-2">
-                <button onClick={() => { setShowInfo(false); navigate(`/communities/${slug}/events`); }}
+                <button onClick={() => { setShowInfo(false); navigate(`/communities/${encodeId(community.id)}/events`); }}
                   className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
                   style={{ background: 'var(--bg-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
@@ -1140,7 +1140,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                   <span style={{ color: 'var(--text-primary)' }}>Événements</span>
                   <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
                 </button>
-                <button onClick={() => { setShowInfo(false); navigate(`/communities/${slug}/leaderboard`); }}
+                <button onClick={() => { setShowInfo(false); navigate(`/communities/${encodeId(community.id)}/leaderboard`); }}
                   className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
                   style={{ background: 'var(--bg-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}

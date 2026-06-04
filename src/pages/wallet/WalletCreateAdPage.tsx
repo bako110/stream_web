@@ -420,7 +420,7 @@ export default function WalletCreateAdPage() {
       {!isEdit && (
         <div className="flex items-center gap-2.5 p-3 rounded-xl"
           style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
-          <Zap size={14} style={{ color: '#22C55E', shrink: 0 }} />
+          <Zap size={14} style={{ color: '#22C55E' }} />
           <p className="text-xs" style={{ color: '#22C55E' }}>
             La pub est diffusée immédiatement après validation. Les coins sont débités à la création.
           </p>
