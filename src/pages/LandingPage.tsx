@@ -319,8 +319,8 @@ function HeroSection() {
             <span className="animate-ping absolute inset-0 rounded-full" style={{ background: '#F0365A', opacity: 0.7 }} />
             <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: '#F0365A' }} />
           </span>
-          <span className="gradient-text font-semibold">Plateforme culturelle #1</span>
-          <span style={{ color: 'var(--text-tertiary)' }}>· Films · Concerts · Événements</span>
+          <span className="gradient-text font-semibold">Streaming · Social · Monétisation</span>
+          <span style={{ color: 'var(--text-tertiary)' }}>· Reels · Concerts · Communautés · Films</span>
         </div>
 
         {/* Title */}
@@ -328,9 +328,9 @@ function HeroSection() {
           className="text-6xl sm:text-7xl md:text-8xl lg:text-[5.5rem] font-black leading-[0.92] tracking-tighter mb-4 animate-reveal-up"
           style={{ animationDelay: '100ms', animationFillMode: 'both', color: 'var(--text-primary)' }}
         >
-          <span className="block">La culture</span>
+          <span className="block gradient-text">GoFolix</span>
           <span className="block mt-2">
-            <Typewriter words={['sans limites', 'en live', 'pour toi', 'partout']} />
+            <Typewriter words={['vis le live', 'crée ta communauté', 'monétise ton talent', 'explore sans limites']} />
           </span>
         </h1>
 
@@ -339,10 +339,10 @@ function HeroSection() {
           className="text-lg md:text-xl max-w-2xl mx-auto mt-8 mb-10 leading-relaxed animate-reveal-up"
           style={{ animationDelay: '200ms', animationFillMode: 'both', color: 'var(--text-secondary)' }}
         >
-          Films, séries, concerts en live, événements exclusifs, reels et communautés —
-          tout ce que tu aimes en un seul endroit.{' '}
+          Reels, concerts live, films & séries, événements, communautés avec
+          trésorerie, billets, cadeaux virtuels et monétisation créateur —{' '}
           <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-            Aucune inscription requise pour explorer.
+            tout en un. Explore sans inscription.
           </span>
         </p>
 
@@ -358,10 +358,10 @@ function HeroSection() {
           ) : (
             <>
               <Link to="/auth/register" className="btn-primary text-base px-8 py-4 flex items-center gap-2.5">
-                <Sparkles size={18} /> Commencer gratuitement <ArrowRight size={18} />
+                <Sparkles size={18} /> Rejoindre GoFolix <ArrowRight size={18} />
               </Link>
               <a href="#discover" className="btn-secondary text-base px-8 py-4 flex items-center gap-2.5">
-                <Play size={18} /> Explorer le contenu
+                <Play size={18} /> Explorer gratuitement
               </a>
             </>
           )}
@@ -372,10 +372,10 @@ function HeroSection() {
           className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto animate-reveal-up"
           style={{ animationDelay: '400ms', animationFillMode: 'both' }}
         >
-          <StatCard icon={Play}     value="500+"  label="Films & Séries"  color="#7B3FF2" delay={450} />
-          <StatCard icon={Radio}    value="200+"  label="Concerts live"   color="#F0365A" delay={520} />
-          <StatCard icon={Music2}   value="1 000+"label="Artistes"        color="#E0389A" delay={590} />
-          <StatCard icon={Calendar} value="300+"  label="Événements"      color="#36D9A0" delay={660} />
+          <StatCard icon={Play}     value="500+"  label="Films & Séries"   color="#7B3FF2" delay={450} />
+          <StatCard icon={Radio}    value="200+"  label="Concerts live"    color="#F0365A" delay={520} />
+          <StatCard icon={Users}    value="1 000+"label="Communautés"      color="#E0389A" delay={590} />
+          <StatCard icon={Calendar} value="300+"  label="Événements"       color="#36D9A0" delay={660} />
         </div>
       </div>
 
