@@ -660,11 +660,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
       <div className="absolute inset-0 flex items-center justify-center bg-black">
         {videoSrc ? (
           <video ref={videoRef}
-            className="absolute"
-            style={isPortrait
-              ? { width: '100%', height: '100%', objectFit: 'cover' }                  // 9:16 : plein écran
-              : { maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' } // 16:9 : taille réelle centrée
-            }
+            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }}
             playsInline poster={reel.thumbnail_url ?? undefined}
             onTimeUpdate={() => {
               const v = videoRef.current;
