@@ -374,6 +374,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
   const [playing,         setPlaying]        = useState(false);
   const [buffering,       setBuffering]       = useState(false);
   const [videoError,      setVideoError]      = useState(false);
+  const [isPortrait,      setIsPortrait]      = useState(true); // 9:16 par défaut (reels)
   const [progress,        setProgress]       = useState(0);
   const [liked,           setLiked]          = useState(reel.user_reaction === 'like');
   const [likeCount,       setLikeCount]      = useState(reel.like_count ?? 0);
@@ -474,6 +475,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     retryCount.current = 0;
     setVideoError(false);
 
+    // Détecter orientation (portrait 9:16 vs landscape 16:9) dès les métadonnées
+    const onMeta = () => {
+      if (v.videoWidth && v.videoHeight) {
+        setIsPortrait(v.videoHeight >= v.videoWidth);
+      }
+    };
+    v.addEventListener('loadedmetadata', onMeta);
+
     const playWhenReady = () => {
       if (!active) return;
       v.currentTime = 0;
@@ -494,6 +503,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     }
 
     return () => {
+      v.removeEventListener('loadedmetadata', onMeta);
       clearStall();
       hlsRef.current?.destroy();
       hlsRef.current = null;
@@ -650,7 +660,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
       <div className="absolute inset-0 flex items-center justify-center bg-black">
         {videoSrc ? (
           <video ref={videoRef}
-            className="w-full h-full object-cover"
+            className={isPortrait
+              ? 'w-full h-full object-cover'           // 9:16 → couvre tout (natif reels)
+              : 'w-full h-auto max-h-full object-contain' // 16:9 → barres noires haut/bas
+            }
             playsInline poster={reel.thumbnail_url ?? undefined}
             onTimeUpdate={() => {
               const v = videoRef.current;
