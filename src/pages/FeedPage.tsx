@@ -1805,9 +1805,8 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
       {/* Image */}
       {post.image_url && (
         <div onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
-          className="relative overflow-hidden cursor-pointer group"
-          style={{ aspectRatio: '16/9' }}>
-          <img src={post.image_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          className="relative overflow-hidden cursor-pointer group">
+          <img src={post.image_url} alt="" className="w-full object-contain transition-transform duration-500 group-hover:scale-105" style={{ maxHeight: '600px' }} />
         </div>
       )}
 
