@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { encodeId } from '../utils/slugId';
+import { encodeId, decodeId } from '../utils/slugId';
 import {
   Heart, MessageCircle, Share2,
   Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft,
@@ -1103,7 +1103,7 @@ const _followCache = new Map<string, boolean>();
 export default function ReelsPage() {
   const [searchParams]                  = useSearchParams();
   const navigate                        = useNavigate();
-  const targetId                        = searchParams.get('id');
+  const targetId                        = searchParams.get('id') ? (() => { try { return decodeId(searchParams.get('id')!); } catch { return searchParams.get('id'); } })() : null;
 
   const { user: me }                    = useAuthStore();
 

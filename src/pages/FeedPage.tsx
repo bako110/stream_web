@@ -1865,7 +1865,7 @@ function ReelCard({ reel, delay = 0 }: {
   return (
     <div ref={cardRef} className="rounded-2xl overflow-hidden animate-reveal-up"
       style={{ background: '#000', border: '1px solid var(--border)', animationDelay: `${delay}s`, aspectRatio: '9/16', maxHeight: 480, position: 'relative', cursor: 'pointer' }}
-      onClick={() => navigate(`/reels?id=${reel.id}`)}>
+      onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}>
 
       {/* Video autoplay muted — pointer-events-none so clicks go to the wrapper */}
       {videoSrc ? (
@@ -1931,7 +1931,7 @@ function ReelRowCard({ reels }: { reels: Reel[] }) {
         {reels.map(reel => (
           <button
             key={reel.id}
-            onClick={() => navigate(`/reels?id=${reel.id}`)}
+            onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}
             className="relative shrink-0 rounded-2xl overflow-hidden transition-transform hover:scale-[1.03] active:scale-95"
             style={{ width: 'clamp(120px, 26vw, 180px)', aspectRatio: '9/16', background: '#000' }}>
             {reel.thumbnail_url ? (
