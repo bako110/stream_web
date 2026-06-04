@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Shield, Check, CheckCircle, X, ArrowLeft, ArrowRight,
   TrendingUp, Star, User, RefreshCw, Send, Info, Music,
-  Briefcase, Edit2, Play,
+  Briefcase, Edit2, Play, Zap, RotateCcw,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
@@ -15,6 +15,7 @@ type VerifStatus = 'none' | 'pending' | 'approved' | 'rejected';
 type AccountType = 'artist' | 'creator' | 'public_figure' | 'brand' | 'journalist' | 'other';
 
 const BLUE = '#1D9BF0';
+const VERIFICATION_FEE = 500;
 
 const ACCOUNT_TYPES: { key: AccountType; icon: React.ReactNode; label: string; sub: string }[] = [
   { key: 'artist',        icon: <Music size={18} />,    label: 'Artiste',              sub: 'Musicien, chanteur, groupe' },
@@ -46,13 +47,18 @@ export default function SettingsVerificationPage() {
   const [links,       setLinks]       = useState('');
   const [loading,     setLoading]     = useState(false);
   const [verifNote,   setVerifNote]   = useState<string | null>((user as any)?.verification_note ?? null);
+  const [myCoins,     setMyCoins]     = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await apiClient.get<{ status: VerifStatus; is_verified: boolean; verification_note?: string }>(Endpoints.users.verificationStatus);
-      setStatus(res.data.status);
-      if (res.data.verification_note) setVerifNote(res.data.verification_note);
+      const [verifRes, walletRes] = await Promise.all([
+        apiClient.get<{ status: VerifStatus; is_verified: boolean; verification_note?: string }>(Endpoints.users.verificationStatus),
+        apiClient.get<{ coins_balance: number }>(Endpoints.wallet.balance),
+      ]);
+      setStatus(verifRes.data.status);
+      setMyCoins(walletRes.data?.coins_balance ?? 0);
+      if (verifRes.data.verification_note) setVerifNote(verifRes.data.verification_note);
     } catch {}
     finally { setFetching(false); }
   }, []);
@@ -64,6 +70,11 @@ export default function SettingsVerificationPage() {
   }, [fetchStatus]);
 
   async function handleSubmit() {
+    if (myCoins !== null && myCoins < VERIFICATION_FEE) {
+      toast.error(`Solde insuffisant. Il te manque ${VERIFICATION_FEE - myCoins} coins.`);
+      navigate('/wallet/buy');
+      return;
+    }
     setLoading(true);
     try {
       const note = [
@@ -73,15 +84,27 @@ export default function SettingsVerificationPage() {
         links.trim() ? `Liens: ${links.trim()}` : '',
       ].filter(Boolean).join('\n');
       await apiClient.post(Endpoints.users.verifyRequest, { note });
+      setMyCoins(prev => prev !== null ? prev - VERIFICATION_FEE : null);
       setStatus('pending');
       setStep(0);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? "Impossible d'envoyer la demande.");
+      const detail = e?.response?.data?.detail ?? '';
+      if (e?.response?.status === 402 || detail.toLowerCase().includes('insuffisant')) {
+        const walletRes = await apiClient.get<{ coins_balance: number }>(Endpoints.wallet.balance).catch(() => null);
+        const realBalance = walletRes?.data?.coins_balance ?? 0;
+        setMyCoins(realBalance);
+        toast.error(`Solde insuffisant (${realBalance} coins). Il te manque ${VERIFICATION_FEE - realBalance} coins.`);
+        navigate('/wallet/buy');
+      } else {
+        toast.error(detail || "Impossible d'envoyer la demande.");
+      }
     } finally { setLoading(false); }
   }
 
   const showWizard = (status === 'none' || status === 'rejected') && step > 0;
   const STEPS = ['Type', 'Infos', 'Envoi'];
+  const canAfford = myCoins === null || myCoins >= VERIFICATION_FEE;
+  const soldeApres = myCoins !== null ? myCoins - VERIFICATION_FEE : null;
 
   const renderStatus = () => {
     const CFG = {
@@ -153,7 +176,10 @@ export default function SettingsVerificationPage() {
           <div>
             <p className="text-sm font-bold" style={{ color: '#EF4444' }}>Demande refusée</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-              {verifNote ?? "Votre demande n'a pas été approuvée. Vous pouvez en soumettre une nouvelle."}
+              {verifNote ?? "Votre demande n'a pas été approuvée."}
+            </p>
+            <p className="text-xs mt-1" style={{ color: '#22C55E' }}>
+              Tes {VERIFICATION_FEE} coins ont été remboursés dans ton wallet.
             </p>
           </div>
         </div>
@@ -307,6 +333,8 @@ export default function SettingsVerificationPage() {
           <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>Vérifiez votre demande</p>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Relisez votre dossier avant de l'envoyer. Notre équipe répond sous 3 à 7 jours.</p>
         </div>
+
+        {/* Récap */}
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           {rows.map((row, i) => (
             <div key={i} className="flex items-start justify-between gap-4 px-4 py-3"
@@ -316,6 +344,37 @@ export default function SettingsVerificationPage() {
             </div>
           ))}
         </div>
+
+        {/* Bloc paiement */}
+        <div className="rounded-2xl p-4 space-y-2"
+          style={{ background: canAfford ? `${BLUE}12` : 'rgba(239,68,68,0.07)', border: `1px solid ${canAfford ? BLUE + '40' : 'rgba(239,68,68,0.25)'}` }}>
+          <div className="flex items-center gap-2">
+            <Zap size={16} color={canAfford ? BLUE : '#EF4444'} />
+            <p className="text-sm font-black" style={{ color: canAfford ? BLUE : '#EF4444' }}>
+              Frais de dossier : {VERIFICATION_FEE} coins
+            </p>
+          </div>
+          {myCoins !== null && (
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Ton solde : {myCoins.toLocaleString('fr-FR')} coins
+              {canAfford && soldeApres !== null ? ` → ${soldeApres.toLocaleString('fr-FR')} coins après` : ''}
+            </p>
+          )}
+          <div className="flex items-start gap-1.5">
+            <RotateCcw size={12} color="#22C55E" className="shrink-0 mt-0.5" />
+            <p className="text-xs" style={{ color: '#22C55E' }}>
+              Ces coins sont remboursés automatiquement si ta demande est refusée.
+            </p>
+          </div>
+          {!canAfford && (
+            <button onClick={() => navigate('/wallet/buy')}
+              className="w-full mt-2 py-2.5 rounded-xl font-bold text-white text-sm"
+              style={{ background: '#EF4444' }}>
+              Acheter des coins — il te manque {VERIFICATION_FEE - (myCoins ?? 0)} coins
+            </button>
+          )}
+        </div>
+
         <div className="rounded-xl p-3.5 flex items-start gap-2.5"
           style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
           <Info size={14} color="#F59E0B" className="shrink-0 mt-0.5" />
@@ -323,15 +382,16 @@ export default function SettingsVerificationPage() {
             Fournir de fausses informations entraîne le rejet définitif de votre demande.
           </p>
         </div>
+
         <div className="flex gap-2">
           <button onClick={() => setStep(2)} className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
             <ArrowLeft size={15} /> Modifier
           </button>
-          <button onClick={handleSubmit} disabled={loading}
+          <button onClick={handleSubmit} disabled={loading || !canAfford}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-black text-white disabled:opacity-60"
-            style={{ background: BLUE }}>
-            {loading ? <Spinner size="sm" /> : <><Send size={14} /> Envoyer la demande</>}
+            style={{ background: canAfford ? BLUE : 'var(--border)' }}>
+            {loading ? <Spinner size="sm" /> : <><Send size={14} /> Envoyer — {VERIFICATION_FEE} coins</>}
           </button>
         </div>
       </div>
@@ -359,7 +419,6 @@ export default function SettingsVerificationPage() {
         <div className="flex justify-center py-12"><Spinner /></div>
       ) : (
         <>
-          {/* Progress bar */}
           {showWizard && (
             <div className="flex items-center gap-2 rounded-2xl px-4 py-3"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
