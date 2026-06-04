@@ -2339,7 +2339,7 @@ function SuggestionsPanel() {
   }, []);
 
   return (
-    <div className="rounded-2xl overflow-hidden sticky top-4"
+    <div className="rounded-2xl overflow-hidden"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="flex items-center gap-2 px-4 py-3.5"
         style={{ borderBottom: '1px solid var(--border)' }}>
@@ -2410,7 +2410,7 @@ function CommunitiesSidePanel() {
   if (!loading && communities.length === 0) return null;
 
   return (
-    <div className="rounded-2xl overflow-hidden sticky top-4"
+    <div className="rounded-2xl overflow-hidden"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between px-4 py-3.5"
         style={{ borderBottom: '1px solid var(--border)' }}>
@@ -2662,11 +2662,11 @@ export default function FeedPage() {
   function handleRefresh() { loadFeed(tab); }
 
   return (
-    <div className="px-2 sm:px-4 py-6">
+    <div className="px-2 sm:px-4 py-6 max-w-[1400px] mx-auto">
       <div className="flex gap-4 items-start">
 
-        {/* ── Left panel (xl+) ── */}
-        <div className="w-52 shrink-0 hidden xl:flex flex-col gap-4 sticky top-4">
+        {/* ── Left panel (lg+) ── */}
+        <div className="w-56 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4">
           <UpcomingEventsPanel />
           <TrendingPanel />
         </div>
@@ -2757,10 +2757,10 @@ export default function FeedPage() {
             <div className="flex flex-col gap-3 animate-reveal-up delay-300">
               {items.map((item, i) => {
                 if (item.kind === 'suggestions') {
-                  return <SuggestionsInline key={item.id} users={suggestUsers} loading={suggestLoading} />;
+                  return <div key={item.id} className="lg:hidden"><SuggestionsInline users={suggestUsers} loading={suggestLoading} /></div>;
                 }
                 if (item.kind === 'communities') {
-                  return <CommunitiesInline key={item.id} communities={item.data} />;
+                  return <div key={item.id} className="lg:hidden"><CommunitiesInline communities={item.data} /></div>;
                 }
                 if (item.kind === 'reel_row') {
                   return <ReelRowCard key={item.id} reels={item.data} />;
@@ -2786,8 +2786,8 @@ export default function FeedPage() {
           )}
         </div>
 
-        {/* ── Sidebar (xl+) ── */}
-        <div className="w-60 shrink-0 hidden xl:block space-y-4">
+        {/* ── Right sidebar (lg+) ── */}
+        <div className="w-60 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4">
           <SuggestionsPanel />
           <CommunitiesSidePanel />
         </div>
