@@ -660,9 +660,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
       <div className="absolute inset-0 flex items-center justify-center bg-black">
         {videoSrc ? (
           <video ref={videoRef}
-            className={isPortrait
-              ? 'w-full h-full object-cover'           // 9:16 → couvre tout (natif reels)
-              : 'w-full h-auto max-h-full object-contain' // 16:9 → barres noires haut/bas
+            className="absolute"
+            style={isPortrait
+              ? { width: '100%', height: '100%', objectFit: 'cover' }                  // 9:16 : plein écran
+              : { maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' } // 16:9 : taille réelle centrée
             }
             playsInline poster={reel.thumbnail_url ?? undefined}
             onTimeUpdate={() => {
