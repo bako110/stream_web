@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import {
   Calendar, Music2, MapPin, Clock, Ticket, ChevronRight,
   CalendarDays, Trash2, Plus, X, AlignLeft, User,
@@ -547,8 +548,8 @@ function EntryCard({
     e.stopPropagation();
     const rid = entry.ref_id ?? entry.event_id ?? entry.concert_id;
     if (!rid) return;
-    if (entry.type === 'concert' || entry.type === 'my_concert') navigate(`/concerts/${rid}`);
-    else navigate(`/events/${rid}`);
+    if (entry.type === 'concert' || entry.type === 'my_concert') navigate(`/concerts/${encodeId(rid)}`);
+    else navigate(`/events/${encodeId(rid)}`);
   }
 
   async function del(e: React.MouseEvent) {

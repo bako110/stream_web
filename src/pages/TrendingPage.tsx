@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import {
   TrendingUp, Film, Play, Eye, Heart, RefreshCw,
 } from 'lucide-react';
@@ -56,8 +57,8 @@ function ContenusTab({ items, loading }: { items: any[]; loading: boolean }) {
       {items.map((item: any, idx: number) => {
         const rank  = idx + 1;
         const route = item.type === 'serie' || item.content_type === 'serie'
-          ? `/series/${item.id}`
-          : `/films/${item.id}`;
+          ? `/series/${encodeId(item.id)}`
+          : `/films/${encodeId(item.id)}`;
         return (
           <div
             key={item.id}

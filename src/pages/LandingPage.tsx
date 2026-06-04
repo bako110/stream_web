@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import {
   Play, Radio, Music2, Calendar, Users, ArrowRight,
   ChevronRight, Zap, Globe, Shield, Sparkles,
@@ -917,7 +918,7 @@ export default function LandingPage() {
             ? <PlaceholderRow count={8} aspect="2/3" width={160} />
             : films.length === 0
               ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <HScrollRow>{films.map(f => <PosterCard key={f.id} item={f} onClick={() => navigate(`/explore/films/${f.id}`)} />)}</HScrollRow>
+              : <HScrollRow>{films.map(f => <PosterCard key={f.id} item={f} onClick={() => navigate(`/explore/films/${encodeId(f.id)}`)} />)}</HScrollRow>
           }
         </section>
 
@@ -928,7 +929,7 @@ export default function LandingPage() {
             ? <PlaceholderRow count={8} aspect="2/3" width={160} />
             : series.length === 0
               ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <HScrollRow>{series.map(s => <PosterCard key={s.id} item={s} onClick={() => navigate(`/explore/series/${s.id}`)} />)}</HScrollRow>
+              : <HScrollRow>{series.map(s => <PosterCard key={s.id} item={s} onClick={() => navigate(`/explore/series/${encodeId(s.id)}`)} />)}</HScrollRow>
           }
         </section>
 
@@ -939,7 +940,7 @@ export default function LandingPage() {
             ? <PlaceholderRow count={5} aspect="16/9" width={280} />
             : concerts.length === 0
               ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <HScrollRow>{concerts.map(c => <ConcertCard key={c.id} concert={c} onClick={() => navigate(`/explore/concerts/${c.id}`)} />)}</HScrollRow>
+              : <HScrollRow>{concerts.map(c => <ConcertCard key={c.id} concert={c} onClick={() => navigate(`/explore/concerts/${encodeId(c.id)}`)} />)}</HScrollRow>
           }
         </section>
 
@@ -950,7 +951,7 @@ export default function LandingPage() {
             ? <PlaceholderRow count={5} aspect="16/9" width={300} />
             : events.length === 0
               ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <HScrollRow>{events.map(e => <EventCard key={e.id} event={e} onClick={() => navigate(`/explore/events/${e.id}`)} />)}</HScrollRow>
+              : <HScrollRow>{events.map(e => <EventCard key={e.id} event={e} onClick={() => navigate(`/explore/events/${encodeId(e.id)}`)} />)}</HScrollRow>
           }
         </section>
       </div>

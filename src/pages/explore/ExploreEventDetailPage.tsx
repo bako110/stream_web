@@ -1,18 +1,20 @@
 import { useParams, Link } from 'react-router-dom';
 import { Calendar, MapPin, Ticket, ArrowLeft, Users } from 'lucide-react';
+import { decodeId } from '../../utils/slugId';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useApi } from '../../hooks/useApi';
-import { apiClient } from '../../api/client';
+import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import type { Event } from '../../types';
 
 export default function ExploreEventDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
 
   const { data: event, loading } = useApi<Event>(
-    () => apiClient.get<Event>(Endpoints.events.byId(id!)),
+    () => publicClient.get<Event>(Endpoints.events.publicById(id)),
     [id]
   );
 

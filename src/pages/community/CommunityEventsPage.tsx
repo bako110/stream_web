@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { decodeId } from '../../utils/slugId';
 import {
   ArrowLeft, Calendar, MapPin, Globe, Plus, X, Check,
   Clock, Users, Trash2, Edit2,
@@ -290,9 +291,10 @@ function EventCard({ event, communityId, canManage, onRsvp, onEdit, onDelete }: 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CommunityEventsPage() {
-  const { id }       = useParams<{ id: string }>();
-  const navigate     = useNavigate();
-  const { user: me } = useAuthStore();
+  const { id: slug }  = useParams<{ id: string }>();
+  const id             = decodeId(slug!);
+  const navigate       = useNavigate();
+  const { user: me }   = useAuthStore();
   const [events,    setEvents]    = useState<CommunityEvent[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [myRole,    setMyRole]    = useState<string | null>(null);

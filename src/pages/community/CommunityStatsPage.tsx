@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { decodeId } from '../../utils/slugId';
 import {
   ArrowLeft, Users, MessageCircle, Heart, TrendingUp,
   BarChart2, Activity, Award, Crown, Medal,
@@ -54,8 +55,9 @@ function BarChartSimple({ data }: { data: { day: string; msgs: number }[] }) {
 }
 
 export default function CommunityStatsPage() {
-  const { id }    = useParams<{ id: string }>();
-  const navigate  = useNavigate();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
+  const navigate      = useNavigate();
   const [stats,   setStats]   = useState<CommunityStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [period,  setPeriod]  = useState<Period>('7j');

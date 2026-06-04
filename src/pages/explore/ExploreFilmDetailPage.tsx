@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
 import { Play, ArrowLeft, Lock } from 'lucide-react';
+import { decodeId } from '../../utils/slugId';
 import { useApi } from '../../hooks/useApi';
-import { apiClient } from '../../api/client';
+import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import type { Content } from '../../types';
@@ -9,14 +10,15 @@ import type { Content } from '../../types';
 interface Props { type?: 'film' | 'serie' }
 
 export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
-  const { id } = useParams<{ id: string }>();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
 
   const endpoint = type === 'film'
-    ? Endpoints.content.filmById(id!)
-    : Endpoints.content.serieById(id!);
+    ? Endpoints.content.filmById(id)
+    : Endpoints.content.serieById(id);
 
   const { data: content, loading } = useApi<Content>(
-    () => apiClient.get<Content>(endpoint),
+    () => publicClient.get<Content>(endpoint),
     [id]
   );
 

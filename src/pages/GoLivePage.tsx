@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import { Radio, Video, Calendar, Zap, ChevronRight, Clock, Music, Globe, Lock } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -81,7 +82,7 @@ function QuickLiveForm({ onBack }: { onBack: () => void }) {
         is_private:  isPrivate,
       });
       // Redirige vers la page live avec le token publisher en state
-      navigate(`/lives/${r.data.live.id}`, {
+      navigate(`/lives/${encodeId(r.data.live.id)}`, {
         state: {
           publisherToken: r.data.token,
           livekitUrl:     r.data.livekit_url,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../utils/slugId';
 import {
   Send, ArrowLeft, MessageCircle, X, SquarePen, Search, RefreshCw,
   Wifi, WifiOff, MoreVertical, Reply, Pencil, Trash2, Forward, Pin,
@@ -325,7 +326,7 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
   return (
     <div className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : ''}`}>
       {!isMe && (
-        <button className="mt-1 shrink-0" onClick={() => navigate(`/user/${msg.sender_id}`)}>
+        <button className="mt-1 shrink-0" onClick={() => navigate(`/user/${encodeId(msg.sender_id)}`)}>
           <Avatar src={senderAvatar} name={senderName} size="xs" />
         </button>
       )}
@@ -939,7 +940,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
         )}
         {peer ? (
           <button className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
-            onClick={() => navigate(`/user/${userId}`)}>
+            onClick={() => navigate(`/user/${encodeId(userId)}`)  }>
             <div className="relative shrink-0">
               <Avatar src={peer.avatar_url} name={peer.display_name ?? peer.username ?? '?'} size="sm" verified={peer.is_verified} />
               {peer.is_online && (
@@ -1158,8 +1159,9 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function MessagesPage() {
-  const navigate   = useNavigate();
-  const { userId } = useParams<{ userId?: string }>();
+  const navigate              = useNavigate();
+  const { userId: userSlug }  = useParams<{ userId?: string }>();
+  const userId                = userSlug ? decodeId(userSlug) : undefined;
   const [selectedId,    setSelectedId]    = useState<string | undefined>(userId);
   const [showNewConvo,  setShowNewConvo]  = useState(false);
   const [lastWsPayload, setLastWsPayload] = useState<WsPayload | null>(null);
@@ -1184,7 +1186,7 @@ export default function MessagesPage() {
 
   function handleSelect(id: string) {
     setSelectedId(id);
-    navigate(`/messages/${id}`, { replace: true });
+    navigate(`/messages/${encodeId(id)}`, { replace: true });
   }
 
   function handleBack() {

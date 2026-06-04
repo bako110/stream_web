@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../utils/slugId';
 import { ArrowLeft, Eye, Clock } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -18,8 +19,9 @@ interface StoryViewer {
 }
 
 export default function StoryViewersPage() {
-  const { id }     = useParams<{ id: string }>();
-  const navigate   = useNavigate();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
+  const navigate      = useNavigate();
   const [viewers,  setViewers]  = useState<StoryViewer[]>([]);
   const [loading,  setLoading]  = useState(true);
 
@@ -91,7 +93,7 @@ export default function StoryViewersPage() {
           <div className="px-4 space-y-1">
             {viewers.map(viewer => (
               <button key={viewer.id}
-                onClick={() => navigate(`/user/${viewer.user_id}`)}
+                onClick={() => navigate(`/user/${encodeId(viewer.user_id)}`)}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all text-left"
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import {
   Activity, UserPlus, Calendar, Music2, Users, Film,
   MessageCircle, Heart, Eye, AtSign, Gift, ChevronRight,
@@ -241,15 +242,15 @@ export default function ActivityPage() {
 
   const handlePress = useCallback((item: ActivityItem) => {
     if (!item.ref_id) {
-      if (item.actor) navigate(`/user/${item.actor.id}`);
+      if (item.actor) navigate(`/user/${encodeId(item.actor.id)}`);
       return;
     }
     const t = item.activity_type;
-    if (t === 'concert_created' || t === 'concert_going') navigate(`/concerts/${item.ref_id}`);
-    else if (t === 'event_created' || t === 'event_going') navigate(`/events/${item.ref_id}`);
-    else if (t === 'community_joined') navigate(`/communities/${item.ref_id}`);
+    if (t === 'concert_created' || t === 'concert_going') navigate(`/concerts/${encodeId(item.ref_id)}`);
+    else if (t === 'event_created' || t === 'event_going') navigate(`/events/${encodeId(item.ref_id)}`);
+    else if (t === 'community_joined') navigate(`/communities/${encodeId(item.ref_id)}`);
     else if (t === 'reel_posted') navigate(`/reels`);
-    else if (item.actor) navigate(`/user/${item.actor.id}`);
+    else if (item.actor) navigate(`/user/${encodeId(item.actor.id)}`);
   }, [navigate]);
 
   const handleDelete = useCallback((id: string) => {

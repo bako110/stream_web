@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../../utils/slugId';
 import {
   Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
   Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
@@ -213,9 +214,10 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
 }
 
 export default function EventDetailPage() {
-  const { id }       = useParams<{ id: string }>();
-  const navigate     = useNavigate();
-  const { user: me } = useAuthStore();
+  const { id: slug }  = useParams<{ id: string }>();
+  const id             = decodeId(slug!);
+  const navigate       = useNavigate();
+  const { user: me }   = useAuthStore();
 
   const { data: event, loading } = useApi<Event>(
     () => apiClient.get<Event>(Endpoints.events.byId(id!)), [id]
@@ -432,12 +434,12 @@ export default function EventDetailPage() {
 
         {isOwner ? (
           <div className="ml-auto flex items-center gap-2">
-            <button onClick={() => navigate(`/events/${id}/attendees`)}
+            <button onClick={() => navigate(`/events/${slug}/attendees`)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
               style={{ background: 'var(--bg-secondary)', color: '#10B981', border: '1px solid var(--border)' }}>
               <Users size={15} /> Inscrits
             </button>
-            <button onClick={() => navigate(`/events/${id}/edit`)}
+            <button onClick={() => navigate(`/events/${slug}/edit`)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
               style={{ background: 'var(--bg-secondary)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
               <Edit3 size={15} /> Modifier

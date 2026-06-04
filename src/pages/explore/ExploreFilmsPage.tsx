@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { encodeId } from '../../utils/slugId';
 import { Search, Film, Star } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
@@ -83,7 +84,7 @@ function FilmCard({ item, basePath }: { item: Content; basePath: string }) {
   const [imgErr, setImgErr] = useState(false);
 
   return (
-    <Link to={`${basePath}/${item.id}`} className="group block">
+    <Link to={`${basePath}/${encodeId(item.id)}`} className="group block">
       <div className="relative rounded-xl overflow-hidden mb-2" style={{ aspectRatio: '2/3', background: 'var(--bg-secondary)' }}>
         {item.thumbnail_url && !imgErr ? (
           <img src={item.thumbnail_url} alt={item.title}

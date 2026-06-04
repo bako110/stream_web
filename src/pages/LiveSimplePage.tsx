@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { decodeId } from '../utils/slugId';
 import {
   Radio, Eye, MessageCircle, Send, X, StopCircle, ChevronLeft,
   Mic, MicOff, VideoIcon, VideoOff, Gift, Hand, FlipHorizontal,
@@ -705,9 +706,10 @@ function MediaControls({
 // ── Page principale ────────────────────────────────────────────────────────────
 
 export default function LiveSimplePage() {
-  const { id }       = useParams<{ id: string }>();
-  const navigate     = useNavigate();
-  const location     = useLocation();
+  const { id: slug }  = useParams<{ id: string }>();
+  const id             = decodeId(slug!);
+  const navigate       = useNavigate();
+  const location       = useLocation();
   const { user, accessToken } = useAuthStore();
 
   const stateToken: string | null = (location.state as any)?.publisherToken ?? null;

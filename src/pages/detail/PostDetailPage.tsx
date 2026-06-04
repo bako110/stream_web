@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../../utils/slugId';
 import { ArrowLeft, Heart, MessageCircle, Share2, Send, X, Bookmark, MoreHorizontal, Trash2 } from 'lucide-react';
 import type { Post } from '../../types';
 import { apiClient } from '../../api';
@@ -12,12 +13,14 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function PostDetailPage() {
-  const { id }     = useParams<{ id: string }>();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
 
   const [post,    setPost]    = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(false);
   const [liked,   setLiked]   = useState(false);
   const [likes,   setLikes]   = useState(0);
   const [comments, setComments] = useState<any[]>([]);
@@ -30,13 +33,14 @@ export default function PostDetailPage() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    setError(false);
     apiClient.get<Post>(Endpoints.posts.byId(id))
       .then(res => {
         setPost(res.data);
         setLiked(res.data.user_reaction === 'like');
         setLikes(res.data.like_count ?? 0);
       })
-      .catch(() => navigate(-1))
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -94,6 +98,15 @@ export default function PostDetailPage() {
     );
   }
 
+  if (error) return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'var(--bg)' }}>
+      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Ce post est introuvable ou indisponible.</p>
+      <button onClick={() => navigate(-1)} className="btn-secondary text-sm flex items-center gap-2">
+        <ArrowLeft size={14} /> Retour
+      </button>
+    </div>
+  );
+
   if (!post) return null;
 
   const author = post.author;
@@ -117,11 +130,11 @@ export default function PostDetailPage() {
 
           {/* Header */}
           <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-            <button onClick={() => author?.id && navigate(`/user/${author.id}`)} className="shrink-0">
+            <button onClick={() => author?.id && navigate(`/user/${encodeId(author.id)}`)} className="shrink-0">
               <Avatar src={author?.avatar_url} name={author?.display_name ?? author?.username ?? '?'} size="md" verified={author?.is_verified} />
             </button>
             <div className="flex-1 min-w-0">
-              <button onClick={() => author?.id && navigate(`/user/${author.id}`)}
+              <button onClick={() => author?.id && navigate(`/user/${encodeId(author.id)}`)}
                 className="text-sm font-bold truncate block text-left" style={{ color: 'var(--text-primary)' }}>
                 {author?.display_name ?? author?.username ?? 'Utilisateur'}
               </button>
@@ -249,7 +262,7 @@ export default function PostDetailPage() {
               </div>
             ) : comments.map((c, i) => (
               <div key={c.id ?? i} className="flex gap-3 px-4 py-3">
-                <button onClick={() => c.author?.id && navigate(`/user/${c.author.id}`)}>
+                <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
                   <Avatar src={c.author?.avatar_url} name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
                 </button>
                 <div className="flex-1 min-w-0">

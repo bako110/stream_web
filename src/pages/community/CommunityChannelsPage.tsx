@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { decodeId } from '../../utils/slugId';
 import {
   ArrowLeft, Hash, Megaphone, Plus, Send, Settings, Lock, Globe,
   Trash2, X, Check, Users,
@@ -257,9 +258,10 @@ function ChannelChat({ communityId, channel, myRole, onBack }: {
 }
 
 export default function CommunityChannelsPage() {
-  const { id }       = useParams<{ id: string }>();
-  const navigate     = useNavigate();
-  const { user: me } = useAuthStore();
+  const { id: slug }  = useParams<{ id: string }>();
+  const id             = decodeId(slug!);
+  const navigate       = useNavigate();
+  const { user: me }   = useAuthStore();
 
   const [community,      setCommunity]      = useState<CommunityMeta | null>(null);
   const [channels,       setChannels]       = useState<Channel[]>([]);

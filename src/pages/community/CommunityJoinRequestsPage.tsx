@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { decodeId } from '../../utils/slugId';
 import { ArrowLeft, UserCheck, UserX, Clock, Check, X } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Avatar } from '../../components/ui/Avatar';
@@ -20,8 +21,9 @@ interface JoinRequest {
 }
 
 export default function CommunityJoinRequestsPage() {
-  const { id }        = useParams<{ id: string }>();
-  const navigate      = useNavigate();
+  const { id: slug }   = useParams<{ id: string }>();
+  const id              = decodeId(slug!);
+  const navigate        = useNavigate();
   const [requests,    setRequests]   = useState<JoinRequest[]>([]);
   const [loading,     setLoading]    = useState(true);
   const [processing,  setProcessing] = useState<string | null>(null);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import { Radio, Clock, Users, Zap, Ticket, Music } from 'lucide-react';
 import type { Concert } from '../types';
 import { apiClient } from '../api';
@@ -47,7 +48,7 @@ function ConcertCard({ concert, isLiveCard = false }: { concert: Concert; isLive
         background: 'var(--surface)',
         boxShadow: isLive ? '0 4px 24px rgba(240,54,90,0.12)' : 'none',
       }}
-      onClick={() => navigate(isLive ? `/live/${concert.id}` : `/concerts/${concert.id}`)}
+      onClick={() => navigate(isLive ? `/live/${encodeId(concert.id)}` : `/concerts/${encodeId(concert.id)}`)}
       onMouseEnter={e => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
         (e.currentTarget as HTMLDivElement).style.boxShadow = isLive

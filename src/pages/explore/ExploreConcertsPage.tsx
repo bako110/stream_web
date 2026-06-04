@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { encodeId } from '../../utils/slugId';
 import { Search, Music2, MapPin, Calendar, Radio, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -136,7 +137,7 @@ function ConcertCard({ concert, isLive = false }: { concert: Concert; isLive?: b
   const venue      = [concert.venue_name, concert.venue_city].filter(Boolean).join(', ');
 
   return (
-    <Link to={`/explore/concerts/${concert.id}`}
+    <Link to={`/explore/concerts/${encodeId(concert.id)}`}
       className="group block rounded-2xl overflow-hidden transition-all hover:scale-[1.01]"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="relative overflow-hidden" style={{ height: 176 }}>

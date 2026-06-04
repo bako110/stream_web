@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import {
   Music, MapPin, Clock, Users, Play, Calendar,
   Flame, ChevronRight, UserPlus, UserCheck, Sparkles, Radio,
@@ -1464,7 +1465,7 @@ function LiveHero({ concert }: { concert: Concert }) {
   const navigate = useNavigate();
   return (
     <div
-      onClick={() => navigate(`/concerts/${concert.id}`)}
+      onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
       className="relative overflow-hidden rounded-2xl cursor-pointer group animate-reveal-up"
       style={{ aspectRatio: '21/9' }}
     >
@@ -1543,12 +1544,12 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         authorId={authorId}
         publishedAt={concert.created_at}
         isFollowed={isFollowed}
-        onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${authorId}`); }}
+        onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="concert"
       />
 
-      <div onClick={() => navigate(`/concerts/${concert.id}`)}
+      <div onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
         className="relative overflow-hidden cursor-pointer group"
         style={{ aspectRatio: '16/9' }}>
         {concert.thumbnail_url ? (
@@ -1571,7 +1572,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         </div>
       </div>
 
-      <div onClick={() => navigate(`/concerts/${concert.id}`)} className="px-3 pt-2.5 pb-1 cursor-pointer space-y-1">
+      <div onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)} className="px-3 pt-2.5 pb-1 cursor-pointer space-y-1">
         <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>{concert.title}</p>
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
           {concert.genre && <span>{concert.genre}</span>}
@@ -1615,12 +1616,12 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         authorId={authorId}
         publishedAt={event.created_at}
         isFollowed={isFollowed}
-        onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${authorId}`); }}
+        onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="event"
       />
 
-      <div onClick={() => navigate(`/events/${event.id}`)}
+      <div onClick={() => navigate(`/events/${encodeId(event.id)}`)}
         className="relative overflow-hidden cursor-pointer group"
         style={{ aspectRatio: '16/9' }}>
         {event.thumbnail_url ? (
@@ -1646,7 +1647,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         )}
       </div>
 
-      <div onClick={() => navigate(`/events/${event.id}`)} className="px-3 pt-2.5 pb-1 cursor-pointer space-y-1">
+      <div onClick={() => navigate(`/events/${encodeId(event.id)}`)} className="px-3 pt-2.5 pb-1 cursor-pointer space-y-1">
         <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>{event.title}</p>
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
           {event.venue_city && <span className="flex items-center gap-1"><MapPin size={11} />{event.venue_city}{event.venue_country ? `, ${event.venue_country}` : ''}</span>}
@@ -1689,14 +1690,14 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         authorId={authorId}
         publishedAt={post.created_at}
         isFollowed={isFollowed}
-        onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${authorId}`); }}
+        onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="post"
       />
 
       {/* Body */}
       {body && (
-        <div className="px-3 pt-1 pb-2 cursor-pointer" onClick={() => navigate(`/posts/${post.id}`)}>
+        <div className="px-3 pt-1 pb-2 cursor-pointer" onClick={() => navigate(`/posts/${encodeId(post.id)}`)}>
           <ExpandableText text={body} limit={280} style={{ color: 'var(--text-primary)' }} />
           {post.feeling && (
             <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
@@ -1709,7 +1710,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
 
       {/* Image */}
       {post.image_url && (
-        <div onClick={() => navigate(`/posts/${post.id}`)}
+        <div onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
           className="relative overflow-hidden cursor-pointer group"
           style={{ aspectRatio: '16/9' }}>
           <img src={post.image_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -1971,7 +1972,7 @@ function SuggestionsInline({ users, loading }: { users: any[]; loading: boolean 
             <SuggestionCard key={u.id} u={u}
               followed={followedIds.has(u.id)}
               onFollow={() => follow(u.id)}
-              onNavigate={() => navigate(`/user/${u.id}`)} />
+              onNavigate={() => navigate(`/user/${encodeId(u.id)}`)} />
           ))}
         </div>
       )}
@@ -2006,7 +2007,7 @@ function UpcomingEventsPanel() {
           const color = EVENT_COLORS[e.event_type ?? 'other'] ?? EVENT_COLORS.other;
           return (
             <div key={e.id}
-              onClick={() => navigate(`/events/${e.id}`)}
+              onClick={() => navigate(`/events/${encodeId(e.id)}`)}
               className="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all"
               onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bg-secondary)')}
               onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
@@ -2054,7 +2055,7 @@ function TrendingPanel() {
       <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
         {concerts.map((c: any, i: number) => (
           <div key={c.id}
-            onClick={() => navigate(`/concerts/${c.id}`)}
+            onClick={() => navigate(`/concerts/${encodeId(c.id)}`)}
             className="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all"
             onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
@@ -2234,7 +2235,7 @@ function CommunitiesInline({ communities }: { communities: Community[] }) {
             isJoined={joined.has(c.id)}
             isJoining={joining.has(c.id)}
             onJoin={e => handleJoin(e, c.id)}
-            onClick={() => navigate(`/communities/${c.id}`)} />
+            onClick={() => navigate(`/communities/${encodeId(c.id)}`)} />
         ))}
       </div>
     </div>
@@ -2274,10 +2275,10 @@ function SuggestionsPanel() {
               style={{ borderBottom: i < users.length - 1 ? '1px solid var(--border)' : 'none' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <button onClick={() => navigate(`/user/${u.id}`)} className="shrink-0">
+              <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="shrink-0">
                 <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="sm" verified={u.is_verified} />
               </button>
-              <button onClick={() => navigate(`/user/${u.id}`)} className="min-w-0 flex-1 text-left">
+              <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="min-w-0 flex-1 text-left">
                 <p className="text-sm font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
                   {u.display_name ?? u.username}
                 </p>
@@ -2346,7 +2347,7 @@ function CommunitiesSidePanel() {
             const count    = c.members_count ?? c.member_count ?? 0;
             return (
               <button key={c.id}
-                onClick={() => navigate(`/communities/${c.id}`)}
+                onClick={() => navigate(`/communities/${encodeId(c.id)}`)}
                 className="w-full flex items-center gap-3 px-4 py-2.5 transition-all text-left"
                 style={{ borderBottom: i < communities.length - 1 ? '1px solid var(--border)' : 'none' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../utils/slugId';
 import {
   MapPin, Globe, Phone, Calendar, UserPlus, UserCheck,
   MessageCircle, Play, Eye, Heart, Grid3x3, FileText,
@@ -89,9 +90,9 @@ function PublicationsTab({ userId }: { userId: string }) {
         const desc  = isPost ? null : item.description;
 
         const handleClick = () => {
-          if (isEvent)   navigate(`/events/${item.id}`);
-          if (isConcert) navigate(`/concerts/${item.id}`);
-          if (isPost)    navigate(`/posts/${item.id}`);
+          if (isEvent)   navigate(`/events/${encodeId(item.id)}`);
+          if (isConcert) navigate(`/concerts/${encodeId(item.id)}`);
+          if (isPost)    navigate(`/posts/${encodeId(item.id)}`);
         };
 
         return (
@@ -252,9 +253,10 @@ function AboutTab({ profile }: { profile: UserPublicProfile }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function UserProfilePage() {
-  const { id }       = useParams<{ id: string }>();
-  const navigate     = useNavigate();
-  const { user: me } = useAuthStore();
+  const { id: slug }  = useParams<{ id: string }>();
+  const id             = decodeId(slug!);
+  const navigate       = useNavigate();
+  const { user: me }   = useAuthStore();
   const [tab,            setTab]            = useState<Tab>('publications');
   const [followed,       setFollowed]       = useState<boolean | null>(null);
   const [blocked,        setBlocked]        = useState<boolean | null>(null);

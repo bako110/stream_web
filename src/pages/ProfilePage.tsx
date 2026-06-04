@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { encodeId } from '../utils/slugId';
 import type { ChangeEvent } from 'react';
 import {
   Camera, Edit3, MapPin, Globe, Calendar, Play, Eye,
@@ -153,7 +154,7 @@ function FollowListModal({ userId, type, onClose }: {
             const name = u.display_name ?? u.username ?? 'Utilisateur';
             return (
               <button key={u.id}
-                onClick={() => { onClose(); navigate(`/user/${u.id}`); }}
+                onClick={() => { onClose(); navigate(`/user/${encodeId(u.id)}`); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
                 style={{ background: 'transparent' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
@@ -222,7 +223,7 @@ function PublicationsTab({ userId }: { userId: string }) {
           <div key={`${item._kind}-${item.id}`}
             className="flex gap-3 p-3 rounded-2xl cursor-pointer transition-all"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-            onClick={() => navigate(isEvent ? `/events/${item.id}` : isConcert ? `/concerts/${item.id}` : `/posts/${item.id}`)}
+            onClick={() => navigate(isEvent ? `/events/${encodeId(item.id)}` : isConcert ? `/concerts/${encodeId(item.id)}` : `/posts/${encodeId(item.id)}`)}
             onMouseEnter={e => (e.currentTarget.style.borderColor = color + '60')}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
             <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden flex items-center justify-center"

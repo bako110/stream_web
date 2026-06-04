@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import { Clock, MapPin, Ticket, Music, Users, Plus, Trash2 } from 'lucide-react';
 import type { Concert, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
@@ -59,7 +60,7 @@ function ConcertCard({
         background: 'var(--surface)',
         boxShadow: featured ? '0 8px 40px rgba(123,63,242,0.15)' : 'none',
       }}
-      onClick={() => navigate(`/concerts/${concert.id}`)}
+      onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
       onMouseEnter={e => {
         (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--primary)';
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';

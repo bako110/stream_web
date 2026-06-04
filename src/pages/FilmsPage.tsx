@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import { Play, Star, Crown, Search, Check, Lock } from 'lucide-react';
 import type { Content, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
@@ -50,7 +51,7 @@ function ContentCard({
 
   return (
     <div className="cursor-pointer group"
-      onClick={() => navigate(`/${item.type === 'film' ? 'films' : 'series'}/${item.id}`, { state: { item } })}>
+      onClick={() => navigate(`/${item.type === 'film' ? 'films' : 'series'}/${encodeId(item.id)}`, { state: { item } })}>
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden"
         style={{ background: 'var(--bg-tertiary)' }}>
         {item.thumbnail_url ? (

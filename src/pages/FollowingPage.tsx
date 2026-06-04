@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { encodeId, decodeId } from '../utils/slugId';
 import { BadgeCheck, UserPlus, UserCheck, Users } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -72,7 +73,7 @@ function UserCardItem({
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(123,63,242,0.35)')}
       onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-      onClick={() => navigate(`/user/${user.id}`)}
+      onClick={() => navigate(`/user/${encodeId(user.id)}`)}
     >
       {/* Cover gradient */}
       <div
@@ -164,10 +165,11 @@ function UserCardItem({
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function FollowingPage() {
-  const { userId }       = useParams<{ userId?: string }>();
-  const { user: me }     = useAuthStore();
-  const targetId         = userId ?? me?.id ?? '';
-  const isOwnProfile     = !userId || userId === me?.id;
+  const { userId: userSlug } = useParams<{ userId?: string }>();
+  const userId               = userSlug ? decodeId(userSlug) : undefined;
+  const { user: me }         = useAuthStore();
+  const targetId             = userId ?? me?.id ?? '';
+  const isOwnProfile         = !userId || userId === me?.id;
 
   const [tab,          setTab]          = useState<Tab>('followers');
   const [followers,    setFollowers]    = useState<UserCard[]>([]);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { decodeId } from '../../utils/slugId';
 import {
   Play, Star, Crown, ChevronDown, ChevronUp, Lock, Coins,
   Check, AlertTriangle, X, Wallet,
@@ -197,8 +198,9 @@ function VideoPlayerWithTracking({ url, poster, videoId, contentId }: {
 // ── Page principale ───────────────────────────────────────────────────────────
 
 export default function FilmDetailPage() {
-  const { id }    = useParams<{ id: string }>();
-  const navigate  = useNavigate();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
+  const navigate      = useNavigate();
 
   const [playingVideo,    setPlayingVideo]    = useState<VideoMeta | null>(null);
   const [expandSynopsis,  setExpandSynopsis]  = useState(false);

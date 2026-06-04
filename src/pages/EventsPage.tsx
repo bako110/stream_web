@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import {
   Calendar, MapPin, Users, Globe, Ticket, Clock,
   Heart, Share2, Plus, Trash2, Music2,
@@ -77,7 +78,7 @@ function EventCard({
   return (
     <div className="group overflow-hidden transition-all duration-300 cursor-pointer relative"
       style={{ borderRadius: '1.25rem', border: '1px solid var(--border)', background: 'var(--surface)' }}
-      onClick={() => navigate(`/events/${event.id}`)}
+      onClick={() => navigate(`/events/${encodeId(event.id)}`)}
       onMouseEnter={e => {
         (e.currentTarget as HTMLDivElement).style.borderColor = color;
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
@@ -175,7 +176,7 @@ function EventCard({
               </button>
             </>
           )}
-          <button onClick={e => { e.stopPropagation(); navigate(`/events/${event.id}`); }}
+          <button onClick={e => { e.stopPropagation(); navigate(`/events/${encodeId(event.id)}`); }}
             className="ml-auto text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
             style={{ background: `${color}18`, color }}>
             Voir →

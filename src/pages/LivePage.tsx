@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../utils/slugId';
 import {
   Radio, Users, MessageCircle, Send, X, Zap, StopCircle,
   Eye, Clock, Ticket, Lock, ChevronLeft,
@@ -193,8 +194,9 @@ function ArtistControls({
 // ── Page principale ────────────────────────────────────────────────────────────
 
 export default function LivePage() {
-  const { id }       = useParams<{ id: string }>();
-  const navigate     = useNavigate();
+  const { id: slug }  = useParams<{ id: string }>();
+  const id             = decodeId(slug!);
+  const navigate       = useNavigate();
   const { user, accessToken } = useAuthStore();
 
   const [showChat,       setShowChat]       = useState(true);
@@ -415,7 +417,7 @@ export default function LivePage() {
               <Radio size={40} className="opacity-30" />
               <p className="font-semibold opacity-60">Ce live est terminé</p>
               {concert.video_url && (
-                <button onClick={() => navigate(`/concerts/${concert.id}`)}
+                <button onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
                   className="btn-ghost text-white/70 text-sm border-white/20 hover:bg-white/10">
                   Voir le replay
                 </button>

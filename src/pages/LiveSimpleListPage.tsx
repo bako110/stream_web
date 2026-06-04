@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import { Radio, Eye, Plus, Zap, Lock } from 'lucide-react';
 import type { LiveStream } from '../types';
 import { apiClient } from '../api';
@@ -24,7 +25,7 @@ function LiveCard({ live }: { live: LiveStream }) {
         background: 'var(--surface)',
         boxShadow: '0 2px 12px rgba(240,54,90,0.08)',
       }}
-      onClick={() => navigate(`/lives/${live.id}`)}
+      onClick={() => navigate(`/lives/${encodeId(live.id)}`)}
       onMouseEnter={e => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
         (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 28px rgba(240,54,90,0.22)';

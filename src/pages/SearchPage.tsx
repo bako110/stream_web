@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import { Search, TrendingUp, Film, Music, Calendar, User, Play } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -175,7 +176,7 @@ export default function SearchPage() {
               <SectionHeader icon={<User size={14} />} title="Utilisateurs" count={results.users!.length} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {results.users!.map((u: any) => (
-                  <button key={u.id} onClick={() => navigate(`/user/${u.id}`)}
+                  <button key={u.id} onClick={() => navigate(`/user/${encodeId(u.id)}`)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
                     style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                     onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--primary)'); (e.currentTarget.style.background = 'var(--bg-secondary)'); }}
@@ -199,7 +200,7 @@ export default function SearchPage() {
               <SectionHeader icon={<Film size={14} />} title="Films" count={results.films!.length} />
               <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3">
                 {results.films!.map((c: any) => (
-                  <div key={c.id} onClick={() => navigate(`/films/${c.id}`)} className="cursor-pointer group">
+                  <div key={c.id} onClick={() => navigate(`/films/${encodeId(c.id)}`)} className="cursor-pointer group">
                     <div className="aspect-[2/3] rounded-xl overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
                       {c.thumbnail_url
                         ? <img src={c.thumbnail_url} alt={c.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -220,7 +221,7 @@ export default function SearchPage() {
               <SectionHeader icon={<Film size={14} />} title="Séries" count={results.series!.length} />
               <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3">
                 {results.series!.map((c: any) => (
-                  <div key={c.id} onClick={() => navigate(`/series/${c.id}`, { state: { item: c } })} className="cursor-pointer group">
+                  <div key={c.id} onClick={() => navigate(`/series/${encodeId(c.id)}`, { state: { item: c } })} className="cursor-pointer group">
                     <div className="aspect-[2/3] rounded-xl overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
                       {c.thumbnail_url
                         ? <img src={c.thumbnail_url} alt={c.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -241,7 +242,7 @@ export default function SearchPage() {
               <SectionHeader icon={<Music size={14} />} title="Concerts" count={results.concerts!.length} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {results.concerts!.map((c: any) => (
-                  <button key={c.id} onClick={() => navigate(`/concerts/${c.id}`)}
+                  <button key={c.id} onClick={() => navigate(`/concerts/${encodeId(c.id)}`)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
                     style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                     onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--primary)'); (e.currentTarget.style.background = 'var(--bg-secondary)'); }}
@@ -274,7 +275,7 @@ export default function SearchPage() {
               <SectionHeader icon={<Calendar size={14} />} title="Événements" count={results.events!.length} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {results.events!.map((ev: any) => (
-                  <button key={ev.id} onClick={() => navigate(`/events/${ev.id}`)}
+                  <button key={ev.id} onClick={() => navigate(`/events/${encodeId(ev.id)}`)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
                     style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                     onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--primary)'); (e.currentTarget.style.background = 'var(--bg-secondary)'); }}

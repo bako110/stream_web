@@ -1,18 +1,20 @@
 import { useParams, Link } from 'react-router-dom';
 import { Music2, MapPin, Calendar, Ticket, ArrowLeft, Radio } from 'lucide-react';
+import { decodeId } from '../../utils/slugId';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useApi } from '../../hooks/useApi';
-import { apiClient } from '../../api/client';
+import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import type { Concert } from '../../types';
 
 export default function ExploreConcertDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
 
   const { data: concert, loading } = useApi<Concert>(
-    () => apiClient.get<Concert>(Endpoints.concerts.byId(id!)),
+    () => publicClient.get<Concert>(Endpoints.concerts.publicById(id)),
     [id]
   );
 

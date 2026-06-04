@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import {
   Users, Plus, Globe, Lock, Search, X,
   LogOut, MessageCircle, BadgeCheck, UserPlus,
@@ -48,7 +49,7 @@ function CommunityCard({
     <div
       className="rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-[1.015] hover:shadow-lg"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
-      onClick={() => navigate(`/communities/${community.id}`)}
+      onClick={() => navigate(`/communities/${encodeId(community.id)}`)}
     >
       {/* Bannière */}
       <div className="relative" style={{ height: 110 }}>
@@ -105,7 +106,7 @@ function CommunityCard({
         {isMine ? (
           <div className="flex gap-2">
             <button
-              onClick={e => { e.stopPropagation(); navigate(`/communities/${community.id}`); }}
+              onClick={e => { e.stopPropagation(); navigate(`/communities/${encodeId(community.id)}`); }}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-white"
               style={{ background: 'var(--primary)' }}>
               <MessageCircle size={13} /> Ouvrir

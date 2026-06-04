@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../../utils/slugId';
 import { ArrowLeft, Trophy, Crown, Medal, Star } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Avatar } from '../../components/ui/Avatar';
@@ -21,8 +22,9 @@ const RANK_COLORS = ['#F59E0B', '#9CA3AF', '#CD7C2F'];
 const RANK_ICONS  = [Crown, Medal, Star];
 
 export default function CommunityLeaderboardPage() {
-  const { id }      = useParams<{ id: string }>();
-  const navigate    = useNavigate();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
+  const navigate      = useNavigate();
   const [entries,   setEntries]  = useState<LeaderEntry[]>([]);
   const [loading,   setLoading]  = useState(true);
   const [name,      setName]     = useState('');
@@ -150,7 +152,7 @@ export default function CommunityLeaderboardPage() {
               </p>
               {rest.map(entry => (
                 <button key={entry.user_id}
-                  onClick={() => navigate(`/user/${entry.user_id}`)}
+                  onClick={() => navigate(`/user/${encodeId(entry.user_id)}`)}
                   className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all"
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>

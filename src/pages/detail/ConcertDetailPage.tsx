@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../../utils/slugId';
 import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff } from 'lucide-react';
 import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
@@ -89,8 +90,9 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ConcertDetailPage() {
-  const { id }   = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id: slug } = useParams<{ id: string }>();
+  const id            = decodeId(slug!);
+  const navigate      = useNavigate();
   const { user } = useAuthStore();
 
   const { data: concert, loading, refetch } = useApi<Concert>(
@@ -141,7 +143,7 @@ export default function ConcertDetailPage() {
     try {
       await apiClient.post<StreamToken>(Endpoints.streaming.start(id));
       await refetch();
-      navigate(`/live/${id}`);
+      navigate(`/live/${encodeId(id)}`);
     } catch { /* error */ }
     finally { setStarting(false); }
   }
@@ -298,13 +300,13 @@ export default function ConcertDetailPage() {
 
           {/* CTA principal */}
           {isLive ? (
-            <button onClick={() => navigate(`/live/${c.id}`)}
+            <button onClick={() => navigate(`/live/${encodeId(c.id)}`)}
               className="btn-primary w-full flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
               <Radio size={16} /> Regarder en direct
             </button>
           ) : isEnded && c.video_url ? (
-            <button onClick={() => navigate(`/live/${c.id}`)}
+            <button onClick={() => navigate(`/live/${encodeId(c.id)}`)}
               className="btn-primary w-full flex items-center justify-center gap-2">
               <Play size={16} fill="white" /> Voir le replay
             </button>
@@ -391,7 +393,7 @@ export default function ConcertDetailPage() {
         onSuccess={() => {
           setPaySheet(false);
           if (c.access_type === 'free') return;
-          navigate(`/live/${c.id}`);
+          navigate(`/live/${encodeId(c.id)}`);
         }}
         itemId={c.id}
         title={c.title}

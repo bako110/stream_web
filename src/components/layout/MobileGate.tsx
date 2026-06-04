@@ -8,33 +8,29 @@ const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.sahely
 const APP_STORE_URL  = 'https://apps.apple.com/app/folix/id0000000000';
 
 /**
- * Routes BLOQUÉES sur mobile → affiche l'écran de téléchargement.
- * Tout ce qui nécessite une interaction native que le web mobile gère mal :
- * création de contenu, messagerie, reels/stories plein écran, live, go-live.
+ * Routes BLOQUÉES sur mobile → écran de téléchargement.
+ *
+ * Critère : lecteur vidéo/streaming, upload, formulaire multi-step,
+ * interactions fines (WebRTC, gifting, contrôles vidéo).
+ * Ces pages sont inutilisables ou sans sens sur un navigateur mobile.
  */
+const MOBILE_BLOCKED_EXACT = new Set([
+  '/reels',       // lecteur vidéo plein écran type TikTok
+  '/go-live',     // choix de stream, interactions souris
+]);
+
 const MOBILE_BLOCKED_PREFIXES = [
-  // Création de contenu
-  '/create/',
-  // Messagerie directe
-  '/messages',
-  // Reels plein écran
-  '/reels',
-  // Stories
-  '/stories',
-  // Live
-  '/live',
-  '/lives',
-  '/go-live',
-  // Pages admin/modération communauté
-  '/communities/',   // sous-pages : channels, join-requests, stats, leaderboard
+  '/create/',         // CreateReel, CreatePost, CreateEvent, CreateConcert
+  '/live',            // /live et /live/:id (LivePage WebRTC)
+  '/lives',           // /lives et /lives/:id (LiveSimplePage WebRTC)
+  '/films/',          // /films/:id → FilmDetailPage lecteur vidéo payant
+  '/series/',         // /series/:id → SerieDetailPage lecteur vidéo
+  '/concerts/',       // /concerts/:id → ConcertDetailPage lecteur streaming
 ];
 
 function isBlockedOnMobile(pathname: string): boolean {
-  // /communities et /communities/:id (sans sous-page) → autorisés
-  if (pathname === '/communities') return false;
-  if (/^\/communities\/[^/]+$/.test(pathname)) return false;
-
-  return MOBILE_BLOCKED_PREFIXES.some(prefix => pathname.startsWith(prefix));
+  if (MOBILE_BLOCKED_EXACT.has(pathname)) return true;
+  return MOBILE_BLOCKED_PREFIXES.some(p => pathname.startsWith(p));
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────

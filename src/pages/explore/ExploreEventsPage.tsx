@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { encodeId } from '../../utils/slugId';
 import { Search, Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -113,7 +114,7 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
   const label     = TYPE_LABELS[event.event_type] ?? event.event_type;
 
   return (
-    <Link to={`/explore/events/${event.id}`}
+    <Link to={`/explore/events/${encodeId(event.id)}`}
       className="group block rounded-2xl overflow-hidden transition-all hover:scale-[1.01]"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="relative overflow-hidden" style={{ height: 160 }}>

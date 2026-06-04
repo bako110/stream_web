@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { encodeId, decodeId } from '../../utils/slugId';
 import {
   ArrowLeft, Shield, Star, User, UserX, Ban, Award,
   Film as FilmIcon, Heart, MessageCircle, Eye, Users,
@@ -50,8 +51,10 @@ function StatRow({ icon, label, value, color }: { icon: React.ReactNode; label: 
 }
 
 export default function CommunityMemberProfilePage() {
-  const { id, userId } = useParams<{ id: string; userId: string }>();
-  const navigate  = useNavigate();
+  const { id: idSlug, userId: userSlug } = useParams<{ id: string; userId: string }>();
+  const id      = decodeId(idSlug!);
+  const userId  = decodeId(userSlug!);
+  const navigate = useNavigate();
   const { user: me } = useAuthStore();
 
   const [profile,       setProfile]       = useState<MemberProfile | null>(null);
@@ -158,7 +161,7 @@ export default function CommunityMemberProfilePage() {
           </button>
           <h1 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>Profil membre</h1>
         </div>
-        <button onClick={() => navigate(`/user/${userId}`)}
+        <button onClick={() => navigate(`/user/${encodeId(userId)}`)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold"
           style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
           Voir profil <ChevronRight size={12} />

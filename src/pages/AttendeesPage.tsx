@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { decodeId } from '../utils/slugId';
 import { ArrowLeft, Search, X, Download, Users, Check, Clock } from 'lucide-react';
 import { apiClient } from '../api';
 import { Spinner } from '../components/ui/Spinner';
@@ -25,8 +26,9 @@ function getInitials(name: string | null | undefined) {
 }
 
 export default function AttendeesPage() {
-  const navigate       = useNavigate();
-  const { id }         = useParams<{ id: string }>();
+  const navigate         = useNavigate();
+  const { id: slug }     = useParams<{ id: string }>();
+  const id               = decodeId(slug!);
   const [attendees,    setAttendees]    = useState<Attendee[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [query,        setQuery]        = useState('');
