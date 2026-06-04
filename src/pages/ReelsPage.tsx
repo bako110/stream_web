@@ -1016,7 +1016,9 @@ export default function ReelsPage() {
   const [searchParams]                  = useSearchParams();
   const navigate                        = useNavigate();
   const targetId                        = searchParams.get('id');
-  const POSITION_KEY = 'folix_reels_position'; // sessionStorage key
+  const POSITION_KEY = 'folix_reels_position';
+  const CACHE_KEY    = 'folix_reels_cache';
+  const CACHE_TTL    = 90_000; // 90s identique mobile avant refresh silencieux
 
   const [reels,         setReels]       = useState<Reel[]>([]);
   const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
@@ -1041,9 +1043,27 @@ export default function ReelsPage() {
     return h;
   };
 
-  const fetchReels = useCallback(() => {
-    setLoading(true);
-    setError(null);
+  const fetchReels = useCallback((silent = false) => {
+    // Tentative de restauration depuis cache sessionStorage (identique mobile < 90s)
+    if (!targetId && !silent) {
+      try {
+        const raw = sessionStorage.getItem(CACHE_KEY);
+        if (raw) {
+          const { list, loadedAt, page } = JSON.parse(raw) as { list: Reel[]; loadedAt: number; page: number };
+          const age = Date.now() - loadedAt;
+          if (age < CACHE_TTL && list.length > 0) {
+            // Cache frais → on l'utilise directement, pas de réseau
+            setReels(list);
+            pageRef.current = page;
+            setHasMore(true);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    if (!silent) { setLoading(true); setError(null); }
     pageRef.current = 1;
     loadingMoreRef.current = false;
     const headers = getHeaders();
@@ -1070,6 +1090,10 @@ export default function ReelsPage() {
               .catch(() => {});
           }
         }
+        // Sauvegarder dans sessionStorage pour figer l'ordre (identique mobile reelsRef)
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ list, loadedAt: Date.now(), page: 1 }));
+        } catch {}
         setReels(list);
         setLoading(false);
       })
@@ -1092,7 +1116,12 @@ export default function ReelsPage() {
         hasMoreRef.current = more;
         setReels(prev => {
           const ids = new Set(prev.map(r => r.id));
-          return [...prev, ...newItems.filter(r => !ids.has(r.id))];
+          const merged = [...prev, ...newItems.filter(r => !ids.has(r.id))];
+          // Mettre à jour le cache avec la liste étendue
+          try {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ list: merged, loadedAt: Date.now(), page: nextPage }));
+          } catch {}
+          return merged;
         });
         pageRef.current = nextPage;
       })
