@@ -10,7 +10,7 @@ import Hls from 'hls.js';
 import type { Reel, Comment } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { API_BASE_URL, toProxiedUrl } from '../utils/constants';
+import { toProxiedUrl } from '../utils/constants';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
@@ -1039,30 +1039,16 @@ export default function ReelsPage() {
   const savedIndexRef                   = useRef(0); // index sauvegardé pour restauration
   useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
 
-  const getHeaders = () => {
-    const h: Record<string, string> = { Accept: 'application/json' };
-    try {
-      const raw = localStorage.getItem('folix-auth-tokens');
-      if (raw) {
-        const { access } = JSON.parse(raw) as { access: string };
-        if (access) h.Authorization = `Bearer ${access}`;
-      }
-    } catch {}
-    return h;
-  };
-
   const fetchReels = useCallback(() => {
     setLoading(true);
     setError(null);
     pageRef.current = 1;
     loadingMoreRef.current = false;
-    const headers = getHeaders();
 
-    fetch(`${API_BASE_URL}/api/v1/reels?limit=15&page=1`, { headers })
-      .then(r => r.json())
-      .then((json: unknown) => {
-        let list = toArray<Reel>(json);
-        const more = (json as any)?.has_more ?? list.length >= 15;
+    apiClient.get<any>(`${Endpoints.reels.feed}?limit=15&page=1`)
+      .then(res => {
+        let list = toArray<Reel>(res.data);
+        const more = (res.data as any)?.has_more ?? list.length >= 15;
         setHasMore(more);
         hasMoreRef.current = more;
         if (targetId) {
@@ -1071,10 +1057,9 @@ export default function ReelsPage() {
             const [target] = list.splice(idx, 1);
             list = [target, ...list];
           } else if (idx === -1) {
-            fetch(`${API_BASE_URL}/api/v1/reels/${targetId}`, { headers })
-              .then(r => r.json())
-              .then((r: unknown) => {
-                const single = (r as any)?.data ?? r;
+            apiClient.get<any>(`${Endpoints.reels.byId(targetId)}`)
+              .then(r => {
+                const single = r.data;
                 if (single?.id) setReels(prev => [single as Reel, ...prev]);
               })
               .catch(() => {});
@@ -1091,13 +1076,11 @@ export default function ReelsPage() {
     loadingMoreRef.current = true;
     setLoadingMore(true);
     const nextPage = pageRef.current + 1;
-    const headers = getHeaders();
 
-    fetch(`${API_BASE_URL}/api/v1/reels?limit=15&page=${nextPage}`, { headers })
-      .then(r => r.json())
-      .then((json: unknown) => {
-        const newItems = toArray<Reel>(json);
-        const more = (json as any)?.has_more ?? newItems.length >= 15;
+    apiClient.get<any>(`${Endpoints.reels.feed}?limit=15&page=${nextPage}`)
+      .then(res => {
+        const newItems = toArray<Reel>(res.data);
+        const more = (res.data as any)?.has_more ?? newItems.length >= 15;
         setHasMore(more);
         hasMoreRef.current = more;
         setReels(prev => {
