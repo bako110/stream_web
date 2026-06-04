@@ -1393,7 +1393,7 @@ function ActionBar({
   async function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
     const path = kind === 'concert' ? 'concerts' : kind === 'event' ? 'events' : kind === 'post' ? 'posts' : 'reels';
-    const url  = `${window.location.origin}/${path}/${encodeId(id)}`;
+    const url  = `${window.location.origin}/og/${path}/${id}`;
 
     if (navigator.share) {
       navigator.share({ title: titleForShare ?? '', url });
