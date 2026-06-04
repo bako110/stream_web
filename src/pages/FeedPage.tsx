@@ -1051,6 +1051,17 @@ function fmtCount(n: number): string {
 // ── Follow hook ───────────────────────────────────────────────────────────────
 function useFollow() {
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    apiClient.get<any>(`${Endpoints.users.following(user.id)}?limit=500`)
+      .then(res => {
+        const list: any[] = Array.isArray(res.data) ? res.data : res.data?.items ?? res.data?.data ?? [];
+        setFollowedIds(new Set(list.map((u: any) => String(u.id))));
+      })
+      .catch(() => {});
+  }, [user?.id]);
 
   const toggle = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
