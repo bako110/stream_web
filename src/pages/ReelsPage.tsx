@@ -883,9 +883,20 @@ interface ReelAd {
   creative_url?: string | null; thumbnail_url?: string | null;
 }
 
-function ReelAdSlide({ ad, active }: { ad: ReelAd; active: boolean }) {
+function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean; globalMuted: boolean }) {
   const impressionSent = useRef(false);
+  const videoRef       = useRef<HTMLVideoElement>(null);
+  const hlsRef         = useRef<Hls | null>(null);
 
+  // Détection vidéo (identique mobile : .m3u8, /hls/, video, .mp4)
+  const isVideo = !!(ad.creative_url && (
+    ad.creative_url.includes('.m3u8') ||
+    ad.creative_url.includes('/hls/') ||
+    ad.creative_url.toLowerCase().includes('video') ||
+    ad.creative_url.toLowerCase().includes('.mp4')
+  ));
+
+  // Impression tracking (1x quand active)
   useEffect(() => {
     if (active && !impressionSent.current) {
       impressionSent.current = true;
@@ -893,38 +904,96 @@ function ReelAdSlide({ ad, active }: { ad: ReelAd; active: boolean }) {
     }
   }, [active, ad.id]);
 
+  // Setup HLS pour vidéo (identique mobile : loop=true, muted sync)
+  useEffect(() => {
+    if (!isVideo || !ad.creative_url) return;
+    const v = videoRef.current;
+    if (!v) return;
+    const src = toProxiedUrl(ad.creative_url);
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hlsRef.current = hls;
+      hls.loadSource(src);
+      hls.attachMedia(v);
+      hls.once(Hls.Events.MANIFEST_PARSED, () => {
+        v.muted = globalMuted; v.loop = true;
+        if (active) v.play().catch(() => {});
+      });
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src; v.loop = true; v.muted = globalMuted;
+      if (active) v.play().catch(() => {});
+    } else {
+      // MP4 direct
+      v.src = src; v.loop = true; v.muted = globalMuted;
+      if (active) v.play().catch(() => {});
+    }
+
+    return () => {
+      hlsRef.current?.destroy(); hlsRef.current = null;
+      v.pause(); v.removeAttribute('src'); v.load();
+    };
+  }, [ad.creative_url, isVideo]); // eslint-disable-line
+
+  // Play/Pause selon active (identique mobile)
+  useEffect(() => {
+    if (!isVideo) return;
+    const v = videoRef.current;
+    if (!v) return;
+    if (active) v.play().catch(() => {});
+    else v.pause();
+  }, [active, isVideo]);
+
+  // Mute sync (identique mobile)
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v) v.muted = globalMuted;
+  }, [globalMuted]);
+
   function handleClick() {
     apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
     if (ad.cta_url) window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
   }
 
-  const bg = ad.thumbnail_url ?? ad.creative_url;
-
   return (
-    <div className="relative w-full flex items-end justify-start overflow-hidden"
-      style={{ height: '100dvh', background: bg ? 'black' : 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
-      {bg && (
-        <img src={bg} alt={ad.title} className="absolute inset-0 w-full h-full object-cover" />
-      )}
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 55%)' }} />
+    <div className="relative w-full overflow-hidden"
+      style={{ height: '100dvh', background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+
+      {/* Fond : VIDEO (HLS/MP4) identique mobile */}
+      {isVideo && ad.creative_url ? (
+        <video ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover"
+          playsInline muted={globalMuted} loop
+          poster={ad.thumbnail_url ?? undefined} />
+      ) : (ad.creative_url || ad.thumbnail_url) ? (
+        /* IMAGE fallback */
+        <img src={ad.creative_url ?? ad.thumbnail_url!} alt={ad.title}
+          className="absolute inset-0 w-full h-full object-cover" />
+      ) : null /* Gradient seul */}
+
+      {/* Gradient sombre bas (identique mobile : transparent → noir 0.55 → noir 0.92) */}
+      <div className="absolute inset-0" style={{
+        background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 35%, transparent 70%)'
+      }} />
 
       {/* Badge sponsorisé */}
-      <div className="absolute top-12 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-black"
-        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
-        <Zap size={10} /> SPONSORISÉ
+      <div className="absolute top-12 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-bold"
+        style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+        <Zap size={10} style={{ color: '#F59E0B' }} /> Sponsorisé
       </div>
 
       {/* Contenu bas */}
-      <div className="relative z-10 p-6 w-full">
-        <p className="text-white font-black text-xl leading-tight mb-1">{ad.title}</p>
+      <div className="absolute bottom-12 left-4 right-20 z-20">
+        <p className="text-white font-black text-lg leading-tight mb-1 line-clamp-2">{ad.title}</p>
         {ad.description && (
           <p className="text-white/70 text-sm mb-4 line-clamp-2">{ad.description}</p>
         )}
         {ad.cta_url && (
           <button onClick={handleClick}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl text-white font-bold text-sm"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 4px 20px rgba(123,63,242,0.5)' }}>
-            {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={14} />
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm"
+            style={{ background: 'white', color: '#7B3FF2' }}>
+            <ExternalLink size={13} />
+            {ad.cta_text ?? 'En savoir plus'}
           </button>
         )}
       </div>
@@ -947,6 +1016,8 @@ export default function ReelsPage() {
   const [searchParams]                  = useSearchParams();
   const navigate                        = useNavigate();
   const targetId                        = searchParams.get('id');
+  const POSITION_KEY = 'folix_reels_position'; // sessionStorage key
+
   const [reels,         setReels]       = useState<Reel[]>([]);
   const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
   const [loading,       setLoading]     = useState(true);
@@ -961,6 +1032,7 @@ export default function ReelsPage() {
   const pageRef                         = useRef(1);
   const loadingMoreRef                  = useRef(false);
   const hasMoreRef                      = useRef(true);
+  const savedIndexRef                   = useRef(0); // index sauvegardé pour restauration
   useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
 
   const getHeaders = () => {
@@ -1036,12 +1108,32 @@ export default function ReelsPage() {
       .catch(() => {});
   }, [fetchReels]);
 
+  // Restaurer position après chargement (identique mobile: scroll direct vers index sauvegardé)
   useEffect(() => {
-    if (reels.length > 0 && containerRef.current) {
-      containerRef.current.scrollTop = 0;
-      setActiveIndex(0);
-    }
-  }, [reels.length === 0]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (reels.length === 0) return;
+    // Si targetId → déjà géré dans fetchReels (index 0)
+    if (targetId) return;
+    try {
+      const saved = sessionStorage.getItem(POSITION_KEY);
+      if (!saved) return;
+      const { idx, reelId } = JSON.parse(saved) as { idx: number; reelId: string; page: number };
+      // Vérifier que le reel sauvegardé est toujours dans la liste
+      const foundIdx = reels.findIndex(r => r.id === reelId);
+      const restoreIdx = foundIdx >= 0 ? foundIdx : Math.min(idx, reels.length - 1);
+      if (restoreIdx <= 0) return;
+      // Scroll vers la position après rendu (RAF + timeout identique mobile 80ms)
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const container = containerRef.current;
+          if (!container) return;
+          const itemH = container.clientHeight;
+          container.scrollTop = restoreIdx * itemH;
+          setActiveIndex(restoreIdx);
+          savedIndexRef.current = restoreIdx;
+        }, 80);
+      });
+    } catch {}
+  }, [reels.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (reels.length === 0) return;
@@ -1050,7 +1142,13 @@ export default function ReelsPage() {
         if (e.isIntersecting) {
           const idx = Number((e.target as HTMLElement).dataset.index);
           setActiveIndex(idx);
-          // Charger plus quand on approche des 3 derniers reels
+          savedIndexRef.current = idx;
+          // Sauvegarder position + reelId courant (identique mobile avec currentIdxRef)
+          try {
+            const reelId = reels[idx]?.id ?? '';
+            sessionStorage.setItem(POSITION_KEY, JSON.stringify({ idx, reelId, page: pageRef.current }));
+          } catch {}
+          // Charger plus quand on approche des 3 derniers (identique mobile)
           if (idx >= reels.length - 3) loadMore();
         }
       }),
@@ -1145,7 +1243,7 @@ export default function ReelsPage() {
               className="w-full snap-start snap-always shrink-0"
               style={{ height: '100dvh' }}>
               {item._isAd ? (
-                <ReelAdSlide ad={item.ad} active={i === activeIndex} />
+                <ReelAdSlide ad={item.ad} active={i === activeIndex} globalMuted={globalMuted} />
               ) : (
                 <ReelPlayer
                   reel={item.reel}
