@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, Send, BarChart2, ArrowUpRight, RefreshCw,
   WifiOff, Gift, Star, RotateCcw, Circle, Zap,
-  Users, Heart, Clock, TrendingUp, Ticket, UserCheck,
+  Users, Heart, Clock, TrendingUp, Ticket, UserCheck, CreditCard,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -101,6 +101,7 @@ export default function WalletPage() {
     { icon: <TrendingUp size={20} />,   label: 'Tendances',      color: '#8B5CF6', path: '/trending' },
     { icon: <Heart size={20} />,        label: 'Favoris',        color: '#EF4444', path: '/favorites' },
     { icon: <Clock size={20} />,        label: 'Historique',     color: '#06B6D4', path: '/watch-history' },
+    { icon: <CreditCard size={20} />,   label: 'Abonnement',     color: '#A855F7', path: '/wallet/subscription/my' },
   ];
 
   if (loading) {
