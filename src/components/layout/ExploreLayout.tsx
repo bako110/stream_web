@@ -46,7 +46,7 @@ export function ExploreLayout() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center shrink-0">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFoliX" className="h-9 w-auto" />
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-9 w-auto" />
           </Link>
 
           {/* Desktop nav links */}
@@ -188,7 +188,7 @@ export function ExploreLayout() {
       <footer className="mt-20 pt-10 pb-8 px-4" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFoliX" className="h-8 w-auto" />
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
             <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>© 2026 Tous droits réservés</span>
           </div>
 

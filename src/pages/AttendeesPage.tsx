@@ -74,7 +74,7 @@ export default function AttendeesPage() {
     setExporting(true);
     try {
       const token = (() => {
-        try { return JSON.parse(localStorage.getItem('gofolix-auth-tokens') ?? '{}').access ?? ''; }
+        try { return JSON.parse(localStorage.getItem('gofolyx-auth-tokens') ?? '{}').access ?? ''; }
         catch { return ''; }
       })();
       const res = await fetch(`/api/v1/events/${id}/attendees/pdf`, {

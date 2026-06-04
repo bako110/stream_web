@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom';
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const BREAKPOINT     = 768;
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.sahelys.gofolix';
-const APP_STORE_URL  = 'https://apps.apple.com/app/gofolix/id0000000000';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.sahelys.gofolyx';
+const APP_STORE_URL  = 'https://apps.apple.com/app/gofolyx/id0000000000';
 
 /**
  * Routes BLOQUÉES sur mobile → écran de téléchargement.
@@ -96,7 +96,7 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
       {/* Logo */}
       <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:12, paddingTop:72 }}>
         <AppLogo size={72} />
-        <span style={{ color:'#fff', fontSize:30, fontWeight:900, letterSpacing:'-0.5px' }}>GoFoliX</span>
+        <span style={{ color:'#fff', fontSize:30, fontWeight:900, letterSpacing:'-0.5px' }}>GoFolyX</span>
         <span style={{ color:'rgba(255,255,255,0.4)', fontSize:13, textAlign:'center', maxWidth:240, lineHeight:1.5 }}>
           Films · Concerts · Live · Reels · Communautés
         </span>
@@ -114,7 +114,7 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
             Cette page est disponible dans l'application
           </p>
           <p style={{ color:'rgba(255,255,255,0.45)', fontSize:13, margin:'6px 0 0', lineHeight:1.5 }}>
-            Télécharge GoFoliX pour profiter de toutes les fonctionnalités
+            Télécharge GoFolyX pour profiter de toutes les fonctionnalités
           </p>
         </div>
 
@@ -153,7 +153,7 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
 
 function AppBanner({ ios }: { ios: boolean }) {
   const [dismissed, setDismissed] = useState(
-    () => sessionStorage.getItem('gofolix_banner_dismissed') === '1',
+    () => sessionStorage.getItem('gofolyx_banner_dismissed') === '1',
   );
 
   if (dismissed) return null;
@@ -161,7 +161,7 @@ function AppBanner({ ios }: { ios: boolean }) {
   const storeUrl = ios ? APP_STORE_URL : PLAY_STORE_URL;
 
   function dismiss() {
-    sessionStorage.setItem('gofolix_banner_dismissed', '1');
+    sessionStorage.setItem('gofolyx_banner_dismissed', '1');
     setDismissed(true);
   }
 
@@ -179,10 +179,10 @@ function AppBanner({ ios }: { ios: boolean }) {
       alignItems: 'center',
       gap:        12,
       boxShadow:  '0 -8px 40px rgba(0,0,0,0.5)',
-      animation:  'gofolix-slide-up 0.35s cubic-bezier(.16,1,.3,1) both',
+      animation:  'gofolyx-slide-up 0.35s cubic-bezier(.16,1,.3,1) both',
     }}>
       <style>{`
-        @keyframes gofolix-slide-up {
+        @keyframes gofolyx-slide-up {
           from { transform:translateY(100%); opacity:0; }
           to   { transform:translateY(0);    opacity:1; }
         }
@@ -198,7 +198,7 @@ function AppBanner({ ios }: { ios: boolean }) {
       <AppLogo size={38} />
 
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ color:'#fff', fontWeight:700, fontSize:14, lineHeight:1.2 }}>GoFoliX</div>
+        <div style={{ color:'#fff', fontWeight:700, fontSize:14, lineHeight:1.2 }}>GoFolyX</div>
         <div style={{ color:'rgba(255,255,255,0.45)', fontSize:11, marginTop:1 }}>
           Meilleure expérience sur l'app
         </div>

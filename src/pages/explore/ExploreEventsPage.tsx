@@ -99,7 +99,7 @@ export default function ExploreEventsPage() {
         <Link to="/auth/register"
           className="inline-block px-6 py-2.5 rounded-xl font-bold text-white"
           style={{ background: 'var(--primary)' }}>
-          Rejoindre GoFoliX
+          Rejoindre GoFolyX
         </Link>
       </div>
     </div>

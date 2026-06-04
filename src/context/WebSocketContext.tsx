@@ -101,7 +101,7 @@ const Ctx = createContext<WsContextValue>({
 
 // ── Helpers token ─────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'gofolix-auth-tokens';
+const STORAGE_KEY = 'gofolyx-auth-tokens';
 const MAX_RETRIES   = 6;
 const INITIAL_DELAY = 1_000;
 const PING_INTERVAL = 25_000;

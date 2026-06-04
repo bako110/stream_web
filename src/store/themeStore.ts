@@ -14,7 +14,7 @@ export const useThemeStore = create<ThemeState>()(
       toggle: () => set(s => { applyTheme(!s.isDark); return { isDark: !s.isDark }; }),
       setDark: (v) => { applyTheme(v); set({ isDark: v }); },
     }),
-    { name: 'gofolix-theme' },
+    { name: 'gofolyx-theme' },
   ),
 );
 

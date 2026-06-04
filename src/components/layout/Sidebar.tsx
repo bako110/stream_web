@@ -123,7 +123,7 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
       {/* ── Logo + collapse toggle ── */}
       <div className={clsx('flex items-center h-14 shrink-0 transition-all', collapsed ? 'px-2 justify-center' : 'px-4 justify-between')}>
         {!collapsed && (
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFoliX" className="h-8 w-auto" />
+          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
         )}
         {onCollapseToggle && (
           <button onClick={onCollapseToggle}

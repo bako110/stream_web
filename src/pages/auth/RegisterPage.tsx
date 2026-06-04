@@ -85,7 +85,7 @@ export default function RegisterPage() {
 
         {/* Logo */}
         <div className="relative z-10">
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFoliX" className="h-10 w-auto" />
+          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-10 w-auto" />
         </div>
 
         {/* Center */}
@@ -139,12 +139,12 @@ export default function RegisterPage() {
 
           {/* Mobile logo */}
           <div className="flex justify-center mb-6 lg:hidden">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFoliX" className="h-9 w-auto" />
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-9 w-auto" />
           </div>
 
           <div className="mb-6">
             <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Créer un compte ✨</h2>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Rejoignez GoFoliX gratuitement</p>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Rejoignez GoFolyX gratuitement</p>
           </div>
 
           {/* Google */}
