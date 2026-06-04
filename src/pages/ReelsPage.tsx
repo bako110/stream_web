@@ -3,8 +3,10 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
   Heart, MessageCircle, Share2,
-  Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft, ChevronRight, ChevronLeft,
-  Gift, Zap, ExternalLink, Eye,
+  Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft,
+  Gift, Zap, ExternalLink, Eye, Search, User, Film,
+  Calendar, Music, MoreVertical, Edit3, Trash2, TrendingUp,
+  ChevronRight,
 } from 'lucide-react';
 import Hls from 'hls.js';
 import type { Reel, Comment } from '../types';
@@ -393,6 +395,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
   const followFetched     = useRef(false);
   const [captionExpanded, setCaptionExpanded]= useState(false);
   const [showGiftPicker,  setShowGiftPicker] = useState(false);
+  const [refInfo, setRefInfo] = useState<{ label: string; kind: string; thumbnail: string | null; color: string; url: string } | null>(null);
 
   // Resync si le reel change
   useEffect(() => {
@@ -408,6 +411,28 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     // Réinitialiser depuis cache si disponible
     if (authorId) setFollowed(_followCache.get(String(authorId)) ?? false);
   }, [reel.id]); // eslint-disable-line
+
+  // Badge référence concert/event/film (identique mobile)
+  useEffect(() => {
+    if (!active || (!reel.ref_concert_id && !reel.ref_event_id && !reel.ref_content_id)) {
+      setRefInfo(null); return;
+    }
+    const load = async () => {
+      try {
+        if (reel.ref_concert_id) {
+          const r = await apiClient.get<any>(Endpoints.concerts.byId(reel.ref_concert_id));
+          setRefInfo({ label: r.data?.title ?? 'Concert', kind: 'Concert', thumbnail: r.data?.thumbnail_url ?? null, color: '#7B3FF2', url: `/concerts/${encodeId(reel.ref_concert_id)}` });
+        } else if (reel.ref_event_id) {
+          const r = await apiClient.get<any>(Endpoints.events.byId(reel.ref_event_id));
+          setRefInfo({ label: r.data?.title ?? 'Événement', kind: 'Événement', thumbnail: r.data?.thumbnail_url ?? null, color: '#F59E0B', url: `/events/${encodeId(reel.ref_event_id)}` });
+        } else if (reel.ref_content_id) {
+          const r = await apiClient.get<any>(Endpoints.content.filmById(reel.ref_content_id));
+          setRefInfo({ label: r.data?.title ?? 'Film', kind: 'Film', thumbnail: r.data?.thumbnail_url ?? null, color: '#3B82F6', url: `/films/${encodeId(reel.ref_content_id)}` });
+        }
+      } catch { setRefInfo(null); }
+    };
+    load();
+  }, [active, reel.ref_concert_id, reel.ref_event_id, reel.ref_content_id]); // eslint-disable-line
 
   // Charger l'état de follow réel depuis l'API quand le reel devient actif (1x par auteur)
   useEffect(() => {
@@ -753,6 +778,29 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
         {/* Left: author + caption */}
         <div className="flex-1 min-w-0 space-y-2 pb-1">
 
+          {/* Badge référence (concert/event/film) — identique mobile */}
+          {refInfo && (
+            <button onClick={e => { e.stopPropagation(); navigate(refInfo.url); }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl mb-2 transition-all"
+              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', border: `1px solid ${refInfo.color}40`, maxWidth: '80%' }}>
+              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: refInfo.color }} />
+              {refInfo.thumbnail
+                ? <img src={refInfo.thumbnail} alt="" className="w-7 h-7 rounded-lg object-cover shrink-0" />
+                : <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: refInfo.color + '30' }}>
+                    {refInfo.kind === 'Concert' ? <Music size={12} style={{ color: refInfo.color }} />
+                      : refInfo.kind === 'Événement' ? <Calendar size={12} style={{ color: refInfo.color }} />
+                      : <Film size={12} style={{ color: refInfo.color }} />}
+                  </div>
+              }
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold" style={{ color: refInfo.color }}>{refInfo.kind}</p>
+                <p className="text-white text-[10px] font-semibold truncate leading-tight">{refInfo.label}</p>
+              </div>
+              <ChevronRight size={12} className="text-white/40 shrink-0" />
+            </button>
+          )}
+
           {/* Author row */}
           <div className="flex items-center gap-2">
             {/* Avatar cliquable → profil (identique mobile) */}
@@ -1057,8 +1105,12 @@ export default function ReelsPage() {
   const navigate                        = useNavigate();
   const targetId                        = searchParams.get('id');
 
+  const { user: me }                    = useAuthStore();
+
   const [reels,         setReels]       = useState<Reel[]>([]);
+  const [myReels,       setMyReels]     = useState<Reel[]>([]);
   const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
+  const [tab,           setTab]         = useState<'feed'|'mine'>('feed');
   const [loading,       setLoading]     = useState(true);
   const [loadingMore,   setLoadingMore] = useState(false);
   const [hasMore,       setHasMore]     = useState(true);
@@ -1067,11 +1119,24 @@ export default function ReelsPage() {
   const [globalMuted,   setGlobalMuted] = useState(true);
   const [sidebarOpen,   setSidebarOpen] = useState(true);
   const [drawerOpen,    setDrawerOpen]  = useState(false);
+  // Recherche
+  const [searchOpen,    setSearchOpen]  = useState(false);
+  const [searchQuery,   setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Reel[]>([]);
+  const [searching,     setSearching]   = useState(false);
+  const searchInputRef                  = useRef<HTMLInputElement>(null);
+  const searchTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Menu 3 points (mes reels)
+  const [menuReel,      setMenuReel]    = useState<Reel | null>(null);
+  const [editReel,      setEditReel]    = useState<Reel | null>(null);
+  const [editCaption,   setEditCaption] = useState('');
+  const [editSaving,    setEditSaving]  = useState(false);
+
   const containerRef                    = useRef<HTMLDivElement>(null);
   const pageRef                         = useRef(1);
   const loadingMoreRef                  = useRef(false);
   const hasMoreRef                      = useRef(true);
-  const savedIndexRef                   = useRef(0); // index sauvegardé pour restauration
+  const savedIndexRef                   = useRef(0);
   useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
 
   const fetchReels = useCallback(() => {
@@ -1133,7 +1198,73 @@ export default function ReelsPage() {
     apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
       .then(r => { if (r.data?.id) setReelAd(r.data); })
       .catch(() => {});
-  }, [fetchReels]);
+    // Charger mes reels en parallèle
+    if (me?.id) {
+      apiClient.get<any>(Endpoints.reels.byUser(String(me.id)))
+        .then(r => setMyReels(toArray<Reel>(r.data)))
+        .catch(() => {});
+    }
+  }, [fetchReels, me?.id]); // eslint-disable-line
+
+  // ── Recherche ──
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+  }, []);
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  }, []);
+  const runSearch = useCallback((q: string) => {
+    if (!q.trim()) { setSearchResults([]); return; }
+    setSearching(true);
+    apiClient.get<any>(`${Endpoints.reels.feed}?search=${encodeURIComponent(q.trim())}&limit=20`)
+      .then(r => setSearchResults(toArray<Reel>(r.data)))
+      .catch(() => setSearchResults([]))
+      .finally(() => setSearching(false));
+  }, []);
+  const onSearchChange = useCallback((v: string) => {
+    setSearchQuery(v);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => runSearch(v), 400);
+  }, [runSearch]);
+  const pickSearchResult = useCallback((r: Reel) => {
+    closeSearch();
+    // Injecter en tête si pas déjà présent
+    setReels(prev => {
+      if (prev.find(x => x.id === r.id)) return prev;
+      return [r, ...prev];
+    });
+    setActiveIndex(0);
+    setTimeout(() => { if (containerRef.current) containerRef.current.scrollTop = 0; }, 80);
+  }, [closeSearch]);
+
+  // ── Menu 3 points ──
+  const handleOpenEdit = useCallback((r: Reel) => {
+    setMenuReel(null);
+    setEditReel(r);
+    setEditCaption(r.caption ?? '');
+  }, []);
+  const handleSaveEdit = useCallback(async () => {
+    if (!editReel) return;
+    setEditSaving(true);
+    try {
+      await apiClient.patch(Endpoints.reels.byId(editReel.id), { caption: editCaption.trim() });
+      setMyReels(prev => prev.map(r => r.id === editReel.id ? { ...r, caption: editCaption.trim() } : r));
+      setEditReel(null);
+    } catch { /* silencieux */ }
+    setEditSaving(false);
+  }, [editReel, editCaption]);
+  const handleDeleteReel = useCallback(async (r: Reel) => {
+    setMenuReel(null);
+    if (!confirm(`Supprimer ce reel ?`)) return;
+    try {
+      await apiClient.delete(Endpoints.reels.delete(r.id));
+      setMyReels(prev => prev.filter(x => x.id !== r.id));
+      setReels(prev => prev.filter(x => x.id !== r.id));
+    } catch { /* silencieux */ }
+  }, []);
 
   // Restaurer position uniquement lors d'une navigation interne (pas au F5)
   // _reelPosition est null après F5 (module rechargé) → index 0
@@ -1243,6 +1374,123 @@ export default function ReelsPage() {
     );
   }
 
+  // ── Vue Mes Reels ─────────────────────────────────────────────────────────────
+  if (tab === 'mine') {
+    return (
+      <div className="fixed inset-0 flex flex-col bg-black" style={{ zIndex: 0 }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0"
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+          <button onClick={() => setTab('feed')} className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.2)' }}>
+            <ArrowLeft size={18} className="text-white" />
+          </button>
+          <h1 className="text-white font-black text-base">Mes Reels</h1>
+          <button onClick={() => navigate('/create/reel')} className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.2)' }}>
+            <span className="text-white font-black text-xl leading-none">+</span>
+          </button>
+        </div>
+
+        {myReels.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-6">
+            <Film size={48} style={{ color: 'rgba(255,255,255,0.3)' }} />
+            <p className="text-white font-bold text-lg">Aucun reel</p>
+            <button onClick={() => navigate('/create/reel')}
+              className="px-6 py-3 rounded-xl text-white font-bold text-sm"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              Créer mon premier reel
+            </button>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-0.5 p-0.5">
+              {myReels.map(r => (
+                <div key={r.id} className="relative" style={{ aspectRatio: '9/16' }}>
+                  {r.thumbnail_url
+                    ? <img src={r.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center bg-neutral-800">
+                        <Film size={28} className="text-white/20" />
+                      </div>
+                  }
+                  {/* Overlay stats */}
+                  <div className="absolute inset-0 flex flex-col justify-end p-2"
+                    style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 50%)' }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-white text-[10px]">
+                        <span className="flex items-center gap-0.5"><Play size={9} fill="white" />{r.view_count ?? 0}</span>
+                        <span className="flex items-center gap-0.5"><Heart size={9} fill="white" />{r.like_count ?? 0}</span>
+                      </div>
+                      <button onClick={() => setMenuReel(r)}
+                        className="w-6 h-6 flex items-center justify-center rounded-full"
+                        style={{ background: 'rgba(0,0,0,0.5)' }}>
+                        <MoreVertical size={12} className="text-white" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Modal menu 3 points */}
+        {menuReel && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center"
+            style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setMenuReel(null)}>
+            <div className="w-full max-w-lg rounded-t-2xl overflow-hidden mb-0"
+              style={{ background: 'var(--surface)' }} onClick={e => e.stopPropagation()}>
+              <button onClick={() => handleOpenEdit(menuReel)}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <Edit3 size={18} style={{ color: 'var(--text-primary)' }} />
+                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Modifier la description</span>
+              </button>
+              <div style={{ height: 1, background: 'var(--border)' }} />
+              <button onClick={() => handleDeleteReel(menuReel)}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(224,56,154,0.08)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <Trash2 size={18} style={{ color: '#E0389A' }} />
+                <span className="font-semibold" style={{ color: '#E0389A' }}>Supprimer le reel</span>
+              </button>
+              <button onClick={() => setMenuReel(null)}
+                className="w-full py-4 font-bold text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal édition caption */}
+        {editReel && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center"
+            style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setEditReel(null)}>
+            <div className="w-full max-w-lg rounded-t-2xl p-5 space-y-4"
+              style={{ background: 'var(--surface)' }} onClick={e => e.stopPropagation()}>
+              <h2 className="font-black text-base" style={{ color: 'var(--text-primary)' }}>Modifier la description</h2>
+              <textarea value={editCaption} onChange={e => setEditCaption(e.target.value)} maxLength={300} rows={4}
+                placeholder="Description…"
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }} />
+              <p className="text-xs text-right" style={{ color: 'var(--text-tertiary)' }}>{editCaption.length}/300</p>
+              <div className="flex gap-3">
+                <button onClick={() => setEditReel(null)} className="flex-1 py-3 rounded-xl font-bold text-sm"
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Annuler</button>
+                <button onClick={handleSaveEdit} disabled={editSaving}
+                  className="flex-1 py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  {editSaving ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ── Main layout ─────────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-black overflow-hidden flex" style={{ zIndex: 0 }}>
@@ -1250,12 +1498,25 @@ export default function ReelsPage() {
       {/* ── Zone player : 100% mobile, réduite sur desktop si sidebar ouverte ── */}
       <div className="relative h-full flex-1 min-w-0">
 
-        {/* Back button */}
-        <button onClick={() => navigate(-1)}
-          className="absolute top-3 left-3 z-40 w-9 h-9 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
-          <ArrowLeft size={18} />
-        </button>
+        {/* Header flottant (identique mobile) */}
+        <div className="absolute top-3 inset-x-0 z-40 flex items-center justify-between px-3 pointer-events-none">
+          <button onClick={() => navigate(-1)} className="pointer-events-auto w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
+            <ArrowLeft size={18} />
+          </button>
+          <p className="text-white font-black text-base" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>Reels</p>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button onClick={openSearch} className="w-9 h-9 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
+              <Search size={16} />
+            </button>
+            <button onClick={() => setTab('mine')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold"
+              style={{ background: 'rgba(123,63,242,0.3)', border: '1px solid rgba(123,63,242,0.6)', backdropFilter: 'blur(8px)' }}>
+              <User size={12} /> Mes reels
+            </button>
+          </div>
+        </div>
 
         {/* Scroll vertical snap */}
         <div ref={containerRef}
@@ -1397,6 +1658,80 @@ export default function ReelsPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* ── Overlay recherche (identique mobile) ── */}
+      {searchOpen && (
+        <div className="absolute inset-0 z-50 flex flex-col" style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(12px)' }}>
+          {/* Barre de recherche */}
+          <div className="flex items-center gap-2 px-4 pt-4 pb-3 shrink-0">
+            <button onClick={closeSearch} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
+              <Search size={14} className="text-white/40 shrink-0" />
+              <input ref={searchInputRef} value={searchQuery} onChange={e => onSearchChange(e.target.value)}
+                placeholder="Rechercher des reels, auteurs…"
+                className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/35"
+                onKeyDown={e => e.key === 'Enter' && runSearch(searchQuery)} />
+              {searchQuery && (
+                <button onClick={() => onSearchChange('')}><X size={14} className="text-white/50" /></button>
+              )}
+            </div>
+          </div>
+
+          {/* Résultats */}
+          <div className="flex-1 overflow-y-auto">
+            {searching ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                <p className="text-white/60 text-sm">Recherche…</p>
+              </div>
+            ) : searchResults.length > 0 ? (
+              <div className="grid grid-cols-2 gap-0.5 p-0.5">
+                {searchResults.map(r => (
+                  <button key={r.id} onClick={() => pickSearchResult(r)}
+                    className="relative" style={{ aspectRatio: '9/16' }}>
+                    {r.thumbnail_url
+                      ? <img src={r.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
+                          <Film size={28} className="text-white/20" />
+                        </div>
+                    }
+                    <div className="absolute inset-0 flex flex-col justify-end p-2"
+                      style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%)' }}>
+                      {r.author?.avatar_url && (
+                        <img src={r.author.avatar_url} alt="" className="w-6 h-6 rounded-full mb-1 border border-white/30" />
+                      )}
+                      <p className="text-white text-[10px] font-bold truncate">
+                        {r.author?.display_name ?? r.author?.username ?? ''}
+                      </p>
+                      {r.caption && <p className="text-white/60 text-[9px] truncate">{r.caption}</p>}
+                      <div className="flex items-center gap-2 mt-1 text-white/70 text-[9px]">
+                        <span className="flex items-center gap-0.5"><Eye size={8} />{r.view_count ?? 0}</span>
+                        <span className="flex items-center gap-0.5"><Heart size={8} />{r.like_count ?? 0}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : searchQuery ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+                <Search size={40} className="text-white/20" />
+                <p className="text-white font-bold">Aucun résultat</p>
+                <p className="text-white/50 text-sm">Essaie un autre mot-clé</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+                <TrendingUp size={40} className="text-white/20" />
+                <p className="text-white font-bold">Découvre des reels</p>
+                <p className="text-white/50 text-sm">Tape un mot-clé ou un nom d'auteur</p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
