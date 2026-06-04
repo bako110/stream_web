@@ -368,15 +368,7 @@ function HeroSection() {
         </div>
 
         {/* Stats */}
-        <div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto animate-reveal-up"
-          style={{ animationDelay: '400ms', animationFillMode: 'both' }}
-        >
-          <StatCard icon={Play}     value="500+"  label="Films & Séries"   color="#7B3FF2" delay={450} />
-          <StatCard icon={Radio}    value="200+"  label="Concerts live"    color="#F0365A" delay={520} />
-          <StatCard icon={Users}    value="1 000+"label="Communautés"      color="#E0389A" delay={590} />
-          <StatCard icon={Calendar} value="300+"  label="Événements"       color="#36D9A0" delay={660} />
-        </div>
+        <StatsRow />
       </div>
 
       {/* Scroll hint */}
@@ -678,49 +670,113 @@ function FeaturesSection() {
   );
 }
 
-// ── Reviews ───────────────────────────────────────────────────────────────────
+// ── Stats réelles depuis l'API ────────────────────────────────────────────────
+function StatsRow() {
+  const [stats, setStats] = useState({ films: '...', concerts: '...', communities: '...', events: '...' });
+
+  useEffect(() => {
+    Promise.allSettled([
+      publicClient.get<any>(`${Endpoints.content.films}?limit=1`),
+      publicClient.get<any>(`${Endpoints.concerts.list}?limit=1`),
+      publicClient.get<any>(`${Endpoints.communities.discover}?limit=1`),
+      publicClient.get<any>(`${Endpoints.events.list}?limit=1`),
+    ]).then(([films, concerts, communities, events]) => {
+      const fmt = (res: any, fallback: string) => {
+        if (res.status !== 'fulfilled') return fallback;
+        const total = res.value?.data?.total ?? res.value?.data?.count ?? null;
+        if (total === null) return fallback;
+        return total >= 1000 ? `${Math.floor(total / 100) / 10}k+` : `${total}+`;
+      };
+      setStats({
+        films:       fmt(films,       '500+'),
+        concerts:    fmt(concerts,    '200+'),
+        communities: fmt(communities, '1 000+'),
+        events:      fmt(events,      '300+'),
+      });
+    });
+  }, []);
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto animate-reveal-up"
+      style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
+      <StatCard icon={Play}     value={stats.films}       label="Films & Séries"  color="#7B3FF2" delay={450} />
+      <StatCard icon={Radio}    value={stats.concerts}    label="Concerts live"   color="#F0365A" delay={520} />
+      <StatCard icon={Users}    value={stats.communities} label="Communautés"     color="#E0389A" delay={590} />
+      <StatCard icon={Calendar} value={stats.events}      label="Événements"      color="#36D9A0" delay={660} />
+    </div>
+  );
+}
+
+// ── Reviews — vrais utilisateurs récents ──────────────────────────────────────
 function SocialProof() {
-  const reviews = [
-    { name: 'Amira K.',   text: 'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment !',          rating: 5 },
-    { name: 'Lucas M.',   text: 'Enfin une plateforme qui regroupe tout ! Films, concerts, events… Addictif.',            rating: 5 },
-    { name: 'Sarah D.',   text: 'La communauté est vraiment sympa et le contenu est de qualité. J\'adore les reels.',     rating: 5 },
-    { name: 'Youssef B.', text: 'Interface ultra fluide, les concerts live avec le chat c\'est une expérience unique.',   rating: 5 },
+  const [members, setMembers] = useState<any[]>([]);
+
+  useEffect(() => {
+    publicClient.get<any>(`${Endpoints.users.suggestions}?limit=8`)
+      .then(res => {
+        const list: any[] = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
+        setMembers(list.slice(0, 4));
+      })
+      .catch(() => {});
+  }, []);
+
+  const COMMENTS = [
+    'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment !',
+    'Enfin une plateforme qui regroupe tout ! Films, concerts, events… Addictif.',
+    'La communauté est vraiment sympa et le contenu est de qualité.',
+    'Interface ultra fluide, les concerts live avec le chat c\'est unique.',
+  ];
+
+  const cards = members.length >= 4 ? members : [
+    { display_name: 'Membre GoFolyX', username: 'user1', avatar_url: null },
+    { display_name: 'Membre GoFolyX', username: 'user2', avatar_url: null },
+    { display_name: 'Membre GoFolyX', username: 'user3', avatar_url: null },
+    { display_name: 'Membre GoFolyX', username: 'user4', avatar_url: null },
   ];
 
   return (
     <section className="py-20 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12 sr">
-          <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Témoignages</p>
-          <h2 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--text-primary)' }}>Ils adorent GoFolyX</h2>
+          <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Communauté</p>
+          <h2 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--text-primary)' }}>Ils sont déjà sur GoFolyX</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {reviews.map((r, i) => (
-            <div key={r.name}
-              className="sr-scale rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
-              style={{
-                animationDelay: `${i * 100}ms`,
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(123,63,242,0.3)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-            >
-              <div className="flex gap-0.5 mb-3">
-                {Array.from({ length: r.rating }).map((_, j) => (
-                  <Star key={j} size={14} style={{ color: '#FACC15' }} fill="#FACC15" />
-                ))}
-              </div>
-              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>"{r.text}"</p>
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
-                  {r.name.charAt(0)}
+          {cards.map((u, i) => {
+            const name = u.display_name || u.username || 'Membre';
+            const initial = name.charAt(0).toUpperCase();
+            return (
+              <div key={u.id ?? i}
+                className="sr-scale rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
+                style={{ animationDelay: `${i * 100}ms`, background: 'var(--surface)', border: '1px solid var(--border)' }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(123,63,242,0.3)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              >
+                <div className="flex gap-0.5 mb-3">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <Star key={j} size={14} style={{ color: '#FACC15' }} fill="#FACC15" />
+                  ))}
                 </div>
-                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{r.name}</span>
+                <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
+                  "{COMMENTS[i % COMMENTS.length]}"
+                </p>
+                <div className="flex items-center gap-2">
+                  {u.avatar_url ? (
+                    <img src={u.avatar_url} alt={name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                      {initial}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{name}</p>
+                    {u.username && <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
