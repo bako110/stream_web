@@ -970,7 +970,7 @@ function StoriesBar() {
             user={user}
             myGroup={myGroup}
             onClick={() => myGroup
-              ? navigate(`/stories?userId=${user?.id}&index=${allGroups.indexOf(myGroup)}`)
+              ? navigate(`/stories?userId=${encodeId(user!.id)}&index=${allGroups.indexOf(myGroup)}`)
               : setCreator(true)
             }
           />
@@ -978,7 +978,7 @@ function StoriesBar() {
           {/* Autres stories — navigue vers page dédiée */}
           {otherGroups.map((group) => (
             <StoryCard key={group.user.id} group={group}
-              onClick={() => navigate(`/stories?userId=${group.user.id}&index=${allGroups.indexOf(group)}`)} />
+              onClick={() => navigate(`/stories?userId=${encodeId(group.user.id)}&index=${allGroups.indexOf(group)}`)} />
           ))}
 
           {/* Skeletons */}

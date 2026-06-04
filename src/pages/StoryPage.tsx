@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { decodeId } from '../utils/slugId';
 import {
   X, ChevronLeft, ChevronRight, Eye, MoreHorizontal,
   Edit3, Trash2,
@@ -21,7 +22,7 @@ export default function StoryPage() {
   const [params]      = useSearchParams();
   const { user }      = useAuthStore();
 
-  const targetUserId  = params.get('userId');
+  const targetUserId  = params.get('userId') ? decodeId(params.get('userId')!) : null;
   const initialIndex  = parseInt(params.get('index') ?? '0', 10);
 
   const [groups,   setGroups]   = useState<StoryGroup[]>([]);
