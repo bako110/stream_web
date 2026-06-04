@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import { MobileDrawer } from './MobileDrawer';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { CreateFAB } from './CreateFAB';
@@ -28,8 +29,8 @@ export function AppLayout() {
             style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <div className="relative z-10 w-64 animate-reveal-left" style={{ animationDuration: '0.22s' }}>
-            <Sidebar onClose={() => setMobileSidebarOpen(false)} />
+          <div className="relative z-10 w-72 animate-reveal-left" style={{ animationDuration: '0.22s' }}>
+            <MobileDrawer onClose={() => setMobileSidebarOpen(false)} />
           </div>
         </div>
       )}
