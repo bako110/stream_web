@@ -1049,17 +1049,15 @@ export default function ReelsPage() {
 
   const fetchReels = useCallback((silent = false) => {
     // Cache module-level frais → restaurer directement sans réseau (identique mobile reelsRef)
-    if (!targetId && !silent && _reelCache) {
+    if (!targetId && _reelCache) {
       const age = Date.now() - _reelCache.loadedAt;
-      if (age < CACHE_TTL_MS && _reelCache.list.length > 0) {
+      if (!silent && age < CACHE_TTL_MS && _reelCache.list.length > 0) {
         setReels(_reelCache.list);
         pageRef.current = _reelCache.page;
         setHasMore(true);
         setLoading(false);
         return;
       }
-      // Cache expiré → vider
-      _reelCache = null;
     }
 
     if (!silent) { setLoading(true); setError(null); }
@@ -1092,6 +1090,20 @@ export default function ReelsPage() {
         // Figer l'ordre en cache module-level
         _reelCache = { list, loadedAt: Date.now(), page: 1 };
         setReels(list);
+        // Silent : garder l'index actuel (identique mobile load(true))
+        // Non-silent : position sera restaurée par l'effet suivant
+        if (silent && _reelPosition) {
+          const foundIdx = list.findIndex(r => r.id === _reelPosition!.reelId);
+          if (foundIdx >= 0 && foundIdx !== savedIndexRef.current) {
+            // Le reel actif a bougé dans la nouvelle liste → scroll discret
+            requestAnimationFrame(() => {
+              setTimeout(() => {
+                const c = containerRef.current;
+                if (c) { c.scrollTop = foundIdx * c.clientHeight; setActiveIndex(foundIdx); }
+              }, 80);
+            });
+          }
+        }
         setLoading(false);
       })
       .catch(() => { setError('Impossible de charger les reels'); setLoading(false); });
@@ -1125,7 +1137,20 @@ export default function ReelsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    fetchReels();
+    // Identique mobile useFocusEffect :
+    // Cache frais → fetchReels() utilise le cache directement (ordre figé)
+    // Cache expiré (>90s) → fetchReels(true) : silent, garde l'index actuel
+    if (_reelCache) {
+      const age = Date.now() - _reelCache.loadedAt;
+      if (age > CACHE_TTL_MS) {
+        // Reload silencieux — liste mise à jour en arrière-plan sans bouger l'index
+        fetchReels(true);
+      } else {
+        fetchReels();
+      }
+    } else {
+      fetchReels();
+    }
     apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
       .then(r => { if (r.data?.id) setReelAd(r.data); })
       .catch(() => {});
