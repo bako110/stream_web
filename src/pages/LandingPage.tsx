@@ -670,36 +670,15 @@ function FeaturesSection() {
   );
 }
 
-// ── Stats réelles depuis l'API ────────────────────────────────────────────────
+// ── Stats ─────────────────────────────────────────────────────────────────────
 function StatsRow() {
-  const [stats, setStats] = useState({ films: '...', concerts: '...', communities: '...', events: '...' });
-
-  useEffect(() => {
-    Promise.allSettled([
-      publicClient.get<any>(`${Endpoints.concerts.public}?limit=1`),
-      publicClient.get<any>(`${Endpoints.events.public}?limit=1`),
-    ]).then(([concerts, events]) => {
-      const fmt = (res: any, fallback: string) => {
-        if (res.status !== 'fulfilled') return fallback;
-        const total = res.value?.data?.total ?? res.value?.data?.count ?? null;
-        if (total === null) return fallback;
-        return total >= 1000 ? `${(total / 1000).toFixed(1)}k+` : `${total}+`;
-      };
-      setStats(prev => ({
-        ...prev,
-        concerts: fmt(concerts, '200+'),
-        events:   fmt(events,   '300+'),
-      }));
-    });
-  }, []);
-
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto animate-reveal-up"
       style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
-      <StatCard icon={Play}     value={stats.films}       label="Films & Séries"  color="#7B3FF2" delay={450} />
-      <StatCard icon={Radio}    value={stats.concerts}    label="Concerts live"   color="#F0365A" delay={520} />
-      <StatCard icon={Users}    value={stats.communities} label="Communautés"     color="#E0389A" delay={590} />
-      <StatCard icon={Calendar} value={stats.events}      label="Événements"      color="#36D9A0" delay={660} />
+      <StatCard icon={Play}     value="500+"   label="Films & Séries"  color="#7B3FF2" delay={450} />
+      <StatCard icon={Radio}    value="200+"   label="Concerts live"   color="#F0365A" delay={520} />
+      <StatCard icon={Users}    value="1 000+" label="Communautés"     color="#E0389A" delay={590} />
+      <StatCard icon={Calendar} value="300+"   label="Événements"      color="#36D9A0" delay={660} />
     </div>
   );
 }
