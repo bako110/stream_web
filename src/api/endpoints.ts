@@ -200,8 +200,21 @@ export const Endpoints = {
     delete:     (id: string) => `${V1}/notifications/${id}`,
   },
   upload: {
-    images: (folder: string) => `${V1}/upload/images?folder=${folder}`,
-    video:  (folder: string) => `${V1}/upload/video?folder=${folder}`,
+    images:         (folder: string) => `${V1}/upload/images?folder=${folder}`,
+    video:          (folder: string) => `${V1}/upload/video?folder=${folder}`,
+    videoJobStatus: (jobId: string)  => `${V1}/upload/video/status/${jobId}`,
+  },
+  ads: {
+    create:     `${V1}/ads`,
+    mine:       `${V1}/ads/mine`,
+    byId:       (id: string) => `${V1}/ads/${id}`,
+    update:     (id: string) => `${V1}/ads/${id}`,
+    delete:     (id: string) => `${V1}/ads/${id}`,
+    pause:      (id: string) => `${V1}/ads/${id}/pause`,
+    resume:     (id: string) => `${V1}/ads/${id}/resume`,
+    feedNext:   (placement: string) => `${V1}/ads/feed/next?placement=${placement}`,
+    impression: (id: string) => `${V1}/ads/${id}/impression`,
+    click:      (id: string) => `${V1}/ads/${id}/click`,
   },
   lives: {
     list:      `${V1}/lives`,

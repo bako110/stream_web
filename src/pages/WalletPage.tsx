@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, Send, BarChart2, ArrowUpRight, RefreshCw,
   WifiOff, Gift, Star, RotateCcw, Circle, Zap,
-  Ticket, UserCheck, CreditCard,
+  Ticket, UserCheck, CreditCard, Megaphone,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -94,6 +94,7 @@ export default function WalletPage() {
     { icon: <Send size={20} />,         label: 'Transférer',   color: '#7B3FF2', path: '/wallet/transfer' },
     { icon: <ArrowUpRight size={20} />, label: 'Retirer',      color: '#3FEDB6', path: '/wallet/withdraw' },
     { icon: <Zap size={20} />,          label: 'Booster',      color: '#F59E0B', path: '/wallet/boost' },
+    { icon: <Megaphone size={20} />,    label: 'Publicités',   color: '#EC4899', path: '/wallet/ads' },
     { icon: <BarChart2 size={20} />,    label: 'Créateur',     color: '#E85DAD', path: '/wallet/creator' },
     { icon: <UserCheck size={20} />,    label: 'Monétisation', color: '#10B981', path: '/wallet/monetisation' },
     { icon: <CreditCard size={20} />,   label: 'Abonnement',   color: '#A855F7', path: '/wallet/subscription/my' },
@@ -169,7 +170,7 @@ export default function WalletPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {ACTIONS.map(a => (
           <button key={a.label} onClick={() => navigate(a.path)}
             className="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all"

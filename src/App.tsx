@@ -48,6 +48,8 @@ const WalletTransferPage = lazy(() => import('./pages/wallet/WalletTransferPage'
 const WalletWithdrawPage = lazy(() => import('./pages/wallet/WalletWithdrawPage'));
 const WalletDashboardPage= lazy(() => import('./pages/wallet/WalletDashboardPage'));
 const WalletBoostPage               = lazy(() => import('./pages/wallet/WalletBoostPage'));
+const WalletAdsPage                 = lazy(() => import('./pages/wallet/WalletAdsPage'));
+const WalletCreateAdPage            = lazy(() => import('./pages/wallet/WalletCreateAdPage'));
 const WalletReferralPage            = lazy(() => import('./pages/wallet/WalletReferralPage'));
 const WalletCreatorDashboardPage    = lazy(() => import('./pages/wallet/WalletCreatorDashboardPage'));
 const WalletMonetisationPage        = lazy(() => import('./pages/wallet/WalletMonetisationPage'));
@@ -220,6 +222,8 @@ function AppShell() {
             <Route path="/wallet/withdraw"   element={<WalletWithdrawPage />} />
             <Route path="/wallet/dashboard"  element={<WalletDashboardPage />} />
             <Route path="/wallet/boost"                     element={<WalletBoostPage />} />
+            <Route path="/wallet/ads"                       element={<WalletAdsPage />} />
+            <Route path="/wallet/ads/create"                element={<WalletCreateAdPage />} />
             <Route path="/wallet/referral"                  element={<WalletReferralPage />} />
             <Route path="/wallet/creator"                   element={<WalletCreatorDashboardPage />} />
             <Route path="/wallet/monetisation"              element={<WalletMonetisationPage />} />

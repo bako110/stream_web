@@ -7,6 +7,7 @@ import {
   Heart, MessageCircle, Share2, Bookmark, Film, RefreshCw,
   X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3,
   Image as ImageIcon, Video, Type, MoreHorizontal, Lock,
+  Megaphone, ExternalLink, Zap,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -997,6 +998,17 @@ function StoriesBar() {
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+interface FeedAd {
+  id: string;
+  title: string;
+  description?: string | null;
+  cta_text?: string | null;
+  cta_url?: string | null;
+  creative_url?: string | null;
+  thumbnail_url?: string | null;
+  format: string;
+}
+
 type FeedItem =
   | { kind: 'concert';      id: string; data: Concert }
   | { kind: 'event';        id: string; data: Event }
@@ -1004,7 +1016,8 @@ type FeedItem =
   | { kind: 'reel';         id: string; data: Reel }
   | { kind: 'reel_row';     id: string; data: Reel[] }
   | { kind: 'suggestions';  id: string; data: null }
-  | { kind: 'communities';  id: string; data: Community[] };
+  | { kind: 'communities';  id: string; data: Community[] }
+  | { kind: 'ad';           id: string; data: FeedAd };
 
 const EVENT_COLORS: Record<string, string> = {
   concert: '#7B3FF2', birthday: '#E0389A', festival: '#FF7A2F',
@@ -1436,6 +1449,76 @@ function ActionBar({
       {/* Share toast — local */}
       {shareToast && <ShareToast onDone={() => setShareToast(false)} />}
     </>
+  );
+}
+
+// ── Native Ad Card ────────────────────────────────────────────────────────────
+function FeedAdCard({ ad }: { ad: FeedAd }) {
+  function handleClick() {
+    if (ad.cta_url) {
+      apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
+      window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
+    }
+  }
+  useEffect(() => {
+    apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+  }, [ad.id]);
+
+  const hasCreative = !!ad.thumbnail_url || !!ad.creative_url;
+
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      {hasCreative ? (
+        <div className="relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+          <img
+            src={ad.thumbnail_url ?? ad.creative_url!}
+            alt={ad.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)' }} />
+          <div className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full text-white"
+            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+            <Zap size={9} /> SPONSORISÉ
+          </div>
+          <div className="absolute bottom-4 left-4 right-4">
+            <p className="text-white font-black text-base leading-tight mb-1">{ad.title}</p>
+            {ad.description && (
+              <p className="text-white/70 text-xs line-clamp-2 mb-3">{ad.description}</p>
+            )}
+            {ad.cta_url && (
+              <button onClick={handleClick}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="p-5 relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(224,56,154,0.08))' }}>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2 text-[10px] font-bold px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>
+              <Megaphone size={9} /> SPONSORISÉ
+            </div>
+          </div>
+          <p className="font-black text-base mb-1" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
+          {ad.description && (
+            <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
+          )}
+          {ad.cta_url && (
+            <button onClick={handleClick}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={12} />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2418,6 +2501,7 @@ export default function FeedPage() {
   const { followedIds, toggle: toggleFollow } = useFollow();
   const [commentTarget,   setCommentTarget]   = useState<{ id: string; kind: 'event'|'concert'|'post'|'reel'; count: number } | null>(null);
   const [commentCounts,   setCommentCounts]   = useState<Record<string, number>>({});
+  const [feedAd,          setFeedAd]          = useState<FeedAd | null>(null);
 
   // Suggestions fetched once — shared across all SuggestionsInline instances
   const [suggestUsers,   setSuggestUsers]   = useState<any[]>([]);
@@ -2440,12 +2524,14 @@ export default function FeedPage() {
         // /search/feed → { items: [{kind, ...fields}], total, page, limit }
         // /reels       → flat array  OR  { items: [...] }
         // /posts/feed  → flat array
-        const [feedRes, reelsRes, postsRes, commRes] = await Promise.all([
+        const [feedRes, reelsRes, postsRes, commRes, adRes] = await Promise.all([
           apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=40`).catch(() => null),
           apiClient.get<any>(`${Endpoints.reels.feed}?page=1&limit=20`).catch(() => null),
           apiClient.get<any>(`${Endpoints.posts.feed}?page=1&limit=20`).catch(() => null),
           apiClient.get<any>(`${Endpoints.communities.discover}?limit=8`).catch(() => null),
+          apiClient.get<any>(Endpoints.ads.feedNext('feed')).catch(() => null),
         ]);
+        if (adRes?.data) setFeedAd(adRes.data);
 
         // /search/feed: events + concerts only (exclude reels — they have their own feed)
         const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
@@ -2512,6 +2598,9 @@ export default function FeedPage() {
         let commCount     = 0;
         const result: FeedItem[] = [];
 
+        const AD_EVERY = 7;
+        let adCount = 0;
+
         merged.forEach((item, i) => {
           result.push(item);
 
@@ -2526,6 +2615,10 @@ export default function FeedPage() {
           // communities: first at i===9, then every 12
           if (commData.length > 0 && (i === 9 || (i > 9 && (i - 9) % COMM_EVERY === 0))) {
             result.push({ kind: 'communities', id: `__communities__${++commCount}`, data: commData });
+          }
+          // ad: first at i===6, then every 7
+          if (adRes?.data && (i === 6 || (i > 6 && (i - 6) % AD_EVERY === 0))) {
+            result.push({ kind: 'ad', id: `__ad__${++adCount}`, data: adRes.data });
           }
         });
 
@@ -2683,6 +2776,9 @@ export default function FeedPage() {
                 }
                 if (item.kind === 'reel') {
                   return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;
+                }
+                if (item.kind === 'ad') {
+                  return <FeedAdCard key={item.id} ad={item.data} />;
                 }
                 return null;
               })}
