@@ -65,9 +65,13 @@ export function Topbar({ onMenuClick }: Props) {
         <Menu size={20} />
       </button>
 
-      {/* Logo mobile */}
-      <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolix" className="h-7 w-auto lg:hidden" />
-
+      {/* Logo — visible partout (mobile + desktop) */}
+      <img
+        src={isDark ? Images.logoDark : Images.logoLight}
+        alt="GoFolix"
+        className="h-7 w-auto cursor-pointer shrink-0"
+        onClick={() => navigate('/feed')}
+      />
 
       {/* Desktop search bar */}
       <form onSubmit={handleSearch} className="flex-1 max-w-md hidden lg:flex items-center">
