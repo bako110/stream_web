@@ -130,7 +130,7 @@ export default function SearchPage() {
   const hasResults = total > 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className="max-w-full px-4 sm:px-6 py-6 space-y-6">
 
       {/* Barre de recherche mobile (le Topbar desktop suffit) */}
       <form onSubmit={e => { e.preventDefault(); if (q.trim()) navigate(`/search?q=${encodeURIComponent(q.trim())}`); }}

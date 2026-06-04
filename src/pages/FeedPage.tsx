@@ -2662,11 +2662,11 @@ export default function FeedPage() {
   function handleRefresh() { loadFeed(tab); }
 
   return (
-    <div className="px-4 sm:px-6 py-6">
-      <div className="max-w-6xl mx-auto flex gap-5 items-start">
+    <div className="px-2 sm:px-4 py-6">
+      <div className="flex gap-4 items-start">
 
         {/* ── Left panel (xl+) ── */}
-        <div className="w-56 shrink-0 hidden xl:flex flex-col gap-4 sticky top-4">
+        <div className="w-52 shrink-0 hidden xl:flex flex-col gap-4 sticky top-4">
           <UpcomingEventsPanel />
           <TrendingPanel />
         </div>
@@ -2787,7 +2787,7 @@ export default function FeedPage() {
         </div>
 
         {/* ── Sidebar (xl+) ── */}
-        <div className="w-64 shrink-0 hidden xl:block space-y-4">
+        <div className="w-60 shrink-0 hidden xl:block space-y-4">
           <SuggestionsPanel />
           <CommunitiesSidePanel />
         </div>
