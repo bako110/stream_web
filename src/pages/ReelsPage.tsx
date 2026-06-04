@@ -1131,10 +1131,14 @@ export default function ReelsPage() {
 
   useEffect(() => {
     fetchReels();
-    // Charger l'ad pour reels (placement=reels)
     apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
       .then(r => { if (r.data?.id) setReelAd(r.data); })
       .catch(() => {});
+
+    // Vider le cache au démontage (quitter la page = ordre frais au retour)
+    return () => {
+      try { sessionStorage.removeItem(CACHE_KEY); } catch {}
+    };
   }, [fetchReels]);
 
   // Restaurer position après chargement (identique mobile: scroll direct vers index sauvegardé)
