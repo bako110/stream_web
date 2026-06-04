@@ -1021,7 +1021,6 @@ export default function ReelsPage() {
   const [searchParams]                  = useSearchParams();
   const navigate                        = useNavigate();
   const targetId                        = searchParams.get('id');
-  const POSITION_KEY = 'folix_reels_position';
 
   const [reels,         setReels]       = useState<Reel[]>([]);
   const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
@@ -1112,19 +1111,13 @@ export default function ReelsPage() {
       .catch(() => {});
   }, [fetchReels]);
 
-  // Restaurer position après chargement (identique mobile: scroll direct vers index sauvegardé)
+  // Restaurer position uniquement lors d'une navigation interne (pas au F5)
+  // _reelPosition est null après F5 (module rechargé) → index 0
   useEffect(() => {
     if (reels.length === 0) return;
     if (targetId) return;
 
-    // Priorité : module-level (navigation) > sessionStorage (F5)
-    let pos = _reelPosition;
-    if (!pos) {
-      try {
-        const raw = sessionStorage.getItem(POSITION_KEY);
-        if (raw) pos = JSON.parse(raw) as { idx: number; reelId: string };
-      } catch {}
-    }
+    const pos = _reelPosition; // null si F5, valide si navigation
     if (!pos) return;
 
     const foundIdx = reels.findIndex(r => r.id === pos!.reelId);
@@ -1154,7 +1147,6 @@ export default function ReelsPage() {
           // Sauvegarder position (module-level + sessionStorage pour F5)
           const reelId = reels[idx]?.id ?? '';
           _reelPosition = { idx, reelId };
-          try { sessionStorage.setItem(POSITION_KEY, JSON.stringify({ idx, reelId })); } catch {}
           // Charger plus quand on approche des 3 derniers (identique mobile)
           if (idx >= reels.length - 3) loadMore();
         }
