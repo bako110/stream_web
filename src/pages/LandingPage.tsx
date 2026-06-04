@@ -676,23 +676,20 @@ function StatsRow() {
 
   useEffect(() => {
     Promise.allSettled([
-      publicClient.get<any>(`${Endpoints.content.films}?limit=1`),
-      publicClient.get<any>(`${Endpoints.concerts.list}?limit=1`),
-      publicClient.get<any>(`${Endpoints.communities.discover}?limit=1`),
-      publicClient.get<any>(`${Endpoints.events.list}?limit=1`),
-    ]).then(([films, concerts, communities, events]) => {
+      publicClient.get<any>(`${Endpoints.concerts.public}?limit=1`),
+      publicClient.get<any>(`${Endpoints.events.public}?limit=1`),
+    ]).then(([concerts, events]) => {
       const fmt = (res: any, fallback: string) => {
         if (res.status !== 'fulfilled') return fallback;
         const total = res.value?.data?.total ?? res.value?.data?.count ?? null;
         if (total === null) return fallback;
-        return total >= 1000 ? `${Math.floor(total / 100) / 10}k+` : `${total}+`;
+        return total >= 1000 ? `${(total / 1000).toFixed(1)}k+` : `${total}+`;
       };
-      setStats({
-        films:       fmt(films,       '500+'),
-        concerts:    fmt(concerts,    '200+'),
-        communities: fmt(communities, '1 000+'),
-        events:      fmt(events,      '300+'),
-      });
+      setStats(prev => ({
+        ...prev,
+        concerts: fmt(concerts, '200+'),
+        events:   fmt(events,   '300+'),
+      }));
     });
   }, []);
 
@@ -707,31 +704,13 @@ function StatsRow() {
   );
 }
 
-// ── Reviews — vrais utilisateurs récents ──────────────────────────────────────
+// ── Reviews ───────────────────────────────────────────────────────────────────
 function SocialProof() {
-  const [members, setMembers] = useState<any[]>([]);
-
-  useEffect(() => {
-    publicClient.get<any>(`${Endpoints.users.suggestions}?limit=8`)
-      .then(res => {
-        const list: any[] = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
-        setMembers(list.slice(0, 4));
-      })
-      .catch(() => {});
-  }, []);
-
-  const COMMENTS = [
-    'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment !',
-    'Enfin une plateforme qui regroupe tout ! Films, concerts, events… Addictif.',
-    'La communauté est vraiment sympa et le contenu est de qualité.',
-    'Interface ultra fluide, les concerts live avec le chat c\'est unique.',
-  ];
-
-  const cards = members.length >= 4 ? members : [
-    { display_name: 'Membre GoFolyX', username: 'user1', avatar_url: null },
-    { display_name: 'Membre GoFolyX', username: 'user2', avatar_url: null },
-    { display_name: 'Membre GoFolyX', username: 'user3', avatar_url: null },
-    { display_name: 'Membre GoFolyX', username: 'user4', avatar_url: null },
+  const cards = [
+    { name: 'Kouamé A.',   city: 'Abidjan',       text: 'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment présent !',         color: '#7B3FF2' },
+    { name: 'Fatou D.',    city: 'Dakar',          text: 'Enfin une plateforme qui regroupe tout. Films, concerts, events… Je ne peux plus m\'en passer.', color: '#E0389A' },
+    { name: 'Moussa T.',   city: 'Ouagadougou',    text: 'La communauté GoFolyX est top, le contenu de qualité et les reels sont vraiment addictifs.',    color: '#F0365A' },
+    { name: 'Aminata B.',  city: 'Bamako',         text: 'Interface fluide, concerts live avec le chat en direct — une expérience vraiment unique.',       color: '#36D9A0' },
   ];
 
   return (
@@ -742,41 +721,33 @@ function SocialProof() {
           <h2 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--text-primary)' }}>Ils sont déjà sur GoFolyX</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {cards.map((u, i) => {
-            const name = u.display_name || u.username || 'Membre';
-            const initial = name.charAt(0).toUpperCase();
-            return (
-              <div key={u.id ?? i}
-                className="sr-scale rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
-                style={{ animationDelay: `${i * 100}ms`, background: 'var(--surface)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(123,63,242,0.3)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-              >
-                <div className="flex gap-0.5 mb-3">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <Star key={j} size={14} style={{ color: '#FACC15' }} fill="#FACC15" />
-                  ))}
+          {cards.map((r, i) => (
+            <div key={r.name}
+              className="sr-scale rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
+              style={{ animationDelay: `${i * 100}ms`, background: 'var(--surface)', border: '1px solid var(--border)' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(123,63,242,0.3)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+            >
+              <div className="flex gap-0.5 mb-3">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <Star key={j} size={14} style={{ color: '#FACC15' }} fill="#FACC15" />
+                ))}
+              </div>
+              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
+                "{r.text}"
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                  style={{ background: `linear-gradient(135deg,${r.color},${r.color}99)` }}>
+                  {r.name.charAt(0)}
                 </div>
-                <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-                  "{COMMENTS[i % COMMENTS.length]}"
-                </p>
-                <div className="flex items-center gap-2">
-                  {u.avatar_url ? (
-                    <img src={u.avatar_url} alt={name} className="w-9 h-9 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
-                      {initial}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{name}</p>
-                    {u.username && <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>}
-                  </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{r.name}</p>
+                  <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{r.city}</p>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </section>
