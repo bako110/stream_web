@@ -83,7 +83,7 @@ export default function SettingsPage() {
 
   const verifStatus = (user?.verification_status ?? 'none') as VerifStatus;
   const verifSub: Record<VerifStatus, string> = {
-    none:     'Obtenir le badge bleu GoFolix',
+    none:     'Obtenir le badge bleu GoFoliX',
     pending:  "Demande en cours d'examen",
     approved: 'Compte vérifié',
     rejected: 'Demande refusée — réessayer',
@@ -111,7 +111,7 @@ export default function SettingsPage() {
     },
     {
       key: 'verification',
-      icon: <Shield size={17} />, label: 'Vérification GoFolix', color: '#1D9BF0',
+      icon: <Shield size={17} />, label: 'Vérification GoFoliX', color: '#1D9BF0',
       sub: verifSub[verifStatus],
       badge: user?.is_verified ? <VerifiedBadge size={15} /> : undefined,
       onClick: () => navigate('/settings/verification'),

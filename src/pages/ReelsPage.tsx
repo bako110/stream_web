@@ -660,7 +660,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     e.stopPropagation();
     const url = `${window.location.origin}/reels?id=${reel.id}`;
     try {
-      if (navigator.share) await navigator.share({ title: caption || 'Reel GoFolix', url });
+      if (navigator.share) await navigator.share({ title: caption || 'Reel GoFoliX', url });
       else await navigator.clipboard.writeText(url);
       apiClient.post(Endpoints.social.share, { reel_id: reel.id, platform: 'web' }).catch(() => {});
       setShareCount(c => c + 1);

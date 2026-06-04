@@ -134,7 +134,7 @@ function GlobalLoader() {
               }} />
           ))}
         </div>
-        <p className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>GoFolix</p>
+        <p className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>GoFoliX</p>
       </div>
     </div>
   );

@@ -126,7 +126,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 hero-grid opacity-20" />
         </div>
         <div className="relative z-10">
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolix" className="h-10 w-auto" />
+          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFoliX" className="h-10 w-auto" />
         </div>
         <div className="relative z-10 space-y-8">
           <div>
@@ -170,12 +170,12 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolix" className="h-9 w-auto" />
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFoliX" className="h-9 w-auto" />
           </div>
 
           <div className="mb-7">
             <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Bon retour 👋</h2>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte GoFolix</p>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte GoFoliX</p>
           </div>
 
           {/* Google */}

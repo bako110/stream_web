@@ -33,7 +33,7 @@ interface SupportTicket {
 
 const FAQS = [
   {
-    q: 'Comment acheter des GoFolix Coins ?',
+    q: 'Comment acheter des GoFoliX Coins ?',
     a: 'Rendez-vous dans Wallet > Acheter des coins. Vous pouvez payer par carte bancaire, mobile money ou virement. Les coins sont credites instantanement.',
   },
   {
@@ -201,7 +201,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
           <Headphones size={18} style={{ color: 'var(--primary)' }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Support GoFolix</p>
+          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Support GoFoliX</p>
           <p className="text-[11px]" style={{ color: '#36D9A0' }}>
             {ticket ? `Ticket #${ticket.id.slice(0, 8)}… · ${ticket.status}` : 'Généralement répond en moins d\'1h'}
           </p>
@@ -227,7 +227,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
             <div className="flex justify-start mb-4">
               <div className="max-w-[80%] rounded-2xl rounded-bl-sm px-4 py-3"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <p className="text-xs font-bold mb-1" style={{ color: 'var(--primary)' }}>Support GoFolix</p>
+                <p className="text-xs font-bold mb-1" style={{ color: 'var(--primary)' }}>Support GoFoliX</p>
                 <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
                   {ticket
                     ? 'Voici l\'historique de votre ticket. Notre équipe vous répondra bientôt.'
@@ -246,7 +246,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
                       : { background: 'var(--primary)', color: '#fff' }}>
                     {isStaff && (
                       <p className="text-[10px] font-bold mb-1" style={{ color: 'var(--primary)' }}>
-                        {msg.sender_name ?? 'Support GoFolix'}
+                        {msg.sender_name ?? 'Support GoFoliX'}
                         {msg.sender_role ? ` · ${msg.sender_role}` : ''}
                       </p>
                     )}
@@ -363,7 +363,7 @@ export default function SupportPage() {
         {/* Footer */}
         <div className="p-4 rounded-2xl text-center"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoFolix v1.0 · © 2026 Sahelys</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoFoliX v1.0 · © 2026 Sahelys</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Intégrateur de solutions informatiques</p>
         </div>
       </div>

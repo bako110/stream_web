@@ -178,7 +178,7 @@ export default function WalletCreateAdPage() {
             {isEdit ? 'Modifier la campagne' : 'Créer une publicité'}
           </h1>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            {isEdit ? editAd!.title : 'Touchez plus d\'utilisateurs avec GoFolix Ads'}
+            {isEdit ? editAd!.title : 'Touchez plus d\'utilisateurs avec GoFoliX Ads'}
           </p>
         </div>
       </div>

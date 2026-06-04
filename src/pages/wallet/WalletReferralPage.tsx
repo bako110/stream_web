@@ -75,9 +75,9 @@ export default function WalletReferralPage() {
 
   const handleShare = useCallback(async () => {
     if (!stats?.referral_code) return;
-    const text = `Rejoins-moi sur GoFolix ! Utilise mon code de parrainage ${stats.referral_code} lors de ton inscription et gagne 20 coins bonus.`;
+    const text = `Rejoins-moi sur GoFoliX ! Utilise mon code de parrainage ${stats.referral_code} lors de ton inscription et gagne 20 coins bonus.`;
     if (navigator.share) {
-      await navigator.share({ title: 'Invite un ami sur GoFolix', text }).catch(() => {});
+      await navigator.share({ title: 'Invite un ami sur GoFoliX', text }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text).catch(() => {});
       setCopied(true);
@@ -143,7 +143,7 @@ export default function WalletReferralPage() {
               Invitez vos amis
             </h2>
             <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-              Gagnez des coins pour chaque ami qui rejoint GoFolix et chaque achat qu'il effectue.
+              Gagnez des coins pour chaque ami qui rejoint GoFoliX et chaque achat qu'il effectue.
             </p>
 
             {/* Reward pills */}

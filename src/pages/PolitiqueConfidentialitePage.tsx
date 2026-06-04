@@ -17,11 +17,11 @@ const SECTIONS: Section[] = [
   {
     key: 'identite', Icon: Info, title: "1. Identité du responsable de traitement",
     body: `Responsable de traitement :
-GoFolix SAS
+GoFoliX SAS
 Siège social : Paris, France
 Email DPO : privacy@gofolix.app
 
-GoFolix SAS est responsable du traitement de vos données personnelles collectées via l'application mobile GoFolix et le site web gofolix.app.
+GoFoliX SAS est responsable du traitement de vos données personnelles collectées via l'application mobile GoFoliX et le site web gofolix.app.
 
 Pour toute question relative à la protection de vos données, vous pouvez contacter notre Délégué à la Protection des Données (DPO) à l'adresse privacy@gofolix.app. Nous nous engageons à répondre à toute demande dans un délai maximum de 30 jours.`,
   },
@@ -79,7 +79,7 @@ Obligations légales :
     key: 'base-legale', Icon: Shield, title: "4. Base légale des traitements",
     body: `Conformément au RGPD, chaque traitement repose sur l'une des bases légales suivantes :
 
-• Exécution du contrat (art. 6.1.b RGPD) : traitements nécessaires à la fourniture du service GoFolix (compte, contenus, paiements)
+• Exécution du contrat (art. 6.1.b RGPD) : traitements nécessaires à la fourniture du service GoFoliX (compte, contenus, paiements)
 
 • Consentement (art. 6.1.a RGPD) : communications marketing, géolocalisation précise, cookies optionnels — vous pouvez retirer votre consentement à tout moment
 
@@ -89,7 +89,7 @@ Obligations légales :
   },
   {
     key: 'partage', Icon: Users, title: "5. Partage et destinataires des données",
-    body: `GoFolix ne vend jamais vos données personnelles à des tiers. Elles peuvent être partagées uniquement dans les cas suivants :
+    body: `GoFoliX ne vend jamais vos données personnelles à des tiers. Elles peuvent être partagées uniquement dans les cas suivants :
 
 Sous-traitants techniques (traitement pour notre compte) :
 • Hébergement cloud (serveurs EU) — AWS / OVH
@@ -100,7 +100,7 @@ Sous-traitants techniques (traitement pour notre compte) :
 
 Tous nos sous-traitants sont liés par des DPA (Data Processing Agreements) conformes au RGPD et ne peuvent utiliser vos données qu'aux fins pour lesquelles nous les mandatons.
 
-Autres utilisateurs GoFolix :
+Autres utilisateurs GoFoliX :
 • Vos contenus publics (posts, reels, profil public) sont visibles conformément à vos paramètres de confidentialité
 • Vos messages privés ne sont partagés qu'avec leurs destinataires
 
@@ -145,7 +145,7 @@ Consentements marketing :
     key: 'droits', Icon: CheckCircle, title: "8. Vos droits RGPD",
     body: `Conformément au RGPD (articles 15 à 22), vous disposez des droits suivants sur vos données personnelles :
 
-• Droit d'accès (art. 15) : obtenir une copie complète de vos données personnelles traitées par GoFolix
+• Droit d'accès (art. 15) : obtenir une copie complète de vos données personnelles traitées par GoFoliX
 
 • Droit de rectification (art. 16) : corriger toute donnée inexacte ou incomplète
 
@@ -165,7 +165,7 @@ Recours : si vous estimez que vos droits ne sont pas respectés, vous pouvez sai
   },
   {
     key: 'securite', Icon: Lock, title: "9. Sécurité des données",
-    body: `GoFolix met en œuvre un ensemble de mesures techniques et organisationnelles pour protéger vos données :
+    body: `GoFoliX met en œuvre un ensemble de mesures techniques et organisationnelles pour protéger vos données :
 
 Mesures techniques :
 • Chiffrement des données en transit : TLS 1.3 minimum sur toutes les connexions
@@ -181,12 +181,12 @@ Mesures organisationnelles :
 • Politique de gestion des incidents de sécurité documentée
 
 En cas de violation de données :
-• GoFolix s'engage à notifier la CNIL dans les 72 heures
+• GoFoliX s'engage à notifier la CNIL dans les 72 heures
 • Les utilisateurs concernés seront notifiés dans les meilleurs délais si la violation présente un risque élevé`,
   },
   {
     key: 'cookies', Icon: Smartphone, title: "10. Cookies et technologies de suivi",
-    body: `GoFolix utilise des technologies similaires aux cookies que nous classons en trois catégories :
+    body: `GoFoliX utilise des technologies similaires aux cookies que nous classons en trois catégories :
 
 Strictement nécessaires (toujours actifs) :
 • Maintien de votre session authentifiée
@@ -210,7 +210,7 @@ Comment gérer vos préférences :
   },
   {
     key: 'mineurs', Icon: UserX, title: "11. Protection des mineurs",
-    body: `GoFolix est destiné aux personnes âgées de 13 ans et plus. Nous prenons la protection des mineurs très au sérieux.
+    body: `GoFoliX est destiné aux personnes âgées de 13 ans et plus. Nous prenons la protection des mineurs très au sérieux.
 
 Mesures en place :
 • Vérification de l'âge lors de l'inscription (déclaration de date de naissance)
@@ -218,11 +218,11 @@ Mesures en place :
 • Contenu sensible masqué par défaut pour les comptes mineurs
 • Signalement facilité des profils suspects
 
-Nous ne collectons pas sciemment de données personnelles d'enfants de moins de 13 ans. Si vous êtes un parent ou tuteur légal et pensez qu'un enfant de moins de 13 ans a créé un compte sur GoFolix, contactez-nous immédiatement à privacy@gofolix.app.`,
+Nous ne collectons pas sciemment de données personnelles d'enfants de moins de 13 ans. Si vous êtes un parent ou tuteur légal et pensez qu'un enfant de moins de 13 ans a créé un compte sur GoFoliX, contactez-nous immédiatement à privacy@gofolix.app.`,
   },
   {
     key: 'ia', Icon: Cpu, title: "12. Intelligence artificielle et algorithmes",
-    body: `GoFolix utilise des systèmes algorithmiques et d'intelligence artificielle pour :
+    body: `GoFoliX utilise des systèmes algorithmiques et d'intelligence artificielle pour :
 
 Personnalisation :
 • Recommandation de contenus dans votre fil d'actualité
@@ -243,7 +243,7 @@ Contactez support@gofolix.app pour toute demande en ce sens.`,
   },
   {
     key: 'modifications', Icon: RefreshCw, title: "13. Modifications de la politique",
-    body: `GoFolix se réserve le droit de modifier la présente Politique de Confidentialité à tout moment, notamment pour :
+    body: `GoFoliX se réserve le droit de modifier la présente Politique de Confidentialité à tout moment, notamment pour :
 • Se conformer aux évolutions légales et réglementaires
 • Refléter de nouvelles pratiques de traitement
 • Intégrer de nouveaux services ou fonctionnalités
@@ -354,9 +354,9 @@ export default function PolitiqueConfidentialitePage() {
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
-              Confidentialité GoFolix
+              Confidentialité GoFoliX
             </h2>
-            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>GoFolix SAS · Paris, France · DPO : privacy@gofolix.app</p>
+            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>GoFoliX SAS · Paris, France · DPO : privacy@gofolix.app</p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Nous prenons la protection de vos données très au sérieux. Cette politique explique comment nous collectons, utilisons et protégeons vos informations personnelles.
             </p>
@@ -454,7 +454,7 @@ export default function PolitiqueConfidentialitePage() {
 
             {/* Footer */}
             <p className="text-center text-xs py-2" style={{ color: 'var(--text-tertiary)' }}>
-              Politique de confidentialité v2.0 · GoFolix SAS · © 2026 Sahelys · Tous droits réservés
+              Politique de confidentialité v2.0 · GoFoliX SAS · © 2026 Sahelys · Tous droits réservés
             </p>
           </div>
         </div>

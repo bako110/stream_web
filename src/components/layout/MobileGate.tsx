@@ -96,7 +96,7 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
       {/* Logo */}
       <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:12, paddingTop:72 }}>
         <AppLogo size={72} />
-        <span style={{ color:'#fff', fontSize:30, fontWeight:900, letterSpacing:'-0.5px' }}>GoFolix</span>
+        <span style={{ color:'#fff', fontSize:30, fontWeight:900, letterSpacing:'-0.5px' }}>GoFoliX</span>
         <span style={{ color:'rgba(255,255,255,0.4)', fontSize:13, textAlign:'center', maxWidth:240, lineHeight:1.5 }}>
           Films · Concerts · Live · Reels · Communautés
         </span>
@@ -114,7 +114,7 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
             Cette page est disponible dans l'application
           </p>
           <p style={{ color:'rgba(255,255,255,0.45)', fontSize:13, margin:'6px 0 0', lineHeight:1.5 }}>
-            Télécharge GoFolix pour profiter de toutes les fonctionnalités
+            Télécharge GoFoliX pour profiter de toutes les fonctionnalités
           </p>
         </div>
 
@@ -198,7 +198,7 @@ function AppBanner({ ios }: { ios: boolean }) {
       <AppLogo size={38} />
 
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ color:'#fff', fontWeight:700, fontSize:14, lineHeight:1.2 }}>GoFolix</div>
+        <div style={{ color:'#fff', fontWeight:700, fontSize:14, lineHeight:1.2 }}>GoFoliX</div>
         <div style={{ color:'rgba(255,255,255,0.45)', fontSize:11, marginTop:1 }}>
           Meilleure expérience sur l'app
         </div>

@@ -189,7 +189,7 @@ export default function QRLoginPanel() {
       {qrState === 'ready' && (
         <div className="flex flex-col gap-2 w-full max-w-[220px]">
           {[
-            { n: 1, text: 'Ouvrez GoFolix sur votre mobile' },
+            { n: 1, text: 'Ouvrez GoFoliX sur votre mobile' },
             { n: 2, text: 'Allez dans Paramètres → Scanner' },
             { n: 3, text: 'Scannez le QR code' },
           ].map(({ n, text }) => (

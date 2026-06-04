@@ -68,7 +68,7 @@ export function Topbar({ onMenuClick }: Props) {
       {/* Logo — visible partout (mobile + desktop) */}
       <img
         src={isDark ? Images.logoDark : Images.logoLight}
-        alt="GoFolix"
+        alt="GoFoliX"
         className="h-7 w-auto cursor-pointer shrink-0"
         onClick={() => navigate('/feed')}
       />
