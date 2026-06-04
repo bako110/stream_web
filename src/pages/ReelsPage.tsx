@@ -1041,7 +1041,13 @@ export default function ReelsPage() {
 
   const getHeaders = () => {
     const h: Record<string, string> = { Accept: 'application/json' };
-    try { const t = localStorage.getItem('folix_access_token'); if (t) h.Authorization = `Bearer ${t}`; } catch {}
+    try {
+      const raw = localStorage.getItem('folix-auth-tokens');
+      if (raw) {
+        const { access } = JSON.parse(raw) as { access: string };
+        if (access) h.Authorization = `Bearer ${access}`;
+      }
+    } catch {}
     return h;
   };
 
