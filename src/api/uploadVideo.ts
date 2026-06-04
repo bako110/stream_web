@@ -17,7 +17,7 @@ export interface UploadedVideo {
 }
 
 function getToken(): string {
-  try { return JSON.parse(localStorage.getItem('folix-auth-tokens') ?? '{}').access ?? ''; }
+  try { return JSON.parse(localStorage.getItem('gofolix-auth-tokens') ?? '{}').access ?? ''; }
   catch { return ''; }
 }
 

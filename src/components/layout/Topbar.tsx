@@ -66,7 +66,7 @@ export function Topbar({ onMenuClick }: Props) {
       </button>
 
       {/* Logo mobile */}
-      <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-7 w-auto lg:hidden" />
+      <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolix" className="h-7 w-auto lg:hidden" />
 
 
       {/* Desktop search bar */}

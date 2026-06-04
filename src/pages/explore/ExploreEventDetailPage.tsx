@@ -159,7 +159,7 @@ export default function ExploreEventDetailPage() {
 
         <div className="mt-8 rounded-2xl bg-gradient-to-r from-orange-500/20 to-red-500/10 border border-orange-500/20 p-8 text-center">
           <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2">
-            Rejoignez la communauté FoliX
+            Rejoignez la communauté GoFolix
           </h2>
           <p className="text-[var(--text-secondary)] mb-4">
             Partagez vos expériences et découvrez de nouveaux événements

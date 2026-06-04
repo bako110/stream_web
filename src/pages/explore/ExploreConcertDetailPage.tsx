@@ -143,7 +143,7 @@ export default function ExploreConcertDetailPage() {
 
           {isPast && (
             <div className="mb-6 p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-tertiary)] text-sm">
-              Ce concert est terminé. Rejoignez FoliX pour accéder aux replays.
+              Ce concert est terminé. Rejoignez GoFolix pour accéder aux replays.
             </div>
           )}
 
@@ -167,7 +167,7 @@ export default function ExploreConcertDetailPage() {
 
         <div className="mt-8 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-500/10 border border-purple-500/20 p-8 text-center">
           <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2">
-            Rejoignez FoliX pour ne rien manquer
+            Rejoignez GoFolix pour ne rien manquer
           </h2>
           <p className="text-[var(--text-secondary)] mb-4">Lives, concerts, communauté — tout est là</p>
           <Link to="/auth/register" className="btn-primary inline-block">Inscription gratuite</Link>

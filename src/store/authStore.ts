@@ -3,7 +3,7 @@ import type { User, LoginRequest, RegisterRequest, AuthToken } from '../types';
 import { apiClient, setAuthToken, setRefreshTokenFn, setOnUnauthorized } from '../api';
 import { Endpoints } from '../api/endpoints';
 
-const STORAGE_KEY = 'folix-auth-tokens';
+const STORAGE_KEY = 'gofolix-auth-tokens';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface AuthState {

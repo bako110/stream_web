@@ -167,7 +167,7 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0">
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-10 w-auto" />
+          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolix" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop nav */}
@@ -635,14 +635,14 @@ function FeaturesSection() {
     { icon: Zap,    title: 'Reels & Stories',      desc: 'Partage des courts-métrages, découvre les créations des artistes du monde entier.',      gradient: 'linear-gradient(135deg,#FF7A2F,#FFB340)' },
     { icon: Users,  title: 'Communautés',          desc: 'Rejoins des groupes de passionnés, crée des liens autour de ta culture favorite.',       gradient: 'linear-gradient(135deg,#36D9A0,#00C9A7)' },
     { icon: Globe,  title: 'Événements',           desc: 'Festivals, conférences, expos — près de chez toi ou en ligne depuis partout.',           gradient: 'linear-gradient(135deg,#3B82F6,#60A5FA)' },
-    { icon: Shield, title: 'Contenu exclusif',     desc: 'Avant-premières mondiales, replays et contenu premium unique sur FoliX.',                gradient: 'linear-gradient(135deg,#E0389A,#F97316)' },
+    { icon: Shield, title: 'Contenu exclusif',     desc: 'Avant-premières mondiales, replays et contenu premium unique sur GoFolix.',                gradient: 'linear-gradient(135deg,#E0389A,#F97316)' },
   ];
 
   return (
     <section id="features" className="py-24 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 sr">
-          <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Pourquoi FoliX</p>
+          <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Pourquoi GoFolix</p>
           <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ color: 'var(--text-primary)' }}>
             Tout ce dont tu as besoin
           </h2>
@@ -692,7 +692,7 @@ function SocialProof() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12 sr">
           <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Témoignages</p>
-          <h2 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--text-primary)' }}>Ils adorent FoliX</h2>
+          <h2 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--text-primary)' }}>Ils adorent GoFolix</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {reviews.map((r, i) => (
@@ -808,7 +808,7 @@ function Footer() {
       { label: 'Mon profil',   href: '/profile'       },
       { label: 'Paramètres',   href: '/settings'      },
     ]},
-    { title: 'FoliX', links: [
+    { title: 'GoFolix', links: [
       { label: 'À propos',  href: '#' },
       { label: 'Blog',      href: '#' },
       { label: 'Presse',    href: '#' },
@@ -823,7 +823,7 @@ function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-9 w-auto" />
+              <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolix" className="h-9 w-auto" />
             </div>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
               La plateforme de streaming culturel qui réunit films, concerts, événements et communauté.
@@ -852,7 +852,7 @@ function Footer() {
 
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs"
           style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-          <p>© 2025 FoliX. Tous droits réservés.</p>
+          <p>© 2025 GoFolix. Tous droits réservés.</p>
           <div className="flex gap-6">
             {['Confidentialité', 'Conditions', 'Cookies'].map(l => (
               <a key={l} href="#" className="transition-colors"

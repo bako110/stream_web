@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { WS_BASE_URL } from '../utils/constants';
 
-const STORAGE_KEY   = 'folix-auth-tokens';
+const STORAGE_KEY   = 'gofolix-auth-tokens';
 const MAX_RETRIES   = 6;
 const INITIAL_DELAY = 1_000;
 const PING_INTERVAL = 25_000;

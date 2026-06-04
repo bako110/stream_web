@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="relative z-10">
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-10 w-auto" />
+          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolix" className="h-10 w-auto" />
         </div>
 
         <div className="relative z-10 space-y-6">
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
 
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-9 w-auto" />
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolix" className="h-9 w-auto" />
           </div>
 
           <Link to="/auth/login"
