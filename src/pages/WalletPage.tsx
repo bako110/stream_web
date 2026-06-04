@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, Send, BarChart2, ArrowUpRight, RefreshCw,
   WifiOff, Gift, Star, RotateCcw, Circle, Zap,
-  Users, Heart, Clock, TrendingUp, Ticket, UserCheck, CreditCard,
+  Ticket, UserCheck, CreditCard,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -90,18 +90,14 @@ export default function WalletPage() {
   }, [fetchData]);
 
   const ACTIONS = [
-    { icon: <ShoppingCart size={20} />, label: 'Acheter',        color: '#3B82F6', path: '/wallet/buy' },
-    { icon: <Send size={20} />,         label: 'Transférer',     color: '#7B3FF2', path: '/wallet/transfer' },
-    { icon: <Zap size={20} />,          label: 'Booster',        color: '#F59E0B', path: '/wallet/boost' },
-    { icon: <BarChart2 size={20} />,    label: 'Créateur',       color: '#E85DAD', path: '/wallet/creator' },
-    { icon: <ArrowUpRight size={20} />, label: 'Retirer',        color: '#3FEDB6', path: '/wallet/withdraw' },
-    { icon: <UserCheck size={20} />,    label: 'Monétisation',   color: '#10B981', path: '/wallet/monetisation' },
-    { icon: <Users size={20} />,        label: 'Parrainage',     color: '#6366F1', path: '/wallet/referral' },
-    { icon: <Ticket size={20} />,       label: 'Mes billets',    color: '#F59E0B', path: '/my-tickets' },
-    { icon: <TrendingUp size={20} />,   label: 'Tendances',      color: '#8B5CF6', path: '/trending' },
-    { icon: <Heart size={20} />,        label: 'Favoris',        color: '#EF4444', path: '/favorites' },
-    { icon: <Clock size={20} />,        label: 'Historique',     color: '#06B6D4', path: '/watch-history' },
-    { icon: <CreditCard size={20} />,   label: 'Abonnement',     color: '#A855F7', path: '/wallet/subscription/my' },
+    { icon: <ShoppingCart size={20} />, label: 'Acheter',      color: '#3B82F6', path: '/wallet/buy' },
+    { icon: <Send size={20} />,         label: 'Transférer',   color: '#7B3FF2', path: '/wallet/transfer' },
+    { icon: <ArrowUpRight size={20} />, label: 'Retirer',      color: '#3FEDB6', path: '/wallet/withdraw' },
+    { icon: <Zap size={20} />,          label: 'Booster',      color: '#F59E0B', path: '/wallet/boost' },
+    { icon: <BarChart2 size={20} />,    label: 'Créateur',     color: '#E85DAD', path: '/wallet/creator' },
+    { icon: <UserCheck size={20} />,    label: 'Monétisation', color: '#10B981', path: '/wallet/monetisation' },
+    { icon: <CreditCard size={20} />,   label: 'Abonnement',   color: '#A855F7', path: '/wallet/subscription/my' },
+    { icon: <Ticket size={20} />,       label: 'Mes billets',  color: '#F59E0B', path: '/my-tickets' },
   ];
 
   if (loading) {
@@ -172,8 +168,8 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Quick actions — 6 colonnes sur grand écran, 4 sur petit */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+      {/* Quick actions */}
+      <div className="grid grid-cols-4 gap-3">
         {ACTIONS.map(a => (
           <button key={a.label} onClick={() => navigate(a.path)}
             className="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all"
