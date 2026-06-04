@@ -1011,14 +1011,18 @@ function toArray<T>(raw: unknown): T[] {
   return [];
 }
 
+// ── Module-level cache (identique mobile reelsRef — persiste entre navigations) ──
+// Vidé uniquement si l'utilisateur n'a pas consulté les reels depuis > 90s
+let _reelCache: { list: Reel[]; loadedAt: number; page: number } | null = null;
+let _reelPosition: { idx: number; reelId: string } | null = null;
+const CACHE_TTL_MS = 90_000;
+
 // ── Page shell ────────────────────────────────────────────────────────────────
 export default function ReelsPage() {
   const [searchParams]                  = useSearchParams();
   const navigate                        = useNavigate();
   const targetId                        = searchParams.get('id');
-  const POSITION_KEY = 'folix_reels_position';
-  const CACHE_KEY    = 'folix_reels_cache';
-  const CACHE_TTL    = 90_000; // 90s identique mobile avant refresh silencieux
+  const POSITION_KEY = 'folix_reels_position'; // sessionStorage pour la position seule (survit au F5)
 
   const [reels,         setReels]       = useState<Reel[]>([]);
   const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
@@ -1044,23 +1048,18 @@ export default function ReelsPage() {
   };
 
   const fetchReels = useCallback((silent = false) => {
-    // Tentative de restauration depuis cache sessionStorage (identique mobile < 90s)
-    if (!targetId && !silent) {
-      try {
-        const raw = sessionStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const { list, loadedAt, page } = JSON.parse(raw) as { list: Reel[]; loadedAt: number; page: number };
-          const age = Date.now() - loadedAt;
-          if (age < CACHE_TTL && list.length > 0) {
-            // Cache frais → on l'utilise directement, pas de réseau
-            setReels(list);
-            pageRef.current = page;
-            setHasMore(true);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch {}
+    // Cache module-level frais → restaurer directement sans réseau (identique mobile reelsRef)
+    if (!targetId && !silent && _reelCache) {
+      const age = Date.now() - _reelCache.loadedAt;
+      if (age < CACHE_TTL_MS && _reelCache.list.length > 0) {
+        setReels(_reelCache.list);
+        pageRef.current = _reelCache.page;
+        setHasMore(true);
+        setLoading(false);
+        return;
+      }
+      // Cache expiré → vider
+      _reelCache = null;
     }
 
     if (!silent) { setLoading(true); setError(null); }
@@ -1090,10 +1089,8 @@ export default function ReelsPage() {
               .catch(() => {});
           }
         }
-        // Sauvegarder dans sessionStorage pour figer l'ordre (identique mobile reelsRef)
-        try {
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ list, loadedAt: Date.now(), page: 1 }));
-        } catch {}
+        // Figer l'ordre en cache module-level
+        _reelCache = { list, loadedAt: Date.now(), page: 1 };
         setReels(list);
         setLoading(false);
       })
@@ -1117,10 +1114,8 @@ export default function ReelsPage() {
         setReels(prev => {
           const ids = new Set(prev.map(r => r.id));
           const merged = [...prev, ...newItems.filter(r => !ids.has(r.id))];
-          // Mettre à jour le cache avec la liste étendue
-          try {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ list: merged, loadedAt: Date.now(), page: nextPage }));
-          } catch {}
+          // Mettre à jour le cache module-level avec la liste étendue
+          _reelCache = { list: merged, loadedAt: _reelCache?.loadedAt ?? Date.now(), page: nextPage };
           return merged;
         });
         pageRef.current = nextPage;
@@ -1134,38 +1129,37 @@ export default function ReelsPage() {
     apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
       .then(r => { if (r.data?.id) setReelAd(r.data); })
       .catch(() => {});
-
-    // Vider le cache au démontage (quitter la page = ordre frais au retour)
-    return () => {
-      try { sessionStorage.removeItem(CACHE_KEY); } catch {}
-    };
   }, [fetchReels]);
 
   // Restaurer position après chargement (identique mobile: scroll direct vers index sauvegardé)
   useEffect(() => {
     if (reels.length === 0) return;
-    // Si targetId → déjà géré dans fetchReels (index 0)
     if (targetId) return;
-    try {
-      const saved = sessionStorage.getItem(POSITION_KEY);
-      if (!saved) return;
-      const { idx, reelId } = JSON.parse(saved) as { idx: number; reelId: string; page: number };
-      // Vérifier que le reel sauvegardé est toujours dans la liste
-      const foundIdx = reels.findIndex(r => r.id === reelId);
-      const restoreIdx = foundIdx >= 0 ? foundIdx : Math.min(idx, reels.length - 1);
-      if (restoreIdx <= 0) return;
-      // Scroll vers la position après rendu (RAF + timeout identique mobile 80ms)
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          const container = containerRef.current;
-          if (!container) return;
-          const itemH = container.clientHeight;
-          container.scrollTop = restoreIdx * itemH;
-          setActiveIndex(restoreIdx);
-          savedIndexRef.current = restoreIdx;
-        }, 80);
-      });
-    } catch {}
+
+    // Priorité : module-level (navigation) > sessionStorage (F5)
+    let pos = _reelPosition;
+    if (!pos) {
+      try {
+        const raw = sessionStorage.getItem(POSITION_KEY);
+        if (raw) pos = JSON.parse(raw) as { idx: number; reelId: string };
+      } catch {}
+    }
+    if (!pos) return;
+
+    const foundIdx = reels.findIndex(r => r.id === pos!.reelId);
+    const restoreIdx = foundIdx >= 0 ? foundIdx : Math.min(pos.idx, reels.length - 1);
+    if (restoreIdx <= 0) return;
+
+    // Scroll 80ms après rendu (identique mobile)
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        container.scrollTop = restoreIdx * container.clientHeight;
+        setActiveIndex(restoreIdx);
+        savedIndexRef.current = restoreIdx;
+      }, 80);
+    });
   }, [reels.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -1176,11 +1170,10 @@ export default function ReelsPage() {
           const idx = Number((e.target as HTMLElement).dataset.index);
           setActiveIndex(idx);
           savedIndexRef.current = idx;
-          // Sauvegarder position + reelId courant (identique mobile avec currentIdxRef)
-          try {
-            const reelId = reels[idx]?.id ?? '';
-            sessionStorage.setItem(POSITION_KEY, JSON.stringify({ idx, reelId, page: pageRef.current }));
-          } catch {}
+          // Sauvegarder position (module-level + sessionStorage pour F5)
+          const reelId = reels[idx]?.id ?? '';
+          _reelPosition = { idx, reelId };
+          try { sessionStorage.setItem(POSITION_KEY, JSON.stringify({ idx, reelId })); } catch {}
           // Charger plus quand on approche des 3 derniers (identique mobile)
           if (idx >= reels.length - 3) loadMore();
         }
