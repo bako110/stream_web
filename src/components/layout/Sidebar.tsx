@@ -121,24 +121,17 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
       style={{ background: 'var(--bg)', borderRight: '1px solid var(--border)' }}
     >
       {/* ── Logo + collapse toggle ── */}
-      <div className={clsx('flex items-center h-14 shrink-0 transition-all', collapsed ? 'px-3 justify-center' : 'px-4 justify-between')}>
-        <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-8 w-auto" />
-        {!collapsed && onCollapseToggle && (
+      <div className={clsx('flex items-center h-14 shrink-0 transition-all', collapsed ? 'px-2 justify-center' : 'px-4 justify-between')}>
+        {!collapsed && (
+          <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-8 w-auto" />
+        )}
+        {onCollapseToggle && (
           <button onClick={onCollapseToggle}
-            className="p-1.5 rounded-lg transition-all"
+            className="p-1.5 rounded-lg transition-all shrink-0"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
             onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = 'var(--text-tertiary)'); }}>
-            <ChevronLeft size={16} />
-          </button>
-        )}
-        {collapsed && onCollapseToggle && (
-          <button onClick={onCollapseToggle}
-            className="absolute -right-3 top-[18px] w-6 h-6 rounded-full flex items-center justify-center z-10 transition-all"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-tertiary)' }}
-            onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--primary)'); (e.currentTarget.style.color = 'var(--primary)'); }}
-            onMouseLeave={e => { (e.currentTarget.style.borderColor = 'var(--border)'); (e.currentTarget.style.color = 'var(--text-tertiary)'); }}>
-            <ChevronRight size={12} />
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         )}
       </div>
