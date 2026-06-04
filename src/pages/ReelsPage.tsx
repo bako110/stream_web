@@ -761,14 +761,6 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
         </div>
       )}
 
-      {/* Mute button — top right */}
-      <div className="absolute top-3 right-3 z-30">
-        <button onClick={e => { e.stopPropagation(); onUnmute(); }}
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
-          {globalMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-        </button>
-      </div>
 
       {/* Bottom: author + caption + actions
           pb adaptatif : env(safe-area-inset-bottom) gère le notch/home bar iOS/Android */}
@@ -859,6 +851,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
 
         {/* Right: actions — boutons plus petits sur mobile */}
         <div className="shrink-0 flex flex-col items-center gap-3 sm:gap-4 pb-1">
+
+          {/* Volume — identique mobile : en haut de la colonne */}
+          <button onClick={e => { e.stopPropagation(); onUnmute(); }} className="flex flex-col items-center gap-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
+              {globalMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+            </div>
+          </button>
 
           {/* Vinyl tournant */}
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden"
