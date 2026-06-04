@@ -367,6 +367,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
   const viewSentRef   = useRef(false);
   const likeInFlight  = useRef(false);
 
+  const authorId   = reel.author?.id;
+  const authorName = reel.author?.display_name ?? reel.author?.username ?? 'Artiste';
+  const isMine     = me?.id === authorId;
+
   const [playing,         setPlaying]        = useState(false);
   const [buffering,       setBuffering]       = useState(false);
   const [videoError,      setVideoError]      = useState(false);
@@ -419,10 +423,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
       .catch(() => {});
   }, [active, authorId, isMine]); // eslint-disable-line
 
-  const authorId   = reel.author?.id;
-  const authorName = reel.author?.display_name ?? reel.author?.username ?? 'Artiste';
   const caption    = reel.caption ?? '';
-  const isMine     = me?.id === authorId;
 
   // Suivi de vue — 10% regardé, 1x par reel, max 30s (identique mobile)
   function sendView() {
