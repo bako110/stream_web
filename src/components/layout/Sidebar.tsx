@@ -4,6 +4,7 @@ import {
   Home, Play, Film, Radio, Calendar, Music2, Users, MessageCircle,
   Bell, Search, Settings, LogOut, Sun, Moon, Activity, Video,
   ChevronLeft, ChevronRight, CalendarDays, HelpCircle,
+  TrendingUp, Heart, Clock, UserPlus,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -30,6 +31,11 @@ const secondaryLinks = [
   { to: '/notifications',  label: 'Notifications', icon: Bell,          color: '#E0389A' },
   { to: '/search',         label: 'Recherche',     icon: Search,        color: '#F59E0B' },
   { to: '/activity',       label: 'Activité',      icon: Activity,      color: '#36D9A0' },
+  { to: '/following',      label: 'Abonnements',   icon: UserPlus,      color: '#6366F1' },
+  { to: '/favorites',      label: 'Favoris',       icon: Heart,         color: '#EF4444' },
+  { to: '/trending',       label: 'Tendances',     icon: TrendingUp,    color: '#8B5CF6' },
+  { to: '/watch-history',  label: 'Historique',    icon: Clock,         color: '#06B6D4' },
+  { to: '/wallet/referral',label: 'Parrainage',    icon: UserPlus,      color: '#10B981' },
   { to: '/planning',       label: 'Mon planning',  icon: CalendarDays,  color: '#7B3FF2' },
   { to: '/support',        label: 'Aide & Support',icon: HelpCircle,    color: '#3B82F6' },
 ];
