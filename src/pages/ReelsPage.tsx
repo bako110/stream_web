@@ -380,8 +380,12 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
   const [heartPos,        setHeartPos]       = useState({ x: 0, y: 0 });
   const [skipAnim,        setSkipAnim]       = useState<{ side: 'left'|'right'; label: string } | null>(null);
   const [saved,           setSaved]          = useState(false);
-  const [followed,        setFollowed]       = useState(false);
+  const [followed,        setFollowed]       = useState(() => {
+    // Initialiser depuis le cache module-level si déjà chargé
+    return authorId ? (_followCache.get(String(authorId)) ?? false) : false;
+  });
   const [followLoading,   setFollowLoading]  = useState(false);
+  const followFetched     = useRef(false);
   const [captionExpanded, setCaptionExpanded]= useState(false);
   const [showGiftPicker,  setShowGiftPicker] = useState(false);
 
@@ -395,7 +399,25 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     viewSentRef.current = false;
     retryCount.current = 0;
     setVideoError(false);
-  }, [reel.id]);
+    followFetched.current = false;
+    // Réinitialiser depuis cache si disponible
+    if (authorId) setFollowed(_followCache.get(String(authorId)) ?? false);
+  }, [reel.id]); // eslint-disable-line
+
+  // Charger l'état de follow réel depuis l'API quand le reel devient actif (1x par auteur)
+  useEffect(() => {
+    if (!active || !authorId || isMine || followFetched.current) return;
+    const cached = _followCache.get(String(authorId));
+    if (cached !== undefined) { setFollowed(cached); followFetched.current = true; return; }
+    followFetched.current = true;
+    apiClient.get<any>(Endpoints.users.publicProfile(String(authorId)))
+      .then(r => {
+        const isFollowed = r.data?.is_followed ?? r.data?.user?.is_followed ?? false;
+        _followCache.set(String(authorId), isFollowed);
+        setFollowed(isFollowed);
+      })
+      .catch(() => {});
+  }, [active, authorId, isMine]); // eslint-disable-line
 
   const authorId   = reel.author?.id;
   const authorName = reel.author?.display_name ?? reel.author?.username ?? 'Artiste';
@@ -589,10 +611,12 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     e.stopPropagation();
     if (!authorId || isMine || followLoading) return;
     setFollowLoading(true);
+    const newState = !followed;
     try {
-      if (followed) await apiClient.delete(Endpoints.users.follow(authorId));
-      else          await apiClient.post(Endpoints.users.follow(authorId));
-      setFollowed(v => !v);
+      if (followed) await apiClient.delete(Endpoints.users.follow(String(authorId)));
+      else          await apiClient.post(Endpoints.users.follow(String(authorId)));
+      setFollowed(newState);
+      _followCache.set(String(authorId), newState); // mettre à jour le cache
     } catch { /* ignore */ } finally { setFollowLoading(false); }
   }
 
@@ -1011,10 +1035,10 @@ function toArray<T>(raw: unknown): T[] {
   return [];
 }
 
-// ── Module-level state (persiste entre navigations React Router) ──
-// On ne cache PAS la liste — le backend doit donner un ordre frais à chaque visite
-// On cache uniquement la position pour la restaurer dans la même session
+// ── Module-level state ──
 let _reelPosition: { idx: number; reelId: string } | null = null;
+// Cache des états de follow par userId — évite les appels API répétés
+const _followCache = new Map<string, boolean>();
 
 // ── Page shell ────────────────────────────────────────────────────────────────
 export default function ReelsPage() {
