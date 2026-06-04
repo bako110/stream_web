@@ -68,16 +68,6 @@ export function Topbar({ onMenuClick }: Props) {
       {/* Logo mobile */}
       <img src={isDark ? Images.logoDark : Images.logoLight} alt="FoliX" className="h-7 w-auto lg:hidden" />
 
-      {/* Desktop hamburger (sidebar collapse) */}
-      <button
-        onClick={onMenuClick}
-        className="hidden lg:flex p-2 rounded-xl transition-all"
-        style={{ color: 'var(--text-secondary)' }}
-        onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
-        onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
-      >
-        <Menu size={20} />
-      </button>
 
       {/* Desktop search bar */}
       <form onSubmit={handleSearch} className="flex-1 max-w-md hidden lg:flex items-center">
