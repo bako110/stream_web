@@ -1011,18 +1011,17 @@ function toArray<T>(raw: unknown): T[] {
   return [];
 }
 
-// ── Module-level cache (identique mobile reelsRef — persiste entre navigations) ──
-// Vidé uniquement si l'utilisateur n'a pas consulté les reels depuis > 90s
-let _reelCache: { list: Reel[]; loadedAt: number; page: number } | null = null;
+// ── Module-level state (persiste entre navigations React Router) ──
+// On ne cache PAS la liste — le backend doit donner un ordre frais à chaque visite
+// On cache uniquement la position pour la restaurer dans la même session
 let _reelPosition: { idx: number; reelId: string } | null = null;
-const CACHE_TTL_MS = 90_000;
 
 // ── Page shell ────────────────────────────────────────────────────────────────
 export default function ReelsPage() {
   const [searchParams]                  = useSearchParams();
   const navigate                        = useNavigate();
   const targetId                        = searchParams.get('id');
-  const POSITION_KEY = 'folix_reels_position'; // sessionStorage pour la position seule (survit au F5)
+  const POSITION_KEY = 'folix_reels_position';
 
   const [reels,         setReels]       = useState<Reel[]>([]);
   const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
@@ -1047,20 +1046,9 @@ export default function ReelsPage() {
     return h;
   };
 
-  const fetchReels = useCallback((silent = false) => {
-    // Cache module-level frais → restaurer directement sans réseau (identique mobile reelsRef)
-    if (!targetId && _reelCache) {
-      const age = Date.now() - _reelCache.loadedAt;
-      if (!silent && age < CACHE_TTL_MS && _reelCache.list.length > 0) {
-        setReels(_reelCache.list);
-        pageRef.current = _reelCache.page;
-        setHasMore(true);
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (!silent) { setLoading(true); setError(null); }
+  const fetchReels = useCallback(() => {
+    setLoading(true);
+    setError(null);
     pageRef.current = 1;
     loadingMoreRef.current = false;
     const headers = getHeaders();
@@ -1087,23 +1075,7 @@ export default function ReelsPage() {
               .catch(() => {});
           }
         }
-        // Figer l'ordre en cache module-level
-        _reelCache = { list, loadedAt: Date.now(), page: 1 };
         setReels(list);
-        // Silent : garder l'index actuel (identique mobile load(true))
-        // Non-silent : position sera restaurée par l'effet suivant
-        if (silent && _reelPosition) {
-          const foundIdx = list.findIndex(r => r.id === _reelPosition!.reelId);
-          if (foundIdx >= 0 && foundIdx !== savedIndexRef.current) {
-            // Le reel actif a bougé dans la nouvelle liste → scroll discret
-            requestAnimationFrame(() => {
-              setTimeout(() => {
-                const c = containerRef.current;
-                if (c) { c.scrollTop = foundIdx * c.clientHeight; setActiveIndex(foundIdx); }
-              }, 80);
-            });
-          }
-        }
         setLoading(false);
       })
       .catch(() => { setError('Impossible de charger les reels'); setLoading(false); });
@@ -1125,10 +1097,7 @@ export default function ReelsPage() {
         hasMoreRef.current = more;
         setReels(prev => {
           const ids = new Set(prev.map(r => r.id));
-          const merged = [...prev, ...newItems.filter(r => !ids.has(r.id))];
-          // Mettre à jour le cache module-level avec la liste étendue
-          _reelCache = { list: merged, loadedAt: _reelCache?.loadedAt ?? Date.now(), page: nextPage };
-          return merged;
+          return [...prev, ...newItems.filter(r => !ids.has(r.id))];
         });
         pageRef.current = nextPage;
       })
@@ -1137,20 +1106,7 @@ export default function ReelsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    // Identique mobile useFocusEffect :
-    // Cache frais → fetchReels() utilise le cache directement (ordre figé)
-    // Cache expiré (>90s) → fetchReels(true) : silent, garde l'index actuel
-    if (_reelCache) {
-      const age = Date.now() - _reelCache.loadedAt;
-      if (age > CACHE_TTL_MS) {
-        // Reload silencieux — liste mise à jour en arrière-plan sans bouger l'index
-        fetchReels(true);
-      } else {
-        fetchReels();
-      }
-    } else {
-      fetchReels();
-    }
+    fetchReels();
     apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
       .then(r => { if (r.data?.id) setReelAd(r.data); })
       .catch(() => {});
