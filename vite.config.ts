@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://178.104.248.78',
+        target: 'https://gofolyx.com',
         changeOrigin: true,
         secure: false,
         ws: true,
@@ -24,7 +24,7 @@ export default defineConfig({
         },
       },
       '/uploads': {
-        target: 'http://178.104.248.78',
+        target: 'https://gofolyx.com',
         changeOrigin: true,
         secure: false,
       },
