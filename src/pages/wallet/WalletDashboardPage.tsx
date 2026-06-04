@@ -18,7 +18,7 @@ interface CreatorStats {
   top_content: Array<{ id: string; title: string; views: number; likes: number; gifts: number }>;
 }
 
-const coinsToEur = (c: number) => ((c / 100) * 0.5).toFixed(2);
+const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
 export default function WalletDashboardPage() {
   const navigate = useNavigate();

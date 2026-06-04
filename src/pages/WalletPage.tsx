@@ -29,7 +29,7 @@ interface Transaction {
   status: 'completed' | 'pending' | 'failed';
 }
 
-const coinsToEur = (c: number) => ((c / 100) * 0.5).toFixed(2);
+const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
 const TX_CONFIG: Record<string, { icon: React.ReactNode; color: string; credit: boolean }> = {
   credit_purchase:      { icon: <ShoppingCart size={18} />, color: '#3B82F6',  credit: true  },
