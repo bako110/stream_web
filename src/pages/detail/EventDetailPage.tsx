@@ -309,14 +309,14 @@ export default function EventDetailPage() {
   }, [id, remindLoading]);
 
   const share = useCallback(async () => {
-    const url = window.location.href;
+    const url = `${window.location.origin}/events/${encodeId(id!)}`;
     try {
       if (navigator.share) await navigator.share({ title: event?.title, url });
       else await navigator.clipboard.writeText(url);
       setShareOk(true);
       setTimeout(() => setShareOk(false), 2000);
     } catch { /* ignore */ }
-  }, [event?.title]);
+  }, [event?.title, id]);
 
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;

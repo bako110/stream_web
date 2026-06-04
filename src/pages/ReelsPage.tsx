@@ -658,7 +658,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
 
   async function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    const url = `${window.location.origin}/reels?id=${reel.id}`;
+    const url = `${window.location.origin}/reels?id=${encodeId(reel.id)}`;
     try {
       if (navigator.share) await navigator.share({ title: caption || 'Reel GoFolyX', url });
       else await navigator.clipboard.writeText(url);
