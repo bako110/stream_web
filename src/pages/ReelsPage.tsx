@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { encodeId } from '../utils/slugId';
 import {
   Heart, MessageCircle, Share2,
   Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft, ChevronRight, ChevronLeft,
-  Gift, Zap, ExternalLink,
+  Gift, Zap, ExternalLink, Eye,
 } from 'lucide-react';
 import Hls from 'hls.js';
 import type { Reel, Comment } from '../types';
@@ -334,10 +335,14 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
 }
 
 // ── Double-tap heart burst ────────────────────────────────────────────────────
-function HeartBurst({ show }: { show: boolean }) {
+function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
   if (!show) return null;
+  const hasPos = x !== undefined && y !== undefined && x > 0 && y > 0;
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+    <div className="absolute pointer-events-none z-20"
+      style={hasPos
+        ? { left: x - 44, top: y - 44, width: 88, height: 88 }
+        : { inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Heart size={88} fill="#E0389A" stroke="none"
         style={{ filter: 'drop-shadow(0 0 24px #E0389Acc)', animation: 'scale-in 0.15s cubic-bezier(.16,1,.3,1) both' }} />
     </div>
@@ -345,93 +350,159 @@ function HeartBurst({ show }: { show: boolean }) {
 }
 
 // ── Single reel player ────────────────────────────────────────────────────────
+const MAX_RETRIES   = 3;
+const STALL_TIMEOUT = 8000; // 8s identique mobile
+
 function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
   reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void;
 }) {
-  const { user: me } = useAuthStore();
-  const videoRef     = useRef<HTMLVideoElement>(null);
-  const tapTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navigate      = useNavigate();
+  const { user: me }  = useAuthStore();
+  const videoRef      = useRef<HTMLVideoElement>(null);
+  const hlsRef        = useRef<Hls | null>(null);
+  const tapTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stallTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCount    = useRef(0);
+  const startTimeRef  = useRef<number>(0);
+  const viewSentRef   = useRef(false);
+  const likeInFlight  = useRef(false);
 
   const [playing,         setPlaying]        = useState(false);
+  const [buffering,       setBuffering]       = useState(false);
+  const [videoError,      setVideoError]      = useState(false);
   const [progress,        setProgress]       = useState(0);
   const [liked,           setLiked]          = useState(reel.user_reaction === 'like');
   const [likeCount,       setLikeCount]      = useState(reel.like_count ?? 0);
+  const [commentCount,    setCommentCount]   = useState(reel.comment_count ?? 0);
+  const [shareCount,      setShareCount]     = useState(reel.share_count ?? 0);
+  const [viewCount,       setViewCount]      = useState(reel.view_count ?? 0);
   const [showHeart,       setShowHeart]      = useState(false);
+  const [heartPos,        setHeartPos]       = useState({ x: 0, y: 0 });
+  const [skipAnim,        setSkipAnim]       = useState<{ side: 'left'|'right'; label: string } | null>(null);
   const [saved,           setSaved]          = useState(false);
   const [followed,        setFollowed]       = useState(false);
   const [followLoading,   setFollowLoading]  = useState(false);
   const [captionExpanded, setCaptionExpanded]= useState(false);
   const [showGiftPicker,  setShowGiftPicker] = useState(false);
-  const likeInFlight = useRef(false);
 
-  // Resync si le reel change (navigation, refresh)
+  // Resync si le reel change
   useEffect(() => {
     setLiked(reel.user_reaction === 'like');
     setLikeCount(reel.like_count ?? 0);
-  }, [reel.id, reel.user_reaction, reel.like_count]);
+    setCommentCount(reel.comment_count ?? 0);
+    setShareCount(reel.share_count ?? 0);
+    setViewCount(reel.view_count ?? 0);
+    viewSentRef.current = false;
+    retryCount.current = 0;
+    setVideoError(false);
+  }, [reel.id]);
 
   const authorId   = reel.author?.id;
   const authorName = reel.author?.display_name ?? reel.author?.username ?? 'Artiste';
   const caption    = reel.caption ?? '';
   const isMine     = me?.id === authorId;
 
-  useEffect(() => {
+  // Suivi de vue — 10% regardé, 1x par reel, max 30s (identique mobile)
+  function sendView() {
+    if (viewSentRef.current) return;
     const v = videoRef.current;
-    if (v) v.muted = globalMuted;
-  }, [globalMuted]);
+    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    const duration = v?.duration ?? 30;
+    const watchRatio = Math.min(elapsed / Math.min(duration, 30), 1.0);
+    if (watchRatio >= 0.1) {
+      viewSentRef.current = true;
+      setViewCount(c => c + 1);
+      apiClient.post(Endpoints.reels.view(reel.id)).catch(() => {});
+    }
+  }
 
+  // Stall detection (8s buffering → retry)
+  function armStall() {
+    clearStall();
+    stallTimer.current = setTimeout(() => doRetry(), STALL_TIMEOUT);
+  }
+  function clearStall() {
+    if (stallTimer.current) { clearTimeout(stallTimer.current); stallTimer.current = null; }
+  }
+
+  // Retry avec backoff exponentiel (identique mobile)
+  function doRetry() {
+    const v = videoRef.current;
+    if (!v || !reel.hls_url) return;
+    if (retryCount.current >= MAX_RETRIES) { setVideoError(true); setBuffering(false); return; }
+    const attempt = retryCount.current++;
+    setTimeout(() => {
+      const src = toProxiedUrl(reel.hls_url!);
+      if (hlsRef.current) {
+        hlsRef.current.loadSource(src);
+      } else if (v.src) {
+        v.load();
+      }
+      v.play().catch(() => {});
+    }, Math.pow(2, attempt) * 1000);
+  }
+
+  // HLS setup
   const videoSrc = toProxiedUrl(reel.hls_url ?? '');
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !videoSrc) return;
-
-    let hls: Hls | null = null;
+    retryCount.current = 0;
+    setVideoError(false);
 
     const playWhenReady = () => {
       if (!active) return;
       v.currentTime = 0;
       v.muted = globalMuted;
-      v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => setPlaying(false));
     };
 
     if (Hls.isSupported()) {
-      hls = new Hls({ autoStartLoad: true });
+      const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30, maxMaxBufferLength: 60 });
+      hlsRef.current = hls;
       hls.loadSource(videoSrc);
       hls.attachMedia(v);
       hls.once(Hls.Events.MANIFEST_PARSED, playWhenReady);
+      hls.on(Hls.Events.ERROR, (_e, data) => { if (data.fatal) doRetry(); });
     } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari native HLS
       v.src = videoSrc;
       v.addEventListener('loadedmetadata', playWhenReady, { once: true });
     }
 
     return () => {
-      hls?.destroy();
+      clearStall();
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
       v.pause();
       v.removeAttribute('src');
       v.load();
       setPlaying(false);
       setProgress(0);
+      setBuffering(false);
     };
   }, [videoSrc]); // eslint-disable-line
 
+  // Active/inactive
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     if (!active) {
-      v.pause();
-      v.currentTime = 0;
-      setPlaying(false);
-      setProgress(0);
+      sendView();
+      v.pause(); v.currentTime = 0;
+      setPlaying(false); setProgress(0);
+      clearStall();
     } else if (v.readyState >= 3) {
-      // HLS déjà chargé (reel revisité) — on joue directement
-      v.muted = globalMuted;
-      v.currentTime = 0;
-      v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      v.muted = globalMuted; v.currentTime = 0;
+      v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => setPlaying(false));
     }
-    // Sinon : MANIFEST_PARSED dans le useEffect HLS s'occupe du premier play
   }, [active]); // eslint-disable-line
+
+  // Mute sync
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v) v.muted = globalMuted;
+  }, [globalMuted]);
 
   function togglePlay() {
     const v = videoRef.current;
@@ -440,11 +511,55 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     else          { v.pause(); setPlaying(false); }
   }
 
+  // Skip ±10s avec animation (identique mobile)
+  function doSkip(seconds: number) {
+    const v = videoRef.current;
+    if (v) { v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + seconds)); }
+    const side = seconds < 0 ? 'left' : 'right';
+    const label = seconds < 0 ? `◄◄ ${Math.abs(seconds)}s` : `${seconds}s ►►`;
+    setSkipAnim({ side, label });
+    setTimeout(() => setSkipAnim(null), 600);
+  }
+
+  // Zones de tap : gauche (skip -10), centre (like/pause), droite (skip +10)
+  function handleZoneTap(zone: 'left'|'center'|'right', e: React.MouseEvent) {
+    e.stopPropagation();
+    if (tapTimer.current) {
+      // Double-tap
+      clearTimeout(tapTimer.current); tapTimer.current = null;
+      if (zone === 'left')   doSkip(-10);
+      else if (zone === 'right') doSkip(10);
+      else {
+        // Double-tap centre = like (identique mobile)
+        if (!liked && !likeInFlight.current) {
+          likeInFlight.current = true;
+          setLiked(true); setLikeCount(c => c + 1);
+          const rect = (e.target as HTMLElement).closest('[data-reel-zone]')?.getBoundingClientRect();
+          if (rect) setHeartPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+          apiClient.post(Endpoints.social.toggleReaction, { reel_id: reel.id, reaction_type: 'like' })
+            .catch(() => { setLiked(false); setLikeCount(c => Math.max(0, c - 1)); })
+            .finally(() => { likeInFlight.current = false; });
+        } else {
+          const rect = (e.target as HTMLElement).closest('[data-reel-zone]')?.getBoundingClientRect();
+          if (rect) setHeartPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+        }
+        setShowHeart(true);
+        setTimeout(() => setShowHeart(false), 750);
+      }
+    } else {
+      tapTimer.current = setTimeout(() => {
+        tapTimer.current = null;
+        if (zone === 'center') togglePlay();
+        // gauche/droite single tap = rien
+      }, 230);
+    }
+  }
+
   function handleTap() {
     if (tapTimer.current) {
       clearTimeout(tapTimer.current);
       tapTimer.current = null;
-      // Double-tap : like seulement si pas déjà liké
+      // Double-tap centre legacy (fallback)
       if (!liked && !likeInFlight.current) {
         likeInFlight.current = true;
         setLiked(true); setLikeCount(c => c + 1);
@@ -464,8 +579,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     if (likeInFlight.current) return;
     likeInFlight.current = true;
     const was = liked;
-    setLiked(!was);
-    setLikeCount(c => c + (was ? -1 : 1));
+    setLiked(!was); setLikeCount(c => c + (was ? -1 : 1));
     apiClient.post(Endpoints.social.toggleReaction, { reel_id: reel.id, reaction_type: 'like' })
       .catch(() => { setLiked(was); setLikeCount(c => c + (was ? 1 : -1)); })
       .finally(() => { likeInFlight.current = false; });
@@ -476,16 +590,26 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     if (!authorId || isMine || followLoading) return;
     setFollowLoading(true);
     try {
-      await apiClient.post(Endpoints.users.follow(authorId));
+      if (followed) await apiClient.delete(Endpoints.users.follow(authorId));
+      else          await apiClient.post(Endpoints.users.follow(authorId));
       setFollowed(v => !v);
     } catch { /* ignore */ } finally { setFollowLoading(false); }
   }
 
-  function handleShare(e: React.MouseEvent) {
+  async function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
     const url = `${window.location.origin}/reels?id=${reel.id}`;
-    if (navigator.share) navigator.share({ title: caption || 'Reel FoliX', url }).catch(() => {});
-    else navigator.clipboard.writeText(url).catch(() => {});
+    try {
+      if (navigator.share) await navigator.share({ title: caption || 'Reel FoliX', url });
+      else await navigator.clipboard.writeText(url);
+      apiClient.post(Endpoints.social.share, { reel_id: reel.id, platform: 'web' }).catch(() => {});
+      setShareCount(c => c + 1);
+    } catch { /* ignore */ }
+  }
+
+  function goToProfile(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (authorId) navigate(`/user/${encodeId(String(authorId))}`);
   }
 
   function fmt(n: number) {
@@ -495,26 +619,51 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
   }
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden select-none">
+    <div className="relative w-full h-full bg-black overflow-hidden select-none" data-reel-zone>
 
       {/* Video */}
-      <div className="absolute inset-0 flex items-center justify-center bg-black" onClick={handleTap}>
+      <div className="absolute inset-0 flex items-center justify-center bg-black">
         {videoSrc ? (
           <video ref={videoRef}
             className="w-full h-full object-cover"
-            loop playsInline poster={reel.thumbnail_url ?? undefined}
+            playsInline poster={reel.thumbnail_url ?? undefined}
             onTimeUpdate={() => {
               const v = videoRef.current;
               if (v?.duration) setProgress((v.currentTime / v.duration) * 100);
             }}
-            onPlay={() => apiClient.post(Endpoints.reels.view(reel.id)).catch(() => {})}
+            onWaiting={() => { setBuffering(true); armStall(); }}
+            onPlaying={() => { setBuffering(false); clearStall(); setPlaying(true); }}
+            onEnded={() => {
+              sendView();
+              // Rejouer (loop manuel pour tracker les vues correctement)
+              const v = videoRef.current;
+              if (v) { v.currentTime = 0; v.play().catch(() => {}); viewSentRef.current = false; startTimeRef.current = Date.now(); }
+            }}
+            onError={() => doRetry()}
           />
         ) : (
           <img src={reel.thumbnail_url ?? ''} className="w-full h-full object-contain" alt={caption} />
         )}
       </div>
 
-      <HeartBurst show={showHeart} />
+      {/* 3 zones de tap (gauche=skip-10, centre=pause/like, droite=skip+10) */}
+      <div className="absolute inset-0 z-10 grid" style={{ gridTemplateColumns: '1fr 2fr 1fr' }}>
+        <div className="h-full" onClick={e => handleZoneTap('left', e)} />
+        <div className="h-full" onClick={e => handleZoneTap('center', e)} />
+        <div className="h-full" onClick={e => handleZoneTap('right', e)} />
+      </div>
+
+      {/* Skip animations */}
+      {skipAnim && (
+        <div className={`absolute top-1/2 -translate-y-1/2 z-20 pointer-events-none px-5 py-3 rounded-2xl text-white font-black text-base
+          ${skipAnim.side === 'left' ? 'left-6' : 'right-6'}`}
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', animation: 'fadeInOut 0.6s ease-out forwards' }}>
+          {skipAnim.label}
+        </div>
+      )}
+
+      {/* Heart burst (double-tap like) */}
+      <HeartBurst show={showHeart} x={heartPos.x} y={heartPos.y} />
 
       {/* Paused overlay */}
       {!playing && (
@@ -536,8 +685,24 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
           style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#7B3FF2,#E0389A)' }} />
       </div>
 
-      {/* Mute button — top right, taille réduite sur petit écran */}
-      <div className="absolute top-3 right-3 z-20">
+      {/* Buffering spinner (identique mobile) */}
+      {buffering && !videoError && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <div className="w-12 h-12 rounded-full border-[3px]"
+            style={{ borderColor: 'rgba(255,255,255,0.15)', borderTopColor: 'white', animation: 'spin 0.8s linear infinite' }} />
+        </div>
+      )}
+
+      {/* Erreur vidéo */}
+      {videoError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none z-20">
+          <Play size={40} className="text-white/30" />
+          <p className="text-white/50 text-sm">Vidéo indisponible</p>
+        </div>
+      )}
+
+      {/* Mute button — top right */}
+      <div className="absolute top-3 right-3 z-30">
         <button onClick={e => { e.stopPropagation(); onUnmute(); }}
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
@@ -555,7 +720,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
 
           {/* Author row */}
           <div className="flex items-center gap-2">
-            <div className="relative shrink-0">
+            {/* Avatar cliquable → profil (identique mobile) */}
+            <button onClick={goToProfile} className="relative shrink-0">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden"
                 style={{ border: '2px solid rgba(255,255,255,0.5)' }}>
                 {reel.author?.avatar_url
@@ -572,14 +738,15 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
                   <span className="text-white text-[8px] font-black">✓</span>
                 </div>
               )}
-            </div>
-            <div className="min-w-0 flex-1">
+            </button>
+            {/* Nom cliquable → profil */}
+            <button onClick={goToProfile} className="min-w-0 flex-1 text-left">
               <p className="text-white font-bold text-xs sm:text-sm leading-tight truncate"
                 style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>{authorName}</p>
               {reel.author?.username && (
                 <p className="text-white/55 text-[10px] sm:text-xs leading-none">@{reel.author.username}</p>
               )}
-            </div>
+            </button>
             {!isMine && (
               <button onClick={handleFollow} disabled={followLoading}
                 className="shrink-0 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full transition-all"
@@ -638,16 +805,34 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
             {likeCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(likeCount)}</span>}
           </button>
 
-          {/* Comment — mobile uniquement, ouvre le drawer */}
-          <button onClick={e => { e.stopPropagation(); onCommentOpen(); }} className="flex flex-col items-center gap-0.5 md:hidden">
+          {/* Commentaires */}
+          <button onClick={e => { e.stopPropagation(); onCommentOpen(); }} className="flex flex-col items-center gap-0.5">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
               <MessageCircle size={17} />
             </div>
-            {(reel.comment_count ?? 0) > 0 && <span className="text-[10px] font-semibold text-white">{fmt(reel.comment_count ?? 0)}</span>}
+            {commentCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(commentCount)}</span>}
           </button>
 
-          {/* Save */}
+          {/* Partage */}
+          <button onClick={handleShare} className="flex flex-col items-center gap-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
+              <Share2 size={17} />
+            </div>
+            {shareCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(shareCount)}</span>}
+          </button>
+
+          {/* Vues (identique mobile) */}
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
+              <Eye size={17} />
+            </div>
+            {viewCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(viewCount)}</span>}
+          </div>
+
+          {/* Sauvegarder */}
           <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }} className="flex flex-col items-center gap-0.5">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
               style={{
@@ -660,24 +845,13 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
             </div>
           </button>
 
-          {/* Share */}
-          <button onClick={handleShare} className="flex flex-col items-center gap-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <Share2 size={17} />
-            </div>
-            {(reel.share_count ?? 0) > 0 && <span className="text-[10px] font-semibold text-white">{fmt(reel.share_count ?? 0)}</span>}
-          </button>
-
-          {/* Gift */}
+          {/* Cadeau */}
           {!isMine && (
             <button onClick={e => { e.stopPropagation(); setShowGiftPicker(true); }} className="flex flex-col items-center gap-0.5">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
                 style={{
-                  background: 'rgba(255,215,0,0.18)',
-                  backdropFilter: 'blur(12px)',
-                  border: '1.5px solid rgba(255,215,0,0.5)',
-                  color: '#FFD700',
+                  background: 'rgba(255,215,0,0.18)', backdropFilter: 'blur(12px)',
+                  border: '1.5px solid rgba(255,215,0,0.5)', color: '#FFD700',
                   boxShadow: '0 0 10px rgba(255,215,0,0.3)',
                 }}>
                 <Gift size={17} />
