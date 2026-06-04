@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Heart, MessageCircle, Share2,
   Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft, ChevronRight, ChevronLeft,
-  Gift,
+  Gift, Zap, ExternalLink,
 } from 'lucide-react';
 import Hls from 'hls.js';
 import type { Reel, Comment } from '../types';
@@ -702,6 +702,62 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Reel Ad Slide ──────────────────────────────────────────────────────────────
+interface ReelAd {
+  id: string; title: string; description?: string | null;
+  cta_text?: string | null; cta_url?: string | null;
+  creative_url?: string | null; thumbnail_url?: string | null;
+}
+
+function ReelAdSlide({ ad, active }: { ad: ReelAd; active: boolean }) {
+  const impressionSent = useRef(false);
+
+  useEffect(() => {
+    if (active && !impressionSent.current) {
+      impressionSent.current = true;
+      apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+    }
+  }, [active, ad.id]);
+
+  function handleClick() {
+    apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
+    if (ad.cta_url) window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
+  }
+
+  const bg = ad.thumbnail_url ?? ad.creative_url;
+
+  return (
+    <div className="relative w-full flex items-end justify-start overflow-hidden"
+      style={{ height: '100dvh', background: bg ? 'black' : 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+      {bg && (
+        <img src={bg} alt={ad.title} className="absolute inset-0 w-full h-full object-cover" />
+      )}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 55%)' }} />
+
+      {/* Badge sponsorisé */}
+      <div className="absolute top-12 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-black"
+        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+        <Zap size={10} /> SPONSORISÉ
+      </div>
+
+      {/* Contenu bas */}
+      <div className="relative z-10 p-6 w-full">
+        <p className="text-white font-black text-xl leading-tight mb-1">{ad.title}</p>
+        {ad.description && (
+          <p className="text-white/70 text-sm mb-4 line-clamp-2">{ad.description}</p>
+        )}
+        {ad.cta_url && (
+          <button onClick={handleClick}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl text-white font-bold text-sm"
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 4px 20px rgba(123,63,242,0.5)' }}>
+            {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={14} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function toArray<T>(raw: unknown): T[] {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw as T[];
@@ -718,6 +774,7 @@ export default function ReelsPage() {
   const navigate                        = useNavigate();
   const targetId                        = searchParams.get('id');
   const [reels,         setReels]       = useState<Reel[]>([]);
+  const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
   const [loading,       setLoading]     = useState(true);
   const [loadingMore,   setLoadingMore] = useState(false);
   const [hasMore,       setHasMore]     = useState(true);
@@ -797,7 +854,13 @@ export default function ReelsPage() {
       .finally(() => { setLoadingMore(false); loadingMoreRef.current = false; });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { fetchReels(); }, [fetchReels]);
+  useEffect(() => {
+    fetchReels();
+    // Charger l'ad pour reels (placement=reels)
+    apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
+      .then(r => { if (r.data?.id) setReelAd(r.data); })
+      .catch(() => {});
+  }, [fetchReels]);
 
   useEffect(() => {
     if (reels.length > 0 && containerRef.current) {
@@ -822,6 +885,20 @@ export default function ReelsPage() {
     document.querySelectorAll('[data-reel-item]').forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, [reels, loadMore]);
+
+  // Injection pub toutes les 5 reels (identique mobile)
+  const feedWithAds = useMemo(() => {
+    const AD_INTERVAL = 5;
+    if (!reelAd) return reels.map(r => ({ _isAd: false as const, reel: r }));
+    const result: ({ _isAd: false; reel: Reel } | { _isAd: true; ad: ReelAd; id: string })[] = [];
+    reels.forEach((r, i) => {
+      result.push({ _isAd: false, reel: r });
+      if ((i + 1) % AD_INTERVAL === 0) {
+        result.push({ _isAd: true, ad: reelAd, id: `ad-${reelAd.id}-${i}` });
+      }
+    });
+    return result;
+  }, [reels, reelAd]);
 
   const activeReel = reels[activeIndex] ?? null;
 
@@ -889,17 +966,21 @@ export default function ReelsPage() {
         <div ref={containerRef}
           className="w-full h-full overflow-y-scroll snap-y snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {reels.map((reel, i) => (
-            <div key={reel.id} data-reel-item data-index={i}
+          {feedWithAds.map((item, i) => (
+            <div key={item._isAd ? item.id : item.reel.id} data-reel-item data-index={i}
               className="w-full snap-start snap-always shrink-0"
               style={{ height: '100dvh' }}>
-              <ReelPlayer
-                reel={reel}
-                active={i === activeIndex}
-                globalMuted={globalMuted}
-                onUnmute={() => setGlobalMuted(v => !v)}
-                onCommentOpen={() => setDrawerOpen(true)}
-              />
+              {item._isAd ? (
+                <ReelAdSlide ad={item.ad} active={i === activeIndex} />
+              ) : (
+                <ReelPlayer
+                  reel={item.reel}
+                  active={i === activeIndex}
+                  globalMuted={globalMuted}
+                  onUnmute={() => setGlobalMuted(v => !v)}
+                  onCommentOpen={() => setDrawerOpen(true)}
+                />
+              )}
             </div>
           ))}
           {loadingMore && (

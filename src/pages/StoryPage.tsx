@@ -8,7 +8,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { decodeId } from '../utils/slugId';
 import {
   X, ChevronLeft, ChevronRight, Eye, MoreHorizontal,
-  Edit3, Trash2,
+  Edit3, Trash2, Zap, ExternalLink,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -16,6 +16,12 @@ import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import type { StoryGroup } from '../types';
+
+interface StoryAd {
+  id: string; title: string; description?: string | null;
+  cta_text?: string | null; cta_url?: string | null;
+  creative_url?: string | null; thumbnail_url?: string | null;
+}
 
 export default function StoryPage() {
   const navigate      = useNavigate();
@@ -26,14 +32,18 @@ export default function StoryPage() {
   const initialIndex  = parseInt(params.get('index') ?? '0', 10);
 
   const [groups,   setGroups]   = useState<StoryGroup[]>([]);
+  const [storyAd,  setStoryAd]  = useState<StoryAd | null>(null);
   const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
-    apiClient.get<StoryGroup[]>(Endpoints.stories.feed)
-      .then(r => {
-        const raw = Array.isArray(r.data) ? r.data : (r.data as any)?.items ?? [];
-        setGroups(raw);
-      })
+    Promise.all([
+      apiClient.get<StoryGroup[]>(Endpoints.stories.feed),
+      apiClient.get<StoryAd>(Endpoints.ads.feedNext('stories')).catch(() => null),
+    ]).then(([storiesRes, adRes]) => {
+      const raw = Array.isArray(storiesRes.data) ? storiesRes.data : (storiesRes.data as any)?.items ?? [];
+      setGroups(raw);
+      if (adRes?.data?.id) setStoryAd(adRes.data);
+    })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -62,6 +72,7 @@ export default function StoryPage() {
       groups={groups}
       initialIndex={startIndex}
       currentUserId={user?.id}
+      storyAd={storyAd}
       onClose={() => navigate(-1)}
       onReload={() => {
         apiClient.get<StoryGroup[]>(Endpoints.stories.feed)
@@ -75,25 +86,31 @@ export default function StoryPage() {
 // ── StoryViewer ───────────────────────────────────────────────────────────────
 
 function StoryViewer({
-  groups, initialIndex, currentUserId, onClose, onReload,
+  groups, initialIndex, currentUserId, storyAd, onClose, onReload,
 }: {
   groups: StoryGroup[];
   initialIndex: number;
   currentUserId?: string;
+  storyAd?: StoryAd | null;
   onClose: () => void;
   onReload: () => void;
 }) {
-  const [groupIdx, setGroupIdx] = useState(initialIndex);
-  const [storyIdx, setStoryIdx] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [paused,   setPaused]   = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [editText, setEditText] = useState('');
-  const [viewers,  setViewers]  = useState<any[]>([]);
-  const [viewersOpen, setViewersOpen]   = useState(false);
+  const [groupIdx,     setGroupIdx]     = useState(initialIndex);
+  const [storyIdx,     setStoryIdx]     = useState(0);
+  const [progress,     setProgress]     = useState(0);
+  const [paused,       setPaused]       = useState(false);
+  const [menuOpen,     setMenuOpen]     = useState(false);
+  const [editMode,     setEditMode]     = useState(false);
+  const [editText,     setEditText]     = useState('');
+  const [viewers,      setViewers]      = useState<any[]>([]);
+  const [viewersOpen,    setViewersOpen]    = useState(false);
   const [viewersLoading, setViewersLoading] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showAd,       setShowAd]       = useState(false);
+  const [adProgress,   setAdProgress]   = useState(0);
+  const nextGroupRef   = useRef(0);
+  const timerRef       = useRef<ReturnType<typeof setInterval> | null>(null);
+  const adTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const adProgressRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const group  = groups[groupIdx];
   const story  = group?.stories[storyIdx];
@@ -132,10 +149,40 @@ function StoryViewer({
   }, [groupIdx, storyIdx]);
 
   const goNext = useCallback(() => {
-    if (storyIdx < totalInGroup - 1) { setStoryIdx(s => s + 1); }
-    else if (groupIdx < groups.length - 1) { setGroupIdx(g => g + 1); setStoryIdx(0); }
-    else { onClose(); }
-  }, [storyIdx, totalInGroup, groupIdx, groups.length, onClose]);
+    if (storyIdx < totalInGroup - 1) {
+      setStoryIdx(s => s + 1);
+    } else if (groupIdx < groups.length - 1) {
+      const nextGroup = groupIdx + 1;
+      // Afficher l'ad entre groupes (5 secondes, identique mobile)
+      if (storyAd) {
+        nextGroupRef.current = nextGroup;
+        setPaused(true);
+        setShowAd(true);
+        setAdProgress(0);
+        apiClient.post(Endpoints.ads.impression(storyAd.id)).catch(() => {});
+        // Progress bar 5s
+        const start = Date.now();
+        if (adProgressRef.current) clearInterval(adProgressRef.current);
+        adProgressRef.current = setInterval(() => {
+          const pct = Math.min(((Date.now() - start) / 5000) * 100, 100);
+          setAdProgress(pct);
+        }, 50);
+        if (adTimerRef.current) clearTimeout(adTimerRef.current);
+        adTimerRef.current = setTimeout(() => {
+          if (adProgressRef.current) clearInterval(adProgressRef.current);
+          setShowAd(false);
+          setPaused(false);
+          setGroupIdx(nextGroupRef.current);
+          setStoryIdx(0);
+        }, 5000);
+      } else {
+        setGroupIdx(nextGroup);
+        setStoryIdx(0);
+      }
+    } else {
+      onClose();
+    }
+  }, [storyIdx, totalInGroup, groupIdx, groups.length, storyAd, onClose]);
 
   const goPrev = useCallback(() => {
     if (storyIdx > 0) { setStoryIdx(s => s - 1); }
@@ -168,6 +215,62 @@ function StoryViewer({
     try { await apiClient.patch(`/api/v1/stories/${story.id}`, { caption: editText.trim() || null }); }
     catch { /* silencieux */ }
     setEditMode(false); setPaused(false); onReload();
+  }
+
+  // Affichage de la pub entre groupes
+  if (showAd && storyAd) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+        <div className="relative w-full max-w-[500px] bg-black" style={{ height: '100dvh' }}>
+          {/* Progress bar ad */}
+          <div className="absolute top-0 inset-x-0 z-30 px-3 pt-3">
+            <div className="h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.3)' }}>
+              <div className="h-full rounded-full bg-white transition-none" style={{ width: `${adProgress}%` }} />
+            </div>
+          </div>
+          {/* Badge sponsorisé */}
+          <div className="absolute top-8 left-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-black"
+            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}>
+            <Zap size={10} /> SPONSORISÉ
+          </div>
+          {/* Fond créatif */}
+          {storyAd.thumbnail_url || storyAd.creative_url ? (
+            <img src={storyAd.thumbnail_url ?? storyAd.creative_url!} alt={storyAd.title}
+              className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }} />
+          )}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%)' }} />
+          {/* Bouton skip */}
+          <button onClick={() => {
+            if (adTimerRef.current) clearTimeout(adTimerRef.current);
+            if (adProgressRef.current) clearInterval(adProgressRef.current);
+            setShowAd(false); setPaused(false);
+            setGroupIdx(nextGroupRef.current); setStoryIdx(0);
+          }}
+            className="absolute top-8 right-4 z-30 text-white text-xs font-bold px-3 py-1.5 rounded-full"
+            style={{ background: 'rgba(255,255,255,0.15)' }}>
+            Ignorer
+          </button>
+          {/* Contenu */}
+          <div className="absolute bottom-12 left-4 right-4 z-30">
+            <p className="text-white font-black text-xl mb-1">{storyAd.title}</p>
+            {storyAd.description && <p className="text-white/70 text-sm mb-4">{storyAd.description}</p>}
+            {storyAd.cta_url && (
+              <button onClick={() => {
+                apiClient.post(Endpoints.ads.click(storyAd.id)).catch(() => {});
+                window.open(storyAd.cta_url!, '_blank', 'noopener,noreferrer');
+              }}
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl text-white font-bold text-sm"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                {storyAd.cta_text ?? 'En savoir plus'} <ExternalLink size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!group || !story) return null;

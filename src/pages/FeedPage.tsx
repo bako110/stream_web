@@ -2598,7 +2598,7 @@ export default function FeedPage() {
         let commCount     = 0;
         const result: FeedItem[] = [];
 
-        const AD_EVERY = 7;
+        const AD_EVERY = 8; // identique mobile
         let adCount = 0;
 
         merged.forEach((item, i) => {
@@ -2616,8 +2616,8 @@ export default function FeedPage() {
           if (commData.length > 0 && (i === 9 || (i > 9 && (i - 9) % COMM_EVERY === 0))) {
             result.push({ kind: 'communities', id: `__communities__${++commCount}`, data: commData });
           }
-          // ad: first at i===6, then every 7
-          if (adRes?.data && (i === 6 || (i > 6 && (i - 6) % AD_EVERY === 0))) {
+          // ad: toutes les 8 cartes (placement=feed, identique mobile)
+          if (adRes?.data && i > 0 && i % AD_EVERY === 0) {
             result.push({ kind: 'ad', id: `__ad__${++adCount}`, data: adRes.data });
           }
         });

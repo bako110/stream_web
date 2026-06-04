@@ -1,11 +1,58 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
-import { Search, TrendingUp, Film, Music, Calendar, User, Play } from 'lucide-react';
+import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
+
+interface SearchAd {
+  id: string; title: string; description?: string | null;
+  cta_text?: string | null; cta_url?: string | null;
+  creative_url?: string | null; thumbnail_url?: string | null;
+}
+
+function SearchAdCard({ ad }: { ad: SearchAd }) {
+  useEffect(() => {
+    if (ad?.id) apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+  }, [ad?.id]);
+
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{ background: 'var(--surface)', border: '1px solid rgba(123,63,242,0.25)' }}>
+      <div className="flex gap-3 p-3 items-center">
+        {(ad.thumbnail_url || ad.creative_url) && (
+          <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
+            <img src={ad.thumbnail_url ?? ad.creative_url!} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1"
+              style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}>
+              <Zap size={9} /> Sponsorisé
+            </span>
+          </div>
+          <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
+          {ad.description && (
+            <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
+          )}
+        </div>
+        {ad.cta_url && (
+          <button onClick={() => {
+            apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
+            window.open(ad.cta_url!, '_blank', 'noopener,noreferrer');
+          }}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            {ad.cta_text ?? 'Voir'} <ExternalLink size={11} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface SearchResult {
   users?:    any[];
@@ -33,9 +80,16 @@ export default function SearchPage() {
   const [params]                = useSearchParams();
   const navigate                = useNavigate();
   const q                       = params.get('q') ?? '';
-  const [results, setResults]   = useState<SearchResult | null>(null);
-  const [loading, setLoading]   = useState(false);
+  const [results,  setResults]  = useState<SearchResult | null>(null);
+  const [loading,  setLoading]  = useState(false);
   const [trending, setTrending] = useState<{ id: string; title: string; thumbnail_url?: string | null }[]>([]);
+  const [searchAd, setSearchAd] = useState<SearchAd | null>(null);
+
+  useEffect(() => {
+    apiClient.get<SearchAd>(Endpoints.ads.feedNext('search'))
+      .then(r => { if (r.data?.id) setSearchAd(r.data); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     apiClient.get<unknown>(Endpoints.search.trending)
@@ -170,6 +224,11 @@ export default function SearchPage() {
             </div>
           )}
 
+          {/* Ad search — affichée en haut si pas de résultats utilisateurs, sinon après */}
+          {searchAd && (results.users?.length ?? 0) === 0 && (
+            <SearchAdCard ad={searchAd} />
+          )}
+
           {/* Utilisateurs */}
           {(results.users?.length ?? 0) > 0 && (
             <section>
@@ -192,6 +251,11 @@ export default function SearchPage() {
                 ))}
               </div>
             </section>
+          )}
+
+          {/* Ad search — après les utilisateurs (toutes les 5 items, identique mobile) */}
+          {searchAd && (results.users?.length ?? 0) > 0 && (
+            <SearchAdCard ad={searchAd} />
           )}
 
           {/* Films */}
