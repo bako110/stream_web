@@ -124,71 +124,74 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-4xl mx-auto px-4 py-5 space-y-4">
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Mon Portefeuille</h1>
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Coins & transactions</p>
+          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Mon Portefeuille</h1>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Coins & transactions</p>
         </div>
         <button onClick={() => { setLoading(true); fetchData().finally(() => setLoading(false)); }}
           className="p-2.5 rounded-xl transition-all"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
           onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
           onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
-      {/* Balance card */}
-      <div className="rounded-3xl p-8 flex flex-col items-center gap-1 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 12px 40px rgba(123,63,242,0.4)' }}>
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1), transparent 60%)' }} />
-        <p className="text-xs font-bold uppercase tracking-widest text-white/70">Solde total</p>
-        <p className="text-6xl font-black text-white leading-none mt-1">{display.toLocaleString('fr-FR')}</p>
-        <p className="text-base text-white/60 font-medium">coins</p>
-        <div className="flex items-center gap-1 mt-3 px-4 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
-          <span className="text-white/75 text-sm font-semibold">≈ {coinsToEur(balance?.coins_balance ?? 0)} EUR</span>
+      {/* Balance card + Stats sur la même ligne */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Balance */}
+        <div className="lg:col-span-2 rounded-2xl p-6 flex flex-col items-center gap-1 relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 8px 32px rgba(123,63,242,0.35)' }}>
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1), transparent 60%)' }} />
+          <p className="text-xs font-bold uppercase tracking-widest text-white/70">Solde total</p>
+          <p className="text-5xl font-black text-white leading-none mt-1">{display.toLocaleString('fr-FR')}</p>
+          <p className="text-sm text-white/60 font-medium">coins</p>
+          <div className="flex items-center gap-1 mt-2 px-4 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
+            <span className="text-white/75 text-sm font-semibold">≈ {coinsToEur(balance?.coins_balance ?? 0)} EUR</span>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 gap-3">
+          {[
+            { label: 'Gagné',   value: balance?.coins_earned ?? 0,       color: '#22C55E' },
+            { label: 'Dépensé', value: balance?.coins_spent ?? 0,        color: '#F0365A' },
+            { label: 'Attente', value: balance?.pending_withdrawal ?? 0, color: '#F59E0B' },
+          ].map(s => (
+            <div key={s.label} className="rounded-xl px-4 py-3 flex items-center justify-between"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{s.label}</p>
+              <p className="text-base font-black" style={{ color: s.color }}>{s.value.toLocaleString('fr-FR')}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-4 gap-3">
+      {/* Quick actions — 6 colonnes sur grand écran, 4 sur petit */}
+      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
         {ACTIONS.map(a => (
           <button key={a.label} onClick={() => navigate(a.path)}
-            className="flex flex-col items-center gap-2 py-4 rounded-2xl transition-all"
+            className="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = a.color)}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-            <div className="w-11 h-11 rounded-full flex items-center justify-center"
+            <div className="w-9 h-9 rounded-full flex items-center justify-center"
               style={{ background: `${a.color}22`, color: a.color }}>
               {a.icon}
             </div>
-            <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{a.label}</span>
+            <span className="text-[11px] font-semibold text-center leading-tight px-1" style={{ color: 'var(--text-primary)' }}>{a.label}</span>
           </button>
-        ))}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Gagné',   value: balance?.coins_earned ?? 0,         color: '#22C55E' },
-          { label: 'Dépensé', value: balance?.coins_spent ?? 0,          color: '#F0365A' },
-          { label: 'Attente', value: balance?.pending_withdrawal ?? 0,   color: '#F59E0B' },
-        ].map(s => (
-          <div key={s.label} className="rounded-2xl p-4 text-center"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <p className="text-xl font-black" style={{ color: s.color }}>{s.value.toLocaleString('fr-FR')}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{s.label}</p>
-          </div>
         ))}
       </div>
 
       {/* Transactions */}
       <div>
-        <h2 className="font-black text-base mb-3" style={{ color: 'var(--text-primary)' }}>Transactions récentes</h2>
+        <h2 className="font-black text-sm mb-2" style={{ color: 'var(--text-primary)' }}>Transactions récentes</h2>
         {txs.length === 0 ? (
           <div className="rounded-2xl py-12 flex flex-col items-center gap-2"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
