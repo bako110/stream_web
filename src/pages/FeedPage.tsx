@@ -1391,7 +1391,7 @@ function SharePreviewModal({ url, title, desc, image, onClose }: {
             style={{ background: copied ? 'rgba(34,197,94,0.15)' : 'var(--bg-secondary)', color: copied ? '#22C55E' : 'var(--text-primary)', border: '1px solid var(--border)' }}>
             {copied ? <><Check size={15} /> Copié !</> : <><Copy size={15} /> Copier le lien</>}
           </button>
-          {navigator.share && (
+          {typeof navigator.share === 'function' && (
             <button onClick={nativeShare}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white"
               style={{ background: 'var(--primary)' }}>
@@ -1898,7 +1898,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         commentCountOverride={commentCountOverride}
         shareCount={post.share_count ?? 0}
         titleForShare={post.body?.slice(0, 60)}
-        imageForShare={post.image_url ?? post.thumbnail_url ?? undefined}
+        imageForShare={post.image_url ?? undefined}
         descForShare={post.body?.slice(0, 120) ?? undefined}
         onOpenComments={onOpenComments}
       />
