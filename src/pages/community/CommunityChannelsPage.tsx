@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
 import {
   ArrowLeft, Hash, Megaphone, Plus, Send, Settings, Lock, Globe,
-  Trash2, X, Check, Users,
+  Trash2, X, Check, Users, Pencil,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { apiClient } from '../../api';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
@@ -109,16 +110,18 @@ function CreateChannelModal({ communityId, onClose, onCreated }: {
   );
 }
 
-function ChannelChat({ communityId, channel, myRole, onBack }: {
-  communityId: string; channel: Channel; myRole: string | null; onBack: () => void;
+function ChannelChat({ communityId, channel, myRole, onBack, onChannelUpdated }: {
+  communityId: string; channel: Channel; myRole: string | null;
+  onBack: () => void; onChannelUpdated: () => void;
 }) {
   const { user: me } = useAuthStore();
-  const [messages, setMessages] = useState<ChannelMessage[]>([]);
-  const [input,    setInput]    = useState('');
+  const [messages,     setMessages]     = useState<ChannelMessage[]>([]);
+  const [input,        setInput]        = useState('');
+  const [showSettings, setShowSettings] = useState(false);
   const wsRef      = useRef<WebSocket | null>(null);
   const bottomRef  = useRef<HTMLDivElement>(null);
-  const isAdmin    = myRole === 'admin' || myRole === 'moderator';
-  const canPost    = channel.type !== 'announcement' || isAdmin;
+  const canManage  = myRole === 'admin' || myRole === 'moderator';
+  const canPost    = channel.type !== 'announcement' || canManage;
 
   useEffect(() => {
     apiClient.get<any>(`/api/v1/communities/${communityId}/channels/${channel.id}/messages`)
@@ -182,12 +185,28 @@ function ChannelChat({ communityId, channel, myRole, onBack }: {
           <TypeIcon size={16} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{channel.name}</p>
+          <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>#{channel.name}</p>
           {channel.type === 'announcement' && (
             <p className="text-[10px]" style={{ color: '#7B3FF2' }}>Annonces · Lecture seule pour les membres</p>
           )}
         </div>
+        {canManage && (
+          <button onClick={() => setShowSettings(true)} className="p-1.5 rounded-xl transition-all shrink-0"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <Settings size={18} />
+          </button>
+        )}
       </div>
+      {showSettings && (
+        <ChannelSettingsModal
+          channel={channel} communityId={communityId}
+          onClose={() => setShowSettings(false)}
+          onSaved={() => { setShowSettings(false); onChannelUpdated(); }}
+          onDeleted={() => { setShowSettings(false); onChannelUpdated(); onBack(); }}
+        />
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2" style={{ background: 'var(--bg)' }}>
@@ -214,7 +233,7 @@ function ChannelChat({ communityId, channel, myRole, onBack }: {
                       : { background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
                     {msg.content}
                   </div>
-                  {(isMe || isAdmin) && (
+                  {(isMe || canManage) && (
                     <button onClick={() => deleteMessage(msg.id)}
                       className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full flex items-center justify-center transition-opacity shrink-0"
                       style={{ background: '#EF444420', color: '#EF4444' }}>
@@ -270,7 +289,8 @@ export default function CommunityChannelsPage() {
   const [selected,       setSelected]       = useState<Channel | null>(null);
   const [showCreate,     setShowCreate]     = useState(false);
 
-  const isAdmin = myRole === 'admin' || myRole === 'moderator';
+  const isAdmin    = myRole === 'admin';
+  const canManage  = myRole === 'admin' || myRole === 'moderator';
 
   async function load() {
     if (!id) return;
@@ -298,6 +318,7 @@ export default function CommunityChannelsPage() {
         channel={selected}
         myRole={myRole}
         onBack={() => setSelected(null)}
+        onChannelUpdated={load}
       />
     );
   }
@@ -321,7 +342,7 @@ export default function CommunityChannelsPage() {
             {channels.length} channel{channels.length !== 1 ? 's' : ''}
           </p>
         </div>
-        {isAdmin && (
+        {canManage && (
           <button onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold"
             style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}>
@@ -338,7 +359,7 @@ export default function CommunityChannelsPage() {
           <p className="font-semibold text-sm" style={{ color: 'var(--text-tertiary)' }}>
             Aucun channel pour l'instant
           </p>
-          {isAdmin && (
+          {canManage && (
             <button onClick={() => setShowCreate(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
               style={{ background: 'var(--primary)' }}>
@@ -354,7 +375,7 @@ export default function CommunityChannelsPage() {
               <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'var(--text-tertiary)' }}>ANNONCES</p>
               <div className="space-y-1">
                 {channels.filter(c => c.type === 'announcement').map(ch => (
-                  <ChannelItem key={ch.id} channel={ch} onClick={() => setSelected(ch)} isAdmin={isAdmin} communityId={id!} onDeleted={load} />
+                  <ChannelItem key={ch.id} channel={ch} onClick={() => setSelected(ch)} isAdmin={canManage} communityId={id!} onDeleted={load} onUpdated={load} />
                 ))}
               </div>
             </div>
@@ -365,7 +386,7 @@ export default function CommunityChannelsPage() {
               <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'var(--text-tertiary)' }}>DISCUSSIONS</p>
               <div className="space-y-1">
                 {channels.filter(c => c.type !== 'announcement').map(ch => (
-                  <ChannelItem key={ch.id} channel={ch} onClick={() => setSelected(ch)} isAdmin={isAdmin} communityId={id!} onDeleted={load} />
+                  <ChannelItem key={ch.id} channel={ch} onClick={() => setSelected(ch)} isAdmin={canManage} communityId={id!} onDeleted={load} onUpdated={load} />
                 ))}
               </div>
             </div>
@@ -378,54 +399,172 @@ export default function CommunityChannelsPage() {
   );
 }
 
-function ChannelItem({ channel, onClick, isAdmin, communityId, onDeleted }: {
-  channel: Channel; onClick: () => void; isAdmin: boolean; communityId: string; onDeleted: () => void;
+// ── Modal settings canal ──────────────────────────────────────────────────────
+function ChannelSettingsModal({ channel, communityId, onClose, onSaved, onDeleted }: {
+  channel: Channel; communityId: string;
+  onClose: () => void; onSaved: () => void; onDeleted: () => void;
 }) {
-  const typeColor = channel.type === 'announcement' ? '#7B3FF2' : '#7B3FF2';
-  const TypeIcon  = channel.type === 'announcement' ? Megaphone : Hash;
+  const [name,    setName]    = useState(channel.name);
+  const [desc,    setDesc]    = useState(channel.description ?? '');
+  const [type,    setType]    = useState<'chat' | 'announcement'>(channel.type === 'announcement' ? 'announcement' : 'chat');
+  const [priv,    setPriv]    = useState(channel.is_private ?? false);
+  const [saving,  setSaving]  = useState(false);
 
-  async function del(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!confirm(`Supprimer le channel #${channel.name} ?`)) return;
+  async function save() {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await apiClient.patch(`/api/v1/communities/${communityId}/channels/${channel.id}`, {
+        name: name.trim(), description: desc.trim() || null, type, is_private: priv,
+      });
+      toast.success('Canal mis à jour');
+      onSaved();
+      onClose();
+    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    finally { setSaving(false); }
+  }
+
+  async function del() {
+    if (!confirm(`Supprimer #${channel.name} ? Cette action est irréversible.`)) return;
     try {
       await apiClient.delete(`/api/v1/communities/${communityId}/channels/${channel.id}`);
+      toast.success('Canal supprimé');
       onDeleted();
-    } catch { }
+      onClose();
+    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
   }
 
   return (
-    <button onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all text-left group"
-      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: typeColor + '15', color: typeColor }}>
-        <TypeIcon size={18} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>#{channel.name}</p>
-        {channel.description && (
-          <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{channel.description}</p>
-        )}
-        {channel.last_message && (
-          <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
-            {channel.last_message.content}
-          </p>
-        )}
-      </div>
-      {channel.members_count !== undefined && (
-        <div className="flex items-center gap-1 shrink-0" style={{ color: 'var(--text-tertiary)' }}>
-          <Users size={12} />
-          <span className="text-xs">{channel.members_count}</span>
+    <>
+      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-lg flex flex-col rounded-2xl overflow-hidden pointer-events-auto"
+          style={{ background: 'var(--surface)', maxHeight: '90vh', boxShadow: '0 24px 80px rgba(0,0,0,0.35)' }}>
+        <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <button onClick={onClose} style={{ color: 'var(--text-primary)' }}><X size={20} /></button>
+          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Paramètres du canal</p>
+          <button onClick={save} disabled={saving} className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
+            {saving ? <Spinner size="sm" /> : 'Enregistrer'}
+          </button>
         </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div>
+            <label className="text-[10px] font-bold tracking-widest mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>NOM</label>
+            <input value={name} onChange={e => setName(e.target.value)} maxLength={40}
+              className="input w-full" placeholder="nom-du-canal" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold tracking-widest mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>DESCRIPTION</label>
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} maxLength={200} rows={2}
+              className="input w-full resize-none" placeholder="Description du canal…" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold tracking-widest mb-2 block" style={{ color: 'var(--text-tertiary)' }}>TYPE</label>
+            {[
+              { val: 'chat' as const,         icon: <Hash size={15} />,       label: 'Chat',     sub: 'Discussion libre' },
+              { val: 'announcement' as const, icon: <Megaphone size={15} />, label: 'Annonces', sub: 'Seuls admins peuvent poster' },
+            ].map(opt => (
+              <button key={opt.val} onClick={() => setType(opt.val)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl text-left mb-2"
+                style={{ background: 'var(--bg-secondary)', border: `1.5px solid ${type === opt.val ? 'var(--primary)' : 'var(--border)'}` }}>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: '#7B3FF220', color: '#7B3FF2' }}>{opt.icon}</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{opt.label}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{opt.sub}</p>
+                </div>
+                <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                  style={{ borderColor: type === opt.val ? 'var(--primary)' : 'var(--border)' }}>
+                  {type === opt.val && <div className="w-2 h-2 rounded-full" style={{ background: 'var(--primary)' }} />}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center justify-between p-3.5 rounded-2xl"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+            <div>
+              <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Canal privé</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Seuls les membres invités peuvent accéder</p>
+            </div>
+            <button onClick={() => setPriv(v => !v)}
+              className="w-12 h-6 rounded-full relative transition-all"
+              style={{ background: priv ? 'var(--primary)' : 'var(--border)' }}>
+              <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                style={{ left: priv ? 26 : 2 }} />
+            </button>
+          </div>
+
+          <p className="text-[10px] font-bold tracking-widest pt-2" style={{ color: '#EF4444' }}>ZONE DE DANGER</p>
+          <button onClick={del}
+            className="w-full flex items-center gap-3 p-3.5 rounded-2xl"
+            style={{ background: '#EF444410', border: '1px solid #EF444430' }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EF444420' }}>
+              <Trash2 size={16} color="#EF4444" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-sm" style={{ color: '#EF4444' }}>Supprimer le canal</p>
+              <p className="text-xs mt-0.5" style={{ color: '#EF444499' }}>Action irréversible</p>
+            </div>
+          </button>
+          <div className="h-4" />
+        </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ChannelItem({ channel, onClick, isAdmin, communityId, onDeleted, onUpdated }: {
+  channel: Channel; onClick: () => void; isAdmin: boolean; communityId: string;
+  onDeleted: () => void; onUpdated: () => void;
+}) {
+  const [showSettings, setShowSettings] = useState(false);
+  const typeColor = channel.type === 'announcement' ? '#7B3FF2' : '#7B3FF2';
+  const TypeIcon  = channel.type === 'announcement' ? Megaphone : Hash;
+
+  return (
+    <>
+      <button onClick={onClick}
+        className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all text-left group"
+        onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: typeColor + '15', color: typeColor }}>
+          <TypeIcon size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>#{channel.name}</p>
+          {channel.description && (
+            <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{channel.description}</p>
+          )}
+          {channel.last_message && !channel.description && (
+            <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+              {channel.last_message.content}
+            </p>
+          )}
+        </div>
+        {channel.members_count !== undefined && (
+          <div className="flex items-center gap-1 shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+            <Users size={12} />
+            <span className="text-xs">{channel.members_count}</span>
+          </div>
+        )}
+        {isAdmin && (
+          <button onClick={e => { e.stopPropagation(); setShowSettings(true); }}
+            className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-full flex items-center justify-center transition-opacity shrink-0"
+            style={{ background: '#7B3FF215', color: '#7B3FF2' }}>
+            <Settings size={13} />
+          </button>
+        )}
+      </button>
+      {showSettings && (
+        <ChannelSettingsModal
+          channel={channel} communityId={communityId}
+          onClose={() => setShowSettings(false)}
+          onSaved={onUpdated}
+          onDeleted={onDeleted}
+        />
       )}
-      {isAdmin && (
-        <button onClick={del}
-          className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-full flex items-center justify-center transition-opacity shrink-0"
-          style={{ background: '#EF444415', color: '#EF4444' }}>
-          <Trash2 size={13} />
-        </button>
-      )}
-    </button>
+    </>
   );
 }

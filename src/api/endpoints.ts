@@ -139,7 +139,7 @@ export const Endpoints = {
     byId:     (id: string) => `${V1}/communities/${id}`,
     join:     (id: string) => `${V1}/communities/${id}/join`,
     leave:    (id: string) => `${V1}/communities/${id}/leave`,
-    role:     (id: string) => `${V1}/communities/${id}/my-role`,
+    role:     (id: string) => `${V1}/communities/${id}/role`,
     // Messages
     messages:      (id: string)                    => `${V1}/communities/${id}/messages`,
     message:       (id: string, msgId: string)     => `${V1}/communities/${id}/messages/${msgId}`,
@@ -176,6 +176,23 @@ export const Endpoints = {
     eventRsvp: (id: string, evId: string)            => `${V1}/communities/${id}/events/${evId}/rsvp`,
     // Verification
     verificationRequest: (id: string) => `${V1}/communities/${id}/verification-request`,
+    // Treasury / Wallet communautaire
+    wallet:              (id: string) => `${V1}/communities/${id}/wallet`,
+    walletTransactions:  (id: string) => `${V1}/communities/${id}/wallet/transactions`,
+    // Cotisations
+    cotisations:         (id: string)                          => `${V1}/communities/${id}/cotisations`,
+    cotisationPay:       (id: string, cotId: string)           => `${V1}/communities/${id}/cotisations/${cotId}/pay`,
+    // Trésorier
+    treasurer:           (id: string)                          => `${V1}/communities/${id}/treasurer`,
+    // Élections trésorier
+    treasurerElections:  (id: string)                          => `${V1}/communities/${id}/treasurer-elections`,
+    activeTreasurerElection: (id: string)                      => `${V1}/communities/${id}/treasurer-elections/active`,
+    treasurerElectionVote:   (id: string, electionId: string)  => `${V1}/communities/${id}/treasurer-elections/${electionId}/vote`,
+    treasurerElectionClose:  (id: string, electionId: string)  => `${V1}/communities/${id}/treasurer-elections/${electionId}/close`,
+    // Retraits
+    withdrawalRequests:       (id: string)                          => `${V1}/communities/${id}/withdrawal-requests`,
+    withdrawalRequestApprove: (id: string, reqId: string)           => `${V1}/communities/${id}/withdrawal-requests/${reqId}/approve`,
+    withdrawalRequestReject:  (id: string, reqId: string)           => `${V1}/communities/${id}/withdrawal-requests/${reqId}/reject`,
   },
   search: {
     query:    `${V1}/search`,

@@ -7,7 +7,7 @@ import {
   Search, X, ChevronRight, Info, MoreVertical, Pencil, Smile, Reply,
   Hash, Trophy, UserCheck, Pin, Image as ImageIcon, BarChart2,
   Calendar, MessageCircle, Megaphone, Film as FilmIcon, Vote,
-  PinOff, UserMinus, Ban, Forward, Clock,
+  PinOff, UserMinus, Ban, Forward, Clock, Briefcase, DollarSign, Link,
 } from 'lucide-react';
 import type { Community } from '../../types';
 import { apiClient } from '../../api';
@@ -26,6 +26,14 @@ import toast from 'react-hot-toast';
 interface MsgReaction { emoji: string; count: number; user_ids: string[]; }
 interface ReplyTo { id: string; sender_id: string; sender_display_name: string | null; sender_username: string | null; content: string | null; message_type: string; }
 
+interface PollOption { id: string; text: string; votes_count: number; voter_ids?: string[]; }
+interface PollData {
+  id: string; question: string; options: PollOption[];
+  total_votes: number; allow_multiple: boolean;
+  is_closed: boolean; my_vote?: string[] | null;
+  deadline?: string | null;
+}
+
 interface CommunityMessage {
   id: string;
   sender_id: string;
@@ -39,6 +47,7 @@ interface CommunityMessage {
   is_pinned?: boolean;
   reactions?: MsgReaction[];
   reply_to?: ReplyTo | null;
+  poll?: PollData | null;
   created_at: string;
   edited_at?: string | null;
 }
@@ -70,7 +79,7 @@ function fmtCount(n: number): string {
 function SettingsPanel({ community, myRole, onClose, onSaved }: {
   community: Community; myRole: string | null; onClose: () => void; onSaved: () => void;
 }) {
-  const [tab,            setTab]            = useState<SettingsTab>('info');
+  const [tab,            setTab]            = useState<SettingsTab>(myRole === 'admin' ? 'info' : 'members');
   const [editName,       setEditName]       = useState(community.name);
   const [editDesc,       setEditDesc]       = useState(community.description ?? '');
   const [editPrivate,    setEditPrivate]    = useState(community.is_private);
@@ -172,15 +181,13 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   return (
     <>
       <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl overflow-hidden"
-        style={{ background: 'var(--surface)', maxHeight: '92vh', boxShadow: '0 -16px 64px rgba(0,0,0,0.3)' }}>
-        <div className="flex justify-center pt-3 shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
-        </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-lg flex flex-col rounded-2xl overflow-hidden pointer-events-auto"
+          style={{ background: 'var(--surface)', maxHeight: '90vh', boxShadow: '0 24px 80px rgba(0,0,0,0.35)' }}>
         <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
           <button onClick={onClose} style={{ color: 'var(--text-primary)' }}><X size={20} /></button>
           <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Gérer la communauté</p>
-          {tab !== 'members' ? (
+          {tab !== 'members' && isAdmin ? (
             <button onClick={tab === 'info' ? saveInfo : saveSecurity} disabled={saving}
               className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
               {saving ? <Spinner size="sm" /> : 'Enregistrer'}
@@ -188,9 +195,9 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
           ) : <div className="w-20" />}
         </div>
         <div className="flex shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
-          {(['info', 'members', 'security'] as SettingsTab[]).map(t => {
-            const labels = { info: 'Info', members: 'Membres', security: 'Sécurité' };
-            const icons  = { info: <Settings size={14} />, members: <Users size={14} />, security: <Shield size={14} /> };
+          {(isAdmin ? ['info', 'members', 'security'] : ['members'] as SettingsTab[]).map(t => {
+            const labels: Record<string, string> = { info: 'Info', members: 'Membres', security: 'Sécurité' };
+            const icons: Record<string, React.ReactNode> = { info: <Settings size={14} />, members: <Users size={14} />, security: <Shield size={14} /> };
             return (
               <button key={t} onClick={() => setTab(t)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold relative"
@@ -247,7 +254,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                         <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{ROLE_LABELS[member.role] ?? member.role}</p>
                       </div>
                     </div>
-                    {isLoading ? <Spinner size="sm" /> : (isAdmin || isMod) && !isSelf ? (
+                    {isLoading ? <Spinner size="sm" /> : !isSelf && (isAdmin || (isMod && member.role === 'member')) ? (
                       <div className="flex flex-wrap gap-1.5 justify-end">
                         {isAdmin && member.role !== 'admin' && (
                           <button onClick={() => changeRole(member.user_id, 'admin')}
@@ -256,14 +263,14 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                             <Shield size={10} /> Admin
                           </button>
                         )}
-                        {member.role !== 'moderator' && (
+                        {isAdmin && member.role !== 'moderator' && (
                           <button onClick={() => changeRole(member.user_id, 'moderator')}
                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
                             style={{ background: '#7B3FF215', borderColor: '#7B3FF240', color: '#7B3FF2' }}>
                             <Star size={10} /> Mod
                           </button>
                         )}
-                        {member.role !== 'member' && (
+                        {isAdmin && member.role !== 'member' && (
                           <button onClick={() => changeRole(member.user_id, 'member')}
                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
                             style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-tertiary)' }}>
@@ -371,22 +378,27 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                   className="input w-full" placeholder="0 = gratuit" />
               </div>
 
-              <p className="text-[10px] font-bold tracking-widest pt-2" style={{ color: '#EF4444' }}>ZONE DE DANGER</p>
-              <button onClick={deleteCommunity}
-                className="w-full flex items-center gap-3 p-3.5 rounded-2xl"
-                style={{ background: '#EF444410', border: '1px solid #EF444430' }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EF444420' }}>
-                  <Trash2 size={18} color="#EF4444" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-sm" style={{ color: '#EF4444' }}>Supprimer la communauté</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#EF444499' }}>Action irréversible</p>
-                </div>
-                <ChevronRight size={16} color="#EF444460" />
-              </button>
+              {isAdmin && (
+                <>
+                  <p className="text-[10px] font-bold tracking-widest pt-2" style={{ color: '#EF4444' }}>ZONE DE DANGER</p>
+                  <button onClick={deleteCommunity}
+                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl"
+                    style={{ background: '#EF444410', border: '1px solid #EF444430' }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EF444420' }}>
+                      <Trash2 size={18} color="#EF4444" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-sm" style={{ color: '#EF4444' }}>Supprimer la communauté</p>
+                      <p className="text-xs mt-0.5" style={{ color: '#EF444499' }}>Action irréversible</p>
+                    </div>
+                    <ChevronRight size={16} color="#EF444460" />
+                  </button>
+                </>
+              )}
               <div className="h-4" />
             </div>
           )}
+        </div>
         </div>
       </div>
     </>
@@ -439,6 +451,104 @@ function PinnedDrawer({ communityId, onClose, onJump }: {
                 </p>
               </button>
             ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── PollCreateModal ───────────────────────────────────────────────────────────
+
+function PollCreateModal({ onClose, onCreate }: {
+  onClose: () => void;
+  onCreate: (question: string, options: string[], allowMultiple: boolean) => void;
+}) {
+  const [question,      setQuestion]      = useState('');
+  const [options,       setOptions]       = useState(['', '']);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [saving,        setSaving]        = useState(false);
+
+  function addOption() {
+    if (options.length < 6) setOptions(prev => [...prev, '']);
+  }
+  function removeOption(i: number) {
+    if (options.length <= 2) return;
+    setOptions(prev => prev.filter((_, idx) => idx !== i));
+  }
+  function setOption(i: number, val: string) {
+    setOptions(prev => prev.map((o, idx) => idx === i ? val : o));
+  }
+
+  async function submit() {
+    if (!question.trim()) { toast.error('Question requise'); return; }
+    const filled = options.filter(o => o.trim());
+    if (filled.length < 2) { toast.error('Au moins 2 options requises'); return; }
+    setSaving(true);
+    try {
+      await onCreate(question.trim(), filled, allowMultiple);
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-lg flex flex-col rounded-2xl overflow-hidden pointer-events-auto"
+          style={{ background: 'var(--surface)', maxHeight: '90vh', boxShadow: '0 24px 80px rgba(0,0,0,0.35)' }}>
+        <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <button onClick={onClose} style={{ color: 'var(--text-primary)' }}><X size={20} /></button>
+          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Nouveau sondage</p>
+          <button onClick={submit} disabled={saving} className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
+            {saving ? <Spinner size="sm" /> : 'Créer'}
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div>
+            <label className="text-[10px] font-bold tracking-widest mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>QUESTION</label>
+            <textarea value={question} onChange={e => setQuestion(e.target.value)} maxLength={200} rows={2}
+              className="input w-full resize-none" placeholder="Posez votre question…" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold tracking-widest mb-2 block" style={{ color: 'var(--text-tertiary)' }}>
+              OPTIONS ({options.length}/6)
+            </label>
+            <div className="space-y-2">
+              {options.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input value={opt} onChange={e => setOption(i, e.target.value)} maxLength={80}
+                    className="input flex-1 text-sm" placeholder={`Option ${i + 1}`} />
+                  {options.length > 2 && (
+                    <button onClick={() => removeOption(i)} className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: '#EF444415', color: '#EF4444' }}>
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {options.length < 6 && (
+              <button onClick={addOption}
+                className="w-full mt-2 py-2 rounded-xl text-xs font-bold border transition-all"
+                style={{ borderStyle: 'dashed', borderColor: 'var(--border)', color: 'var(--text-tertiary)' }}>
+                + Ajouter une option
+              </button>
+            )}
+          </div>
+          <div className="flex items-center justify-between p-3.5 rounded-2xl"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+            <div>
+              <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Choix multiple</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Permettre plusieurs réponses</p>
+            </div>
+            <button onClick={() => setAllowMultiple(v => !v)}
+              className="w-12 h-6 rounded-full relative transition-all"
+              style={{ background: allowMultiple ? 'var(--primary)' : 'var(--border)' }}>
+              <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                style={{ left: allowMultiple ? 26 : 2 }} />
+            </button>
+          </div>
+          <div className="h-4" />
+        </div>
         </div>
       </div>
     </>
@@ -581,14 +691,16 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-function MessageBubble({ msg, isMe, canManage, onReact, onReply, onEdit, onDelete, onPin, onBlockSender, navigate }: {
-  msg: CommunityMessage; isMe: boolean; canManage: boolean;
+function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdit, onDelete, onPin, onBlockSender, navigate }: {
+  msg: CommunityMessage; isMe: boolean; canManage: boolean; canBlock: boolean;
   onReact: (id: string, emoji: string) => void;
   onReply: (msg: CommunityMessage) => void;
   onEdit: (msg: CommunityMessage) => void;
   onDelete: (id: string) => void;
   onPin: (id: string, pin: boolean) => void;
   onBlockSender: (msg: CommunityMessage) => void;
+  onVotePoll: (msgId: string, optionId: string) => void;
+  onClosePoll: (msgId: string) => void;
   navigate: (to: string) => void;
 }) {
   const { user: me } = useAuthStore();
@@ -596,6 +708,7 @@ function MessageBubble({ msg, isMe, canManage, onReact, onReply, onEdit, onDelet
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [editingText, setEditingText] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [votingId, setVotingId] = useState<string | null>(null);
   const canDelete = isMe || canManage;
 
   function startEdit() { setEditingText(msg.content ?? ''); setIsEditing(true); setMenuOpen(false); }
@@ -680,6 +793,68 @@ function MessageBubble({ msg, isMe, canManage, onReact, onReply, onEdit, onDelet
                     {msg.edited_at && <span className="text-[9px] ml-1.5 opacity-60">modifié</span>}
                   </div>
                 )}
+
+                {/* Sondage */}
+                {msg.message_type === 'poll' && msg.poll && (
+                  <div className="px-3 pb-3 pt-2" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <BarChart2 size={12} style={{ opacity: 0.8 }} />
+                      <span className="text-[10px] font-bold opacity-80">Sondage</span>
+                      {msg.poll.is_closed && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                          style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444' }}>Clôturé</span>
+                      )}
+                    </div>
+                    <p className="text-sm font-bold mb-2.5" style={{ color: isMe ? '#fff' : 'var(--text-primary)' }}>
+                      {msg.poll.question}
+                    </p>
+                    <div className="space-y-1.5">
+                      {msg.poll.options.map(opt => {
+                        const total = msg.poll!.total_votes || 1;
+                        const pct   = Math.round((opt.votes_count / total) * 100);
+                        const voted = (msg.poll!.my_vote ?? []).includes(opt.id);
+                        const isVoting = votingId === opt.id;
+                        return (
+                          <button key={opt.id}
+                            disabled={msg.poll!.is_closed || !!msg.poll!.my_vote?.length || isVoting}
+                            onClick={() => { setVotingId(opt.id); onVotePoll(msg.id, opt.id); setTimeout(() => setVotingId(null), 1000); }}
+                            className="w-full text-left relative rounded-xl overflow-hidden transition-all"
+                            style={{
+                              background: isMe ? 'rgba(255,255,255,0.15)' : 'var(--bg-secondary)',
+                              border: `1px solid ${voted ? (isMe ? 'rgba(255,255,255,0.5)' : 'var(--primary)') : 'transparent'}`,
+                            }}>
+                            <div className="absolute inset-0 rounded-xl transition-all"
+                              style={{ width: `${pct}%`, background: isMe ? 'rgba(255,255,255,0.12)' : 'rgba(123,63,242,0.12)' }} />
+                            <div className="relative flex items-center justify-between px-3 py-2">
+                              <div className="flex items-center gap-1.5">
+                                {voted && <Check size={10} style={{ color: isMe ? '#fff' : 'var(--primary)', flexShrink: 0 }} />}
+                                <span className="text-xs font-semibold" style={{ color: isMe ? '#fff' : 'var(--text-primary)' }}>
+                                  {opt.text}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold ml-2 shrink-0" style={{ color: isMe ? 'rgba(255,255,255,0.7)' : 'var(--text-tertiary)' }}>
+                                {pct}%
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-[10px]" style={{ color: isMe ? 'rgba(255,255,255,0.6)' : 'var(--text-tertiary)' }}>
+                        {msg.poll.total_votes} vote{msg.poll.total_votes !== 1 ? 's' : ''}
+                        {msg.poll.allow_multiple && ' · choix multiple'}
+                      </p>
+                      {canManage && !msg.poll.is_closed && (
+                        <button onClick={() => onClosePoll(msg.id)}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
+                          Clôturer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -756,7 +931,7 @@ function MessageBubble({ msg, isMe, canManage, onReact, onReply, onEdit, onDelet
                         {msg.is_pinned ? 'Désépingler' : 'Épingler'}
                       </button>
                     )}
-                    {canManage && !isMe && (
+                    {canBlock && !isMe && (
                       <button onClick={() => { onBlockSender(msg); setMenuOpen(false); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
                         style={{ color: '#7B3FF2' }}
@@ -796,15 +971,18 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
 }) {
   const navigate                       = useNavigate();
   const { user: me }                   = useAuthStore();
-  const [messages,     setMessages]    = useState<CommunityMessage[]>([]);
-  const [input,        setInput]       = useState('');
-  const [showSettings, setShowSettings]= useState(false);
-  const [showInfo,     setShowInfo]    = useState(false);
-  const [showPins,     setShowPins]    = useState(false);
-  const [replyTo,      setReplyTo]     = useState<CommunityMessage | null>(null);
-  const [tab,          setTab]         = useState<ChatTab>('discussion');
-  const [uploading,    setUploading]   = useState(false);
-  const [pendingCount, setPendingCount]= useState(0);
+  const [messages,      setMessages]     = useState<CommunityMessage[]>([]);
+  const [input,         setInput]        = useState('');
+  const [showSettings,  setShowSettings] = useState(false);
+  const [showInfo,      setShowInfo]     = useState(false);
+  const [showPins,      setShowPins]     = useState(false);
+  const [replyTo,       setReplyTo]      = useState<CommunityMessage | null>(null);
+  const [tab,           setTab]          = useState<ChatTab>('discussion');
+  const [uploading,     setUploading]    = useState(false);
+  const [pendingCount,  setPendingCount] = useState(0);
+  const [showPollModal, setShowPollModal]= useState(false);
+  const [activeCotisation, setActiveCotisation] = useState<any>(null);
+  const [activeElection,   setActiveElection]   = useState<any>(null);
   const wsRef       = useRef<WebSocket | null>(null);
   const bottomRef   = useRef<HTMLDivElement>(null);
   const inputRef    = useRef<HTMLInputElement>(null);
@@ -854,10 +1032,32 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
           setMessages(prev => prev.filter(m => m.id !== data.id));
         } else if (data.type === 'community_message_reaction') {
           setMessages(prev => prev.map(m => m.id === data.message_id ? { ...m, reactions: data.reactions } : m));
+        } else if (data.type === 'community_poll_created') {
+          setMessages(prev => [...prev.slice(-99), data]);
+        } else if (data.type === 'community_poll_updated') {
+          setMessages(prev => prev.map(m => m.id === data.message_id ? { ...m, poll: data.poll } : m));
+        } else if (data.type === 'community_cotisation_created' || data.type === 'community_cotisation_updated') {
+          if (data.status === 'active') setActiveCotisation(data);
+        } else if (data.type === 'treasurer_election_launched' || data.type === 'treasurer_vote_cast') {
+          setActiveElection(data.election ?? data);
+        } else if (data.type === 'treasurer_elected') {
+          setActiveElection(null);
         }
       } catch { }
     };
     return () => ws.close();
+  }, [id]);
+
+  // Cotisation active + élection active
+  useEffect(() => {
+    apiClient.get<any>(`/api/v1/communities/${id}/cotisations?status=active`)
+      .then(r => {
+        const list = Array.isArray(r.data) ? r.data : r.data?.items ?? r.data?.data ?? [];
+        setActiveCotisation(list[0] ?? null);
+      }).catch(() => {});
+    apiClient.get<any>(`/api/v1/communities/${id}/treasurer-elections/active`)
+      .then(r => setActiveElection(r.data?.election ?? null))
+      .catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -954,6 +1154,44 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
     } catch { toast.error('Erreur'); }
   }
 
+  async function handleVotePoll(msgId: string, optionId: string) {
+    try {
+      const msg = messages.find(m => m.id === msgId);
+      if (!msg?.poll) return;
+      await apiClient.post(`/api/v1/communities/${id}/polls/${msg.poll.id}/vote`, { option_id: optionId });
+      setMessages(prev => prev.map(m => {
+        if (m.id !== msgId || !m.poll) return m;
+        const options = m.poll.options.map(o =>
+          o.id === optionId ? { ...o, votes_count: o.votes_count + 1 } : o
+        );
+        return { ...m, poll: { ...m.poll, total_votes: m.poll.total_votes + 1, my_vote: [optionId], options } };
+      }));
+    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+  }
+
+  async function handleClosePoll(msgId: string) {
+    if (!confirm('Clôturer ce sondage ?')) return;
+    try {
+      const msg = messages.find(m => m.id === msgId);
+      if (!msg?.poll) return;
+      await apiClient.post(`/api/v1/communities/${id}/polls/${msg.poll.id}/close`);
+      setMessages(prev => prev.map(m =>
+        m.id === msgId && m.poll ? { ...m, poll: { ...m.poll, is_closed: true } } : m
+      ));
+      toast.success('Sondage clôturé');
+    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+  }
+
+  async function handleCreatePoll(question: string, options: string[], allowMultiple: boolean) {
+    try {
+      await apiClient.post(`/api/v1/communities/${id}/polls`, {
+        question, options: options.map(text => ({ text })), allow_multiple: allowMultiple,
+      });
+      setShowPollModal(false);
+      toast.success('Sondage créé');
+    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+  }
+
   async function handleLeave() {
     if (!confirm('Quitter cette communauté ?')) return;
     try { await apiClient.post(Endpoints.communities.leave(id)); onRefresh(); } catch { }
@@ -1036,6 +1274,18 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <BarChart2 size={18} />
               </button>
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/treasury`)} className="p-1.5 rounded-xl transition-all" title="Trésorerie"
+                style={{ color: 'var(--text-tertiary)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <Briefcase size={18} />
+              </button>
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/invite`)} className="p-1.5 rounded-xl transition-all" title="Inviter"
+                style={{ color: 'var(--text-tertiary)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <Link size={18} />
+              </button>
               <div className="relative">
                 <button onClick={() => navigate(`/communities/${encodeId(community.id)}/join-requests`)} className="p-1.5 rounded-xl transition-all" title="Demandes"
                   style={{ color: 'var(--text-tertiary)' }}
@@ -1050,6 +1300,12 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               </div>
             </>
           )}
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/members`)} className="p-1.5 rounded-xl transition-all" title="Membres"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <Users size={18} />
+          </button>
           <button onClick={() => setShowInfo(v => !v)} className="p-1.5 rounded-xl transition-all"
             style={{ color: showInfo ? 'var(--primary)' : 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
@@ -1149,6 +1405,55 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                   <span style={{ color: 'var(--text-primary)' }}>Classement</span>
                   <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
                 </button>
+                <button onClick={() => { setShowInfo(false); navigate(`/communities/${encodeId(community.id)}/treasury`); }}
+                  className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
+                  style={{ background: 'var(--bg-secondary)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+                  <Briefcase size={15} style={{ color: '#E0389A' }} />
+                  <span style={{ color: 'var(--text-primary)' }}>Trésorerie</span>
+                  <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+                <button onClick={() => { setShowInfo(false); navigate(`/communities/${encodeId(community.id)}/fund`); }}
+                  className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
+                  style={{ background: 'var(--bg-secondary)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+                  <DollarSign size={15} style={{ color: '#10B981' }} />
+                  <span style={{ color: 'var(--text-primary)' }}>Cotisations</span>
+                  <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+                {canManage && (
+                  <button onClick={() => { setShowInfo(false); navigate(`/communities/${encodeId(community.id)}/treasurer`); }}
+                    className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
+                    style={{ background: 'var(--bg-secondary)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+                    <UserCheck size={15} style={{ color: '#7B3FF2' }} />
+                    <span style={{ color: 'var(--text-primary)' }}>Trésorier & Retraits</span>
+                    <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
+                  </button>
+                )}
+                <button onClick={() => { setShowInfo(false); navigate(`/communities/${encodeId(community.id)}/members`); }}
+                  className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
+                  style={{ background: 'var(--bg-secondary)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+                  <Users size={15} style={{ color: '#3B82F6' }} />
+                  <span style={{ color: 'var(--text-primary)' }}>Tous les membres</span>
+                  <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+                {canManage && (
+                  <button onClick={() => { setShowInfo(false); navigate(`/communities/${encodeId(community.id)}/invite`); }}
+                    className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all"
+                    style={{ background: 'var(--bg-secondary)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
+                    <Link size={15} style={{ color: '#F59E0B' }} />
+                    <span style={{ color: 'var(--text-primary)' }}>Inviter des membres</span>
+                    <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
+                  </button>
+                )}
               </div>
               <button onClick={handleLeave}
                 className="w-full flex items-center justify-center gap-2 mt-4 py-3 rounded-xl text-sm font-bold transition-all"
@@ -1158,6 +1463,48 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Banner cotisation active */}
+      {activeCotisation && tab === 'discussion' && (
+        <button
+          onClick={() => navigate(`/communities/${encodeId(community.id)}/fund`)}
+          className="mx-3 my-1 shrink-0 flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition-all"
+          style={{ background: 'linear-gradient(90deg, #10B98115, #10B98108)', border: '1px solid #10B98130' }}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#10B98120' }}>
+            <DollarSign size={14} color="#10B981" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold truncate" style={{ color: '#10B981' }}>Cotisation en cours</p>
+            <p className="text-[11px] truncate" style={{ color: 'var(--text-secondary)' }}>{activeCotisation.title}</p>
+          </div>
+          <div className="shrink-0">
+            <div className="h-1.5 w-16 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+              <div className="h-full rounded-full" style={{ width: `${Math.min(100, activeCotisation.progress_pct ?? 0)}%`, background: '#10B981' }} />
+            </div>
+            <p className="text-[10px] text-right mt-0.5" style={{ color: '#10B981' }}>{Math.round(activeCotisation.progress_pct ?? 0)}%</p>
+          </div>
+          <ChevronRight size={14} style={{ color: '#10B981', flexShrink: 0 }} />
+        </button>
+      )}
+
+      {/* Banner élection active */}
+      {activeElection && tab === 'discussion' && (
+        <button
+          onClick={() => navigate(`/communities/${encodeId(community.id)}/treasurer`)}
+          className="mx-3 mb-1 shrink-0 flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition-all"
+          style={{ background: 'linear-gradient(90deg, #7B3FF215, #7B3FF208)', border: '1px solid #7B3FF230' }}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#7B3FF220' }}>
+            <Vote size={14} color="#7B3FF2" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold" style={{ color: '#7B3FF2' }}>Élection trésorier en cours</p>
+            <p className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+              {activeElection.total_votes ?? 0} vote{(activeElection.total_votes ?? 0) !== 1 ? 's' : ''} · {Math.round(activeElection.participation ?? 0)}% participation
+            </p>
+          </div>
+          <ChevronRight size={14} style={{ color: '#7B3FF2', flexShrink: 0 }} />
+        </button>
       )}
 
       {/* Messages */}
@@ -1183,12 +1530,15 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                 msg={msg}
                 isMe={isMe}
                 canManage={canManage}
+                canBlock={isAdmin}
                 onReact={handleReact}
                 onReply={setReplyTo}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onPin={handlePin}
                 onBlockSender={handleBlockSender}
+                onVotePoll={handleVotePoll}
+                onClosePoll={handleClosePoll}
                 navigate={navigate}
               />
             </div>
@@ -1232,6 +1582,14 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
               <ImageIcon size={16} />
             </button>
+            {canManage && tab === 'discussion' && (
+              <button onClick={() => setShowPollModal(true)}
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}
+                title="Créer un sondage">
+                <BarChart2 size={16} />
+              </button>
+            )}
             <input ref={fileRef} type="file" accept="image/*,video/*" multiple hidden onChange={handleUpload} />
             <input ref={inputRef}
               className="input flex-1 text-sm rounded-full px-4 py-2.5"
@@ -1254,6 +1612,9 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
       )}
       {showPins && (
         <PinnedDrawer communityId={id} onClose={() => setShowPins(false)} onJump={jumpToMsg} />
+      )}
+      {showPollModal && (
+        <PollCreateModal onClose={() => setShowPollModal(false)} onCreate={handleCreatePoll} />
       )}
     </>
   );

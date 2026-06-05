@@ -85,6 +85,12 @@ const CommunityJoinRequestsPage  = lazy(() => import('./pages/community/Communit
 const CommunityEventsPage        = lazy(() => import('./pages/community/CommunityEventsPage'));
 const CommunityStatsPage         = lazy(() => import('./pages/community/CommunityStatsPage'));
 const CommunityMemberProfilePage = lazy(() => import('./pages/community/CommunityMemberProfilePage'));
+const CommunityTreasuryPage      = lazy(() => import('./pages/community/CommunityTreasuryPage'));
+const CommunityFundPage          = lazy(() => import('./pages/community/CommunityFundPage'));
+const CommunityFundDetailPage    = lazy(() => import('./pages/community/CommunityFundDetailPage'));
+const CommunityTreasurerPage     = lazy(() => import('./pages/community/CommunityTreasurerPage'));
+const CommunityMembersPage       = lazy(() => import('./pages/community/CommunityMembersPage'));
+const CommunityInvitePage        = lazy(() => import('./pages/community/CommunityInvitePage'));
 
 const SettingsVerificationPage  = lazy(() => import('./pages/settings/SettingsVerificationPage'));
 const SettingsAppearancePage    = lazy(() => import('./pages/settings/SettingsAppearancePage'));
@@ -259,6 +265,12 @@ function AppShell() {
             <Route path="/communities/:id/events"                 element={<CommunityEventsPage />} />
             <Route path="/communities/:id/stats"                  element={<CommunityStatsPage />} />
             <Route path="/communities/:id/members/:userId"        element={<CommunityMemberProfilePage />} />
+            <Route path="/communities/:id/treasury"               element={<CommunityTreasuryPage />} />
+            <Route path="/communities/:id/fund"                   element={<CommunityFundPage />} />
+            <Route path="/communities/:id/fund/:cotId"            element={<CommunityFundDetailPage />} />
+            <Route path="/communities/:id/treasurer"              element={<CommunityTreasurerPage />} />
+            <Route path="/communities/:id/members"                element={<CommunityMembersPage />} />
+            <Route path="/communities/:id/invite"                 element={<CommunityInvitePage />} />
           </Route>
         </Route>
 

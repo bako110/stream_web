@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
-import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink } from 'lucide-react';
+import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink, UserPlus } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
@@ -84,6 +84,9 @@ export default function SearchPage() {
   const [loading,  setLoading]  = useState(false);
   const [trending, setTrending] = useState<{ id: string; title: string; thumbnail_url?: string | null }[]>([]);
   const [searchAd, setSearchAd] = useState<SearchAd | null>(null);
+  const [suggestions,    setSuggestions]    = useState<any[]>([]);
+  const [followedIds,    setFollowedIds]    = useState<Set<string>>(new Set());
+  const [followingIds,   setFollowingIds]   = useState<Set<string>>(new Set());
 
   useEffect(() => {
     apiClient.get<SearchAd>(Endpoints.ads.feedNext('search'))
@@ -102,7 +105,34 @@ export default function SearchPage() {
         setTrending(list);
       })
       .catch(() => {});
+    apiClient.get<any>(`${Endpoints.users.suggestions}?limit=20`)
+      .then(r => {
+        const raw = r.data as any;
+        const list = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
+        setSuggestions(list);
+      })
+      .catch(() => {});
   }, []);
+
+  async function follow(userId: string) {
+    if (followingIds.has(userId)) return;
+    setFollowingIds(s => new Set(s).add(userId));
+    try {
+      await apiClient.post(`/api/v1/users/${userId}/follow`);
+      setFollowedIds(s => new Set(s).add(userId));
+    } catch { /* silencieux */ }
+    finally { setFollowingIds(s => { const n = new Set(s); n.delete(userId); return n; }); }
+  }
+
+  async function unfollow(userId: string) {
+    if (followingIds.has(userId)) return;
+    setFollowingIds(s => new Set(s).add(userId));
+    try {
+      await apiClient.delete(`/api/v1/users/${userId}/follow`);
+      setFollowedIds(s => { const n = new Set(s); n.delete(userId); return n; });
+    } catch { /* silencieux */ }
+    finally { setFollowingIds(s => { const n = new Set(s); n.delete(userId); return n; }); }
+  }
 
   const doSearch = useCallback((term: string) => {
     if (!term.trim()) { setResults(null); setLoading(false); return; }
@@ -171,6 +201,48 @@ export default function SearchPage() {
         <div className="flex items-center justify-center gap-3 py-12">
           <Spinner />
           <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Recherche en cours…</span>
+        </div>
+      )}
+
+      {/* Suggestions de personnes */}
+      {!q && !loading && suggestions.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <User size={15} style={{ color: 'var(--primary)' }} />
+            <h2 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Personnes à suivre</h2>
+          </div>
+          <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            {suggestions.map((u: any, i: number) => {
+              const isFollowed  = followedIds.has(u.id);
+              const isFollowing = followingIds.has(u.id);
+              return (
+                <div key={u.id}
+                  className="flex items-center gap-3 px-4 py-3 transition-all"
+                  style={{ borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="shrink-0">
+                    <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="sm" verified={u.is_verified} />
+                  </button>
+                  <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="min-w-0 flex-1 text-left">
+                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                      {u.display_name ?? u.username}
+                    </p>
+                    {u.username && <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>}
+                  </button>
+                  <button
+                    onClick={() => isFollowed ? unfollow(u.id) : follow(u.id)}
+                    disabled={isFollowing}
+                    className="shrink-0 flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all"
+                    style={isFollowed
+                      ? { background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
+                      : { background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}>
+                    {isFollowing ? <Spinner size="sm" /> : isFollowed ? 'Abonné' : <><UserPlus size={11} /> Suivre</>}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

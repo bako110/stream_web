@@ -2420,8 +2420,10 @@ function CommunitiesInline({ communities }: { communities: Community[] }) {
 // ── Suggestions sidebar ───────────────────────────────────────────────────────
 function SuggestionsPanel() {
   const navigate = useNavigate();
-  const [users,   setUsers]   = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [users,      setUsers]      = useState<any[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     apiClient.get<any>(`${Endpoints.users.suggestions}?limit=5`)
@@ -2430,13 +2432,39 @@ function SuggestionsPanel() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function follow(userId: string) {
+    if (followingIds.has(userId)) return;
+    setFollowingIds(s => new Set(s).add(userId));
+    try {
+      await apiClient.post(`/api/v1/users/${userId}/follow`);
+      setFollowedIds(s => new Set(s).add(userId));
+    } catch { /* silencieux */ }
+    finally { setFollowingIds(s => { const n = new Set(s); n.delete(userId); return n; }); }
+  }
+
+  async function unfollow(userId: string) {
+    if (followingIds.has(userId)) return;
+    setFollowingIds(s => new Set(s).add(userId));
+    try {
+      await apiClient.delete(`/api/v1/users/${userId}/follow`);
+      setFollowedIds(s => { const n = new Set(s); n.delete(userId); return n; });
+    } catch { /* silencieux */ }
+    finally { setFollowingIds(s => { const n = new Set(s); n.delete(userId); return n; }); }
+  }
+
   return (
     <div className="rounded-2xl overflow-hidden"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center gap-2 px-4 py-3.5"
+      <div className="flex items-center justify-between px-4 py-3.5"
         style={{ borderBottom: '1px solid var(--border)' }}>
-        <Sparkles size={14} style={{ color: 'var(--primary)' }} />
-        <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Suggestions</p>
+        <div className="flex items-center gap-2">
+          <Sparkles size={14} style={{ color: 'var(--primary)' }} />
+          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Suggestions</p>
+        </div>
+        <button onClick={() => navigate('/search')}
+          className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
+          Voir plus →
+        </button>
       </div>
       {loading ? (
         <div className="flex justify-center py-8"><Spinner size="sm" /></div>
@@ -2444,9 +2472,12 @@ function SuggestionsPanel() {
         <p className="text-center py-8 text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucune suggestion</p>
       ) : (
         <>
-          {users.map((u: any, i: number) => (
+          {users.map((u: any, i: number) => {
+            const isFollowed  = followedIds.has(u.id);
+            const isFollowing = followingIds.has(u.id);
+            return (
             <div key={u.id}
-              className="flex items-center gap-3 px-4 py-2.5 transition-all cursor-pointer"
+              className="flex items-center gap-3 px-4 py-2.5 transition-all"
               style={{ borderBottom: i < users.length - 1 ? '1px solid var(--border)' : 'none' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -2460,14 +2491,19 @@ function SuggestionsPanel() {
                 {u.username && <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>}
               </button>
               <button
+                onClick={() => isFollowed ? unfollow(u.id) : follow(u.id)}
+                disabled={isFollowing}
                 className="shrink-0 flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition-all"
-                style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(123,63,242,0.1)'; e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(123,63,242,0.2)'; }}>
-                <UserPlus size={11} /> Suivre
+                style={isFollowed
+                  ? { background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
+                  : { background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}
+                onMouseEnter={e => { if (!isFollowed) { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; } }}
+                onMouseLeave={e => { if (!isFollowed) { e.currentTarget.style.background = 'rgba(123,63,242,0.1)'; e.currentTarget.style.color = 'var(--primary)'; } }}>
+                {isFollowing ? <Spinner size="sm" /> : isFollowed ? 'Abonné' : <><UserPlus size={11} /> Suivre</>}
               </button>
             </div>
-          ))}
+            );
+          })}
           <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
             <button onClick={() => navigate('/search')}
               className="text-xs font-bold w-full text-center py-1.5 rounded-xl transition-all"
