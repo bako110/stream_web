@@ -5,7 +5,7 @@ import {
   Music, MapPin, Clock, Users, Play, Calendar,
   Flame, ChevronRight, UserPlus, UserCheck, Sparkles, Radio,
   Heart, MessageCircle, Share2, Bookmark, Film, RefreshCw,
-  X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3,
+  X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3, Copy,
   Image as ImageIcon, Video, Type, MoreHorizontal, Lock,
   Megaphone, ExternalLink, Zap,
 } from 'lucide-react';
@@ -1338,10 +1338,76 @@ function ShareToast({ onDone }: { onDone: () => void }) {
 }
 
 // ── Action bar — per-card state ───────────────────────────────────────────────
+function SharePreviewModal({ url, title, desc, image, onClose }: {
+  url: string; title: string; desc?: string; image?: string; onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => { setCopied(false); onClose(); }, 1500);
+  }
+
+  async function nativeShare() {
+    try {
+      await navigator.share({ title, url });
+      onClose();
+    } catch { /* annulé */ }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl overflow-hidden animate-reveal-up"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Preview card */}
+        <div className="rounded-xl m-3 overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+          {image && (
+            <img src={image} alt={title}
+              className="w-full object-cover"
+              style={{ maxHeight: '220px', objectPosition: 'top' }} />
+          )}
+          <div className="p-3" style={{ background: 'var(--bg-secondary)' }}>
+            <p className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>{title}</p>
+            {desc && <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-tertiary)' }}>{desc}</p>}
+            <p className="text-[11px] mt-1 truncate" style={{ color: 'var(--primary)' }}>gofolyx.com</p>
+          </div>
+        </div>
+
+        {/* URL */}
+        <div className="mx-3 mb-3 flex items-center gap-2 px-3 py-2 rounded-xl"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+          <p className="text-xs truncate flex-1" style={{ color: 'var(--text-secondary)' }}>{url}</p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 p-3 pt-0">
+          <button onClick={copyLink}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all"
+            style={{ background: copied ? 'rgba(34,197,94,0.15)' : 'var(--bg-secondary)', color: copied ? '#22C55E' : 'var(--text-primary)', border: '1px solid var(--border)' }}>
+            {copied ? <><Check size={15} /> Copié !</> : <><Copy size={15} /> Copier le lien</>}
+          </button>
+          {navigator.share && (
+            <button onClick={nativeShare}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white"
+              style={{ background: 'var(--primary)' }}>
+              <Share2 size={15} /> Partager
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ActionBar({
   id, kind, initialLiked, initialLikeCount, initialCommentCount = 0,
   commentCountOverride, shareCount = 0,
-  titleForShare, onOpenComments,
+  titleForShare, imageForShare, descForShare, onOpenComments,
 }: {
   id: string;
   kind: 'event' | 'concert' | 'post' | 'reel';
@@ -1351,6 +1417,8 @@ function ActionBar({
   commentCountOverride?: number;
   shareCount?: number;
   titleForShare?: string;
+  imageForShare?: string;
+  descForShare?: string;
   onOpenComments: (id: string, kind: 'event' | 'concert' | 'post' | 'reel', count: number) => void;
 }) {
   const [liked,      setLiked]      = useState(initialLiked);
@@ -1358,6 +1426,7 @@ function ActionBar({
   const commentCount = commentCountOverride ?? initialCommentCount ?? 0;
   const [saved,      setSaved]      = useState(false);
   const [shareToast, setShareToast] = useState(false);
+  const [showSharePreview, setShowSharePreview] = useState(false);
   const inFlight = useRef(false);
 
   // Resync si les données de la card changent (refresh feed, navigation)
@@ -1390,27 +1459,17 @@ function ActionBar({
     }
   }
 
-  async function handleShare(e: React.MouseEvent) {
+  function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    const path = kind === 'concert' ? 'concerts' : kind === 'event' ? 'events' : kind === 'post' ? 'posts' : 'reels';
-    const url  = `${window.location.origin}/${path}/${encodeId(id)}`;
-
-    if (navigator.share) {
-      navigator.share({ title: titleForShare ?? '', url });
-    } else {
-      await navigator.clipboard.writeText(url);
-      setShareToast(true);
-    }
+    setShowSharePreview(true);
     // Record share in backend
-    try {
-      await apiClient.post(Endpoints.social.share, {
-        ...(kind === 'event'   ? { event_id: id }   :
-            kind === 'concert' ? { concert_id: id } :
-            kind === 'reel'    ? { reel_id: id }    :
-                                 { post_id: id }),
-        platform: 'link',
-      });
-    } catch { /* silencieux */ }
+    apiClient.post(Endpoints.social.share, {
+      ...(kind === 'event'   ? { event_id: id }   :
+          kind === 'concert' ? { concert_id: id } :
+          kind === 'reel'    ? { reel_id: id }    :
+                               { post_id: id }),
+      platform: 'link',
+    }).catch(() => {});
   }
 
   return (
@@ -1459,6 +1518,23 @@ function ActionBar({
 
       {/* Share toast — local */}
       {shareToast && <ShareToast onDone={() => setShareToast(false)} />}
+
+      {/* Share preview modal */}
+      {showSharePreview && (() => {
+        const path = kind === 'concert' ? 'concerts' : kind === 'event' ? 'events' : kind === 'post' ? 'posts' : 'reels';
+        const url  = kind === 'reel'
+          ? `${window.location.origin}/reels?id=${encodeId(id)}`
+          : `${window.location.origin}/${path}/${encodeId(id)}`;
+        return (
+          <SharePreviewModal
+            url={url}
+            title={titleForShare ?? 'GoFolyX'}
+            desc={descForShare}
+            image={imageForShare}
+            onClose={() => setShowSharePreview(false)}
+          />
+        );
+      })()}
     </>
   );
 }
@@ -1684,6 +1760,8 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         initialCommentCount={concert.comment_count ?? 0}
         commentCountOverride={commentCountOverride}
         titleForShare={concert.title}
+        imageForShare={concert.thumbnail_url ?? undefined}
+        descForShare={concert.description?.slice(0, 120) ?? concert.genre ?? undefined}
         onOpenComments={onOpenComments}
       />
     </div>
@@ -1758,6 +1836,8 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         initialCommentCount={event.comment_count ?? 0}
         commentCountOverride={commentCountOverride}
         titleForShare={event.title}
+        imageForShare={event.thumbnail_url ?? event.banner_url ?? undefined}
+        descForShare={event.description?.slice(0, 120) ?? undefined}
         onOpenComments={onOpenComments}
       />
     </div>
@@ -1818,6 +1898,8 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         commentCountOverride={commentCountOverride}
         shareCount={post.share_count ?? 0}
         titleForShare={post.body?.slice(0, 60)}
+        imageForShare={post.image_url ?? post.thumbnail_url ?? undefined}
+        descForShare={post.body?.slice(0, 120) ?? undefined}
         onOpenComments={onOpenComments}
       />
     </div>
