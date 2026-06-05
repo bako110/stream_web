@@ -148,8 +148,8 @@ export default function CommunityFundDetailPage() {
     if (!confirm('Annuler et rembourser les membres qui ont déjà payé ?')) return;
     setActionLoading('cancel');
     try {
-      const res = await apiClient.post(`/api/v1/communities/${communityId}/cotisations/${cotId}/cancel`);
-      const refunded = res.data?.refunded_count ?? res.data?.data?.refunded_count;
+      const res = await apiClient.post<any>(`/api/v1/communities/${communityId}/cotisations/${cotId}/cancel`);
+      const refunded = (res.data as any)?.refunded_count ?? (res.data as any)?.data?.refunded_count;
       toast.success(refunded != null ? `${refunded} membre${refunded !== 1 ? 's' : ''} remboursé${refunded !== 1 ? 's' : ''}` : 'Cotisation annulée');
       load(true);
     } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }

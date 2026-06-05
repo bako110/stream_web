@@ -195,7 +195,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
           ) : <div className="w-20" />}
         </div>
         <div className="flex shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
-          {(isAdmin ? ['info', 'members', 'security'] : ['members'] as SettingsTab[]).map(t => {
+          {(isAdmin ? ['info', 'members', 'security'] as SettingsTab[] : ['members'] as SettingsTab[]).map(t => {
             const labels: Record<string, string> = { info: 'Info', members: 'Membres', security: 'Sécurité' };
             const icons: Record<string, React.ReactNode> = { info: <Settings size={14} />, members: <Users size={14} />, security: <Shield size={14} /> };
             return (
@@ -691,7 +691,7 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdit, onDelete, onPin, onBlockSender, navigate }: {
+function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdit, onDelete, onPin, onBlockSender, onVotePoll, onClosePoll, navigate }: {
   msg: CommunityMessage; isMe: boolean; canManage: boolean; canBlock: boolean;
   onReact: (id: string, emoji: string) => void;
   onReply: (msg: CommunityMessage) => void;
@@ -991,6 +991,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   const id = community.id;
   const [g1, g2] = gradientFor(community.name);
   const count    = community.members_count ?? (community as any).member_count ?? 0;
+  const isAdmin   = myRole === 'admin';
   const canManage = myRole === 'admin' || myRole === 'moderator';
 
   const loadMessages = useCallback((msgType?: string) => {
