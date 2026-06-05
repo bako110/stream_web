@@ -78,8 +78,8 @@ function CreateChannelModal({ communityId, onClose, onCreated }: {
             <label className="text-[10px] font-bold tracking-widest block mb-2" style={{ color: 'var(--text-tertiary)' }}>TYPE</label>
             <div className="space-y-2">
               {[
-                { val: 'chat', icon: <Hash size={16} />, label: 'Chat', sub: 'Discussion libre entre membres', color: '#3B82F6' },
-                { val: 'announcement', icon: <Megaphone size={16} />, label: 'Annonces', sub: 'Seuls les admins peuvent poster', color: '#F59E0B' },
+                { val: 'chat', icon: <Hash size={16} />, label: 'Chat', sub: 'Discussion libre entre membres', color: '#7B3FF2' },
+                { val: 'announcement', icon: <Megaphone size={16} />, label: 'Annonces', sub: 'Seuls les admins peuvent poster', color: '#7B3FF2' },
               ].map(opt => (
                 <button key={opt.val} onClick={() => setType(opt.val as any)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl text-left"
@@ -166,7 +166,7 @@ function ChannelChat({ communityId, channel, myRole, onBack }: {
     } catch { }
   }
 
-  const typeColor = channel.type === 'announcement' ? '#F59E0B' : '#3B82F6';
+  const typeColor = channel.type === 'announcement' ? '#7B3FF2' : '#7B3FF2';
   const TypeIcon  = channel.type === 'announcement' ? Megaphone : Hash;
 
   return (
@@ -184,7 +184,7 @@ function ChannelChat({ communityId, channel, myRole, onBack }: {
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{channel.name}</p>
           {channel.type === 'announcement' && (
-            <p className="text-[10px]" style={{ color: '#F59E0B' }}>Annonces · Lecture seule pour les membres</p>
+            <p className="text-[10px]" style={{ color: '#7B3FF2' }}>Annonces · Lecture seule pour les membres</p>
           )}
         </div>
       </div>
@@ -381,7 +381,7 @@ export default function CommunityChannelsPage() {
 function ChannelItem({ channel, onClick, isAdmin, communityId, onDeleted }: {
   channel: Channel; onClick: () => void; isAdmin: boolean; communityId: string; onDeleted: () => void;
 }) {
-  const typeColor = channel.type === 'announcement' ? '#F59E0B' : '#3B82F6';
+  const typeColor = channel.type === 'announcement' ? '#7B3FF2' : '#7B3FF2';
   const TypeIcon  = channel.type === 'announcement' ? Megaphone : Hash;
 
   async function del(e: React.MouseEvent) {

@@ -108,7 +108,7 @@ export default function SettingsVerificationPage() {
 
   const renderStatus = () => {
     const CFG = {
-      pending:  { icon: <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}><Spinner /></div>, color: '#F59E0B', title: "En cours d'examen", sub: 'Notre équipe examine votre dossier. Cela peut prendre quelques jours.' },
+      pending:  { icon: <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(123,63,242,0.15)' }}><Spinner /></div>, color: '#7B3FF2', title: "En cours d'examen", sub: 'Notre équipe examine votre dossier. Cela peut prendre quelques jours.' },
       approved: { icon: <CheckCircle size={48} color={BLUE} />, color: BLUE, title: 'Compte vérifié', sub: 'Votre compte est certifié GoFolyX.' },
     } as Record<string, any>;
     const cfg = CFG[status];
@@ -376,8 +376,8 @@ export default function SettingsVerificationPage() {
         </div>
 
         <div className="rounded-xl p-3.5 flex items-start gap-2.5"
-          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
-          <Info size={14} color="#F59E0B" className="shrink-0 mt-0.5" />
+          style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.25)' }}>
+          <Info size={14} color="#7B3FF2" className="shrink-0 mt-0.5" />
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
             Fournir de fausses informations entraîne le rejet définitif de votre demande.
           </p>

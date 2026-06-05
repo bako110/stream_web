@@ -40,7 +40,7 @@ const TAB_CONFIG: {
     label: 'Evenements',
     icon: <Calendar size={14} />,
     pill: 'Evenement',
-    pillColor: '#F59E0B',
+    pillColor: '#7B3FF2',
     emptyIcon: <Calendar size={32} strokeWidth={1.2} />,
     emptyText: 'Aucun evenement en favori',
     navPath: (item) => `/events/${item.item_id ?? item.id}`,
@@ -50,7 +50,7 @@ const TAB_CONFIG: {
     label: 'Concerts',
     icon: <Music size={14} />,
     pill: 'Concert',
-    pillColor: '#FF7A2F',
+    pillColor: '#7B3FF2',
     emptyIcon: <Music size={32} strokeWidth={1.2} />,
     emptyText: 'Aucun concert en favori',
     navPath: (item) => `/concerts/${item.item_id ?? item.id}`,
@@ -60,7 +60,7 @@ const TAB_CONFIG: {
     label: 'Reels',
     icon: <Play size={14} />,
     pill: 'Reel',
-    pillColor: '#E0389A',
+    pillColor: '#7B3FF2',
     emptyIcon: <Play size={32} strokeWidth={1.2} />,
     emptyText: 'Aucun reel en favori',
     navPath: () => `/reels`,
@@ -80,7 +80,7 @@ const TAB_CONFIG: {
     label: 'Communautes',
     icon: <Users size={14} />,
     pill: 'Communaute',
-    pillColor: '#3B82F6',
+    pillColor: '#7B3FF2',
     emptyIcon: <Users size={32} strokeWidth={1.2} />,
     emptyText: 'Aucune communaute en favori',
     navPath: (item) => `/communities/${item.item_id ?? item.id}`,
@@ -171,7 +171,7 @@ function FavRow({
         className="p-2 rounded-lg transition-all shrink-0"
         style={{ color: config.pillColor, background: config.pillColor + '15' }}
         title="Retirer des favoris"
-        onMouseEnter={ev => { (ev.currentTarget.style.background = 'rgba(240,54,90,0.12)'); (ev.currentTarget.style.color = '#F0365A'); }}
+        onMouseEnter={ev => { (ev.currentTarget.style.background = 'rgba(123,63,242,0.12)'); (ev.currentTarget.style.color = '#7B3FF2'); }}
         onMouseLeave={ev => { (ev.currentTarget.style.background = config.pillColor + '15'); (ev.currentTarget.style.color = config.pillColor); }}
       >
         {removing

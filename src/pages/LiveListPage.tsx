@@ -15,7 +15,7 @@ import { fr } from 'date-fns/locale';
 function LiveBadge() {
   return (
     <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-      style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
+      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
       <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
     </span>
   );
@@ -44,22 +44,22 @@ function ConcertCard({ concert, isLiveCard = false }: { concert: Concert; isLive
       className="group cursor-pointer overflow-hidden transition-all duration-300"
       style={{
         borderRadius: '1rem',
-        border: `1px solid ${isLive ? 'rgba(240,54,90,0.3)' : 'var(--border)'}`,
+        border: `1px solid ${isLive ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
         background: 'var(--surface)',
-        boxShadow: isLive ? '0 4px 24px rgba(240,54,90,0.12)' : 'none',
+        boxShadow: isLive ? '0 4px 24px rgba(123,63,242,0.12)' : 'none',
       }}
       onClick={() => navigate(isLive ? `/live/${encodeId(concert.id)}` : `/concerts/${encodeId(concert.id)}`)}
       onMouseEnter={e => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
         (e.currentTarget as HTMLDivElement).style.boxShadow = isLive
-          ? '0 8px 32px rgba(240,54,90,0.25)'
+          ? '0 8px 32px rgba(123,63,242,0.25)'
           : '0 8px 32px rgba(123,63,242,0.18)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = isLive ? 'rgba(240,54,90,0.6)' : 'var(--primary)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = isLive ? 'rgba(123,63,242,0.6)' : 'var(--primary)';
       }}
       onMouseLeave={e => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = isLive ? '0 4px 24px rgba(240,54,90,0.12)' : 'none';
-        (e.currentTarget as HTMLDivElement).style.borderColor = isLive ? 'rgba(240,54,90,0.3)' : 'var(--border)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = isLive ? '0 4px 24px rgba(123,63,242,0.12)' : 'none';
+        (e.currentTarget as HTMLDivElement).style.borderColor = isLive ? 'rgba(123,63,242,0.3)' : 'var(--border)';
       }}
     >
       {/* Thumbnail */}
@@ -123,7 +123,7 @@ function ConcertCard({ concert, isLiveCard = false }: { concert: Concert; isLive
         <div className="ml-auto shrink-0 self-center">
           {isLive ? (
             <span className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-all"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               Regarder
             </span>
           ) : (
@@ -199,7 +199,7 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
 
         <button onClick={handleBoost} disabled={loading}
           className="btn-primary w-full flex items-center justify-center gap-2"
-          style={{ background: 'linear-gradient(135deg,#F59E0B,#F0365A)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           {loading ? <Spinner size="sm" /> : <Zap size={15} />}
           {loading ? 'Traitement...' : 'Confirmer le boost'}
         </button>
@@ -279,7 +279,7 @@ export default function LiveListPage() {
                 <button
                   onClick={e => { e.stopPropagation(); setBoostTarget(c); }}
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-medium transition-all"
-                  style={{ background: 'rgba(245,158,11,0.85)', color: '#fff', backdropFilter: 'blur(4px)' }}
+                  style={{ background: 'rgba(123,63,242,0.85)', color: '#fff', backdropFilter: 'blur(4px)' }}
                   title="Booster ce live">
                   <Zap size={11} /> Boost
                 </button>
@@ -324,7 +324,7 @@ export default function LiveListPage() {
                 <button
                   onClick={e => { e.stopPropagation(); setBoostTarget(c); }}
                   className="absolute top-14 right-3 opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-medium transition-all"
-                  style={{ background: 'rgba(245,158,11,0.85)', color: '#fff', backdropFilter: 'blur(4px)' }}
+                  style={{ background: 'rgba(123,63,242,0.85)', color: '#fff', backdropFilter: 'blur(4px)' }}
                   title="Booster ce concert">
                   <Zap size={11} /> Boost
                 </button>

@@ -41,10 +41,10 @@ export default function WalletDashboardPage() {
   const KPI = [
     { label: 'Gains ce mois',   value: `${coinsToEur(stats?.earnings_this_month ?? 0)} €`,  sub: `${(stats?.earnings_this_month ?? 0).toLocaleString('fr-FR')} coins`, color: '#22C55E', icon: <DollarSign size={18}/> },
     { label: 'Cadeaux reçus',   value: (stats?.total_gifts_received ?? 0).toLocaleString('fr-FR'), color: '#E85DAD', icon: <Gift size={18}/> },
-    { label: 'Vues totales',    value: (stats?.total_views ?? 0).toLocaleString('fr-FR'),  color: '#3B82F6', icon: <Eye size={18}/> },
-    { label: 'Likes totaux',    value: (stats?.total_likes ?? 0).toLocaleString('fr-FR'),  color: '#F0365A', icon: <Heart size={18}/> },
+    { label: 'Vues totales',    value: (stats?.total_views ?? 0).toLocaleString('fr-FR'),  color: '#7B3FF2', icon: <Eye size={18}/> },
+    { label: 'Likes totaux',    value: (stats?.total_likes ?? 0).toLocaleString('fr-FR'),  color: '#7B3FF2', icon: <Heart size={18}/> },
     { label: 'Abonnés',         value: (stats?.total_followers ?? 0).toLocaleString('fr-FR'), color: '#7B3FF2', icon: <Users size={18}/> },
-    { label: 'Total gagné',     value: `${coinsToEur(stats?.total_coins_earned ?? 0)} €`,  sub: `${(stats?.total_coins_earned ?? 0).toLocaleString('fr-FR')} coins`, color: '#F59E0B', icon: <TrendingUp size={18}/> },
+    { label: 'Total gagné',     value: `${coinsToEur(stats?.total_coins_earned ?? 0)} €`,  sub: `${(stats?.total_coins_earned ?? 0).toLocaleString('fr-FR')} coins`, color: '#7B3FF2', icon: <TrendingUp size={18}/> },
   ];
 
   return (
@@ -67,7 +67,7 @@ export default function WalletDashboardPage() {
       {/* Month comparison */}
       {stats && (
         <div className="rounded-2xl p-5 relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 10px 32px rgba(123,63,242,0.3)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 10px 32px rgba(123,63,242,0.3)' }}>
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(circle at 80% 10%, rgba(255,255,255,0.12), transparent 55%)' }} />
           <p className="text-xs text-white/70 font-medium uppercase tracking-wider mb-3">Gains</p>
@@ -83,7 +83,7 @@ export default function WalletDashboardPage() {
           </div>
           {stats.earnings_last_month > 0 && (
             <div className="mt-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black text-white"
-              style={{ background: stats.earnings_this_month >= stats.earnings_last_month ? 'rgba(34,197,94,0.25)' : 'rgba(240,54,90,0.25)' }}>
+              style={{ background: stats.earnings_this_month >= stats.earnings_last_month ? 'rgba(34,197,94,0.25)' : 'rgba(123,63,242,0.25)' }}>
               <TrendingUp size={11} />
               {stats.earnings_this_month >= stats.earnings_last_month ? '+' : ''}
               {(((stats.earnings_this_month - stats.earnings_last_month) / stats.earnings_last_month) * 100).toFixed(0)}%
@@ -118,7 +118,7 @@ export default function WalletDashboardPage() {
             {stats.top_content.map((item, i) => (
               <div key={item.id} className="flex items-center gap-3 px-4 py-3.5"
                 style={{ borderBottom: i < stats.top_content.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <span className="text-lg font-black w-6 text-center" style={{ color: i === 0 ? '#F59E0B' : 'var(--text-tertiary)' }}>
+                <span className="text-lg font-black w-6 text-center" style={{ color: i === 0 ? '#7B3FF2' : 'var(--text-tertiary)' }}>
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">

@@ -17,7 +17,7 @@ import toast from 'react-hot-toast';
 function LiveBadge() {
   return (
     <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-      style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
       LIVE
     </span>
@@ -49,9 +49,9 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
   return (
     <div
       className="cursor-pointer group overflow-hidden transition-all duration-300"
-      style={{ borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface)', borderLeft: '3px solid #FF7A2F' }}
+      style={{ borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface)', borderLeft: '3px solid #7B3FF2' }}
       onClick={goEdit}
-      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 32px rgba(255,122,47,0.15)'; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 32px rgba(123,63,242,0.15)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}>
 
       {/* Thumbnail */}
@@ -61,8 +61,8 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,rgba(255,122,47,0.2),rgba(255,122,47,0.06))' }}>
-            <Music size={40} style={{ color: '#FF7A2F', opacity: 0.5 }} />
+            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.2),rgba(123,63,242,0.06))' }}>
+            <Music size={40} style={{ color: '#7B3FF2', opacity: 0.5 }} />
           </div>
         )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 60%)' }} />
@@ -80,8 +80,8 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
         <div className="absolute top-3 right-3">
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
             style={{
-              background: concert.access_type === 'free' ? 'rgba(34,197,94,0.2)' : concert.access_type === 'ticket' ? 'rgba(255,122,47,0.2)' : 'rgba(123,63,242,0.2)',
-              color: concert.access_type === 'free' ? '#22c55e' : concert.access_type === 'ticket' ? '#FF7A2F' : 'var(--primary)',
+              background: concert.access_type === 'free' ? 'rgba(34,197,94,0.2)' : concert.access_type === 'ticket' ? 'rgba(123,63,242,0.2)' : 'rgba(123,63,242,0.2)',
+              color: concert.access_type === 'free' ? '#22c55e' : concert.access_type === 'ticket' ? '#7B3FF2' : 'var(--primary)',
               border: '1px solid currentColor',
             }}>
             {concert.access_type === 'free' ? 'Gratuit' : concert.access_type === 'ticket' ? `${concert.ticket_price ?? ''}€` : 'Abonnement'}
@@ -113,7 +113,7 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
           )}
           {concert.genre && (
             <span className="px-2 py-0.5 rounded-full text-[11px] font-medium"
-              style={{ background: 'rgba(255,122,47,0.1)', color: '#FF7A2F' }}>
+              style={{ background: 'rgba(123,63,242,0.1)', color: '#7B3FF2' }}>
               {concert.genre}
             </span>
           )}
@@ -131,7 +131,7 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
           </button>
           <button onClick={e => { e.stopPropagation(); goEdit(); }}
             className="ml-auto text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
-            style={{ background: 'rgba(255,122,47,0.12)', color: '#FF7A2F' }}>
+            style={{ background: 'rgba(123,63,242,0.12)', color: '#7B3FF2' }}>
             Modifier →
           </button>
         </div>
@@ -182,8 +182,8 @@ export default function MyConcertsPage() {
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(255,122,47,0.12)' }}>
-            <Music size={20} style={{ color: '#FF7A2F' }} />
+            style={{ background: 'rgba(123,63,242,0.12)' }}>
+            <Music size={20} style={{ color: '#7B3FF2' }} />
           </div>
           <div>
             <h1 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>Mes Concerts</h1>
@@ -195,12 +195,12 @@ export default function MyConcertsPage() {
         <div className="flex items-center gap-2">
           <button onClick={toggleSearch}
             className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-            style={{ background: searchOpen ? '#FF7A2F' : 'var(--bg-secondary)', color: searchOpen ? '#fff' : 'var(--text-tertiary)' }}>
+            style={{ background: searchOpen ? '#7B3FF2' : 'var(--bg-secondary)', color: searchOpen ? '#fff' : 'var(--text-tertiary)' }}>
             {searchOpen ? <X size={15} /> : <Search size={15} />}
           </button>
           <button onClick={() => navigate('/create/concert')}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"
-            style={{ background: '#FF7A2F', color: '#fff' }}>
+            style={{ background: '#7B3FF2', color: '#fff' }}>
             <Plus size={14} /> Publier
           </button>
         </div>
@@ -235,9 +235,9 @@ export default function MyConcertsPage() {
         </span>
         <button onClick={() => navigate('/create/concert')}
           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all"
-          style={{ background: 'rgba(255,122,47,0.1)', color: '#FF7A2F' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,122,47,0.2)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,122,47,0.1)')}>
+          style={{ background: 'rgba(123,63,242,0.1)', color: '#7B3FF2' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.2)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.1)')}>
           <Plus size={12} /> Créer
         </button>
       </div>
@@ -251,8 +251,8 @@ export default function MyConcertsPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: 'rgba(255,122,47,0.1)' }}>
-              <Music size={28} style={{ color: '#FF7A2F' }} />
+              style={{ background: 'rgba(123,63,242,0.1)' }}>
+              <Music size={28} style={{ color: '#7B3FF2' }} />
             </div>
             <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
               {items.length === 0 ? 'Aucun concert créé' : `Aucun résultat pour « ${search} »`}
@@ -263,7 +263,7 @@ export default function MyConcertsPage() {
             {items.length === 0 && (
               <button onClick={() => navigate('/create/concert')}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold"
-                style={{ background: '#FF7A2F', color: '#fff' }}>
+                style={{ background: '#7B3FF2', color: '#fff' }}>
                 <Plus size={15} /> Publier un concert
               </button>
             )}

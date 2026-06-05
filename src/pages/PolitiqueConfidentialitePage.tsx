@@ -260,7 +260,7 @@ La date de dernière mise à jour est toujours indiquée en haut de ce document.
 function AccordionItem({ section, defaultOpen }: { section: Section; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   const { Icon } = section;
-  const accent = '#36D9A0';
+  const accent = '#7B3FF2';
 
   return (
     <div style={{ borderBottom: '1px solid var(--border)' }}>
@@ -304,7 +304,7 @@ function AccordionItem({ section, defaultOpen }: { section: Section; defaultOpen
 export default function PolitiqueConfidentialitePage() {
   const navigate    = useNavigate();
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const accent      = '#36D9A0';
+  const accent      = '#7B3FF2';
 
   const scrollTo = (key: string) => {
     sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });

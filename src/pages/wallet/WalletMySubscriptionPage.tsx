@@ -46,8 +46,8 @@ const PLAN_META: Record<string, { label: string; gradient: string; color: string
   },
   basic: {
     label: 'Basic',
-    gradient: 'linear-gradient(135deg,#3B82F6,#60A5FA)',
-    color: '#3B82F6',
+    gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
+    color: '#7B3FF2',
     screens: 2, quality: 'HD', profiles: 2, downloads: 5,
   },
   premium: {
@@ -282,7 +282,7 @@ export default function WalletMySubscriptionPage() {
           <button
             onClick={() => navigate('/wallet/subscription/plans')}
             className="px-6 py-3 rounded-xl font-black text-sm text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 6px 20px rgba(123,63,242,0.35)' }}
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.35)' }}
           >
             Voir les plans
           </button>

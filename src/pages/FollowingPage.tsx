@@ -81,7 +81,7 @@ function UserCardItem({
         style={{
           background: user.banner_url
             ? undefined
-            : 'linear-gradient(135deg,#7B3FF2,#E0389A)',
+            : 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
         }}
       >
         {user.banner_url && (
@@ -102,7 +102,7 @@ function UserCardItem({
           <div
             className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-sm font-black text-white ring-2"
             style={{
-              background: 'linear-gradient(135deg,#7B3FF2,#E0389A)',
+              background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
               boxShadow:  '0 0 0 2px var(--surface)',
             }}
           >
@@ -152,7 +152,7 @@ function UserCardItem({
             <button
               onClick={() => onFollow(user.id)}
               className="w-full flex items-center justify-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-xl transition-all text-white"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', border: 'none' }}
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', border: 'none' }}
             >
               <UserPlus size={12} /> Suivre
             </button>

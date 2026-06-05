@@ -19,9 +19,9 @@ interface Subscription {
 const PLAN_LABELS: Record<string, string> = { free:'Gratuit', basic:'Essentiel', standard:'Standard', premium:'Premium' };
 const PLAN_COLORS: Record<string, [string, string]> = {
   free:     ['#9390AB', '#6B698A'],
-  basic:    ['#3B82F6', '#6366F1'],
+  basic:    ['#7B3FF2', '#7B3FF2'],
   standard: ['#7B3FF2', '#A855F7'],
-  premium:  ['#E0389A', '#F43F5E'],
+  premium:  ['#7B3FF2', '#F43F5E'],
 };
 const PLAN_FEATURES: Record<string, string[]> = {
   free:     ['Accès limité', '1 écran', 'Qualité SD'],
@@ -139,7 +139,7 @@ export default function SubscriptionsPage() {
                 </button>
                 <button onClick={handleCancel} disabled={cancelling}
                   className="flex-1 py-2.5 rounded-xl text-sm font-black text-white flex items-center justify-center gap-2 disabled:opacity-60"
-                  style={{ background: 'rgba(240,54,90,0.7)' }}>
+                  style={{ background: 'rgba(123,63,242,0.7)' }}>
                   {cancelling ? <Spinner size="sm" /> : 'Confirmer'}
                 </button>
               </div>

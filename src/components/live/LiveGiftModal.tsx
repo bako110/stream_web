@@ -49,7 +49,7 @@ export function GiftTicker({ notifs }: { notifs: GiftNotif[] }) {
         <div key={n.id}
           className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold text-white"
           style={{
-            background: 'linear-gradient(135deg,rgba(245,158,11,0.85),rgba(234,88,12,0.85))',
+            background: 'linear-gradient(135deg,rgba(123,63,242,0.85),rgba(234,88,12,0.85))',
             backdropFilter: 'blur(8px)',
             animation: 'slideInLeft 0.3s ease-out',
           }}>
@@ -77,9 +77,9 @@ export function GiftToast({ notif, onDone }: { notif: GiftNotif; onDone: () => v
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-2xl text-white pointer-events-none"
       style={{
-        background: 'linear-gradient(135deg,rgba(245,158,11,0.9),rgba(234,88,12,0.9))',
+        background: 'linear-gradient(135deg,rgba(123,63,242,0.9),rgba(234,88,12,0.9))',
         backdropFilter: 'blur(10px)',
-        boxShadow: '0 4px 24px rgba(245,158,11,0.4)',
+        boxShadow: '0 4px 24px rgba(123,63,242,0.4)',
         animation: 'slideInRight 0.3s ease-out',
         minWidth: 220,
       }}>
@@ -235,9 +235,9 @@ export function LiveGiftModal({ liveId: _liveId, receiverId, receiverName, onClo
                     style={{
                       width: 80,
                       background: isSel
-                        ? 'linear-gradient(135deg,#F59E0B,#EA580C)'
+                        ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)'
                         : 'var(--bg-secondary)',
-                      border: isSel ? '2px solid #F59E0B' : '2px solid transparent',
+                      border: isSel ? '2px solid #7B3FF2' : '2px solid transparent',
                       opacity: locked ? 0.5 : 1,
                     }}>
                     <span className="text-3xl">{g.emoji}</span>
@@ -274,7 +274,7 @@ export function LiveGiftModal({ liveId: _liveId, receiverId, receiverName, onClo
             <button onClick={handleSend}
               disabled={!selected || !sufficient || sending}
               className="flex-1 py-3 rounded-xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
-              style={{ background: 'linear-gradient(135deg,#F59E0B,#EA580C)', boxShadow: '0 6px 20px rgba(245,158,11,0.4)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.4)' }}>
               {sending ? <Spinner size="sm" /> : <><Gift size={15} /> Envoyer {selected?.emoji ?? ''}</>}
             </button>
           </div>

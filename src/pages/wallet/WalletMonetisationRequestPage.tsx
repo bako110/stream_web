@@ -135,7 +135,7 @@ export default function WalletMonetisationRequestPage() {
           })}
         </div>
         {errors.types && (
-          <p className="text-xs mt-1.5" style={{ color: '#F0365A' }}>{errors.types}</p>
+          <p className="text-xs mt-1.5" style={{ color: '#7B3FF2' }}>{errors.types}</p>
         )}
       </div>
 
@@ -145,7 +145,7 @@ export default function WalletMonetisationRequestPage() {
           <label className="text-xs font-black uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
             Description de votre activite *
           </label>
-          <span className="text-xs" style={{ color: description.length > DESC_MAX ? '#F0365A' : 'var(--text-tertiary)' }}>
+          <span className="text-xs" style={{ color: description.length > DESC_MAX ? '#7B3FF2' : 'var(--text-tertiary)' }}>
             {description.length}/{DESC_MAX}
           </span>
         </div>
@@ -155,10 +155,10 @@ export default function WalletMonetisationRequestPage() {
           placeholder="Decrivez votre activite creative, votre audience, la frequence de publication..."
           rows={5}
           className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
-          style={{ background: 'var(--surface)', border: `1px solid ${errors.description ? '#F0365A' : 'var(--border)'}`, color: 'var(--text-primary)' }}
+          style={{ background: 'var(--surface)', border: `1px solid ${errors.description ? '#7B3FF2' : 'var(--border)'}`, color: 'var(--text-primary)' }}
         />
         {errors.description && (
-          <p className="text-xs mt-1" style={{ color: '#F0365A' }}>{errors.description}</p>
+          <p className="text-xs mt-1" style={{ color: '#7B3FF2' }}>{errors.description}</p>
         )}
       </div>
 
@@ -173,10 +173,10 @@ export default function WalletMonetisationRequestPage() {
           onChange={e => setPaymentEmail(e.target.value)}
           placeholder="email@exemple.com"
           className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-          style={{ background: 'var(--surface)', border: `1px solid ${errors.paymentEmail ? '#F0365A' : 'var(--border)'}`, color: 'var(--text-primary)' }}
+          style={{ background: 'var(--surface)', border: `1px solid ${errors.paymentEmail ? '#7B3FF2' : 'var(--border)'}`, color: 'var(--text-primary)' }}
         />
         {errors.paymentEmail && (
-          <p className="text-xs mt-1" style={{ color: '#F0365A' }}>{errors.paymentEmail}</p>
+          <p className="text-xs mt-1" style={{ color: '#7B3FF2' }}>{errors.paymentEmail}</p>
         )}
       </div>
 
@@ -193,8 +193,8 @@ export default function WalletMonetisationRequestPage() {
       {/* Submit error */}
       {errors.submit && (
         <div className="rounded-xl px-4 py-3"
-          style={{ background: 'rgba(240,54,90,0.08)', border: '1px solid rgba(240,54,90,0.25)' }}>
-          <p className="text-xs" style={{ color: '#F0365A' }}>{errors.submit}</p>
+          style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.25)' }}>
+          <p className="text-xs" style={{ color: '#7B3FF2' }}>{errors.submit}</p>
         </div>
       )}
 
@@ -203,7 +203,7 @@ export default function WalletMonetisationRequestPage() {
         onClick={handleSubmit}
         disabled={submitting}
         className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
         {submitting ? <Spinner size="sm" /> : <><Send size={15} /> Envoyer ma demande</>}
       </button>
     </div>

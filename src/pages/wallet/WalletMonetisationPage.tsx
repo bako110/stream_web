@@ -13,8 +13,8 @@ interface MonetizationStatusResponse {
 
 const CONDITIONS = [
   { icon: <Users size={15} />,        label: '100 abonnés minimum',            color: '#7B3FF2' },
-  { icon: <FileText size={15} />,     label: '5 contenus publiés',             color: '#3B82F6' },
-  { icon: <CalendarDays size={15} />, label: 'Compte actif depuis 30 jours',   color: '#F59E0B' },
+  { icon: <FileText size={15} />,     label: '5 contenus publiés',             color: '#7B3FF2' },
+  { icon: <CalendarDays size={15} />, label: 'Compte actif depuis 30 jours',   color: '#7B3FF2' },
   { icon: <ShieldCheck size={15} />,  label: 'Respect des CGU et politiques',  color: '#22C55E' },
 ];
 
@@ -59,7 +59,7 @@ export default function WalletMonetisationPage() {
       {s === 'approved' && (
         <div className="space-y-4">
           <div className="rounded-2xl p-5 relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 10px 32px rgba(123,63,242,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 10px 32px rgba(123,63,242,0.3)' }}>
             <div className="absolute inset-0 pointer-events-none"
               style={{ background: 'radial-gradient(circle at 80% 10%, rgba(255,255,255,0.12), transparent 55%)' }} />
             <p className="text-xs text-white/70 font-medium uppercase tracking-wider mb-1">Statut</p>
@@ -89,10 +89,10 @@ export default function WalletMonetisationPage() {
       {/* ── PENDING ─────────────────────────────────────────────────────── */}
       {s === 'pending' && (
         <div className="rounded-2xl p-6 flex flex-col items-center gap-4 text-center"
-          style={{ background: 'var(--surface)', border: '1px solid rgba(245,158,11,0.3)' }}>
+          style={{ background: 'var(--surface)', border: '1px solid rgba(123,63,242,0.3)' }}>
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(245,158,11,0.12)' }}>
-            <Clock size={28} style={{ color: '#F59E0B' }} />
+            style={{ background: 'rgba(123,63,242,0.12)' }}>
+            <Clock size={28} style={{ color: '#7B3FF2' }} />
           </div>
           <div>
             <p className="text-base font-black" style={{ color: 'var(--text-primary)' }}>Demande en cours d'examen</p>
@@ -101,8 +101,8 @@ export default function WalletMonetisationPage() {
             </p>
           </div>
           <div className="px-4 py-2 rounded-full"
-            style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
-            <p className="text-xs font-black" style={{ color: '#F59E0B' }}>2 a 5 jours ouvres</p>
+            style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.25)' }}>
+            <p className="text-xs font-black" style={{ color: '#7B3FF2' }}>2 a 5 jours ouvres</p>
           </div>
         </div>
       )}
@@ -114,10 +114,10 @@ export default function WalletMonetisationPage() {
           {/* Rejection reason */}
           {s === 'rejected' && status?.rejection_reason && (
             <div className="rounded-xl px-4 py-3.5 flex items-start gap-3"
-              style={{ background: 'rgba(240,54,90,0.08)', border: '1px solid rgba(240,54,90,0.25)' }}>
-              <AlertCircle size={16} style={{ color: '#F0365A', flexShrink: 0, marginTop: 1 }} />
+              style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.25)' }}>
+              <AlertCircle size={16} style={{ color: '#7B3FF2', flexShrink: 0, marginTop: 1 }} />
               <div>
-                <p className="text-xs font-black mb-0.5" style={{ color: '#F0365A' }}>Demande refusee</p>
+                <p className="text-xs font-black mb-0.5" style={{ color: '#7B3FF2' }}>Demande refusee</p>
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                   {status.rejection_reason}
                 </p>
@@ -147,7 +147,7 @@ export default function WalletMonetisationPage() {
           <button
             onClick={() => navigate('/wallet/monetisation/request')}
             className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 transition-all"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
             Faire une demande
           </button>
 

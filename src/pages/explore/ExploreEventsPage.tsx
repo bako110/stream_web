@@ -17,9 +17,9 @@ const TYPE_LABELS: Record<string, string> = {
   exhibition: 'Exposition', other: 'Autre',
 };
 const TYPE_COLORS: Record<string, string> = {
-  concert: '#7B3FF2', festival: '#E0389A', sport: '#FF7A2F',
-  conference: '#3B82F6', theater: '#8B5CF6', exhibition: '#06B6D4',
-  birthday: '#F59E0B', other: '#6B7280',
+  concert: '#7B3FF2', festival: '#7B3FF2', sport: '#7B3FF2',
+  conference: '#7B3FF2', theater: '#7B3FF2', exhibition: '#06B6D4',
+  birthday: '#7B3FF2', other: '#6B7280',
 };
 
 export default function ExploreEventsPage() {

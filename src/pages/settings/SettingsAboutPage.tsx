@@ -63,9 +63,9 @@ export default function SettingsAboutPage() {
 
       {/* App identity card */}
       <div className="rounded-2xl p-5 flex items-center gap-4"
-        style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(224,56,154,0.05))', border: '1px solid rgba(123,63,242,0.18)' }}>
+        style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(123,63,242,0.05))', border: '1px solid rgba(123,63,242,0.18)' }}>
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 font-black text-xl"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
           FX
         </div>
         <div>

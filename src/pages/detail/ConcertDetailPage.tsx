@@ -78,7 +78,7 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
 
         <button onClick={handleBoost} disabled={loading}
           className="btn-primary w-full flex items-center justify-center gap-2"
-          style={{ background: 'linear-gradient(135deg,#F59E0B,#F0365A)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           {loading ? <Spinner size="sm" /> : <Zap size={15} />}
           {loading ? 'Traitement...' : 'Confirmer le boost'}
         </button>
@@ -160,8 +160,8 @@ export default function ConcertDetailPage() {
 
   const allTiers = ([
     { key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: c.ticket_price ?? 0,       sub: 'Accès standard' },
-    { key: 'vip'    as const, label: 'VIP',    color: '#F59E0B', price: c.ticket_price_vip ?? 0,   sub: 'Accès prioritaire' },
-    { key: 'vvip'   as const, label: 'VVIP',   color: '#8B5CF6', price: c.ticket_price_vvip ?? 0,  sub: 'Expérience premium' },
+    { key: 'vip'    as const, label: 'VIP',    color: '#7B3FF2', price: c.ticket_price_vip ?? 0,   sub: 'Accès prioritaire' },
+    { key: 'vvip'   as const, label: 'VVIP',   color: '#7B3FF2', price: c.ticket_price_vvip ?? 0,  sub: 'Expérience premium' },
     { key: 'vvvip'  as const, label: 'VVVIP',  color: '#EF4444', price: c.ticket_price_vvvip ?? 0, sub: 'All-inclusive' },
   ] as TicketTier[]).filter(t => t.price > 0);
 
@@ -186,7 +186,7 @@ export default function ConcertDetailPage() {
         {isLive && (
           <div className="absolute top-4 left-4 flex items-center gap-2">
             <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
             </span>
             <span className="bg-black/60 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm">
@@ -199,7 +199,7 @@ export default function ConcertDetailPage() {
         {c.is_featured && (
           <div className="absolute top-4 right-4">
             <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-yellow-300"
-              style={{ background: 'rgba(245,158,11,0.25)', border: '1px solid rgba(245,158,11,0.4)', backdropFilter: 'blur(4px)' }}>
+              style={{ background: 'rgba(123,63,242,0.25)', border: '1px solid rgba(123,63,242,0.4)', backdropFilter: 'blur(4px)' }}>
               <Zap size={11} /> Boosté
             </span>
           </div>
@@ -302,7 +302,7 @@ export default function ConcertDetailPage() {
           {isLive ? (
             <button onClick={() => navigate(`/live/${encodeId(c.id)}`)}
               className="btn-primary w-full flex items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <Radio size={16} /> Regarder en direct
             </button>
           ) : isEnded && c.video_url ? (
@@ -337,9 +337,9 @@ export default function ConcertDetailPage() {
             <button onClick={toggleReminder} disabled={remindLoading}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
               style={{
-                background: reminder ? 'rgba(245,158,11,0.12)' : 'var(--bg-secondary)',
-                color: reminder ? '#F59E0B' : 'var(--text-secondary)',
-                border: `1px solid ${reminder ? '#F59E0B40' : 'var(--border)'}`,
+                background: reminder ? 'rgba(123,63,242,0.12)' : 'var(--bg-secondary)',
+                color: reminder ? '#7B3FF2' : 'var(--text-secondary)',
+                border: `1px solid ${reminder ? '#7B3FF240' : 'var(--border)'}`,
               }}>
               {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={15} /> : <Bell size={15} />}
               {reminder ? 'Rappel actif — cliquer pour désactiver' : 'Me rappeler pour ce concert'}
@@ -354,7 +354,7 @@ export default function ConcertDetailPage() {
               {!isLive && !isEnded && (
                 <button onClick={handleStart} disabled={starting}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                  style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', color: '#fff' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
                   {starting ? <Spinner size="sm" /> : <Radio size={15} />}
                   {starting ? 'Démarrage...' : 'Démarrer le live'}
                 </button>

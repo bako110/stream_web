@@ -74,7 +74,7 @@ function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () 
       <div className="space-y-4">
         {error && (
           <div className="px-4 py-3 rounded-xl text-sm"
-            style={{ background: 'rgba(240,54,90,0.08)', border: '1px solid rgba(240,54,90,0.25)', color: '#F0365A' }}>
+            style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.25)', color: '#7B3FF2' }}>
             {error}
           </div>
         )}
@@ -121,7 +121,7 @@ function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () 
           </button>
           <button onClick={save} disabled={saving}
             className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 flex items-center gap-2"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             {saving ? <><Spinner size="sm" />Enregistrement…</> : 'Enregistrer'}
           </button>
         </div>
@@ -214,7 +214,7 @@ function PublicationsTab({ userId }: { userId: string }) {
         const isEvent   = item._kind === 'event';
         const isConcert = item._kind === 'concert';
         const isPost    = item._kind === 'post';
-        const color     = isEvent ? '#F59E0B' : isConcert ? '#FF7A2F' : '#7B3FF2';
+        const color     = isEvent ? '#7B3FF2' : isConcert ? '#7B3FF2' : '#7B3FF2';
         const label     = isEvent ? 'Événement' : isConcert ? 'Concert' : 'Post';
         const img       = item.thumbnail_url ?? item.banner_url ?? item.image_url;
         const date      = isEvent ? item.starts_at : isConcert ? item.scheduled_at : item.created_at;
@@ -311,7 +311,7 @@ function ReelsTab({ userId }: { userId: string }) {
 // ── About tab ─────────────────────────────────────────────────────────────────
 function AboutTab({ user }: { user: User }) {
   const ROLE_LABEL: Record<string, string> = { artist: 'Artiste', admin: 'Admin', user: 'Membre' };
-  const ROLE_COLOR: Record<string, string> = { artist: '#E0389A', admin: '#F0365A', user: '#7B3FF2' };
+  const ROLE_COLOR: Record<string, string> = { artist: '#7B3FF2', admin: '#7B3FF2', user: '#7B3FF2' };
   const color = ROLE_COLOR[user.role] ?? '#7B3FF2';
 
   return (
@@ -447,7 +447,7 @@ export default function ProfilePage() {
 
       {/* ── Banner ── */}
       <div className="relative h-44 overflow-hidden group"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A,#FF7A2F)' }}>
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
         {user.banner_url && (
           <img src={user.banner_url} className="w-full h-full object-cover" alt="" />
         )}
@@ -501,8 +501,8 @@ export default function ProfilePage() {
           {user.is_verified && <BadgeCheck size={18} color="#7B3FF2" />}
           {user.role && user.role !== 'user' && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background: user.role === 'artist' ? 'rgba(224,56,154,0.12)' : 'rgba(240,54,90,0.12)',
-                       color: user.role === 'artist' ? '#E0389A' : '#F0365A' }}>
+              style={{ background: user.role === 'artist' ? 'rgba(123,63,242,0.12)' : 'rgba(123,63,242,0.12)',
+                       color: user.role === 'artist' ? '#7B3FF2' : '#7B3FF2' }}>
               {user.role === 'artist' ? 'Artiste' : 'Admin'}
             </span>
           )}

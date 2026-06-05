@@ -51,11 +51,11 @@ type ChatTab = 'discussion' | 'announcements' | 'media' | 'polls';
 type SettingsTab = 'info' | 'members' | 'security';
 
 const ROLE_LABELS: Record<string, string> = { admin: 'Admin', moderator: 'Modérateur', member: 'Membre' };
-const ROLE_COLORS: Record<string, string> = { admin: '#36D9A0', moderator: '#3B82F6', member: '#9390AB' };
+const ROLE_COLORS: Record<string, string> = { admin: '#7B3FF2', moderator: '#7B3FF2', member: '#9390AB' };
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '😍'];
 const GRADIENTS = [
-  ['#7B3FF2','#E0389A'],['#0EA5E9','#6366F1'],['#10B981','#0EA5E9'],
-  ['#F59E0B','#EF4444'],['#EC4899','#8B5CF6'],['#14B8A6','#3B82F6'],
+  ['#7B3FF2','#5B2EC4'],['#7B3FF2','#5B2EC4'],['#10B981','#7B3FF2'],
+  ['#7B3FF2','#EF4444'],['#7B3FF2','#7B3FF2'],['#14B8A6','#7B3FF2'],
 ];
 function gradientFor(name: string): [string, string] {
   return GRADIENTS[(name.charCodeAt(0) || 0) % GRADIENTS.length] as [string, string];
@@ -252,14 +252,14 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                         {isAdmin && member.role !== 'admin' && (
                           <button onClick={() => changeRole(member.user_id, 'admin')}
                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
-                            style={{ background: '#36D9A015', borderColor: '#36D9A040', color: '#36D9A0' }}>
+                            style={{ background: '#7B3FF215', borderColor: '#7B3FF240', color: '#7B3FF2' }}>
                             <Shield size={10} /> Admin
                           </button>
                         )}
                         {member.role !== 'moderator' && (
                           <button onClick={() => changeRole(member.user_id, 'moderator')}
                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
-                            style={{ background: '#3B82F615', borderColor: '#3B82F640', color: '#3B82F6' }}>
+                            style={{ background: '#7B3FF215', borderColor: '#7B3FF240', color: '#7B3FF2' }}>
                             <Star size={10} /> Mod
                           </button>
                         )}
@@ -302,7 +302,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                       </div>
                       <button onClick={() => unblockMember(m.user_id)}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
-                        style={{ background: '#36D9A015', borderColor: '#36D9A040', color: '#36D9A0' }}>
+                        style={{ background: '#7B3FF215', borderColor: '#7B3FF240', color: '#7B3FF2' }}>
                         Débloquer
                       </button>
                     </div>
@@ -315,8 +315,8 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
             <div className="p-5 space-y-4">
               <p className="text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>VISIBILITÉ</p>
               {[
-                { val: false, icon: <Globe size={18} />, color: '#3B82F6', label: 'Publique', sub: 'Tout le monde peut rejoindre' },
-                { val: true,  icon: <Lock size={18} />,  color: '#E0389A', label: 'Privée',   sub: 'Sur invitation uniquement' },
+                { val: false, icon: <Globe size={18} />, color: '#7B3FF2', label: 'Publique', sub: 'Tout le monde peut rejoindre' },
+                { val: true,  icon: <Lock size={18} />,  color: '#7B3FF2', label: 'Privée',   sub: 'Sur invitation uniquement' },
               ].map(opt => (
                 <button key={String(opt.val)} onClick={() => setEditPrivate(opt.val)}
                   className="w-full flex items-center gap-3 p-3.5 rounded-2xl text-left"
@@ -517,7 +517,7 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
         </div>
         <div className="flex items-center gap-2 mb-4">
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
-            style={{ background: community.is_private ? '#E0389A20' : '#3B82F620', color: community.is_private ? '#E0389A' : '#3B82F6' }}>
+            style={{ background: community.is_private ? '#7B3FF220' : '#7B3FF220', color: community.is_private ? '#7B3FF2' : '#7B3FF2' }}>
             {community.is_private ? <Lock size={10} /> : <Globe size={10} />}
             {community.is_private ? 'Privée' : 'Publique'}
           </span>
@@ -549,13 +549,13 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
         {joinStatus === 'pending' ? (
           <div className="w-full max-w-sm space-y-3">
             <div className="flex items-center gap-3 p-4 rounded-2xl"
-              style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
+              style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.3)' }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(245,158,11,0.2)' }}>
-                <Clock size={18} style={{ color: '#F59E0B' }} />
+                style={{ background: 'rgba(123,63,242,0.2)' }}>
+                <Clock size={18} style={{ color: '#7B3FF2' }} />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-sm" style={{ color: '#F59E0B' }}>Demande en attente</p>
+                <p className="font-bold text-sm" style={{ color: '#7B3FF2' }}>Demande en attente</p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                   En attente d'approbation par un admin
                 </p>
@@ -759,8 +759,8 @@ function MessageBubble({ msg, isMe, canManage, onReact, onReply, onEdit, onDelet
                     {canManage && !isMe && (
                       <button onClick={() => { onBlockSender(msg); setMenuOpen(false); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
-                        style={{ color: '#F59E0B' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#F59E0B10')}
+                        style={{ color: '#7B3FF2' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#7B3FF210')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <UserMinus size={12} /> Bloquer l'auteur
                       </button>
@@ -1045,7 +1045,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                 </button>
                 {pendingCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black text-white flex items-center justify-center"
-                    style={{ background: '#F59E0B' }}>{pendingCount}</span>
+                    style={{ background: '#7B3FF2' }}>{pendingCount}</span>
                 )}
               </div>
             </>
@@ -1145,7 +1145,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                   style={{ background: 'var(--bg-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
-                  <Trophy size={15} style={{ color: '#F59E0B' }} />
+                  <Trophy size={15} style={{ color: '#7B3FF2' }} />
                   <span style={{ color: 'var(--text-primary)' }}>Classement</span>
                   <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
                 </button>

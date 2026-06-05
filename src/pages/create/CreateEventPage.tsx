@@ -20,12 +20,12 @@ const STEPS = ['Infos', 'Accès', 'Lieu & Dates', 'Médias', 'Révision'] as con
 
 const EVENT_TYPES = [
   { type: 'concert'    as EventType, Icon: Music,    label: 'Concert',      color: '#7B3FF2' },
-  { type: 'festival'   as EventType, Icon: Star,     label: 'Festival',     color: '#FF7A2F' },
-  { type: 'birthday'   as EventType, Icon: Gift,     label: 'Anniversaire', color: '#E0389A' },
-  { type: 'conference' as EventType, Icon: Mic,      label: 'Conférence',   color: '#36D9A0' },
-  { type: 'sport'      as EventType, Icon: Activity, label: 'Sport',        color: '#3B82F6' },
+  { type: 'festival'   as EventType, Icon: Star,     label: 'Festival',     color: '#7B3FF2' },
+  { type: 'birthday'   as EventType, Icon: Gift,     label: 'Anniversaire', color: '#7B3FF2' },
+  { type: 'conference' as EventType, Icon: Mic,      label: 'Conférence',   color: '#7B3FF2' },
+  { type: 'sport'      as EventType, Icon: Activity, label: 'Sport',        color: '#7B3FF2' },
   { type: 'theater'    as EventType, Icon: Film,     label: 'Théâtre',      color: '#9B65F5' },
-  { type: 'exhibition' as EventType, Icon: ImageIcon,label: 'Exposition',   color: '#36D9A0' },
+  { type: 'exhibition' as EventType, Icon: ImageIcon,label: 'Exposition',   color: '#7B3FF2' },
   { type: 'other'      as EventType, Icon: Calendar, label: 'Autre',        color: '#9390AB' },
 ];
 
@@ -36,10 +36,10 @@ const ACCESS_TYPES = [
 ];
 
 const TICKET_TIERS = [
-  { key: 'simple' as const, label: 'Simple', sub: 'Accès standard',       color: '#36D9A0' },
+  { key: 'simple' as const, label: 'Simple', sub: 'Accès standard',       color: '#7B3FF2' },
   { key: 'vip'    as const, label: 'VIP',    sub: 'Accès privilégié',     color: '#7B3FF2' },
-  { key: 'vvip'   as const, label: 'VVIP',   sub: 'Expérience premium',   color: '#E0389A' },
-  { key: 'vvvip'  as const, label: 'VVVIP',  sub: 'Accès ultra exclusif', color: '#FF7A2F' },
+  { key: 'vvip'   as const, label: 'VVIP',   sub: 'Expérience premium',   color: '#7B3FF2' },
+  { key: 'vvvip'  as const, label: 'VVVIP',  sub: 'Accès ultra exclusif', color: '#7B3FF2' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -633,13 +633,13 @@ export default function CreateEventPage() {
         {step < STEPS.length - 1 ? (
           <button onClick={goNext}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             Suivant <ArrowRight size={16} />
           </button>
         ) : (
           <button onClick={handlePublish} disabled={publishing}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             {publishing ? <Spinner size="sm" /> : <><Check size={16} /> {isEdit ? 'Enregistrer les modifications' : 'Publier l\'événement'}</>}
           </button>
         )}

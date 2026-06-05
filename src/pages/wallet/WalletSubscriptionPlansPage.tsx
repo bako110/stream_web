@@ -60,8 +60,8 @@ const PLANS: PlanConfig[] = [
     quality: 'HD',
     profiles: 2,
     downloads: 5,
-    gradient: 'linear-gradient(135deg,#3B82F6,#60A5FA)',
-    color: '#3B82F6',
+    gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
+    color: '#7B3FF2',
     features: [
       'Tout le contenu Basic',
       '2 écrans simultanés',

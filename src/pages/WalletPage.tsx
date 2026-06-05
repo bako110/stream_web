@@ -32,7 +32,7 @@ interface Transaction {
 const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
 const TX_CONFIG: Record<string, { icon: React.ReactNode; color: string; credit: boolean }> = {
-  credit_purchase:      { icon: <ShoppingCart size={18} />, color: '#3B82F6',  credit: true  },
+  credit_purchase:      { icon: <ShoppingCart size={18} />, color: '#7B3FF2',  credit: true  },
   gift_sent:            { icon: <Gift size={18} />,         color: '#E85DAD',  credit: false },
   gift_received:        { icon: <Gift size={18} />,         color: '#3FEDB6',  credit: true  },
   transfer_sent:        { icon: <ArrowUpRight size={18} />, color: '#7B3FF2',  credit: false },
@@ -90,15 +90,15 @@ export default function WalletPage() {
   }, [fetchData]);
 
   const ACTIONS = [
-    { icon: <ShoppingCart size={20} />, label: 'Acheter',      color: '#3B82F6', path: '/wallet/buy' },
+    { icon: <ShoppingCart size={20} />, label: 'Acheter',      color: '#7B3FF2', path: '/wallet/buy' },
     { icon: <Send size={20} />,         label: 'Transférer',   color: '#7B3FF2', path: '/wallet/transfer' },
     { icon: <ArrowUpRight size={20} />, label: 'Retirer',      color: '#3FEDB6', path: '/wallet/withdraw' },
-    { icon: <Zap size={20} />,          label: 'Booster',      color: '#F59E0B', path: '/wallet/boost' },
-    { icon: <Megaphone size={20} />,    label: 'Publicités',   color: '#EC4899', path: '/wallet/ads' },
+    { icon: <Zap size={20} />,          label: 'Booster',      color: '#7B3FF2', path: '/wallet/boost' },
+    { icon: <Megaphone size={20} />,    label: 'Publicités',   color: '#7B3FF2', path: '/wallet/ads' },
     { icon: <BarChart2 size={20} />,    label: 'Créateur',     color: '#E85DAD', path: '/wallet/creator' },
     { icon: <UserCheck size={20} />,    label: 'Monétisation', color: '#10B981', path: '/wallet/monetisation' },
     { icon: <CreditCard size={20} />,   label: 'Abonnement',   color: '#A855F7', path: '/wallet/subscription/my' },
-    { icon: <Ticket size={20} />,       label: 'Mes billets',  color: '#F59E0B', path: '/my-tickets' },
+    { icon: <Ticket size={20} />,       label: 'Mes billets',  color: '#7B3FF2', path: '/my-tickets' },
   ];
 
   if (loading) {
@@ -142,7 +142,7 @@ export default function WalletPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Balance */}
         <div className="lg:col-span-2 rounded-2xl p-6 flex flex-col items-center gap-1 relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 8px 32px rgba(123,63,242,0.35)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 32px rgba(123,63,242,0.35)' }}>
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1), transparent 60%)' }} />
           <p className="text-xs font-bold uppercase tracking-widest text-white/70">Solde total</p>
@@ -157,8 +157,8 @@ export default function WalletPage() {
         <div className="grid grid-cols-1 gap-3">
           {[
             { label: 'Gagné',   value: balance?.coins_earned ?? 0,       color: '#22C55E' },
-            { label: 'Dépensé', value: balance?.coins_spent ?? 0,        color: '#F0365A' },
-            { label: 'Attente', value: balance?.pending_withdrawal ?? 0, color: '#F59E0B' },
+            { label: 'Dépensé', value: balance?.coins_spent ?? 0,        color: '#7B3FF2' },
+            { label: 'Attente', value: balance?.pending_withdrawal ?? 0, color: '#7B3FF2' },
           ].map(s => (
             <div key={s.label} className="rounded-xl px-4 py-3 flex items-center justify-between"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -217,11 +217,11 @@ export default function WalletPage() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-black" style={{ color: isCredit ? '#22C55E' : '#F0365A' }}>
+                    <p className="text-sm font-black" style={{ color: isCredit ? '#22C55E' : '#7B3FF2' }}>
                       {isCredit ? '+' : ''}{tx.coins_amount.toLocaleString('fr-FR')} <span className="font-normal text-xs">coins</span>
                     </p>
-                    {tx.status === 'pending' && <p className="text-[10px] font-medium" style={{ color: '#F59E0B' }}>En attente</p>}
-                    {tx.status === 'failed'  && <p className="text-[10px] font-medium" style={{ color: '#F0365A' }}>Échoué</p>}
+                    {tx.status === 'pending' && <p className="text-[10px] font-medium" style={{ color: '#7B3FF2' }}>En attente</p>}
+                    {tx.status === 'failed'  && <p className="text-[10px] font-medium" style={{ color: '#7B3FF2' }}>Échoué</p>}
                   </div>
                 </div>
               );

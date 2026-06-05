@@ -78,7 +78,7 @@ function PaywallModal({ serie, onClose, onPurchased }: {
             <X size={14} />
           </button>
           <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <Lock size={28} color="white" />
           </div>
           <p className="text-white font-black text-lg">Contenu Premium</p>
@@ -125,7 +125,7 @@ function PaywallModal({ serie, onClose, onPurchased }: {
           <button onClick={handleBuy}
             disabled={buying || !sufficient}
             className="w-full py-3.5 rounded-xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
-            style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)', boxShadow: '0 6px 20px rgba(255,122,47,0.4)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.4)' }}>
             {buying ? <Spinner size="sm" /> : <><Check size={16} /> Acheter l'accès</>}
           </button>
 
@@ -380,7 +380,7 @@ export default function SerieDetailPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                   <Crown size={11} /> Premium · {s.price ? `${s.price.toFixed(2)} €` : ''}
                 </div>
               )}
@@ -440,7 +440,7 @@ export default function SerieDetailPage() {
         {/* ── CTA Achat si série premium non achetée ── */}
         {isPremium && !hasAccess && hasAccess !== null && (
           <div className="p-4 rounded-2xl flex items-center justify-between gap-4"
-            style={{ background: 'linear-gradient(135deg,rgba(255,122,47,0.08),rgba(224,56,154,0.05))', border: '1px solid rgba(255,122,47,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(123,63,242,0.05))', border: '1px solid rgba(123,63,242,0.3)' }}>
             <div>
               <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Accès à toute la série</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
@@ -449,7 +449,7 @@ export default function SerieDetailPage() {
             </div>
             <button onClick={() => setShowPaywall(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-white text-sm shrink-0"
-              style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <Lock size={14} /> Débloquer
             </button>
           </div>
@@ -519,7 +519,7 @@ export default function SerieDetailPage() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       {isLocked ? (
                         <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ background: 'rgba(255,122,47,0.85)' }}>
+                          style={{ background: 'rgba(123,63,242,0.85)' }}>
                           <Lock size={14} color="white" />
                         </div>
                       ) : epVidLoading && isPlaying ? (
@@ -539,7 +539,7 @@ export default function SerieDetailPage() {
                       <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>
                         Épisode {ep.number}
                       </span>
-                      {isLocked && <Lock size={11} style={{ color: '#FF7A2F' }} />}
+                      {isLocked && <Lock size={11} style={{ color: '#7B3FF2' }} />}
                       {ep.is_free && (
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded"
                           style={{ background: '#10b98118', color: '#10b981' }}>

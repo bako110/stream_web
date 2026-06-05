@@ -49,7 +49,7 @@ const PLACEMENT_LABELS: Record<AdPlacement, string> = {
 const STATUS_CONFIG: Record<AdStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   draft:    { label: 'Brouillon',  color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)', icon: <Edit3 size={12}/>     },
   active:   { label: 'En ligne',   color: '#22C55E', bg: 'rgba(34,197,94,0.12)',   icon: <Zap size={12}/>        },
-  paused:   { label: 'En pause',   color: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  icon: <PauseCircle size={12}/> },
+  paused:   { label: 'En pause',   color: '#7B3FF2', bg: 'rgba(123,63,242,0.12)',  icon: <PauseCircle size={12}/> },
   ended:    { label: 'Terminée',   color: '#6B7280', bg: 'rgba(107,114,128,0.12)', icon: <CheckCircle size={12}/> },
   rejected: { label: 'Refusée',    color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   icon: <XCircle size={12}/>     },
 };
@@ -103,7 +103,7 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
           </div>
         ) : (
           <div className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.2),rgba(224,56,154,0.1))' }}>
+            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.2),rgba(123,63,242,0.1))' }}>
             <Megaphone size={20} style={{ color: 'var(--primary)' }} />
           </div>
         )}
@@ -119,7 +119,7 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
           <div className="h-full rounded-full transition-all"
-            style={{ width: `${progress}%`, background: progress > 85 ? '#EF4444' : progress > 60 ? '#F59E0B' : '#22C55E' }} />
+            style={{ width: `${progress}%`, background: progress > 85 ? '#EF4444' : progress > 60 ? '#7B3FF2' : '#22C55E' }} />
         </div>
       </div>
 
@@ -157,7 +157,7 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
           {ad.status === 'active' && (
             <button onClick={() => onPause(ad.id)}
               className="p-1.5 rounded-lg transition-all"
-              style={{ color: '#F59E0B', background: 'rgba(245,158,11,0.1)' }}
+              style={{ color: '#7B3FF2', background: 'rgba(123,63,242,0.1)' }}
               title="Mettre en pause">
               <PauseCircle size={13} />
             </button>
@@ -232,7 +232,7 @@ export default function WalletAdsPage() {
 
   const groups = [
     { label: 'En ligne',   icon: <Zap size={14}/>,         color: '#22C55E', items: active   },
-    { label: 'En pause',   icon: <PauseCircle size={14}/>,  color: '#F59E0B', items: paused   },
+    { label: 'En pause',   icon: <PauseCircle size={14}/>,  color: '#7B3FF2', items: paused   },
     { label: 'Brouillons', icon: <Edit3 size={14}/>,        color: '#9CA3AF', items: drafts   },
     { label: 'Terminées',  icon: <CheckCircle size={14}/>,  color: '#6B7280', items: ended    },
     { label: 'Refusées',   icon: <XCircle size={14}/>,      color: '#EF4444', items: rejected },
@@ -257,7 +257,7 @@ export default function WalletAdsPage() {
           </button>
           <div>
             <h1 className="text-xl font-black flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-              <Megaphone size={20} style={{ color: '#EC4899' }} /> Mes Publicités
+              <Megaphone size={20} style={{ color: '#7B3FF2' }} /> Mes Publicités
             </h1>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Gérez vos campagnes publicitaires</p>
           </div>
@@ -272,7 +272,7 @@ export default function WalletAdsPage() {
           </button>
           <button onClick={() => navigate('/wallet/ads/create')}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 4px 16px rgba(123,63,242,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 16px rgba(123,63,242,0.3)' }}>
             <Plus size={15} /> Créer
           </button>
         </div>
@@ -280,7 +280,7 @@ export default function WalletAdsPage() {
 
       {/* Comment ça marche */}
       <div className="rounded-2xl p-5 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(224,56,154,0.06))', border: '1px solid rgba(123,63,242,0.2)' }}>
+        style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.06))', border: '1px solid rgba(123,63,242,0.2)' }}>
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'rgba(123,63,242,0.15)' }}>
@@ -312,7 +312,7 @@ export default function WalletAdsPage() {
           {[
             { label: 'Budget total',    value: `${totalBudget.toLocaleString('fr-FR')} coins`,     color: '#7B3FF2', icon: <Zap size={16}/> },
             { label: 'Dépensé',         value: `${totalSpent.toLocaleString('fr-FR')} coins`,      color: '#EF4444', icon: <BarChart2 size={16}/> },
-            { label: 'Impressions',     value: totalImpressions.toLocaleString('fr-FR'),           color: '#3B82F6', icon: <Eye size={16}/> },
+            { label: 'Impressions',     value: totalImpressions.toLocaleString('fr-FR'),           color: '#7B3FF2', icon: <Eye size={16}/> },
             { label: 'CTR moyen',       value: `${avgCtr.toFixed(1)}%`,                            color: '#22C55E', icon: <TrendingUp size={16}/> },
           ].map(s => (
             <div key={s.label} className="rounded-xl p-4"
@@ -335,8 +335,8 @@ export default function WalletAdsPage() {
         <div className="rounded-2xl py-16 flex flex-col items-center gap-4 text-center"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(236,72,153,0.1)' }}>
-            <Megaphone size={32} style={{ color: '#EC4899' }} />
+            style={{ background: 'rgba(123,63,242,0.1)' }}>
+            <Megaphone size={32} style={{ color: '#7B3FF2' }} />
           </div>
           <div>
             <p className="font-black text-base mb-1" style={{ color: 'var(--text-primary)' }}>Aucune campagne</p>
@@ -344,7 +344,7 @@ export default function WalletAdsPage() {
           </div>
           <button onClick={() => navigate('/wallet/ads/create')}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <Plus size={15} /> Créer ma première pub
           </button>
         </div>

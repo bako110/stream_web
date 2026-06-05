@@ -273,7 +273,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
               </div>
               {(c.unread_count ?? 0) > 0 && (
                 <span className="shrink-0 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                   {c.unread_count}
                 </span>
               )}
@@ -342,7 +342,7 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
             {/* Bulle */}
             <div className={`rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
               style={isMe
-                ? { background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff', boxShadow: '0 4px 16px rgba(123,63,242,0.25)' }
+                ? { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', boxShadow: '0 4px 16px rgba(123,63,242,0.25)' }
                 : { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
 
               {/* Épinglé */}
@@ -494,8 +494,8 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
                   )}
                   <button onClick={() => { onDeleteForMe(msg.id); setMenuOpen(false); }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold"
-                    style={{ color: '#F59E0B' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#F59E0B10')}
+                    style={{ color: '#7B3FF2' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#7B3FF210')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     <Trash2 size={12} /> Supprimer pour moi
                   </button>
@@ -1036,7 +1036,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
           if (isTemp) return (
             <div key={msg.id} className="flex justify-end">
               <div className="max-w-[72%] px-3.5 py-2.5 rounded-2xl rounded-br-sm text-sm opacity-60"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff' }}>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
                 <p>{msg.body}</p>
                 <p className="text-[10px] mt-1 text-right opacity-70">Envoi…</p>
               </div>

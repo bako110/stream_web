@@ -287,7 +287,7 @@ export default function WalletBoostPage() {
                 onSelect={setTargetContent}
               />
               {!targetContent && (
-                <p className="text-[10px] mt-1.5 px-1" style={{ color: '#F59E0B' }}>
+                <p className="text-[10px] mt-1.5 px-1" style={{ color: '#7B3FF2' }}>
                   Sélectionnez un contenu avant de choisir un pack
                 </p>
               )}

@@ -10,8 +10,8 @@ import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
 
 const PERKS = [
-  { icon: Zap,         label: 'Accès instantané au contenu',     color: '#F59E0B' },
-  { icon: Globe,       label: 'Communauté internationale',        color: '#36D9A0' },
+  { icon: Zap,         label: 'Accès instantané au contenu',     color: '#7B3FF2' },
+  { icon: Globe,       label: 'Communauté internationale',        color: '#7B3FF2' },
   { icon: ShieldCheck, label: 'Compte sécurisé et privé',         color: '#7B3FF2' },
 ];
 
@@ -77,7 +77,7 @@ export default function RegisterPage() {
 
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[-80px] right-[-80px] w-72 h-72 rounded-full"
-            style={{ background: 'radial-gradient(circle,#E0389A,transparent 70%)', opacity: 0.3 }} />
+            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.3 }} />
           <div className="absolute bottom-[-60px] left-[-60px] w-64 h-64 rounded-full"
             style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.25 }} />
           <div className="absolute inset-0 hero-grid opacity-20" />
@@ -132,7 +132,7 @@ export default function RegisterPage() {
 
         <div className="absolute inset-0 pointer-events-none overflow-hidden lg:hidden">
           <div className="absolute -top-32 -right-32 w-72 h-72 rounded-full"
-            style={{ background: 'radial-gradient(circle,#E0389A,transparent 70%)', opacity: isDark ? 0.13 : 0.05 }} />
+            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: isDark ? 0.13 : 0.05 }} />
         </div>
 
         <div className="relative w-full max-w-md py-8">
@@ -174,7 +174,7 @@ export default function RegisterPage() {
 
           {error && (
             <div className="mb-4 px-4 py-3 rounded-xl text-sm"
-              style={{ background: 'rgba(240,54,90,0.1)', border: '1px solid rgba(240,54,90,0.3)', color: '#F0365A' }}>
+              style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.3)', color: '#7B3FF2' }}>
               {error}
             </div>
           )}

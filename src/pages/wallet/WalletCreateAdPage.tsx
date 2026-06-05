@@ -27,8 +27,8 @@ const FORMAT_OPTIONS: { value: AdFormat; label: string; icon: React.ReactNode }[
 
 const CPM_OPTIONS = [
   { label: 'Économique', cpm: 1,  coins: 100,  color: '#22C55E' },
-  { label: 'Standard',   cpm: 2,  coins: 200,  color: '#3B82F6' },
-  { label: 'Premium',    cpm: 5,  coins: 500,  color: '#F59E0B' },
+  { label: 'Standard',   cpm: 2,  coins: 200,  color: '#7B3FF2' },
+  { label: 'Premium',    cpm: 5,  coins: 500,  color: '#7B3FF2' },
   { label: 'Top',        cpm: 10, coins: 1000, color: '#EF4444' },
 ];
 
@@ -185,7 +185,7 @@ export default function WalletCreateAdPage() {
 
       {/* Aperçu budget */}
       <div className="rounded-2xl p-5 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.12), transparent 55%)' }} />
         <p className="text-xs text-white/70 font-bold uppercase tracking-wider mb-3">Aperçu de la campagne</p>
@@ -437,7 +437,7 @@ export default function WalletCreateAdPage() {
       {/* Bouton submit */}
       <button onClick={handleSubmit} disabled={loading || uploading || insufficient}
         className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white transition-all disabled:opacity-50"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 6px 20px rgba(123,63,242,0.35)' }}>
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.35)' }}>
         {loading ? <><Spinner size="sm" /> Traitement…</> : isEdit
           ? <><CheckCircle size={16} /> Enregistrer les modifications</>
           : <><Megaphone size={16} /> Lancer la campagne · {coinsNeeded > 0 ? `${coinsNeeded.toLocaleString('fr-FR')} coins` : '…'}</>

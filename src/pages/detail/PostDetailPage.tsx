@@ -161,8 +161,8 @@ export default function PostDetailPage() {
                       style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: 160 }}>
                       <button onClick={deletePost}
                         className="flex items-center gap-3 px-4 py-3 w-full text-sm font-semibold transition-all"
-                        style={{ color: '#F0365A' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(240,54,90,0.08)')}
+                        style={{ color: '#7B3FF2' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.08)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <Trash2 size={14} /> Supprimer
                       </button>
@@ -197,8 +197,8 @@ export default function PostDetailPage() {
           <div className="flex items-center gap-1 px-3 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
             <button onClick={toggleLike}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
-              style={{ color: liked ? '#F0365A' : 'var(--text-secondary)', background: liked ? 'rgba(240,54,90,0.08)' : 'transparent' }}>
-              <Heart size={16} fill={liked ? '#F0365A' : 'none'} /> {likes > 0 && <span>{likes}</span>}
+              style={{ color: liked ? '#7B3FF2' : 'var(--text-secondary)', background: liked ? 'rgba(123,63,242,0.08)' : 'transparent' }}>
+              <Heart size={16} fill={liked ? '#7B3FF2' : 'none'} /> {likes > 0 && <span>{likes}</span>}
             </button>
             <button onClick={() => inputRef.current?.focus()}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"

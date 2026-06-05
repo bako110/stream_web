@@ -43,18 +43,18 @@ const CFG: Record<string, {
   grad: [string, string];
   label: (name: string, summary?: string | null) => string;
 }> = {
-  follow:           { Icon: UserPlus,       grad: ['#3B82F6','#60A5FA'], label: () => 'vous suit maintenant' },
-  event_created:    { Icon: Calendar,       grad: ['#E0389A','#F472B6'], label: (_, s) => s || 'a créé un événement' },
+  follow:           { Icon: UserPlus,       grad: ['#7B3FF2','#9B65F5'], label: () => 'vous suit maintenant' },
+  event_created:    { Icon: Calendar,       grad: ['#7B3FF2','#5B2EC4'], label: (_, s) => s || 'a créé un événement' },
   concert_created:  { Icon: Music2,         grad: ['#7B3FF2','#A78BFA'], label: (_, s) => s || 'a créé un concert' },
-  event_going:      { Icon: Calendar,       grad: ['#36D9A0','#6EE7B7'], label: (_, s) => s || 'va à un événement' },
-  concert_going:    { Icon: Music2,         grad: ['#FF7A2F','#FCA5A5'], label: (_, s) => s || 'va à un concert' },
+  event_going:      { Icon: Calendar,       grad: ['#7B3FF2','#5B2EC4'], label: (_, s) => s || 'va à un événement' },
+  concert_going:    { Icon: Music2,         grad: ['#7B3FF2','#5B2EC4'], label: (_, s) => s || 'va à un concert' },
   community_joined: { Icon: Users,          grad: ['#9B65F5','#C4B5FD'], label: (_, s) => s || 'a rejoint une communauté' },
-  reel_posted:      { Icon: Film,           grad: ['#E0389A','#FB7185'], label: (_, s) => s || 'a posté un reel' },
-  comment:          { Icon: MessageCircle,  grad: ['#3B82F6','#93C5FD'], label: (_, s) => s || 'a commenté votre contenu' },
+  reel_posted:      { Icon: Film,           grad: ['#7B3FF2','#5B2EC4'], label: (_, s) => s || 'a posté un reel' },
+  comment:          { Icon: MessageCircle,  grad: ['#7B3FF2','#5B2EC4'], label: (_, s) => s || 'a commenté votre contenu' },
   reaction:         { Icon: Heart,          grad: ['#EF4444','#FCA5A5'], label: (_, s) => s || 'a réagi à votre contenu' },
-  story_view:       { Icon: Eye,            grad: ['#F59E0B','#FCD34D'], label: () => 'a vu votre story' },
+  story_view:       { Icon: Eye,            grad: ['#7B3FF2','#5B2EC4'], label: () => 'a vu votre story' },
   mention:          { Icon: AtSign,         grad: ['#06B6D4','#67E8F9'], label: (_, s) => s || 'vous a mentionné' },
-  birthday:         { Icon: Gift,           grad: ['#EC4899','#F9A8D4'], label: () => "fête son anniversaire aujourd'hui" },
+  birthday:         { Icon: Gift,           grad: ['#7B3FF2','#5B2EC4'], label: () => "fête son anniversaire aujourd'hui" },
 };
 
 const NAVIGABLE = ['concert_created','concert_going','event_created','event_going','community_joined','reel_posted'];

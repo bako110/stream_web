@@ -5,7 +5,7 @@ import { Endpoints } from '../../api/endpoints';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
-const HEART_COLORS = ['#EF4444','#F97316','#EAB308','#A855F7','#3B82F6','#EC4899'];
+const HEART_COLORS = ['#EF4444','#F97316','#EAB308','#A855F7','#7B3FF2','#7B3FF2'];
 const HEART_EMOJIS = ['❤️','🧡','💛','💜','💙','🩷'];
 const REACTIONS    = ['❤️','😂','😮','😢','😡','🔥','👏','🎉'];
 
@@ -87,11 +87,11 @@ export function LiveLikeButton({
         style={{ transform: bumping ? 'scale(1.4)' : 'scale(1)', transition: 'transform 0.15s' }}>
         <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
           style={{
-            background: liked ? 'rgba(224,56,154,0.25)' : 'rgba(239,68,68,0.15)',
-            border: `1px solid ${liked ? '#E0389A' : 'rgba(239,68,68,0.3)'}`,
-            boxShadow: liked ? '0 0 12px rgba(224,56,154,0.4)' : 'none',
+            background: liked ? 'rgba(123,63,242,0.25)' : 'rgba(239,68,68,0.15)',
+            border: `1px solid ${liked ? '#7B3FF2' : 'rgba(239,68,68,0.3)'}`,
+            boxShadow: liked ? '0 0 12px rgba(123,63,242,0.4)' : 'none',
           }}>
-          <Heart size={18} style={{ color: liked ? '#E0389A' : '#EF4444' }} fill={liked ? '#E0389A' : 'none'} />
+          <Heart size={18} style={{ color: liked ? '#7B3FF2' : '#EF4444' }} fill={liked ? '#7B3FF2' : 'none'} />
         </div>
         <span className="text-white text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
           {count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count}
@@ -210,8 +210,8 @@ export const LIVE_ANIMATIONS_CSS = `
   to   { transform: translateX(0);    opacity: 1; }
 }
 @keyframes pulseLive {
-  0%,100% { box-shadow: 0 0 0 0 rgba(240,54,90,0.4); }
-  50%     { box-shadow: 0 0 0 6px rgba(240,54,90,0); }
+  0%,100% { box-shadow: 0 0 0 0 rgba(123,63,242,0.4); }
+  50%     { box-shadow: 0 0 0 6px rgba(123,63,242,0); }
 }
 @keyframes fadeInDown {
   from { transform: translate(-50%, -12px); opacity: 0; }

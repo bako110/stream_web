@@ -47,10 +47,10 @@ function ParticleCanvas() {
 
     const COLORS = [
       'rgba(123,63,242,',
-      'rgba(224,56,154,',
+      'rgba(123,63,242,',
       'rgba(155,101,245,',
-      'rgba(255,122,47,',
-      'rgba(54,217,160,',
+      'rgba(123,63,242,',
+      'rgba(123,63,242,',
     ];
 
     interface P { x:number;y:number;vx:number;vy:number;r:number;color:string;op:number;od:number; }
@@ -116,9 +116,9 @@ function OrbsBg() {
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       {[
         { w:700, top:'-200px', left:'-150px',  color:'123,63,242',  dOp:0.18, lOp:0.10, delay:'0s',  blur:60 },
-        { w:600, top:'30%',    right:'-180px', color:'224,56,154',  dOp:0.14, lOp:0.07, delay:'3s',  blur:60 },
-        { w:500, bottom:'10%', left:'25%',     color:'255,122,47',  dOp:0.10, lOp:0.05, delay:'6s',  blur:80 },
-        { w:400, top:'60%',    left:'60%',     color:'54,217,160',  dOp:0.08, lOp:0.04, delay:'9s',  blur:60 },
+        { w:600, top:'30%',    right:'-180px', color:'123,63,242',  dOp:0.14, lOp:0.07, delay:'3s',  blur:60 },
+        { w:500, bottom:'10%', left:'25%',     color:'123,63,242',  dOp:0.10, lOp:0.05, delay:'6s',  blur:80 },
+        { w:400, top:'60%',    left:'60%',     color:'123,63,242',  dOp:0.08, lOp:0.04, delay:'9s',  blur:60 },
       ].map(({ w, color, dOp, lOp, delay, blur, ...pos }, i) => (
         <div
           key={i}
@@ -267,7 +267,7 @@ function Typewriter({ words }: { words: string[] }) {
     <span className="shimmer-text">
       {text}
       <span className="inline-block w-0.5 h-[0.85em] ml-1 align-middle rounded-sm"
-        style={{ background: '#E0389A', animation: 'blink 1s step-end infinite' }} />
+        style={{ background: '#7B3FF2', animation: 'blink 1s step-end infinite' }} />
     </span>
   );
 }
@@ -310,14 +310,14 @@ function HeroSection() {
         <div
           className="inline-flex items-center gap-2.5 rounded-full px-5 py-2.5 mb-10 text-sm font-medium animate-reveal-up"
           style={{
-            background: 'linear-gradient(135deg, rgba(123,63,242,0.12), rgba(224,56,154,0.08))',
+            background: 'linear-gradient(135deg, rgba(123,63,242,0.12), rgba(123,63,242,0.08))',
             border: '1px solid rgba(123,63,242,0.25)',
             animationFillMode: 'both',
           }}
         >
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inset-0 rounded-full" style={{ background: '#F0365A', opacity: 0.7 }} />
-            <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: '#F0365A' }} />
+            <span className="animate-ping absolute inset-0 rounded-full" style={{ background: '#7B3FF2', opacity: 0.7 }} />
+            <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: '#7B3FF2' }} />
           </span>
           <span className="gradient-text font-semibold">Streaming · Social · Monétisation</span>
           <span style={{ color: 'var(--text-tertiary)' }}>· Reels · Concerts · Communautés · Films</span>
@@ -425,7 +425,7 @@ function PosterCard({ item, onClick }: { item: Content; onClick: () => void }) {
             onError={() => setImgErr(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.25),rgba(224,56,154,0.15))' }}>
+            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.25),rgba(123,63,242,0.15))' }}>
             <Play size={28} className="text-white/60" />
           </div>
         )}
@@ -441,7 +441,7 @@ function PosterCard({ item, onClick }: { item: Content; onClick: () => void }) {
 
         {item.is_premium && (
           <div className="absolute top-2 left-2 text-white text-xs font-bold px-2 py-0.5 rounded-full"
-            style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             Premium
           </div>
         )}
@@ -480,7 +480,7 @@ function ConcertCard({ concert, onClick }: { concert: Concert; onClick: () => vo
             onError={() => setImgErr(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.3),rgba(224,56,154,0.2))' }}>
+            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.3),rgba(123,63,242,0.2))' }}>
             <Music2 size={36} className="text-white/50" />
           </div>
         )}
@@ -531,7 +531,7 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
       <div className="w-16 shrink-0 flex flex-col items-center justify-center py-4"
         style={{
           borderRight: '1px solid var(--border)',
-          background: 'linear-gradient(180deg,rgba(123,63,242,0.15),rgba(224,56,154,0.08))',
+          background: 'linear-gradient(180deg,rgba(123,63,242,0.15),rgba(123,63,242,0.08))',
         }}>
         <span className="text-2xl font-black text-white leading-none">{dd}</span>
         <span className="text-xs font-bold tracking-widest mt-0.5" style={{ color: 'var(--primary)' }}>{mo}</span>
@@ -546,7 +546,7 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
             onError={() => setImgErr(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
-            style={{ minHeight: 110, background: 'linear-gradient(135deg,rgba(255,122,47,0.2),rgba(240,54,90,0.15))' }}>
+            style={{ minHeight: 110, background: 'linear-gradient(135deg,rgba(123,63,242,0.2),rgba(123,63,242,0.15))' }}>
             <Calendar size={28} className="text-white/40" />
           </div>
         )}
@@ -559,7 +559,7 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
             </div>
           )}
           {event.ticket_price != null && (
-            <span className="text-xs font-bold mt-1.5" style={{ color: '#36D9A0' }}>
+            <span className="text-xs font-bold mt-1.5" style={{ color: '#7B3FF2' }}>
               {event.ticket_price === 0 ? '— Gratuit —' : `${event.ticket_price}€`}
             </span>
           )}
@@ -622,12 +622,12 @@ function MarqueeBanner() {
 // ── Features section ──────────────────────────────────────────────────────────
 function FeaturesSection() {
   const features = [
-    { icon: Radio,  title: 'Concerts en direct',  desc: 'Vis les concerts de tes artistes préférés en live streaming HD avec chat en temps réel.', gradient: 'linear-gradient(135deg,#F0365A,#E0389A)' },
+    { icon: Radio,  title: 'Concerts en direct',  desc: 'Vis les concerts de tes artistes préférés en live streaming HD avec chat en temps réel.', gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
     { icon: Play,   title: 'Films & Séries',       desc: 'Un catalogue immense en streaming HD, sous-titres multi-langues, sans interruption.',    gradient: 'linear-gradient(135deg,#7B3FF2,#A67CF7)' },
-    { icon: Zap,    title: 'Reels & Stories',      desc: 'Partage des courts-métrages, découvre les créations des artistes du monde entier.',      gradient: 'linear-gradient(135deg,#FF7A2F,#FFB340)' },
-    { icon: Users,  title: 'Communautés',          desc: 'Rejoins des groupes de passionnés, crée des liens autour de ta culture favorite.',       gradient: 'linear-gradient(135deg,#36D9A0,#00C9A7)' },
-    { icon: Globe,  title: 'Événements',           desc: 'Festivals, conférences, expos — près de chez toi ou en ligne depuis partout.',           gradient: 'linear-gradient(135deg,#3B82F6,#60A5FA)' },
-    { icon: Shield, title: 'Contenu exclusif',     desc: 'Avant-premières mondiales, replays et contenu premium unique sur GoFolyX.',                gradient: 'linear-gradient(135deg,#E0389A,#F97316)' },
+    { icon: Zap,    title: 'Reels & Stories',      desc: 'Partage des courts-métrages, découvre les créations des artistes du monde entier.',      gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
+    { icon: Users,  title: 'Communautés',          desc: 'Rejoins des groupes de passionnés, crée des liens autour de ta culture favorite.',       gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
+    { icon: Globe,  title: 'Événements',           desc: 'Festivals, conférences, expos — près de chez toi ou en ligne depuis partout.',           gradient: 'linear-gradient(135deg,#7B3FF2,#9B65F5)' },
+    { icon: Shield, title: 'Contenu exclusif',     desc: 'Avant-premières mondiales, replays et contenu premium unique sur GoFolyX.',                gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
   ];
 
   return (
@@ -676,9 +676,9 @@ function StatsRow() {
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto animate-reveal-up"
       style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
       <StatCard icon={Play}     value="500+"   label="Films & Séries"  color="#7B3FF2" delay={450} />
-      <StatCard icon={Radio}    value="200+"   label="Concerts live"   color="#F0365A" delay={520} />
-      <StatCard icon={Users}    value="1 000+" label="Communautés"     color="#E0389A" delay={590} />
-      <StatCard icon={Calendar} value="300+"   label="Événements"      color="#36D9A0" delay={660} />
+      <StatCard icon={Radio}    value="200+"   label="Concerts live"   color="#7B3FF2" delay={520} />
+      <StatCard icon={Users}    value="1 000+" label="Communautés"     color="#7B3FF2" delay={590} />
+      <StatCard icon={Calendar} value="300+"   label="Événements"      color="#7B3FF2" delay={660} />
     </div>
   );
 }
@@ -687,9 +687,9 @@ function StatsRow() {
 function SocialProof() {
   const cards = [
     { name: 'Kouamé A.',   city: 'Abidjan',       text: 'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment présent !',         color: '#7B3FF2' },
-    { name: 'Fatou D.',    city: 'Dakar',          text: 'Enfin une plateforme qui regroupe tout. Films, concerts, events… Je ne peux plus m\'en passer.', color: '#E0389A' },
-    { name: 'Moussa T.',   city: 'Ouagadougou',    text: 'La communauté GoFolyX est top, le contenu de qualité et les reels sont vraiment addictifs.',    color: '#F0365A' },
-    { name: 'Aminata B.',  city: 'Bamako',         text: 'Interface fluide, concerts live avec le chat en direct — une expérience vraiment unique.',       color: '#36D9A0' },
+    { name: 'Fatou D.',    city: 'Dakar',          text: 'Enfin une plateforme qui regroupe tout. Films, concerts, events… Je ne peux plus m\'en passer.', color: '#7B3FF2' },
+    { name: 'Moussa T.',   city: 'Ouagadougou',    text: 'La communauté GoFolyX est top, le contenu de qualité et les reels sont vraiment addictifs.',    color: '#7B3FF2' },
+    { name: 'Aminata B.',  city: 'Bamako',         text: 'Interface fluide, concerts live avec le chat en direct — une expérience vraiment unique.',       color: '#7B3FF2' },
   ];
 
   return (
@@ -742,7 +742,7 @@ function CtaSection() {
       <div className="max-w-4xl mx-auto sr">
         <div className="relative rounded-3xl overflow-hidden">
           <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2 0%,#E0389A 50%,#FF7A2F 100%)' }} />
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
           <div className="absolute inset-0 hero-grid opacity-20" />
           <div className="absolute inset-0"
             style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(255,255,255,0.12), transparent 60%)' }} />

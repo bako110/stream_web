@@ -33,7 +33,7 @@ interface CreatorStats {
   total_coins_earned: number; gifts_coins_earned: number; community_coins_earned: number;
 }
 
-const ROLE_COLORS: Record<string, string> = { admin: '#36D9A0', moderator: '#3B82F6', member: '#9390AB' };
+const ROLE_COLORS: Record<string, string> = { admin: '#7B3FF2', moderator: '#7B3FF2', member: '#9390AB' };
 const ROLE_LABELS: Record<string, string> = { admin: 'Admin', moderator: 'Modérateur', member: 'Membre' };
 
 function StatRow({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string | number; color: string }) {
@@ -177,7 +177,7 @@ export default function CommunityMemberProfilePage() {
             <Avatar src={profile.avatar_url} name={profile.display_name ?? profile.username ?? '?'} size="lg" />
             {profile.is_online && (
               <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white"
-                style={{ background: '#36D9A0' }} />
+                style={{ background: '#7B3FF2' }} />
             )}
           </div>
           <h2 className="text-lg font-black mb-0.5" style={{ color: 'var(--text-primary)' }}>
@@ -193,7 +193,7 @@ export default function CommunityMemberProfilePage() {
               {ROLE_LABELS[profile.role]}
             </span>
             {profile.is_online
-              ? <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#36D9A018', color: '#36D9A0' }}>En ligne</span>
+              ? <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#7B3FF218', color: '#7B3FF2' }}>En ligne</span>
               : profile.last_seen && (
                 <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                   Vu {format(new Date(profile.last_seen), 'd MMM', { locale: fr })}
@@ -223,13 +223,13 @@ export default function CommunityMemberProfilePage() {
         <div className="p-4">
           <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>ACTIVITÉ DANS LA COMMUNAUTÉ</p>
           <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <StatRow icon={<Award size={15} />} label="Coins gagnés" value={profile.coins_total} color="#F59E0B" />
+            <StatRow icon={<Award size={15} />} label="Coins gagnés" value={profile.coins_total} color="#7B3FF2" />
             <StatRow icon={<MessageCircle size={15} />} label="Messages envoyés" value={profile.posts_count} color="#7B3FF2" />
             <StatRow icon={<Heart size={15} />} label="Réactions données" value={profile.reactions_given} color="#EF4444" />
             <div className="flex items-center gap-3 py-2.5 px-4">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: '#36D9A018' }}>
-                <Users size={15} style={{ color: '#36D9A0' }} />
+                style={{ background: '#7B3FF218' }}>
+                <Users size={15} style={{ color: '#7B3FF2' }} />
               </div>
               <span className="flex-1 text-sm" style={{ color: 'var(--text-primary)' }}>Événements</span>
               <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{profile.events_attended}</span>
@@ -256,13 +256,13 @@ export default function CommunityMemberProfilePage() {
             {statsLoading ? <div className="flex justify-center py-4"><Spinner /></div> :
               creatorStats ? (
                 <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <StatRow icon={<FilmIcon size={15} />} label="Reels publiés" value={creatorStats.reels_count} color="#E0389A" />
-                  <StatRow icon={<Eye size={15} />} label="Vues des reels" value={creatorStats.reels_views.toLocaleString()} color="#3B82F6" />
+                  <StatRow icon={<FilmIcon size={15} />} label="Reels publiés" value={creatorStats.reels_count} color="#7B3FF2" />
+                  <StatRow icon={<Eye size={15} />} label="Vues des reels" value={creatorStats.reels_views.toLocaleString()} color="#7B3FF2" />
                   <StatRow icon={<Heart size={15} />} label="Likes reels" value={creatorStats.reels_likes.toLocaleString()} color="#EF4444" />
                   <StatRow icon={<MessageCircle size={15} />} label="Posts publiés" value={creatorStats.posts_count} color="#7B3FF2" />
-                  <StatRow icon={<Users size={15} />} label="Abonnés" value={creatorStats.followers.toLocaleString()} color="#36D9A0" />
-                  <StatRow icon={<Coins size={15} />} label="Coins gagnés (total)" value={creatorStats.total_coins_earned} color="#F59E0B" />
-                  <StatRow icon={<Award size={15} />} label="Coins communauté" value={creatorStats.community_coins_earned} color="#8B5CF6" />
+                  <StatRow icon={<Users size={15} />} label="Abonnés" value={creatorStats.followers.toLocaleString()} color="#7B3FF2" />
+                  <StatRow icon={<Coins size={15} />} label="Coins gagnés (total)" value={creatorStats.total_coins_earned} color="#7B3FF2" />
+                  <StatRow icon={<Award size={15} />} label="Coins communauté" value={creatorStats.community_coins_earned} color="#7B3FF2" />
                 </div>
               ) : null}
           </div>
@@ -276,14 +276,14 @@ export default function CommunityMemberProfilePage() {
               {isAdmin && profile.role !== 'admin' && (
                 <button onClick={() => changeRole('admin')} disabled={roleLoading}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border"
-                  style={{ background: '#36D9A015', borderColor: '#36D9A040', color: '#36D9A0' }}>
+                  style={{ background: '#7B3FF215', borderColor: '#7B3FF240', color: '#7B3FF2' }}>
                   <Shield size={12} /> Promouvoir Admin
                 </button>
               )}
               {profile.role !== 'moderator' && (
                 <button onClick={() => changeRole('moderator')} disabled={roleLoading}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border"
-                  style={{ background: '#3B82F615', borderColor: '#3B82F640', color: '#3B82F6' }}>
+                  style={{ background: '#7B3FF215', borderColor: '#7B3FF240', color: '#7B3FF2' }}>
                   <Star size={12} /> Promouvoir Mod
                 </button>
               )}

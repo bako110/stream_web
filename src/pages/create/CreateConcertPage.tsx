@@ -34,8 +34,8 @@ const GENRE_PRESETS = ['Pop', 'Rock', 'Hip-Hop', 'R&B', 'Jazz', 'Classique', 'É
 
 const TICKET_TIERS = [
   { key: 'simple' as const, label: 'Simple', sub: 'Entrée standard',    color: '#6B7280' },
-  { key: 'vip'    as const, label: 'VIP',    sub: 'Accès privilégié',   color: '#F59E0B' },
-  { key: 'vvip'   as const, label: 'VVIP',   sub: 'Expérience premium', color: '#8B5CF6' },
+  { key: 'vip'    as const, label: 'VIP',    sub: 'Accès privilégié',   color: '#7B3FF2' },
+  { key: 'vvip'   as const, label: 'VVIP',   sub: 'Expérience premium', color: '#7B3FF2' },
   { key: 'vvvip'  as const, label: 'VVVIP',  sub: 'Elite exclusif',     color: '#EF4444' },
 ];
 
@@ -609,13 +609,13 @@ export default function CreateConcertPage() {
         {step < STEPS.length - 1 ? (
           <button onClick={goNext}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             Suivant <ArrowRight size={16} />
           </button>
         ) : (
           <button onClick={handlePublish} disabled={publishing}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             {publishing ? <Spinner size="sm" /> : <><Check size={16} /> {isEdit ? 'Enregistrer les modifications' : 'Publier le concert'}</>}
           </button>
         )}

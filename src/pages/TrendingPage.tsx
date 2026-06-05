@@ -23,7 +23,7 @@ function RankBadge({ rank }: { rank: number }) {
     <span
       className="absolute top-1.5 left-1.5 text-[10px] font-black px-1.5 py-0.5 rounded-md z-10"
       style={gold
-        ? { background: 'linear-gradient(135deg,#F59E0B,#FBBF24)', color: '#000' }
+        ? { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#000' }
         : { background: 'rgba(0,0,0,0.55)', color: '#fff' }}
     >
       #{rank}
@@ -146,7 +146,7 @@ function ReelsTab({ items, loading }: { items: any[]; loading: boolean }) {
           {/* Rank */}
           <span
             className="text-xs font-black w-6 text-center shrink-0"
-            style={{ color: idx < 3 ? '#F59E0B' : 'var(--text-tertiary)' }}
+            style={{ color: idx < 3 ? '#7B3FF2' : 'var(--text-tertiary)' }}
           >
             #{idx + 1}
           </span>
@@ -253,7 +253,7 @@ export default function TrendingPage() {
       {/* Hero banner */}
       <div
         className="relative overflow-hidden rounded-b-3xl mb-6 px-6 py-8"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2 0%,#E0389A 100%)' }}
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}
       >
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-1">

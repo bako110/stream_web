@@ -355,7 +355,7 @@ export function TicketPaymentModal({
                 <button
                   onClick={goRecharge}
                   className="flex-[2] py-3.5 rounded-xl font-black text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95"
-                  style={{ background: 'linear-gradient(135deg,#F59E0B,#EF4444)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#EF4444)' }}>
                   <Zap size={15} fill="white" />
                   Recharger mon wallet
                 </button>

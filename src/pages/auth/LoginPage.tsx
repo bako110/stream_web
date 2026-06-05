@@ -34,11 +34,11 @@ const COUNTRIES = [
 ];
 
 const FEATURES = [
-  { icon: Play,      label: 'Reels & Vidéos',     color: '#E0389A' },
+  { icon: Play,      label: 'Reels & Vidéos',     color: '#7B3FF2' },
   { icon: Music2,    label: 'Concerts en direct',  color: '#7B3FF2' },
-  { icon: Calendar,  label: 'Événements',           color: '#F59E0B' },
-  { icon: Film,      label: 'Films & Séries',       color: '#3B82F6' },
-  { icon: Radio,     label: 'Live streaming',       color: '#F0365A' },
+  { icon: Calendar,  label: 'Événements',           color: '#7B3FF2' },
+  { icon: Film,      label: 'Films & Séries',       color: '#7B3FF2' },
+  { icon: Radio,     label: 'Live streaming',       color: '#7B3FF2' },
 ];
 
 export default function LoginPage() {
@@ -122,7 +122,7 @@ export default function LoginPage() {
           <div className="absolute top-[-80px] left-[-80px] w-72 h-72 rounded-full"
             style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.35 }} />
           <div className="absolute bottom-[-60px] right-[-60px] w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle,#E0389A,transparent 70%)', opacity: 0.25 }} />
+            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.25 }} />
           <div className="absolute inset-0 hero-grid opacity-20" />
         </div>
         <div className="relative z-10">
@@ -163,7 +163,7 @@ export default function LoginPage() {
           <div className="absolute -top-32 -left-32 w-72 h-72 rounded-full"
             style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: isDark ? 0.15 : 0.06 }} />
           <div className="absolute -bottom-32 -right-32 w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle,#E0389A,transparent 70%)', opacity: isDark ? 0.12 : 0.05 }} />
+            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: isDark ? 0.12 : 0.05 }} />
         </div>
 
         <div className="relative w-full max-w-md">
@@ -222,7 +222,7 @@ export default function LoginPage() {
 
               {error && (
                 <div className="mb-4 px-4 py-3 rounded-xl text-sm"
-                  style={{ background: 'rgba(240,54,90,0.1)', border: '1px solid rgba(240,54,90,0.3)', color: '#F0365A' }}>
+                  style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.3)', color: '#7B3FF2' }}>
                   {error}
                 </div>
               )}

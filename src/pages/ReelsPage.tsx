@@ -271,7 +271,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                   </div>
                   <button onClick={() => toggleLike(c)}
                     className="shrink-0 flex items-center gap-1 transition-colors"
-                    style={{ color: isLiked ? '#E0389A' : 'var(--text-tertiary)' }}>
+                    style={{ color: isLiked ? '#7B3FF2' : 'var(--text-tertiary)' }}>
                     <Heart size={12} fill={isLiked ? 'currentColor' : 'none'} />
                     <span className="text-[10px] font-medium">{(localLikes[c.id] ?? c.like_count) || ''}</span>
                   </button>
@@ -325,7 +325,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
           disabled={!text.trim() || sending}
           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all"
           style={{
-            background:  text.trim() ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'var(--bg-secondary)',
+            background:  text.trim() ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' : 'var(--bg-secondary)',
             color:       text.trim() ? '#fff' : 'var(--text-tertiary)',
             boxShadow:   text.trim() ? '0 4px 12px rgba(123,63,242,0.4)' : 'none',
           }}>
@@ -345,8 +345,8 @@ function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
       style={hasPos
         ? { left: x - 44, top: y - 44, width: 88, height: 88 }
         : { inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Heart size={88} fill="#E0389A" stroke="none"
-        style={{ filter: 'drop-shadow(0 0 24px #E0389Acc)', animation: 'scale-in 0.15s cubic-bezier(.16,1,.3,1) both' }} />
+      <Heart size={88} fill="#7B3FF2" stroke="none"
+        style={{ filter: 'drop-shadow(0 0 24px #7B3FF2cc)', animation: 'scale-in 0.15s cubic-bezier(.16,1,.3,1) both' }} />
     </div>
   );
 }
@@ -424,10 +424,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
           setRefInfo({ label: r.data?.title ?? 'Concert', kind: 'Concert', thumbnail: r.data?.thumbnail_url ?? null, color: '#7B3FF2', url: `/concerts/${encodeId(reel.ref_concert_id)}` });
         } else if (reel.ref_event_id) {
           const r = await apiClient.get<any>(Endpoints.events.byId(reel.ref_event_id));
-          setRefInfo({ label: r.data?.title ?? 'Événement', kind: 'Événement', thumbnail: r.data?.thumbnail_url ?? null, color: '#F59E0B', url: `/events/${encodeId(reel.ref_event_id)}` });
+          setRefInfo({ label: r.data?.title ?? 'Événement', kind: 'Événement', thumbnail: r.data?.thumbnail_url ?? null, color: '#7B3FF2', url: `/events/${encodeId(reel.ref_event_id)}` });
         } else if (reel.ref_content_id) {
           const r = await apiClient.get<any>(Endpoints.content.filmById(reel.ref_content_id));
-          setRefInfo({ label: r.data?.title ?? 'Film', kind: 'Film', thumbnail: r.data?.thumbnail_url ?? null, color: '#3B82F6', url: `/films/${encodeId(reel.ref_content_id)}` });
+          setRefInfo({ label: r.data?.title ?? 'Film', kind: 'Film', thumbnail: r.data?.thumbnail_url ?? null, color: '#7B3FF2', url: `/films/${encodeId(reel.ref_content_id)}` });
         }
       } catch { setRefInfo(null); }
     };
@@ -742,7 +742,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
       {/* Progress bar */}
       <div className="absolute top-0 inset-x-0 h-[3px] z-20" style={{ background: 'rgba(255,255,255,0.12)' }}>
         <div className="h-full transition-[width] duration-200"
-          style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#7B3FF2,#E0389A)' }} />
+          style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#7B3FF2,#5B2EC4)' }} />
       </div>
 
       {/* Buffering spinner (identique mobile) */}
@@ -802,14 +802,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
                 {reel.author?.avatar_url
                   ? <img src={reel.author.avatar_url} alt={authorName} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-white font-bold text-xs"
-                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                       {authorName[0]?.toUpperCase()}
                     </div>
                 }
               </div>
               {reel.author?.is_verified && (
                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                   <span className="text-white text-[8px] font-black">✓</span>
                 </div>
               )}
@@ -827,7 +827,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
                 className="shrink-0 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full transition-all"
                 style={followed
                   ? { background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(255,255,255,0.3)' }
-                  : { background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff', boxShadow: '0 2px 12px rgba(123,63,242,0.5)' }
+                  : { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', boxShadow: '0 2px 12px rgba(123,63,242,0.5)' }
                 }>
                 {followLoading ? '…' : followed ? 'Suivi' : '+ Suivre'}
               </button>
@@ -869,7 +869,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
             }}>
             {reel.author?.avatar_url
               ? <img src={reel.author.avatar_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }} />
+              : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
             }
           </div>
 
@@ -877,11 +877,11 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
               style={{
-                background: liked ? 'rgba(224,56,154,0.25)' : 'rgba(0,0,0,0.45)',
+                background: liked ? 'rgba(123,63,242,0.25)' : 'rgba(0,0,0,0.45)',
                 backdropFilter: 'blur(12px)',
-                border: `1.5px solid ${liked ? '#E0389A' : 'rgba(255,255,255,0.2)'}`,
-                color: liked ? '#E0389A' : '#fff',
-                boxShadow: liked ? '0 0 14px rgba(224,56,154,0.5)' : 'none',
+                border: `1.5px solid ${liked ? '#7B3FF2' : 'rgba(255,255,255,0.2)'}`,
+                color: liked ? '#7B3FF2' : '#fff',
+                boxShadow: liked ? '0 0 14px rgba(123,63,242,0.5)' : 'none',
               }}>
               <Heart size={17} fill={liked ? 'currentColor' : 'none'} />
             </div>
@@ -919,10 +919,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
           <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }} className="flex flex-col items-center gap-0.5">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
               style={{
-                background: saved ? 'rgba(255,122,47,0.25)' : 'rgba(0,0,0,0.45)',
+                background: saved ? 'rgba(123,63,242,0.25)' : 'rgba(0,0,0,0.45)',
                 backdropFilter: 'blur(12px)',
-                border: `1.5px solid ${saved ? '#FF7A2F' : 'rgba(255,255,255,0.2)'}`,
-                color: saved ? '#FF7A2F' : '#fff',
+                border: `1.5px solid ${saved ? '#7B3FF2' : 'rgba(255,255,255,0.2)'}`,
+                color: saved ? '#7B3FF2' : '#fff',
               }}>
               <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} />
             </div>
@@ -1040,7 +1040,7 @@ function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean;
 
   return (
     <div className="relative w-full overflow-hidden"
-      style={{ height: '100dvh', background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+      style={{ height: '100dvh', background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
 
       {/* Fond : VIDEO (HLS/MP4) identique mobile */}
       {isVideo && ad.creative_url ? (
@@ -1062,7 +1062,7 @@ function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean;
       {/* Badge sponsorisé */}
       <div className="absolute top-12 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-bold"
         style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
-        <Zap size={10} style={{ color: '#F59E0B' }} /> Sponsorisé
+        <Zap size={10} style={{ color: '#7B3FF2' }} /> Sponsorisé
       </div>
 
       {/* Contenu bas */}
@@ -1338,7 +1338,7 @@ export default function ReelsPage() {
         <div className="flex flex-col items-center gap-4">
           <div className="relative w-14 h-14">
             <div className="absolute inset-0 rounded-2xl rotate-12"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', animation: 'spin-slow 3s linear infinite' }} />
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', animation: 'spin-slow 3s linear infinite' }} />
             <div className="absolute inset-1 rounded-xl flex items-center justify-center bg-black">
               <span className="text-base font-black gradient-text">FX</span>
             </div>
@@ -1365,7 +1365,7 @@ export default function ReelsPage() {
           <p className="text-white font-semibold">{error ?? 'Aucun reel disponible'}</p>
           {error && (
             <button onClick={fetchReels} className="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               Réessayer
             </button>
           )}
@@ -1380,7 +1380,7 @@ export default function ReelsPage() {
       <div className="fixed inset-0 flex flex-col bg-black" style={{ zIndex: 0 }}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           <button onClick={() => setTab('feed')} className="w-9 h-9 rounded-full flex items-center justify-center"
             style={{ background: 'rgba(0,0,0,0.2)' }}>
             <ArrowLeft size={18} className="text-white" />
@@ -1398,7 +1398,7 @@ export default function ReelsPage() {
             <p className="text-white font-bold text-lg">Aucun reel</p>
             <button onClick={() => navigate('/create/reel')}
               className="px-6 py-3 rounded-xl text-white font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               Créer mon premier reel
             </button>
           </div>
@@ -1450,10 +1450,10 @@ export default function ReelsPage() {
               <div style={{ height: 1, background: 'var(--border)' }} />
               <button onClick={() => handleDeleteReel(menuReel)}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(224,56,154,0.08)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.08)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <Trash2 size={18} style={{ color: '#E0389A' }} />
-                <span className="font-semibold" style={{ color: '#E0389A' }}>Supprimer le reel</span>
+                <Trash2 size={18} style={{ color: '#7B3FF2' }} />
+                <span className="font-semibold" style={{ color: '#7B3FF2' }}>Supprimer le reel</span>
               </button>
               <button onClick={() => setMenuReel(null)}
                 className="w-full py-4 font-bold text-sm" style={{ color: 'var(--text-tertiary)' }}>
@@ -1480,7 +1480,7 @@ export default function ReelsPage() {
                   style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Annuler</button>
                 <button onClick={handleSaveEdit} disabled={editSaving}
                   className="flex-1 py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                   {editSaving ? 'Enregistrement…' : 'Enregistrer'}
                 </button>
               </div>
@@ -1570,7 +1570,7 @@ export default function ReelsPage() {
               {activeReel.author?.avatar_url
                 ? <img src={activeReel.author.avatar_url} alt="" className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold"
-                    style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                    style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                     {(activeReel.author?.display_name ?? activeReel.author?.username ?? 'A')[0].toUpperCase()}
                   </div>
               }
@@ -1636,7 +1636,7 @@ export default function ReelsPage() {
                 {activeReel.author?.avatar_url
                   ? <img src={activeReel.author.avatar_url} alt="" className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-white text-[9px] font-bold"
-                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                       {(activeReel.author?.display_name ?? activeReel.author?.username ?? 'A')[0].toUpperCase()}
                     </div>
                 }

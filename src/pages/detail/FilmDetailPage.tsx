@@ -62,7 +62,7 @@ function PaywallModal({ film, onClose, onPurchased }: {
             <X size={14} />
           </button>
           <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <Lock size={28} color="white" />
           </div>
           <p className="text-white font-black text-lg">Contenu Premium</p>
@@ -116,7 +116,7 @@ function PaywallModal({ film, onClose, onPurchased }: {
           <button onClick={handleBuy}
             disabled={buying || !sufficient}
             className="w-full py-3.5 rounded-xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
-            style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)', boxShadow: '0 6px 20px rgba(255,122,47,0.4)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.4)' }}>
             {buying ? <Spinner size="sm" /> : <><Check size={16} /> Acheter l'accès</>}
           </button>
 
@@ -298,7 +298,7 @@ export default function FilmDetailPage() {
             ) : !accessOk ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(255,122,47,0.9)', backdropFilter: 'blur(8px)' }}>
+                  style={{ background: 'rgba(123,63,242,0.9)', backdropFilter: 'blur(8px)' }}>
                   <Lock size={28} color="white" />
                 </div>
                 <p className="text-white text-sm font-bold"
@@ -329,7 +329,7 @@ export default function FilmDetailPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                   <Crown size={11} /> Premium · {f.price ? `${f.price.toFixed(2)} €` : ''}
                 </div>
               )}
@@ -415,7 +415,7 @@ export default function FilmDetailPage() {
         {/* ── CTA Achat si premium non acheté ── */}
         {isPremium && !hasAccess && hasAccess !== null && (
           <div className="p-4 rounded-2xl flex items-center justify-between gap-4"
-            style={{ background: 'linear-gradient(135deg,rgba(255,122,47,0.08),rgba(224,56,154,0.05))', border: '1px solid rgba(255,122,47,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(123,63,242,0.05))', border: '1px solid rgba(123,63,242,0.3)' }}>
             <div>
               <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Accès à vie</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
@@ -424,7 +424,7 @@ export default function FilmDetailPage() {
             </div>
             <button onClick={() => setShowPaywall(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-white text-sm shrink-0"
-              style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <Lock size={14} /> Débloquer
             </button>
           </div>

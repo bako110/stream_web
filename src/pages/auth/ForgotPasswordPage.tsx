@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
           <div className="absolute top-[-80px] left-[-80px] w-72 h-72 rounded-full"
             style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.35 }} />
           <div className="absolute bottom-[-60px] right-[-60px] w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle,#E0389A,transparent 70%)', opacity: 0.25 }} />
+            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.25 }} />
           <div className="absolute inset-0 hero-grid opacity-20" />
         </div>
 
@@ -105,8 +105,8 @@ export default function ForgotPasswordPage() {
           {sent ? (
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-                style={{ background: 'rgba(54,217,160,0.12)', border: '1px solid rgba(54,217,160,0.3)' }}>
-                <CheckCircle size={32} style={{ color: '#36D9A0' }} />
+                style={{ background: 'rgba(123,63,242,0.12)', border: '1px solid rgba(123,63,242,0.3)' }}>
+                <CheckCircle size={32} style={{ color: '#7B3FF2' }} />
               </div>
               <h2 className="text-xl font-black mb-2" style={{ color: 'var(--text-primary)' }}>Email envoyé !</h2>
               <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
@@ -129,7 +129,7 @@ export default function ForgotPasswordPage() {
 
               {error && (
                 <div className="mb-5 px-4 py-3 rounded-xl text-sm"
-                  style={{ background: 'rgba(240,54,90,0.1)', border: '1px solid rgba(240,54,90,0.3)', color: '#F0365A' }}>
+                  style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.3)', color: '#7B3FF2' }}>
                   {error}
                 </div>
               )}

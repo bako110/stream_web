@@ -30,7 +30,7 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     label: 'Abonnés',
     sublabel: 'Compte',
     description: 'Gagnez de nouveaux abonnés et développez votre audience',
-    gradient: ['#7B3FF2', '#E0389A'],
+    gradient: ['#7B3FF2', '#5B2EC4'],
     tiers: [
       { id: 'f1', label: 'Starter', quantity: '+50 abonnés',    quantity_num: 50,   duration: '3 jours',  duration_days: 3,  coins: 200 },
       { id: 'f2', label: 'Growth',  quantity: '+150 abonnés',   quantity_num: 150,  duration: '7 jours',  duration_days: 7,  coins: 500, popular: true },
@@ -69,7 +69,7 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     label: 'Reels',
     sublabel: 'Vues',
     description: 'Propulsez un Reel spécifique avec plus de vues',
-    gradient: ['#E0389A', '#FF8C00'],
+    gradient: ['#7B3FF2', '#5B2EC4'],
     contentType: 'reel',
     targetLabel: 'Choisir un Reel',
     tiers: [
@@ -84,7 +84,7 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     label: 'Posts',
     sublabel: 'Publications',
     description: "Boostez la portée d'une publication spécifique",
-    gradient: ['#06B6D4', '#0EA5E9'],
+    gradient: ['#7B3FF2', '#5B2EC4'],
     contentType: 'post',
     targetLabel: 'Choisir un post',
     tiers: [
@@ -99,7 +99,7 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     label: 'Événements',
     sublabel: 'Events',
     description: "Faites connaître un événement à plus de personnes",
-    gradient: ['#F59E0B', '#EF4444'],
+    gradient: ['#7B3FF2', '#EF4444'],
     contentType: 'event',
     targetLabel: 'Choisir un événement',
     tiers: [
@@ -114,7 +114,7 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     label: 'Concerts',
     sublabel: 'Concerts',
     description: 'Remplissez votre concert en touchant plus de fans',
-    gradient: ['#EC4899', '#8B5CF6'],
+    gradient: ['#7B3FF2', '#5B2EC4'],
     contentType: 'concert',
     targetLabel: 'Choisir un concert',
     tiers: [

@@ -36,7 +36,7 @@ interface CommunityEvent {
 type Filter = 'all' | 'upcoming' | 'past';
 type RsvpStatus = 'going' | 'maybe' | 'not_going';
 
-const EVENT_COLORS = ['#7B3FF2','#E0389A','#FF7A2F','#36D9A0','#3B82F6','#F59E0B','#EF4444','#8B5CF6'];
+const EVENT_COLORS = ['#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#EF4444','#7B3FF2'];
 
 // ── CreateEventModal ──────────────────────────────────────────────────────────
 
@@ -214,7 +214,7 @@ function EventCard({ event, communityId, canManage, onRsvp, onEdit, onDelete }: 
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{event.title}</p>
             {cancelled && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#9CA3AF20', color: '#9CA3AF' }}>Annulé</span>}
-            {event.status === 'ongoing' && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#36D9A020', color: '#36D9A0' }}>En cours</span>}
+            {event.status === 'ongoing' && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#7B3FF220', color: '#7B3FF2' }}>En cours</span>}
           </div>
           {canManage && !cancelled && (
             <div className="flex gap-1 shrink-0">
@@ -268,7 +268,7 @@ function EventCard({ event, communityId, canManage, onRsvp, onEdit, onDelete }: 
             {(['going', 'maybe', 'not_going'] as RsvpStatus[]).map(status => {
               const active = event.rsvp_status === status;
               const labels = { going: 'Participe', maybe: 'Peut-être', not_going: 'Absent' };
-              const colors = { going: '#36D9A0', maybe: '#F59E0B', not_going: '#EF4444' };
+              const colors = { going: '#7B3FF2', maybe: '#7B3FF2', not_going: '#EF4444' };
               return (
                 <button key={status} onClick={() => onRsvp(event.id, status)}
                   className="flex-1 py-2 rounded-xl text-xs font-bold transition-all"

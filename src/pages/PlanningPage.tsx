@@ -51,15 +51,15 @@ type TimeStatus = 'ongoing' | 'upcoming' | 'past';
 type SectionKey = 'ongoing' | 'today' | 'tomorrow' | 'this_week' | 'later' | 'past';
 type FilterTab  = 'all' | 'upcoming' | 'ongoing' | 'past';
 
-const PALETTE = ['#3B82F6', '#7B3FF2', '#E0389A', '#FF7A2F', '#36D9A0', '#FF4757', '#F59E0B', '#9B65F5'];
+const PALETTE = ['#7B3FF2', '#7B3FF2', '#7B3FF2', '#7B3FF2', '#7B3FF2', '#FF4757', '#7B3FF2', '#9B65F5'];
 
 const TYPE_CONFIG: Record<string, { icon: React.FC<any>; label: string; color: string }> = {
   concert:    { icon: Music2,    label: 'Concert',       color: '#7B3FF2' },
-  event:      { icon: Calendar,  label: 'Événement',     color: '#E0389A' },
-  my_concert: { icon: Music2,    label: 'Mon Concert',   color: '#FF7A2F' },
-  my_event:   { icon: Calendar,  label: 'Mon Événement', color: '#36D9A0' },
-  personal:   { icon: User,      label: 'Perso',         color: '#3B82F6' },
-  invited:    { icon: UserPlus,  label: 'Invitation',    color: '#F59E0B' },
+  event:      { icon: Calendar,  label: 'Événement',     color: '#7B3FF2' },
+  my_concert: { icon: Music2,    label: 'Mon Concert',   color: '#7B3FF2' },
+  my_event:   { icon: Calendar,  label: 'Mon Événement', color: '#7B3FF2' },
+  personal:   { icon: User,      label: 'Perso',         color: '#7B3FF2' },
+  invited:    { icon: UserPlus,  label: 'Invitation',    color: '#7B3FF2' },
 };
 
 const SECTION_LABELS: Record<SectionKey, string> = {
@@ -74,8 +74,8 @@ const SECTION_LABELS: Record<SectionKey, string> = {
 const SECTION_ORDER: SectionKey[] = ['ongoing', 'today', 'tomorrow', 'this_week', 'later', 'past'];
 
 const TIME_STATUS_CONFIG: Record<TimeStatus, { label: string; color: string; bg: string }> = {
-  ongoing:  { label: 'En cours', color: '#36D9A0', bg: 'rgba(54,217,160,0.12)' },
-  upcoming: { label: 'À venir',  color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
+  ongoing:  { label: 'En cours', color: '#7B3FF2', bg: 'rgba(123,63,242,0.12)' },
+  upcoming: { label: 'À venir',  color: '#7B3FF2', bg: 'rgba(123,63,242,0.12)' },
   past:     { label: 'Passé',    color: '#888',    bg: 'rgba(136,136,136,0.1)' },
 };
 
@@ -596,10 +596,10 @@ function EntryCard({
               {entry.invite_status && (
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
                   style={{
-                    background: entry.invite_status === 'accepted' ? 'rgba(54,217,160,0.15)'
-                      : entry.invite_status === 'declined' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.15)',
-                    color: entry.invite_status === 'accepted' ? '#36D9A0'
-                      : entry.invite_status === 'declined' ? '#EF4444' : '#F59E0B',
+                    background: entry.invite_status === 'accepted' ? 'rgba(123,63,242,0.15)'
+                      : entry.invite_status === 'declined' ? 'rgba(239,68,68,0.12)' : 'rgba(123,63,242,0.15)',
+                    color: entry.invite_status === 'accepted' ? '#7B3FF2'
+                      : entry.invite_status === 'declined' ? '#EF4444' : '#7B3FF2',
                   }}>
                   {entry.invite_status === 'accepted' ? 'Accepté' : entry.invite_status === 'declined' ? 'Refusé' : 'En attente'}
                 </span>
@@ -647,7 +647,7 @@ function EntryCard({
             </span>
           )}
           {entry.ticket_count != null && entry.ticket_count > 0 && (
-            <span className="flex items-center gap-1" style={{ color: '#36D9A0' }}>
+            <span className="flex items-center gap-1" style={{ color: '#7B3FF2' }}>
               <Ticket size={11} />
               {entry.ticket_count} billet{entry.ticket_count > 1 ? 's' : ''}
             </span>
@@ -667,7 +667,7 @@ function EntryCard({
             {entry.invites.slice(0, 5).map(inv => (
               <div key={inv.id} className="w-5 h-5 rounded-full overflow-hidden"
                 style={{
-                  border: `2px solid ${inv.status === 'accepted' ? '#36D9A0' : inv.status === 'declined' ? '#EF4444' : 'var(--border)'}`,
+                  border: `2px solid ${inv.status === 'accepted' ? '#7B3FF2' : inv.status === 'declined' ? '#EF4444' : 'var(--border)'}`,
                 }}>
                 <Avatar src={inv.invitee?.avatar_url} name={inv.invitee?.display_name ?? inv.invitee?.username ?? '?'} size="xs" />
               </div>
@@ -683,7 +683,7 @@ function EntryCard({
           <div className="flex gap-2 mt-3">
             <button onClick={e => { e.stopPropagation(); onAccept(); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
-              style={{ background: '#36D9A0' }}>
+              style={{ background: '#7B3FF2' }}>
               <Check size={12} /> Accepter
             </button>
             <button onClick={e => { e.stopPropagation(); onDecline(); }}
@@ -805,7 +805,7 @@ export default function PlanningPage() {
             <CalendarDays size={20} style={{ color: 'var(--primary)' }} />
             {pendingInvites > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black text-white flex items-center justify-center"
-                style={{ background: '#F59E0B' }}>
+                style={{ background: '#7B3FF2' }}>
                 {pendingInvites}
               </span>
             )}
@@ -872,7 +872,7 @@ export default function PlanningPage() {
           <section key={section.key}>
             <div className="flex items-center gap-2 mb-3">
               {section.key === 'ongoing' && (
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#36D9A0' }} />
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#7B3FF2' }} />
               )}
               <p className="text-[10px] font-bold tracking-widest"
                 style={{ color: section.key === 'past' ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}>
@@ -904,7 +904,7 @@ export default function PlanningPage() {
       {/* FAB mobile */}
       <button onClick={openCreate}
         className="sm:hidden fixed bottom-6 right-6 w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl z-40 transition-all active:scale-95"
-        style={{ background: 'linear-gradient(135deg,var(--primary),#E0389A)', color: '#fff', boxShadow: '0 8px 24px rgba(123,63,242,0.4)' }}>
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', boxShadow: '0 8px 24px rgba(123,63,242,0.4)' }}>
         <Plus size={24} />
       </button>
 

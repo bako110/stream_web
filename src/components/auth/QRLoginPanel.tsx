@@ -103,7 +103,7 @@ export default function QRLoginPanel() {
   }, [generate]);
 
   const pct = (remaining / QR_TTL_S) * 100;
-  const strokeColor = pct > 40 ? '#7B3FF2' : pct > 15 ? '#F59E0B' : '#F0365A';
+  const strokeColor = pct > 40 ? '#7B3FF2' : pct > 15 ? '#7B3FF2' : '#7B3FF2';
 
   return (
     <div className="flex flex-col items-center gap-4 select-none">
@@ -167,10 +167,10 @@ export default function QRLoginPanel() {
 
           {qrState === 'error' && (
             <div className="flex flex-col items-center gap-3 px-4 text-center">
-              <span className="text-xs" style={{ color: '#F0365A' }}>Erreur de génération</span>
+              <span className="text-xs" style={{ color: '#7B3FF2' }}>Erreur de génération</span>
               <button onClick={generate}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
-                style={{ background: 'rgba(240,54,90,0.1)', color: '#F0365A', border: '1px solid rgba(240,54,90,0.3)' }}>
+                style={{ background: 'rgba(123,63,242,0.1)', color: '#7B3FF2', border: '1px solid rgba(123,63,242,0.3)' }}>
                 <RefreshCw size={12} /> Réessayer
               </button>
             </div>
@@ -180,7 +180,7 @@ export default function QRLoginPanel() {
 
       {/* Timer texte */}
       {qrState === 'ready' && (
-        <p className="text-xs tabular-nums" style={{ color: remaining <= 20 ? '#F0365A' : 'var(--text-tertiary)' }}>
+        <p className="text-xs tabular-nums" style={{ color: remaining <= 20 ? '#7B3FF2' : 'var(--text-tertiary)' }}>
           Expire dans {remaining}s
         </p>
       )}

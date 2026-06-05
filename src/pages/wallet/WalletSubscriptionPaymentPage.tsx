@@ -57,8 +57,8 @@ const PLANS: Record<string, PlanConfig> = {
     quality: 'HD',
     profiles: 2,
     downloads: 5,
-    gradient: 'linear-gradient(135deg,#3B82F6,#60A5FA)',
-    color: '#3B82F6',
+    gradient: 'linear-gradient(135deg,#7B3FF2,#9B65F5)',
+    color: '#7B3FF2',
     features: ['Tout le contenu Basic', '2 ecrans simultanes', 'Qualite HD', '2 profils', '5 telechargements / mois'],
   },
   premium: {
@@ -252,7 +252,7 @@ export default function WalletSubscriptionPaymentPage() {
               onClick={() => setMethod('coins')}
               className="w-full rounded-2xl p-4 text-left transition-all"
               style={{
-                background: method === 'coins' ? 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(224,56,154,0.08))' : 'var(--surface)',
+                background: method === 'coins' ? 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.08))' : 'var(--surface)',
                 border: method === 'coins' ? '2px solid var(--primary)' : '1px solid var(--border)',
               }}
             >
@@ -313,15 +313,15 @@ export default function WalletSubscriptionPaymentPage() {
               onClick={() => setMethod('stripe')}
               className="w-full rounded-2xl p-4 text-left transition-all"
               style={{
-                background: method === 'stripe' ? 'linear-gradient(135deg,rgba(59,130,246,0.1),rgba(96,165,250,0.07))' : 'var(--surface)',
-                border: method === 'stripe' ? '2px solid #3B82F6' : '1px solid var(--border)',
+                background: method === 'stripe' ? 'linear-gradient(135deg,rgba(123,63,242,0.1),rgba(96,165,250,0.07))' : 'var(--surface)',
+                border: method === 'stripe' ? '2px solid #7B3FF2' : '1px solid var(--border)',
               }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center"
-                    style={{ background: 'rgba(59,130,246,0.15)', color: '#3B82F6' }}
+                    style={{ background: 'rgba(123,63,242,0.15)', color: '#7B3FF2' }}
                   >
                     <CreditCard size={18} />
                   </div>
@@ -333,8 +333,8 @@ export default function WalletSubscriptionPaymentPage() {
                 <div
                   className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                   style={{
-                    borderColor: method === 'stripe' ? '#3B82F6' : 'var(--border)',
-                    background: method === 'stripe' ? '#3B82F6' : 'transparent',
+                    borderColor: method === 'stripe' ? '#7B3FF2' : 'var(--border)',
+                    background: method === 'stripe' ? '#7B3FF2' : 'transparent',
                   }}
                 >
                   {method === 'stripe' && <Check size={10} strokeWidth={3} className="text-white" />}

@@ -239,7 +239,7 @@ function StoryViewer({
               className="absolute inset-0 w-full h-full object-cover" />
           ) : (
             <div className="absolute inset-0"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }} />
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
           )}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%)' }} />
           {/* Bouton skip */}
@@ -263,7 +263,7 @@ function StoryViewer({
                 window.open(storyAd.cta_url!, '_blank', 'noopener,noreferrer');
               }}
                 className="flex items-center gap-2 px-5 py-3 rounded-2xl text-white font-bold text-sm"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                 {storyAd.cta_text ?? 'En savoir plus'} <ExternalLink size={14} />
               </button>
             )}
@@ -341,7 +341,7 @@ function StoryViewer({
             <img key={story.id} src={story.media_url} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center px-8"
-              style={{ background: story.background_color ?? 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              style={{ background: story.background_color ?? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               {story.caption && (
                 <p className="text-white font-black text-3xl text-center leading-snug">{story.caption}</p>
               )}
@@ -447,7 +447,7 @@ function StoryViewer({
                 </button>
                 <button onClick={saveEdit}
                   className="flex-1 py-3 rounded-xl text-sm font-black text-white"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                   Enregistrer
                 </button>
               </div>

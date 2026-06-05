@@ -65,9 +65,9 @@ function ModalBox({ children, title, onClose }: { children: React.ReactNode; tit
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-semibold" style={{ color: error ? '#F0365A' : 'var(--text-tertiary)' }}>{label}</label>
+      <label className="text-xs font-semibold" style={{ color: error ? '#7B3FF2' : 'var(--text-tertiary)' }}>{label}</label>
       {children}
-      {error && <p className="text-xs font-medium" style={{ color: '#F0365A' }}>{error}</p>}
+      {error && <p className="text-xs font-medium" style={{ color: '#7B3FF2' }}>{error}</p>}
     </div>
   );
 }
@@ -75,7 +75,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 function ErrorBanner({ msg }: { msg: string }) {
   return (
     <p className="text-xs font-medium px-3 py-2 rounded-xl"
-      style={{ background: 'rgba(240,54,90,0.1)', color: '#F0365A' }}>{msg}</p>
+      style={{ background: 'rgba(123,63,242,0.1)', color: '#7B3FF2' }}>{msg}</p>
   );
 }
 
@@ -113,7 +113,7 @@ function ProgressBar({ pct, done }: { pct: number; done?: boolean }) {
   return (
     <div className="rounded-full overflow-hidden h-1.5" style={{ background: 'var(--bg-secondary)' }}>
       <div className="h-full rounded-full transition-all duration-300"
-        style={{ width: `${pct}%`, background: done ? '#36D9A0' : 'linear-gradient(90deg,#7B3FF2,#E0389A)' }} />
+        style={{ width: `${pct}%`, background: done ? '#7B3FF2' : 'linear-gradient(90deg,#7B3FF2,#5B2EC4)' }} />
     </div>
   );
 }
@@ -349,7 +349,7 @@ function CreateReelModal({ onClose, onDone }: { onClose: () => void; onDone: () 
         {step !== 'idle' && (
           <div className="space-y-1.5">
             <ProgressBar pct={pct} done={isDone} />
-            <p className="text-xs text-center font-medium" style={{ color: isDone ? '#36D9A0' : 'var(--text-secondary)' }}>
+            <p className="text-xs text-center font-medium" style={{ color: isDone ? '#7B3FF2' : 'var(--text-secondary)' }}>
               {isDone
                 ? '✓ Reel publié !'
                 : step === 'uploading'
@@ -367,7 +367,7 @@ function CreateReelModal({ onClose, onDone }: { onClose: () => void; onDone: () 
             {isDone && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2"
                 style={{ background: 'rgba(0,0,0,0.6)' }}>
-                <CheckCircle size={48} color="#36D9A0" />
+                <CheckCircle size={48} color="#7B3FF2" />
                 <p className="text-white font-bold">Reel publié !</p>
               </div>
             )}
@@ -411,11 +411,11 @@ function CreateReelModal({ onClose, onDone }: { onClose: () => void; onDone: () 
 
 const EVENT_TYPES = [
   { value: 'concert',    label: 'Concert',      color: '#7B3FF2' },
-  { value: 'festival',   label: 'Festival',     color: '#E0389A' },
-  { value: 'sport',      label: 'Sport',        color: '#FF7A2F' },
-  { value: 'conference', label: 'Conférence',   color: '#3B82F6' },
-  { value: 'theater',    label: 'Théâtre',      color: '#8B5CF6' },
-  { value: 'birthday',   label: 'Anniversaire', color: '#F59E0B' },
+  { value: 'festival',   label: 'Festival',     color: '#7B3FF2' },
+  { value: 'sport',      label: 'Sport',        color: '#7B3FF2' },
+  { value: 'conference', label: 'Conférence',   color: '#7B3FF2' },
+  { value: 'theater',    label: 'Théâtre',      color: '#7B3FF2' },
+  { value: 'birthday',   label: 'Anniversaire', color: '#7B3FF2' },
   { value: 'other',      label: 'Autre',        color: '#6B7280' },
 ];
 
@@ -544,7 +544,7 @@ function CreateEventModal({ onClose, onDone }: { onClose: () => void; onDone: ()
         <Field label="Titre *" error={errors.title}>
           <input value={title} onChange={e => { setTitle(e.target.value); setErrors(v => ({ ...v, title: undefined })); }}
             placeholder="Nom de l'événement" className="input w-full text-sm"
-            style={errors.title ? { borderColor: '#F0365A' } : {}} />
+            style={errors.title ? { borderColor: '#7B3FF2' } : {}} />
         </Field>
 
         <Field label="Description">
@@ -556,7 +556,7 @@ function CreateEventModal({ onClose, onDone }: { onClose: () => void; onDone: ()
           <Field label="Date de début *" error={errors.startsAt}>
             <input type="datetime-local" value={startsAt}
               onChange={e => { setStartsAt(e.target.value); setErrors(v => ({ ...v, startsAt: undefined })); }}
-              className="input w-full text-sm" style={errors.startsAt ? { borderColor: '#F0365A' } : {}} />
+              className="input w-full text-sm" style={errors.startsAt ? { borderColor: '#7B3FF2' } : {}} />
           </Field>
           <Field label="Date de fin">
             <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} className="input w-full text-sm" />
@@ -588,13 +588,13 @@ function CreateEventModal({ onClose, onDone }: { onClose: () => void; onDone: ()
               <input value={venueCity}
                 onChange={e => { setVenueCity(e.target.value); setErrors(v => ({ ...v, venueCity: undefined })); }}
                 placeholder="Paris, Abidjan…" className="input text-sm"
-                style={errors.venueCity ? { borderColor: '#F0365A' } : {}} />
+                style={errors.venueCity ? { borderColor: '#7B3FF2' } : {}} />
             </Field>
             <Field label="Pays *" error={errors.venueCountry}>
               <input value={venueCountry}
                 onChange={e => { setVenueCountry(e.target.value); setErrors(v => ({ ...v, venueCountry: undefined })); }}
                 placeholder="France, Côte d'Ivoire…" className="input text-sm"
-                style={errors.venueCountry ? { borderColor: '#F0365A' } : {}} />
+                style={errors.venueCountry ? { borderColor: '#7B3FF2' } : {}} />
             </Field>
           </div>
           {!isOnline && (
@@ -771,7 +771,7 @@ function CreateConcertModal({ onClose, onDone }: { onClose: () => void; onDone: 
         <Field label="Titre *" error={errors.title}>
           <input value={title} onChange={e => { setTitle(e.target.value); setErrors(v => ({ ...v, title: undefined })); }}
             placeholder="Nom du concert" className="input w-full text-sm"
-            style={errors.title ? { borderColor: '#F0365A' } : {}} />
+            style={errors.title ? { borderColor: '#7B3FF2' } : {}} />
         </Field>
 
         <Field label="Description">
@@ -787,7 +787,7 @@ function CreateConcertModal({ onClose, onDone }: { onClose: () => void; onDone: 
           <Field label="Date prévue *" error={errors.schedAt}>
             <input type="datetime-local" value={schedAt}
               onChange={e => { setSchedAt(e.target.value); setErrors(v => ({ ...v, schedAt: undefined })); }}
-              className="input w-full text-sm" style={errors.schedAt ? { borderColor: '#F0365A' } : {}} />
+              className="input w-full text-sm" style={errors.schedAt ? { borderColor: '#7B3FF2' } : {}} />
           </Field>
         </div>
 
@@ -797,9 +797,9 @@ function CreateConcertModal({ onClose, onDone }: { onClose: () => void; onDone: 
               <button key={t.value} onClick={() => setConcertType(t.value)}
                 className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={{
-                  background: concertType === t.value ? 'rgba(255,122,47,0.12)' : 'var(--bg-secondary)',
-                  color:      concertType === t.value ? '#FF7A2F' : 'var(--text-secondary)',
-                  border:     `1px solid ${concertType === t.value ? '#FF7A2F50' : 'var(--border)'}`,
+                  background: concertType === t.value ? 'rgba(123,63,242,0.12)' : 'var(--bg-secondary)',
+                  color:      concertType === t.value ? '#7B3FF2' : 'var(--text-secondary)',
+                  border:     `1px solid ${concertType === t.value ? '#7B3FF250' : 'var(--border)'}`,
                 }}>
                 {t.label}
               </button>
@@ -835,13 +835,13 @@ function CreateConcertModal({ onClose, onDone }: { onClose: () => void; onDone: 
               <input value={venueCity}
                 onChange={e => { setVenueCity(e.target.value); setErrors(v => ({ ...v, venueCity: undefined })); }}
                 placeholder="Paris, Abidjan…" className="input text-sm"
-                style={errors.venueCity ? { borderColor: '#F0365A' } : {}} />
+                style={errors.venueCity ? { borderColor: '#7B3FF2' } : {}} />
             </Field>
             <Field label="Pays *" error={errors.venueCountry}>
               <input value={venueCountry}
                 onChange={e => { setVenueCountry(e.target.value); setErrors(v => ({ ...v, venueCountry: undefined })); }}
                 placeholder="France, Côte d'Ivoire…" className="input text-sm"
-                style={errors.venueCountry ? { borderColor: '#F0365A' } : {}} />
+                style={errors.venueCountry ? { borderColor: '#7B3FF2' } : {}} />
             </Field>
           </div>
           <input value={venueName} onChange={e => setVenueName(e.target.value)}
@@ -883,9 +883,9 @@ type Modal = 'post' | 'reel' | null;
 
 const FAB_ACTIONS = [
   { id: 'post'    as const, label: 'Post',      icon: FileText, color: '#7B3FF2', route: null           },
-  { id: 'reel'    as const, label: 'Reel',      icon: Film,     color: '#E0389A', route: null           },
-  { id: 'event'   as const, label: 'Événement', icon: Calendar, color: '#F59E0B', route: '/create/event'   },
-  { id: 'concert' as const, label: 'Concert',   icon: Music2,   color: '#FF7A2F', route: '/create/concert' },
+  { id: 'reel'    as const, label: 'Reel',      icon: Film,     color: '#7B3FF2', route: null           },
+  { id: 'event'   as const, label: 'Événement', icon: Calendar, color: '#7B3FF2', route: '/create/event'   },
+  { id: 'concert' as const, label: 'Concert',   icon: Music2,   color: '#7B3FF2', route: '/create/concert' },
 ];
 
 export function CreateFAB() {
@@ -926,7 +926,7 @@ export function CreateFAB() {
         <button onClick={() => setOpen(v => !v)}
           className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-200"
           style={{
-            background: open ? 'var(--surface)' : 'linear-gradient(135deg,#7B3FF2,#E0389A)',
+            background: open ? 'var(--surface)' : 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
             border:     open ? '2px solid var(--border)' : 'none',
             transform:  open ? 'rotate(45deg)' : 'rotate(0deg)',
           }}>

@@ -6,7 +6,7 @@ import { apiClient } from '../api';
 import { Spinner } from '../components/ui/Spinner';
 import toast from 'react-hot-toast';
 
-const TIER_COLORS: Record<string, string> = { simple: '#7B3FF2', vip: '#F59E0B', vvip: '#8B5CF6', vvvip: '#EF4444' };
+const TIER_COLORS: Record<string, string> = { simple: '#7B3FF2', vip: '#7B3FF2', vvip: '#7B3FF2', vvvip: '#EF4444' };
 const TIER_LABELS: Record<string, string> = { simple: 'STD', vip: 'VIP', vvip: 'VVIP', vvvip: 'VVVIP' };
 
 interface Attendee {
@@ -101,7 +101,7 @@ export default function AttendeesPage() {
     <div className="max-w-3xl mx-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 px-4 py-4 flex items-center gap-3"
-        style={{ background: 'linear-gradient(135deg,var(--primary),#E0389A)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        style={{ background: 'linear-gradient(135deg,var(--primary),#5B2EC4)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <button onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
           style={{ background: 'rgba(255,255,255,0.2)' }}>
@@ -184,7 +184,7 @@ export default function AttendeesPage() {
                 {a.avatar_url
                   ? <img src={a.avatar_url} className="w-11 h-11 rounded-full object-cover flex-shrink-0" alt="" />
                   : <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0"
-                      style={{ background: 'linear-gradient(135deg,var(--primary),#E0389A)', color: '#fff' }}>
+                      style={{ background: 'linear-gradient(135deg,var(--primary),#5B2EC4)', color: '#fff' }}>
                       {getInitials(name)}
                     </div>
                 }

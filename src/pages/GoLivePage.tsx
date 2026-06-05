@@ -194,7 +194,7 @@ function QuickLiveForm({ onBack }: { onBack: () => void }) {
         <button onClick={onBack} className="btn-ghost flex-1">Annuler</button>
         <button onClick={handleStart} disabled={loading || !title.trim()}
           className="btn-primary flex-1 flex items-center justify-center gap-2"
-          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           {loading ? <Spinner size="sm" /> : <Radio size={16} />}
           {loading ? 'Démarrage...' : 'Démarrer le live'}
         </button>
@@ -215,7 +215,7 @@ export default function GoLivePage() {
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 8px 32px rgba(240,54,90,0.35)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 32px rgba(123,63,242,0.35)' }}>
           <Radio size={28} color="white" />
         </div>
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">Passer en direct</h1>
@@ -231,7 +231,7 @@ export default function GoLivePage() {
             title="Live spontané"
             description="Démarre immédiatement. Parle à ta communauté en temps réel, sans préparation."
             badge="Immédiat"
-            color="#F0365A"
+            color="#7B3FF2"
             onClick={() => setStep('quick-live')}
           />
 
@@ -265,8 +265,8 @@ export default function GoLivePage() {
             </button>
 
             <button onClick={() => navigate('/lives')}
-              className="card p-4 text-left hover:border-[#F0365A] transition-colors group">
-              <Zap size={20} className="text-[var(--text-tertiary)] group-hover:text-[#F0365A] transition-colors mb-2" />
+              className="card p-4 text-left hover:border-[#7B3FF2] transition-colors group">
+              <Zap size={20} className="text-[var(--text-tertiary)] group-hover:text-[#7B3FF2] transition-colors mb-2" />
               <p className="text-sm font-semibold text-[var(--text-primary)]">Lives spontanés</p>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">Voir tous les lives</p>
             </button>

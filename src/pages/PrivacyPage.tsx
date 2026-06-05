@@ -144,7 +144,7 @@ export default function PrivacyPage() {
             <p className="text-[11px] font-black uppercase tracking-wider mb-2 px-1" style={{ color: 'var(--text-tertiary)' }}>INFORMATIONS PERSONNELLES</p>
             <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <SettingRow icon={<Phone size={16}/>} label="Afficher le téléphone"          desc="Visible sur votre profil public" color="#10B981" field="privacy_show_phone"    settings={settings} saving={saving} onToggle={onToggle} />
-              <SettingRow icon={<Gift size={16}/>}  label="Afficher la date de naissance"  desc="Visible sur votre profil public" color="#F59E0B" field="privacy_show_birthday" settings={settings} saving={saving} onToggle={onToggle} last />
+              <SettingRow icon={<Gift size={16}/>}  label="Afficher la date de naissance"  desc="Visible sur votre profil public" color="#7B3FF2" field="privacy_show_birthday" settings={settings} saving={saving} onToggle={onToggle} last />
             </div>
           </div>
 
@@ -152,7 +152,7 @@ export default function PrivacyPage() {
           <div>
             <p className="text-[11px] font-black uppercase tracking-wider mb-2 px-1" style={{ color: 'var(--text-tertiary)' }}>COMMUNICATION</p>
             <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <SettingRow icon={<MessageCircle size={16}/>} label="Autoriser les messages"    desc="Recevoir des messages de tout le monde"  color="#3B82F6" field="privacy_allow_messages" settings={settings} saving={saving} onToggle={onToggle} />
+              <SettingRow icon={<MessageCircle size={16}/>} label="Autoriser les messages"    desc="Recevoir des messages de tout le monde"  color="#7B3FF2" field="privacy_allow_messages" settings={settings} saving={saving} onToggle={onToggle} />
               <SettingRow icon={<Wifi size={16}/>}          label="Afficher le statut en ligne" desc="Montrer quand vous êtes connecté(e)"   color="#7B3FF2" field="privacy_show_online"     settings={settings} saving={saving} onToggle={onToggle} last />
             </div>
           </div>

@@ -24,9 +24,9 @@ const TYPE_LABELS: Record<string, string> = {
   exhibition: 'Exposition', other: 'Autre',
 };
 const TYPE_COLORS: Record<string, string> = {
-  concert: '#7B3FF2', festival: '#E0389A', sport: '#FF7A2F',
-  conference: '#3B82F6', theater: '#8B5CF6', exhibition: '#06B6D4',
-  birthday: '#F59E0B', other: '#6B7280',
+  concert: '#7B3FF2', festival: '#7B3FF2', sport: '#7B3FF2',
+  conference: '#7B3FF2', theater: '#7B3FF2', exhibition: '#06B6D4',
+  birthday: '#7B3FF2', other: '#6B7280',
 };
 
 function LightboxModal({ urls, index, onClose }: { urls: string[]; index: number; onClose: () => void }) {
@@ -328,8 +328,8 @@ export default function EventDetailPage() {
 
   const allTiers = ([
     { key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: ev.ticket_price ?? 0,       sub: 'Accès standard' },
-    { key: 'vip'    as const, label: 'VIP',    color: '#F59E0B', price: ev.ticket_price_vip ?? 0,   sub: 'Accès prioritaire' },
-    { key: 'vvip'   as const, label: 'VVIP',   color: '#8B5CF6', price: ev.ticket_price_vvip ?? 0,  sub: 'Expérience premium' },
+    { key: 'vip'    as const, label: 'VIP',    color: '#7B3FF2', price: ev.ticket_price_vip ?? 0,   sub: 'Accès prioritaire' },
+    { key: 'vvip'   as const, label: 'VVIP',   color: '#7B3FF2', price: ev.ticket_price_vvip ?? 0,  sub: 'Expérience premium' },
     { key: 'vvvip'  as const, label: 'VVVIP',  color: '#EF4444', price: ev.ticket_price_vvvip ?? 0, sub: 'All-inclusive' },
   ] as TicketTier[]).filter(t => t.price > 0);
   const tierColor = allTiers.find(t => t.key === selectedTier)?.color ?? '#7B3FF2';
@@ -423,9 +423,9 @@ export default function EventDetailPage() {
           <button onClick={toggleReminder} disabled={remindLoading}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
             style={{
-              background: reminder ? 'rgba(245,158,11,0.12)' : 'var(--bg-secondary)',
-              color: reminder ? '#F59E0B' : 'var(--text-secondary)',
-              border: `1px solid ${reminder ? '#F59E0B40' : 'var(--border)'}`,
+              background: reminder ? 'rgba(123,63,242,0.12)' : 'var(--bg-secondary)',
+              color: reminder ? '#7B3FF2' : 'var(--text-secondary)',
+              border: `1px solid ${reminder ? '#7B3FF240' : 'var(--border)'}`,
             }}>
             {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={16} /> : <Bell size={16} />}
             <span className="hidden sm:inline">{reminder ? 'Rappel actif' : 'Me rappeler'}</span>
@@ -518,8 +518,8 @@ export default function EventDetailPage() {
 
           {ev.max_attendees != null && (
             <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
-                <Users size={15} style={{ color: '#3b82f6' }} />
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.12)' }}>
+                <Users size={15} style={{ color: '#7B3FF2' }} />
               </div>
               <div className="flex-1">
                 <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>

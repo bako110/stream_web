@@ -45,7 +45,7 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
             window.open(ad.cta_url!, '_blank', 'noopener,noreferrer');
           }}
             className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             {ad.cta_text ?? 'Voir'} <ExternalLink size={11} />
           </button>
         )}
@@ -325,7 +325,7 @@ export default function SearchPage() {
                     </div>
                     {c.status === 'live' && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white shrink-0"
-                        style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>LIVE</span>
+                        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>LIVE</span>
                     )}
                   </button>
                 ))}

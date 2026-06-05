@@ -194,7 +194,7 @@ const LiveChat = forwardRef<LiveChatHandle, {
         />
         <button onClick={send} disabled={!input.trim() || sending}
           className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
-          style={{ background: input.trim() ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'rgba(255,255,255,0.1)' }}>
+          style={{ background: input.trim() ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' : 'rgba(255,255,255,0.1)' }}>
           <Send size={13} className="text-white" />
         </button>
       </div>
@@ -614,13 +614,13 @@ function MediaControls({
     icon: React.ReactNode; label: string; onClick?: () => void;
     active?: boolean; color?: string; badge?: number; danger?: boolean;
   }) {
-    const bg     = danger ? 'rgba(240,54,90,0.2)' : active ? `${color ?? '#7B3FF2'}25` : 'rgba(255,255,255,0.12)';
-    const border = danger ? '#F0365A' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.15)';
-    const txt    = danger ? '#F0365A' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)';
+    const bg     = danger ? 'rgba(123,63,242,0.2)' : active ? `${color ?? '#7B3FF2'}25` : 'rgba(255,255,255,0.12)';
+    const border = danger ? '#7B3FF2' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.15)';
+    const txt    = danger ? '#7B3FF2' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)';
     return (
       <button onClick={onClick} className="flex flex-col items-center gap-1 relative" style={{ minWidth: 52 }}>
         <div className="w-12 h-12 rounded-full flex items-center justify-center transition-all"
-          style={{ background: bg, border: `1.5px solid ${border}`, color: danger ? '#F0365A' : active ? (color ?? '#7B3FF2') : '#fff' }}>
+          style={{ background: bg, border: `1.5px solid ${border}`, color: danger ? '#7B3FF2' : active ? (color ?? '#7B3FF2') : '#fff' }}>
           {icon}
         </div>
         {badge !== undefined && badge > 0 && (
@@ -916,7 +916,7 @@ export default function LiveSimplePage() {
 
                 <div className="flex items-center gap-2 shrink-0 flex-wrap">
                   <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-                    style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
+                    style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
                   </span>
                   {live.is_private && (
@@ -1026,7 +1026,7 @@ export default function LiveSimplePage() {
                           onClick={() => setGiftTarget({ id: live.user!.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
                           className="flex flex-col items-center gap-1">
                           <div className="w-11 h-11 rounded-full flex items-center justify-center text-xl"
-                            style={{ background: 'rgba(245,158,11,0.15)', border: '1.5px solid rgba(245,158,11,0.35)' }}>
+                            style={{ background: 'rgba(123,63,242,0.15)', border: '1.5px solid rgba(123,63,242,0.35)' }}>
                             🎁
                           </div>
                           <span className="text-white text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>Cadeau</span>
@@ -1055,7 +1055,7 @@ export default function LiveSimplePage() {
                   <p className="font-semibold text-white text-sm truncate">{live.title}</p>
                 </div>
                 <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-                  style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                   <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
                 </span>
               </div>

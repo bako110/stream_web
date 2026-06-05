@@ -46,7 +46,7 @@ function EntryCard({ entry }: { entry: HistoryEntry }) {
   const pct      = progressPct(entry);
   const label    = typeLabel(entry);
   const isEp     = label === 'Episode';
-  const typeColor = isEp ? '#7B3FF2' : '#3B82F6';
+  const typeColor = isEp ? '#7B3FF2' : '#7B3FF2';
   const date     = entry.watched_at ?? entry.updated_at ?? entry.created_at;
 
   return (
@@ -81,7 +81,7 @@ function EntryCard({ entry }: { entry: HistoryEntry }) {
                 width: `${pct}%`,
                 background: entry.completed
                   ? 'linear-gradient(90deg,#22C55E,#16A34A)'
-                  : 'linear-gradient(90deg,#7B3FF2,#E0389A)',
+                  : 'linear-gradient(90deg,#7B3FF2,#5B2EC4)',
               }}
             />
           </div>

@@ -24,8 +24,8 @@ const ROLE_LABEL: Record<string, string> = {
   user:   'Membre',
 };
 const ROLE_COLOR: Record<string, string> = {
-  artist: '#E0389A',
-  admin:  '#F0365A',
+  artist: '#7B3FF2',
+  admin:  '#7B3FF2',
   user:   '#7B3FF2',
 };
 
@@ -82,7 +82,7 @@ function PublicationsTab({ userId }: { userId: string }) {
         const isConcert = item._kind === 'concert';
         const isPost    = item._kind === 'post';
 
-        const color = isEvent ? '#F59E0B' : isConcert ? '#FF7A2F' : '#7B3FF2';
+        const color = isEvent ? '#7B3FF2' : isConcert ? '#7B3FF2' : '#7B3FF2';
         const label = isEvent ? 'Événement' : isConcert ? 'Concert' : 'Post';
         const img   = item.thumbnail_url ?? item.banner_url ?? item.image_url;
         const date  = isEvent ? item.starts_at : isConcert ? item.scheduled_at : item.created_at;
@@ -317,7 +317,7 @@ export default function UserProfilePage() {
 
       {/* ── Banner ── */}
       <div className="relative h-44 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A,#FF7A2F)' }}>
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
         {profile.banner_url && (
           <img src={profile.banner_url} alt="" className="w-full h-full object-cover" />
         )}
@@ -344,7 +344,7 @@ export default function UserProfilePage() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
                 style={isFollowed
                   ? { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }
-                  : { background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff', border: 'none' }}>
+                  : { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', border: 'none' }}>
                 {isFollowed ? <><UserCheck size={15} /> Suivi</> : <><UserPlus size={15} /> Suivre</>}
               </button>
 
@@ -370,9 +370,9 @@ export default function UserProfilePage() {
               <button onClick={toggleBlock}
                 className="flex items-center justify-center w-9 h-9 rounded-xl transition-all"
                 style={{
-                  background: isBlocked ? 'rgba(240,54,90,0.1)' : 'var(--bg-secondary)',
-                  color:      isBlocked ? '#F0365A' : 'var(--text-tertiary)',
-                  border:     `1px solid ${isBlocked ? 'rgba(240,54,90,0.3)' : 'var(--border)'}`,
+                  background: isBlocked ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
+                  color:      isBlocked ? '#7B3FF2' : 'var(--text-tertiary)',
+                  border:     `1px solid ${isBlocked ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
                 }}
                 title={isBlocked ? 'Débloquer' : 'Bloquer'}>
                 {isBlocked ? <Shield size={16} /> : <ShieldOff size={16} />}

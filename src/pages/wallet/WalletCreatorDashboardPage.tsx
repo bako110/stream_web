@@ -290,7 +290,7 @@ export default function WalletCreatorDashboardPage() {
               icon={<Eye size={18} />}
               label="Vues totales"
               value={fmtNum(stats.total_views ?? 0)}
-              color="#3B82F6"
+              color="#7B3FF2"
             />
             <StatCard
               icon={<Gift size={18} />}
@@ -518,7 +518,7 @@ export default function WalletCreatorDashboardPage() {
         {(
           [
             { key: 'stripe',       label: 'Stripe',       icon: <CreditCard size={22} />, color: '#635BFF' },
-            { key: 'mobile_money', label: 'Mobile Money', icon: <Smartphone size={22} />, color: '#FF7A2F' },
+            { key: 'mobile_money', label: 'Mobile Money', icon: <Smartphone size={22} />, color: '#7B3FF2' },
           ] as const
         ).map(m => {
           const isSelected = profile?.payout_method === m.key;

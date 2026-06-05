@@ -139,7 +139,7 @@ export default function CommunityJoinRequestsPage() {
                   <div className="flex gap-2">
                     <button onClick={() => approve(req.id)} disabled={isProcessing}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
-                      style={{ background: '#36D9A015', color: '#36D9A0', border: '1px solid #36D9A030' }}>
+                      style={{ background: '#7B3FF215', color: '#7B3FF2', border: '1px solid #7B3FF230' }}>
                       {isProcessing ? <Spinner size="sm" /> : <><Check size={15} /> Approuver</>}
                     </button>
                     <button onClick={() => reject(req.id)} disabled={isProcessing}

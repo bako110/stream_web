@@ -67,7 +67,7 @@ function ContentCard({
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
           style={{ background: 'rgba(0,0,0,0.45)' }}>
           <div style={{
-            background: isLocked ? 'rgba(255,122,47,0.9)' : 'rgba(255,255,255,0.2)',
+            background: isLocked ? 'rgba(123,63,242,0.9)' : 'rgba(255,255,255,0.2)',
             backdropFilter: 'blur(8px)',
             borderRadius: '50%',
             padding: '0.75rem',
@@ -95,7 +95,7 @@ function ContentCard({
               </div>
             ) : (
               <div className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-                style={{ background: 'linear-gradient(135deg,#FF7A2F,#E0389A)' }}>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                 <Crown size={9} /> {item.price ? `${item.price.toFixed(0)} €` : 'Premium'}
               </div>
             )}

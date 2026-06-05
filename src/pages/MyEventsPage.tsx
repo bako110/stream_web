@@ -19,9 +19,9 @@ const TYPE_LABELS: Record<string, string> = {
   exhibition: 'Exposition', other: 'Autre',
 };
 const TYPE_COLORS: Record<string, string> = {
-  concert: '#7B3FF2', festival: '#E0389A', sport: '#FF7A2F',
-  conference: '#3B82F6', theater: '#8B5CF6', exhibition: '#06B6D4',
-  birthday: '#F59E0B', other: '#6B7280',
+  concert: '#7B3FF2', festival: '#7B3FF2', sport: '#7B3FF2',
+  conference: '#7B3FF2', theater: '#7B3FF2', exhibition: '#06B6D4',
+  birthday: '#7B3FF2', other: '#6B7280',
 };
 
 // ── EventCard ─────────────────────────────────────────────────────────────────
@@ -83,8 +83,8 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: string) =
           </span>
           {event.access_type === 'ticket' && event.ticket_price != null && (
             <span className="text-xs font-black text-white flex items-center gap-1">
-              <Ticket size={11} style={{ color: '#FF7A2F' }} />
-              <span style={{ color: '#FF7A2F' }}>{event.ticket_price}€</span>
+              <Ticket size={11} style={{ color: '#7B3FF2' }} />
+              <span style={{ color: '#7B3FF2' }}>{event.ticket_price}€</span>
             </span>
           )}
         </div>
@@ -184,8 +184,8 @@ export default function MyEventsPage() {
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(245,158,11,0.12)' }}>
-            <Calendar size={20} style={{ color: '#F59E0B' }} />
+            style={{ background: 'rgba(123,63,242,0.12)' }}>
+            <Calendar size={20} style={{ color: '#7B3FF2' }} />
           </div>
           <div>
             <h1 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>Mes Événements</h1>
@@ -253,8 +253,8 @@ export default function MyEventsPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: 'rgba(245,158,11,0.1)' }}>
-              <Calendar size={28} style={{ color: '#F59E0B' }} />
+              style={{ background: 'rgba(123,63,242,0.1)' }}>
+              <Calendar size={28} style={{ color: '#7B3FF2' }} />
             </div>
             <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
               {items.length === 0 ? 'Aucun événement créé' : `Aucun résultat pour « ${search} »`}

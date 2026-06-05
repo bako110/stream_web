@@ -17,7 +17,7 @@ import toast from 'react-hot-toast';
 function LiveBadge() {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-      style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 12px rgba(240,54,90,0.4)' }}>
+      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 12px rgba(123,63,242,0.4)' }}>
       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
       LIVE
     </span>
@@ -103,11 +103,11 @@ function ConcertCard({
               background: concert.access_type === 'free'
                 ? 'rgba(34,197,94,0.2)'
                 : concert.access_type === 'ticket'
-                ? 'rgba(255,122,47,0.2)'
+                ? 'rgba(123,63,242,0.2)'
                 : 'rgba(123,63,242,0.2)',
               color: concert.access_type === 'free'
                 ? '#22c55e' : concert.access_type === 'ticket'
-                ? '#FF7A2F' : 'var(--primary)',
+                ? '#7B3FF2' : 'var(--primary)',
               border: '1px solid currentColor',
             }}>
             {concert.access_type === 'free' ? 'Gratuit' : concert.access_type === 'ticket' ? `${concert.ticket_price ?? ''}€` : 'Abonnement'}
@@ -249,7 +249,7 @@ function MyConcertsTab() {
         </div>
         <button onClick={() => navigate('/create/concert')}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
-          style={{ background: '#FF7A2F', color: '#fff' }}
+          style={{ background: '#7B3FF2', color: '#fff' }}
           onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
           <Plus size={16} /> Créer un concert
@@ -259,8 +259,8 @@ function MyConcertsTab() {
       {items.length === 0 ? (
         <div className="text-center py-20 rounded-2xl" style={{ border: '2px dashed var(--border)' }}>
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'rgba(255,122,47,0.1)' }}>
-            <Music size={28} style={{ color: '#FF7A2F' }} />
+            style={{ background: 'rgba(123,63,242,0.1)' }}>
+            <Music size={28} style={{ color: '#7B3FF2' }} />
           </div>
           <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Aucun concert créé</p>
           <p className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
@@ -268,7 +268,7 @@ function MyConcertsTab() {
           </p>
           <button onClick={() => navigate('/create/concert')}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold"
-            style={{ background: '#FF7A2F', color: '#fff' }}>
+            style={{ background: '#7B3FF2', color: '#fff' }}>
             <Plus size={15} /> Créer un concert
           </button>
         </div>
@@ -305,7 +305,7 @@ export default function ConcertsPage() {
           <button key={t.val} onClick={() => setTab(t.val)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
             style={tab === t.val
-              ? { background: 'var(--surface)', color: '#FF7A2F', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }
+              ? { background: 'var(--surface)', color: '#7B3FF2', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }
               : { color: 'var(--text-secondary)' }}>
             <Music size={15} />
             {t.label}

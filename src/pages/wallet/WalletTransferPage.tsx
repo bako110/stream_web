@@ -188,7 +188,7 @@ export default function WalletTransferPage() {
             onClick={handleTransfer}
             disabled={transferring || !amount || Number(amount) <= 0}
             className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 8px 24px rgba(123,63,242,0.35)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.35)' }}>
             {transferring ? <Spinner size="sm" /> : <><Send size={16} /> Envoyer {amount || '0'} coins</>}
           </button>
         </div>

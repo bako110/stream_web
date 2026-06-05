@@ -64,9 +64,9 @@ const UNIT_LABELS: Record<string, string> = {
 function StatusBadge({ status }: { status: BoostRecord['status'] }) {
   const cfg = {
     active:    { label: 'Actif',     bg: '#22C55E20', color: '#22C55E', Icon: Zap },
-    completed: { label: 'Terminé',   bg: '#3B82F620', color: '#3B82F6', Icon: CheckCircle2 },
+    completed: { label: 'Terminé',   bg: '#7B3FF220', color: '#7B3FF2', Icon: CheckCircle2 },
     cancelled: { label: 'Annulé',    bg: '#EF444420', color: '#EF4444', Icon: XCircle },
-    paused:    { label: 'En pause',  bg: '#F59E0B20', color: '#F59E0B', Icon: PauseCircle },
+    paused:    { label: 'En pause',  bg: '#7B3FF220', color: '#7B3FF2', Icon: PauseCircle },
   }[status];
   const { label, bg, color, Icon } = cfg;
   return (
@@ -206,7 +206,7 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
   const [stopping,  setStopping]  = useState(false);
 
   const cat: BoostCategory | undefined = BOOST_CATEGORIES.find(c => c.id === boost.target);
-  const [g1, g2] = cat?.gradient ?? ['#7B3FF2', '#E0389A'];
+  const [g1, g2] = cat?.gradient ?? ['#7B3FF2', '#5B2EC4'];
   const icon = ICONS[boost.target] ?? <Zap size={16} />;
 
   const pct        = Math.min(1, Math.max(0, Number(boost.progress ?? 0)));
@@ -305,7 +305,7 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
                 </span>
                 {isActive && (
                   <span className="text-[10px] font-bold"
-                    style={{ color: days <= 1 ? '#EF4444' : days <= 3 ? '#F59E0B' : '#22C55E' }}>
+                    style={{ color: days <= 1 ? '#EF4444' : days <= 3 ? '#7B3FF2' : '#22C55E' }}>
                     {days > 0 ? `${days}j restant${days > 1 ? 's' : ''}` : "Expire aujourd'hui"}
                   </span>
                 )}
@@ -348,7 +348,7 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
                   label: 'Multiplicateur feed',
                   value: mult > 1 ? `×${mult.toFixed(1)}` : '×1.0',
                   icon: <BarChart2 size={11} />,
-                  color: mult > 1 ? '#F59E0B' : 'var(--text-secondary)',
+                  color: mult > 1 ? '#7B3FF2' : 'var(--text-secondary)',
                 },
                 {
                   label: 'Durée totale',

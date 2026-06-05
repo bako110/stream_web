@@ -111,7 +111,7 @@ function GlobalLoader() {
         <div className="relative w-16 h-16">
           <div className="absolute inset-0 rounded-2xl rotate-12"
             style={{
-              background: 'linear-gradient(135deg,#7B3FF2,#E0389A)',
+              background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
               animation:  'spin-slow 3s linear infinite',
             }} />
           <div className="absolute inset-1 rounded-xl flex items-center justify-center"
@@ -120,7 +120,7 @@ function GlobalLoader() {
           </div>
           <div className="absolute inset-0 rounded-2xl rotate-12"
             style={{
-              background: 'linear-gradient(135deg,#7B3FF2,#E0389A)',
+              background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
               opacity:    0.25,
               animation:  'ping-once 1.5s ease-out infinite',
             }} />

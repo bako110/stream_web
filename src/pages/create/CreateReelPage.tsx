@@ -184,7 +184,7 @@ export default function CreateReelPage() {
       <div className="px-4 pb-8">
         <button onClick={handlePublish} disabled={!canPublish || publishing}
           className="w-full py-4 rounded-2xl text-sm font-black text-white flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: canPublish ? '0 6px 24px rgba(123,63,242,0.4)' : 'none' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: canPublish ? '0 6px 24px rgba(123,63,242,0.4)' : 'none' }}>
           {publishing ? <Spinner size="sm" /> : <><Upload size={15} /> Publier le Reel</>}
         </button>
       </div>

@@ -251,7 +251,7 @@ export default function CGUPage() {
 
         {/* ── Intro card ── */}
         <div className="rounded-2xl p-6 flex flex-col sm:flex-row gap-5 items-start"
-          style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(224,56,154,0.06))', border: '1px solid rgba(123,63,242,0.2)' }}>
+          style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(123,63,242,0.06))', border: '1px solid rgba(123,63,242,0.2)' }}>
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
             style={{ background: 'rgba(123,63,242,0.15)' }}>
             <FileText size={26} style={{ color: 'var(--primary)' }} />

@@ -18,7 +18,7 @@ interface LeaderEntry {
   reactions_count?: number;
 }
 
-const RANK_COLORS = ['#F59E0B', '#9CA3AF', '#CD7C2F'];
+const RANK_COLORS = ['#7B3FF2', '#9CA3AF', '#CD7C2F'];
 const RANK_ICONS  = [Crown, Medal, Star];
 
 export default function CommunityLeaderboardPage() {
@@ -61,7 +61,7 @@ export default function CommunityLeaderboardPage() {
           <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Classement</p>
           {name && <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{name}</p>}
         </div>
-        <Trophy size={20} style={{ color: '#F59E0B' }} />
+        <Trophy size={20} style={{ color: '#7B3FF2' }} />
       </div>
 
       {loading ? (

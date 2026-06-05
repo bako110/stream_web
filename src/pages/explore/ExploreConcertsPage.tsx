@@ -152,7 +152,7 @@ function ConcertCard({ concert, isLive = false }: { concert: Concert; isLive?: b
         )}
         {isLive && (
           <div className="absolute top-3 left-3 flex items-center gap-1.5 text-xs font-black text-white px-2.5 py-1 rounded-full"
-            style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
           </div>
         )}

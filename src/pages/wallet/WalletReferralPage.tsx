@@ -129,7 +129,7 @@ export default function WalletReferralPage() {
           <div
             className="rounded-2xl p-5 relative overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, rgba(123,63,242,0.14) 0%, rgba(224,56,154,0.10) 100%)',
+              background: 'linear-gradient(135deg, rgba(123,63,242,0.14) 0%, rgba(123,63,242,0.10) 100%)',
               border: '1px solid rgba(123,63,242,0.30)',
             }}
           >
@@ -210,7 +210,7 @@ export default function WalletReferralPage() {
               disabled={!stats?.referral_code}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white disabled:opacity-40 transition-all"
               style={{
-                background: 'linear-gradient(135deg, #7B3FF2, #E0389A)',
+                background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
                 boxShadow: '0 6px 20px rgba(123,63,242,0.35)',
               }}
             >
@@ -278,8 +278,8 @@ export default function WalletReferralPage() {
                 style={{
                   width: `${monthlyPct}%`,
                   background: monthlyPct >= 90
-                    ? 'linear-gradient(90deg,#F59E0B,#EF4444)'
-                    : 'linear-gradient(90deg,#7B3FF2,#E0389A)',
+                    ? 'linear-gradient(90deg,#7B3FF2,#EF4444)'
+                    : 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
                 }}
               />
             </div>

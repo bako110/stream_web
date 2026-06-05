@@ -108,9 +108,9 @@ export function Topbar({ onMenuClick }: Props) {
         <button
           onClick={() => navigate('/go-live')}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', color: '#fff', boxShadow: '0 2px 10px rgba(240,54,90,0.35)' }}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 18px rgba(240,54,90,0.55)')}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 10px rgba(240,54,90,0.35)')}
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', boxShadow: '0 2px 10px rgba(123,63,242,0.35)' }}
+          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 18px rgba(123,63,242,0.55)')}
+          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 10px rgba(123,63,242,0.35)')}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           <span className="hidden sm:inline">Go Live</span>
@@ -139,7 +139,7 @@ export function Topbar({ onMenuClick }: Props) {
         >
           <Bell size={20} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
-            style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }} />
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
         </button>
 
         {/* Avatar — desktop */}

@@ -71,7 +71,7 @@ export default function CommunityStatsPage() {
       .finally(() => setLoading(false));
   }, [id, period]);
 
-  const MEDAL_COLORS = ['#F59E0B', '#9CA3AF', '#CD7C32'];
+  const MEDAL_COLORS = ['#7B3FF2', '#9CA3AF', '#CD7C32'];
   const MedalIcon = ({ rank }: { rank: number }) => {
     if (rank === 0) return <Crown size={16} color={MEDAL_COLORS[0]} />;
     if (rank === 1) return <Medal size={16} color={MEDAL_COLORS[1]} />;
@@ -123,10 +123,10 @@ export default function CommunityStatsPage() {
             <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>MEMBRES</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatCard icon={<Users size={16} />} label="Total membres" value={stats.members.total} color="#7B3FF2" />
-              <StatCard icon={<TrendingUp size={16} />} label="Nouveaux cette semaine" value={stats.members.new_week} color="#36D9A0"
+              <StatCard icon={<TrendingUp size={16} />} label="Nouveaux cette semaine" value={stats.members.new_week} color="#7B3FF2"
                 sub={stats.members.growth > 0 ? `+${stats.members.growth}%` : undefined} />
-              <StatCard icon={<Users size={16} />} label="Nouveaux ce mois" value={stats.members.new_month} color="#3B82F6" />
-              <StatCard icon={<Activity size={16} />} label="Membres actifs" value={stats.engagement.active_members} color="#F59E0B" />
+              <StatCard icon={<Users size={16} />} label="Nouveaux ce mois" value={stats.members.new_month} color="#7B3FF2" />
+              <StatCard icon={<Activity size={16} />} label="Membres actifs" value={stats.engagement.active_members} color="#7B3FF2" />
             </div>
           </section>
 
@@ -135,9 +135,9 @@ export default function CommunityStatsPage() {
             <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>ENGAGEMENT</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatCard icon={<MessageCircle size={16} />} label="Messages aujourd'hui" value={stats.engagement.messages_today} color="#7B3FF2" />
-              <StatCard icon={<MessageCircle size={16} />} label="Messages cette semaine" value={stats.engagement.messages_week} color="#E0389A" />
+              <StatCard icon={<MessageCircle size={16} />} label="Messages cette semaine" value={stats.engagement.messages_week} color="#7B3FF2" />
               <StatCard icon={<Heart size={16} />} label="Réactions" value={stats.engagement.reactions} color="#EF4444" />
-              <StatCard icon={<BarChart2 size={16} />} label="Sondages" value={stats.content.polls} color="#8B5CF6" />
+              <StatCard icon={<BarChart2 size={16} />} label="Sondages" value={stats.content.polls} color="#7B3FF2" />
             </div>
           </section>
 
@@ -156,8 +156,8 @@ export default function CommunityStatsPage() {
             <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>RÉTENTION</p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'J+1', value: stats.retention.d1, color: '#36D9A0' },
-                { label: 'J+7', value: stats.retention.d7, color: '#3B82F6' },
+                { label: 'J+1', value: stats.retention.d1, color: '#7B3FF2' },
+                { label: 'J+7', value: stats.retention.d7, color: '#7B3FF2' },
                 { label: 'J+30', value: stats.retention.d30, color: '#7B3FF2' },
               ].map(r => (
                 <div key={r.label} className="rounded-2xl p-4 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -176,8 +176,8 @@ export default function CommunityStatsPage() {
             <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>RÉPARTITION DES RÔLES</p>
             <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               {[
-                { label: 'Admins', value: stats.roles.admin, color: '#36D9A0' },
-                { label: 'Modérateurs', value: stats.roles.moderator, color: '#3B82F6' },
+                { label: 'Admins', value: stats.roles.admin, color: '#7B3FF2' },
+                { label: 'Modérateurs', value: stats.roles.moderator, color: '#7B3FF2' },
                 { label: 'Membres', value: stats.roles.member, color: '#9390AB' },
               ].map(r => {
                 const total = stats.members.total || 1;
@@ -212,8 +212,8 @@ export default function CommunityStatsPage() {
                       <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{c.posts} messages</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Award size={13} style={{ color: '#F59E0B' }} />
-                      <span className="text-xs font-bold" style={{ color: '#F59E0B' }}>{c.coins}</span>
+                      <Award size={13} style={{ color: '#7B3FF2' }} />
+                      <span className="text-xs font-bold" style={{ color: '#7B3FF2' }}>{c.coins}</span>
                     </div>
                   </div>
                 ))}
@@ -226,9 +226,9 @@ export default function CommunityStatsPage() {
             <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>CONTENU</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatCard icon={<MessageCircle size={16} />} label="Messages totaux" value={stats.content.posts} color="#7B3FF2" />
-              <StatCard icon={<BarChart2 size={16} />} label="Médias partagés" value={stats.content.media} color="#E0389A" />
-              <StatCard icon={<Award size={16} />} label="Épinglés" value={stats.content.pinned} color="#F59E0B" />
-              <StatCard icon={<Activity size={16} />} label="Sondages" value={stats.content.polls} color="#36D9A0" />
+              <StatCard icon={<BarChart2 size={16} />} label="Médias partagés" value={stats.content.media} color="#7B3FF2" />
+              <StatCard icon={<Award size={16} />} label="Épinglés" value={stats.content.pinned} color="#7B3FF2" />
+              <StatCard icon={<Activity size={16} />} label="Sondages" value={stats.content.polls} color="#7B3FF2" />
             </div>
           </section>
 

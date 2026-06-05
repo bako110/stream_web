@@ -108,8 +108,8 @@ function FilmCard({ item, basePath }: { item: Content; basePath: string }) {
 
         {item.rating && (
           <div className="absolute top-2 right-2 flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(0,0,0,0.6)', color: '#F59E0B' }}>
-            <Star size={10} fill="#F59E0B" />
+            style={{ background: 'rgba(0,0,0,0.6)', color: '#7B3FF2' }}>
+            <Star size={10} fill="#7B3FF2" />
             {Number(item.rating).toFixed(1)}
           </div>
         )}

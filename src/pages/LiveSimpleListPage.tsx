@@ -21,20 +21,20 @@ function LiveCard({ live }: { live: LiveStream }) {
       className="group cursor-pointer overflow-hidden transition-all duration-200"
       style={{
         borderRadius: '1rem',
-        border: '1px solid rgba(240,54,90,0.2)',
+        border: '1px solid rgba(123,63,242,0.2)',
         background: 'var(--surface)',
-        boxShadow: '0 2px 12px rgba(240,54,90,0.08)',
+        boxShadow: '0 2px 12px rgba(123,63,242,0.08)',
       }}
       onClick={() => navigate(`/lives/${encodeId(live.id)}`)}
       onMouseEnter={e => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 28px rgba(240,54,90,0.22)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(240,54,90,0.5)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 28px rgba(123,63,242,0.22)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(123,63,242,0.5)';
       }}
       onMouseLeave={e => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(240,54,90,0.08)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(240,54,90,0.2)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(123,63,242,0.08)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(123,63,242,0.2)';
       }}
     >
       {/* Thumbnail / placeholder */}
@@ -52,7 +52,7 @@ function LiveCard({ live }: { live: LiveStream }) {
         {/* Live badge + viewers */}
         <div className="absolute top-3 left-3 flex items-center gap-2">
           <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-            style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
           </span>
           <span className="flex items-center gap-1 text-xs text-white px-2 py-0.5 rounded-full"
@@ -73,7 +73,7 @@ function LiveCard({ live }: { live: LiveStream }) {
         {live.is_featured && (
           <div className="absolute top-3 right-3">
             <span className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full text-yellow-300"
-              style={{ background: 'rgba(245,158,11,0.25)', border: '1px solid rgba(245,158,11,0.4)', backdropFilter: 'blur(4px)' }}>
+              style={{ background: 'rgba(123,63,242,0.25)', border: '1px solid rgba(123,63,242,0.4)', backdropFilter: 'blur(4px)' }}>
               <Zap size={10} /> Boost
             </span>
           </div>
@@ -101,7 +101,7 @@ function LiveCard({ live }: { live: LiveStream }) {
           )}
         </div>
         <span className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white shrink-0 self-center transition-all"
-          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           Rejoindre
         </span>
       </div>
@@ -166,7 +166,7 @@ export default function LiveSimpleListPage() {
           </button>
           <button onClick={() => navigate('/go-live')}
             className="btn-primary flex items-center gap-2 text-sm"
-            style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <Plus size={16} /> Démarrer un live
           </button>
         </div>
@@ -182,7 +182,7 @@ export default function LiveSimpleListPage() {
           action={
             <button onClick={() => navigate('/go-live')}
               className="btn-primary flex items-center gap-2 mx-auto"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <Radio size={16} /> Démarrer maintenant
             </button>
           }

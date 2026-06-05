@@ -31,8 +31,8 @@
     --scrollbar-thumb:  #D6D4EE;
     /* glows — subtle in light mode */
     --glow-purple:      rgba(123, 63, 242, 0.15);
-    --glow-pink:        rgba(224,  56, 154, 0.10);
-    --glow-orange:      rgba(255, 122,  47, 0.10);
+    --glow-pink:        rgba(123,63,242, 0.10);
+    --glow-orange:      rgba(123,63,242, 0.10);
     /* orbs — light mode: very subtle */
     --orb-1-opacity:    0.08;
     --orb-2-opacity:    0.06;
@@ -64,8 +64,8 @@
     --input-bg:         #0F0F1E;
     --scrollbar-thumb:  #1E1D35;
     --glow-purple:      rgba(123, 63, 242, 0.40);
-    --glow-pink:        rgba(224,  56, 154, 0.30);
-    --glow-orange:      rgba(255, 122,  47, 0.25);
+    --glow-pink:        rgba(123,63,242, 0.30);
+    --glow-orange:      rgba(123,63,242, 0.25);
     --orb-1-opacity:    0.18;
     --orb-2-opacity:    0.14;
     --orb-3-opacity:    0.10;
@@ -226,7 +226,7 @@
    GRADIENT TEXT
    ══════════════════════════════════════════════════════════════════════════════ */
 .gradient-text {
-  background: linear-gradient(135deg, #7B3FF2 0%, #E0389A 50%, #FF7A2F 100%);
+  background: linear-gradient(135deg,#7B3FF2,#5B2EC4);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -238,7 +238,7 @@
   -webkit-text-fill-color: transparent;
 }
 .shimmer-text {
-  background: linear-gradient(90deg, #7B3FF2 0%, #E0389A 25%, #FF7A2F 50%, #E0389A 75%, #7B3FF2 100%);
+  background: linear-gradient(135deg,#7B3FF2,#5B2EC4);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -288,7 +288,7 @@
   .btn-primary {
     @apply relative inline-flex items-center justify-center font-semibold rounded-xl text-white overflow-hidden;
     padding: 0.625rem 1.25rem;
-    background: linear-gradient(135deg, #7B3FF2, #E0389A);
+    background: linear-gradient(135deg,#7B3FF2,#5B2EC4);
     box-shadow: 0 4px 24px rgba(123,63,242,0.35);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
@@ -348,8 +348,8 @@
   /* ── Badge ── */
   .badge-live {
     @apply inline-flex items-center text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider;
-    background: linear-gradient(135deg, #F0365A, #E0389A);
-    box-shadow: 0 0 12px rgba(240,54,90,0.4);
+    background: linear-gradient(135deg,#7B3FF2,#5B2EC4);
+    box-shadow: 0 0 12px rgba(123,63,242,0.4);
   }
 
   /* ── Sidebar ── */

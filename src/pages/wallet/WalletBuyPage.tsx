@@ -106,7 +106,7 @@ export default function WalletBuyPage() {
 
       {/* Info banner */}
       <div className="rounded-2xl px-4 py-3 flex items-center gap-3"
-        style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(224,56,154,0.08))', border: '1px solid rgba(123,63,242,0.2)' }}>
+        style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.08))', border: '1px solid rgba(123,63,242,0.2)' }}>
         <Sparkles size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
           Les coins permettent d'offrir des cadeaux, de booster votre contenu et d'accéder à des fonctionnalités exclusives.
@@ -151,19 +151,19 @@ export default function WalletBuyPage() {
                   className="relative rounded-2xl p-4 text-left transition-all"
                   style={{
                     background: isSelected
-                      ? 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(224,56,154,0.1))'
+                      ? 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(123,63,242,0.1))'
                       : 'var(--surface)',
                     border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)',
                   }}>
                   {popular && (
                     <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] font-black px-2.5 py-0.5 rounded-full text-white"
-                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                       POPULAIRE
                     </span>
                   )}
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                      style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(224,56,154,0.1))', color: 'var(--primary)' }}>
+                      style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(123,63,242,0.1))', color: 'var(--primary)' }}>
                       <Icon size={18} />
                     </div>
                     <span className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>{pkg.name}</span>
@@ -193,7 +193,7 @@ export default function WalletBuyPage() {
             return (
               <button onClick={() => handleBuy(pkg)} disabled={!!buying}
                 className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 8px 24px rgba(123,63,242,0.35)' }}>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.35)' }}>
                 {buying === selected
                   ? <Spinner size="sm" />
                   : `Acheter ${total.toLocaleString('fr-FR')} coins — ${price.toFixed(2)} €`}
@@ -224,7 +224,7 @@ export default function WalletBuyPage() {
 
           {customAmount > 0 && (
             <div className="rounded-xl px-4 py-3 flex items-center justify-between"
-              style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.1),rgba(224,56,154,0.07))', border: '1px solid rgba(123,63,242,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.1),rgba(123,63,242,0.07))', border: '1px solid rgba(123,63,242,0.15)' }}>
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Vous recevrez</p>
               <p className="text-lg font-black" style={{ color: 'var(--primary)' }}>
                 {customCoins.toLocaleString('fr-FR')} <span className="text-sm font-semibold">coins</span>
@@ -241,7 +241,7 @@ export default function WalletBuyPage() {
           <button onClick={handleBuyCustom} disabled={!customValid || buying === 'custom'}
             className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
             style={{
-              background: customValid ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'var(--bg-secondary)',
+              background: customValid ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' : 'var(--bg-secondary)',
               boxShadow: customValid ? '0 8px 24px rgba(123,63,242,0.35)' : 'none',
             }}>
             {buying === 'custom'

@@ -202,7 +202,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Support GoFolyX</p>
-          <p className="text-[11px]" style={{ color: '#36D9A0' }}>
+          <p className="text-[11px]" style={{ color: '#7B3FF2' }}>
             {ticket ? `Ticket #${ticket.id.slice(0, 8)}… · ${ticket.status}` : 'Généralement répond en moins d\'1h'}
           </p>
         </div>
@@ -324,8 +324,8 @@ export default function SupportPage() {
               <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Ticket support</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Envoyez un ticket, on vous répond</p>
               <div className="flex items-center gap-1 mt-1">
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#36D9A0' }} />
-                <span className="text-[10px] font-semibold" style={{ color: '#36D9A0' }}>Disponible</span>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#7B3FF2' }} />
+                <span className="text-[10px] font-semibold" style={{ color: '#7B3FF2' }}>Disponible</span>
               </div>
             </div>
           </button>
@@ -333,11 +333,11 @@ export default function SupportPage() {
           <a href="mailto:support@gofolyx.app"
             className="flex items-center gap-3 p-4 rounded-2xl text-left transition-all"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', textDecoration: 'none' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = '#3B82F6')}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = '#7B3FF2')}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: '#3B82F615' }}>
-              <Mail size={22} style={{ color: '#3B82F6' }} />
+              style={{ background: '#7B3FF215' }}>
+              <Mail size={22} style={{ color: '#7B3FF2' }} />
             </div>
             <div>
               <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Email</p>

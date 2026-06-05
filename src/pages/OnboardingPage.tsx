@@ -7,8 +7,8 @@ import { Images } from '../components/assets';
 const STEPS = [
   {
     icon: Play,
-    color: '#E0389A',
-    gradient: ['#E0389A', '#7B3FF2'],
+    color: '#7B3FF2',
+    gradient: ['#7B3FF2', '#5B2EC4'],
     title: 'Reels & Contenus courts',
     description: 'Explorez des milliers de vidéos courtes de créateurs africains et du monde entier. Likez, commentez, partagez.',
     visual: (
@@ -18,12 +18,12 @@ const STEPS = [
           <div className="absolute inset-0 flex flex-col justify-end p-4">
             {[80, 60, 90, 50].map((h, i) => (
               <div key={i} className="mb-1 rounded-full opacity-30"
-                style={{ height: 8, width: `${h}%`, background: '#E0389A' }} />
+                style={{ height: 8, width: `${h}%`, background: '#7B3FF2' }} />
             ))}
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(224,56,154,0.3)', border: '2px solid rgba(224,56,154,0.6)' }}>
+              style={{ background: 'rgba(123,63,242,0.3)', border: '2px solid rgba(123,63,242,0.6)' }}>
               <Play size={24} fill="white" color="white" />
             </div>
           </div>
@@ -40,7 +40,7 @@ const STEPS = [
   {
     icon: Music2,
     color: '#7B3FF2',
-    gradient: ['#7B3FF2', '#3B82F6'],
+    gradient: ['#7B3FF2', '#5B2EC4'],
     title: 'Concerts & Lives',
     description: 'Assistez à des concerts en direct depuis votre salon. Achetez vos billets, regardez en streaming, interagissez avec l\'artiste.',
     visual: (
@@ -48,12 +48,12 @@ const STEPS = [
         <div className="rounded-3xl overflow-hidden p-5"
           style={{ background: 'linear-gradient(135deg,#1a0533,#0d0118)', border: '1px solid rgba(123,63,242,0.3)' }}>
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#F0365A' }} />
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#7B3FF2' }} />
             <span className="text-xs font-bold text-white">EN DIRECT</span>
             <span className="ml-auto text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>12.4K</span>
           </div>
           <div className="rounded-2xl aspect-video mb-3 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <Music2 size={40} color="white" />
           </div>
           <p className="text-white font-bold text-sm">Concert Afrobeat Festival</p>
@@ -64,16 +64,16 @@ const STEPS = [
   },
   {
     icon: Calendar,
-    color: '#F59E0B',
-    gradient: ['#F59E0B', '#EF4444'],
+    color: '#7B3FF2',
+    gradient: ['#7B3FF2', '#5B2EC4'],
     title: 'Événements & Billets',
     description: 'Découvrez les événements près de chez vous. Achetez vos billets en toute sécurité et recevez votre QR code instantanément.',
     visual: (
       <div className="relative w-full max-w-[280px] mx-auto space-y-3">
         {[
-          { label: 'AfroVibes Festival', date: '28 Juin · Dakar', color: '#F59E0B' },
-          { label: 'Tech Summit 2026', date: '5 Juil · Abidjan', color: '#3B82F6' },
-          { label: 'Fashion Week', date: '12 Juil · Paris', color: '#E0389A' },
+          { label: 'AfroVibes Festival', date: '28 Juin · Dakar', color: '#7B3FF2' },
+          { label: 'Tech Summit 2026', date: '5 Juil · Abidjan', color: '#7B3FF2' },
+          { label: 'Fashion Week', date: '12 Juil · Paris', color: '#7B3FF2' },
         ].map((ev, i) => (
           <div key={i} className="flex items-center gap-3 p-3 rounded-2xl"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -92,14 +92,14 @@ const STEPS = [
   },
   {
     icon: Film,
-    color: '#3B82F6',
-    gradient: ['#3B82F6', '#6366F1'],
+    color: '#7B3FF2',
+    gradient: ['#7B3FF2', '#5B2EC4'],
     title: 'Films & Séries',
     description: 'Un catalogue immense de films africains et internationaux, séries exclusives. Regardez en HD, à votre rythme.',
     visual: (
       <div className="relative w-full max-w-[280px] mx-auto">
         <div className="grid grid-cols-3 gap-2">
-          {['#7B3FF2', '#E0389A', '#3B82F6', '#F59E0B', '#10B981', '#F0365A'].map((c, i) => (
+          {['#7B3FF2', '#7B3FF2', '#7B3FF2', '#7B3FF2', '#10B981', '#7B3FF2'].map((c, i) => (
             <div key={i} className="rounded-xl aspect-[2/3] flex items-center justify-center"
               style={{ background: `linear-gradient(135deg,${c}60,${c}20)`, border: `1px solid ${c}30` }}>
               <Film size={20} style={{ color: c }} />
@@ -113,16 +113,16 @@ const STEPS = [
   },
   {
     icon: Users,
-    color: '#36D9A0',
-    gradient: ['#36D9A0', '#3B82F6'],
+    color: '#7B3FF2',
+    gradient: ['#7B3FF2', '#5B2EC4'],
     title: 'Communautés',
     description: 'Rejoignez des communautés passionnantes, échangez avec des membres partageant vos intérêts, participez aux discussions.',
     visual: (
       <div className="relative w-full max-w-[280px] mx-auto space-y-3">
         {[
-          { name: 'Afrobeats Lovers', members: '24.5K', color: '#E0389A' },
-          { name: 'Cinéphiles Africains', members: '8.2K', color: '#3B82F6' },
-          { name: 'Entrepreneurs', members: '15.1K', color: '#36D9A0' },
+          { name: 'Afrobeats Lovers', members: '24.5K', color: '#7B3FF2' },
+          { name: 'Cinéphiles Africains', members: '8.2K', color: '#7B3FF2' },
+          { name: 'Entrepreneurs', members: '15.1K', color: '#7B3FF2' },
         ].map((c, i) => (
           <div key={i} className="flex items-center gap-3 p-3 rounded-2xl"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -145,25 +145,25 @@ const STEPS = [
   },
   {
     icon: Wallet,
-    color: '#F0365A',
-    gradient: ['#F0365A', '#7B3FF2'],
+    color: '#7B3FF2',
+    gradient: ['#7B3FF2', '#5B2EC4'],
     title: 'Monétisation & Coins',
     description: 'Devenez créateur, gagnez des coins, envoyez des cadeaux. Retirez vos gains directement sur votre compte ou mobile money.',
     visual: (
       <div className="relative w-full max-w-[280px] mx-auto">
         <div className="rounded-3xl overflow-hidden p-5"
-          style={{ background: 'linear-gradient(135deg,#1a0533,#0d0118)', border: '1px solid rgba(240,54,90,0.3)' }}>
+          style={{ background: 'linear-gradient(135deg,#1a0533,#0d0118)', border: '1px solid rgba(123,63,242,0.3)' }}>
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>Solde GoFolyX Coins</p>
-            <Wallet size={16} color="#F0365A" />
+            <Wallet size={16} color="#7B3FF2" />
           </div>
           <p className="text-3xl font-black text-white mb-1">2,450 <span className="text-lg">FXC</span></p>
           <p className="text-xs mb-4" style={{ color: 'rgba(255,255,255,0.4)' }}>≈ 24.50 €</p>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: 'Acheter', color: '#36D9A0' },
-              { label: 'Envoyer', color: '#3B82F6' },
-              { label: 'Retirer', color: '#F59E0B' },
+              { label: 'Acheter', color: '#7B3FF2' },
+              { label: 'Envoyer', color: '#7B3FF2' },
+              { label: 'Retirer', color: '#7B3FF2' },
             ].map(btn => (
               <div key={btn.label} className="py-2 rounded-xl text-center text-xs font-bold"
                 style={{ background: btn.color + '20', color: btn.color }}>{btn.label}</div>

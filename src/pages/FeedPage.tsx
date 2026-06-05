@@ -23,7 +23,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 // ── Story Creator ─────────────────────────────────────────────────────────────
-const TEXT_COLORS = ['#7B3FF2','#E0389A','#F0365A','#FF7A2F','#36D9A0','#3B82F6','#F59E0B','#1a0533','#000000','#ffffff'];
+const TEXT_COLORS = ['#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#1a0533','#000000','#ffffff'];
 
 function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [mode,      setMode]      = useState<'pick'|'text'|'image'|'video'|'preview'>('pick');
@@ -38,7 +38,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const MODES = [
-    { key: 'text'  as const, icon: <Type size={22} />,       label: 'Texte',   sub: 'Message sur fond coloré',    grad: 'linear-gradient(135deg,#7B3FF2,#9B65F5)' },
+    { key: 'text'  as const, icon: <Type size={22} />,       label: 'Texte',   sub: 'Message sur fond coloré',    grad: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
     { key: 'image' as const, icon: <ImageIcon size={22} />,  label: 'Photo',   sub: 'Depuis votre galerie',       grad: 'linear-gradient(135deg,#1565C0,#2196F3)' },
     { key: 'video' as const, icon: <Video size={22} />,      label: 'Vidéo',   sub: 'Clip jusqu\'à 30 secondes',  grad: 'linear-gradient(135deg,#AD1457,#E91E63)' },
   ];
@@ -121,7 +121,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
           /* ── Succès ── */
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <Check size={28} className="text-white" />
             </div>
             <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>Story publiée !</p>
@@ -201,7 +201,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
             <div className="px-4 pb-5">
               <button onClick={publish} disabled={!caption.trim() || uploading}
                 className="w-full py-3 rounded-xl font-black text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                 {uploading ? <Spinner size="sm" /> : <><Send size={14} /> Publier</>}
               </button>
             </div>
@@ -240,7 +240,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
             <div className="px-4 pb-5">
               <button onClick={publish} disabled={uploading}
                 className="w-full py-3 rounded-xl font-black text-white flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                 {uploading ? <Spinner size="sm" /> : <><Send size={14} /> Publier</>}
               </button>
             </div>
@@ -506,7 +506,7 @@ function StoryViewer({
                 </button>
                 <button onClick={saveEdit}
                   className="flex-1 py-3 rounded-xl text-sm font-black text-white"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                   Enregistrer
                 </button>
               </div>
@@ -603,7 +603,7 @@ function MyStoriesPage({
         {/* Header */}
         <div className="flex items-center gap-3 px-5 pt-5 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
           <div className="rounded-full p-[2.5px] shrink-0"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
               <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="md" />
             </div>
@@ -697,7 +697,7 @@ function MyStoriesPage({
         <div className="px-4 py-4" style={{ borderTop: '1px solid var(--border)' }}>
           <button onClick={onNewStory}
             className="w-full py-3.5 rounded-2xl font-black text-white flex items-center justify-center gap-2.5 transition-opacity"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <Plus size={18} />
             Ajouter une nouvelle story
           </button>
@@ -733,7 +733,7 @@ function StoryBubble({ group, onClick }: { group: StoryGroup; onClick: () => voi
       <div className="relative">
         {group.has_unseen ? (
           <div className="rounded-full p-[2.5px]"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <div className="rounded-full p-[2px]" style={{ background: 'var(--surface)' }}>
               {inner}
             </div>
@@ -834,7 +834,7 @@ function MyStoryCard({ user, myGroup, onClick }: { user: any; myGroup: StoryGrou
         <div className="relative">
           {myGroup ? (
             <div className="rounded-full p-[2px]"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <div className="rounded-full p-[1.5px]" style={{ background: 'var(--surface)' }}>
                 <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
               </div>
@@ -882,7 +882,7 @@ function StoryCard({ group, onClick }: { group: StoryGroup; onClick: () => void 
       {/* Anneau avatar en haut */}
       <div className="absolute top-2.5 left-2.5">
         <div className="rounded-full p-[2px]"
-          style={{ background: group.has_unseen ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'rgba(255,255,255,0.4)' }}>
+          style={{ background: group.has_unseen ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' : 'rgba(255,255,255,0.4)' }}>
           <div className="rounded-full p-[1.5px]" style={{ background: 'rgba(0,0,0,0.3)' }}>
             <div className="w-8 h-8 rounded-full overflow-hidden">
               {u.avatar_url && !avErr
@@ -1020,9 +1020,9 @@ type FeedItem =
   | { kind: 'ad';           id: string; data: FeedAd };
 
 const EVENT_COLORS: Record<string, string> = {
-  concert: '#7B3FF2', birthday: '#E0389A', festival: '#FF7A2F',
-  conference: '#36D9A0', sport: '#3B82F6', theater: '#9B65F5',
-  exhibition: '#F59E0B', other: '#9290AE',
+  concert: '#7B3FF2', birthday: '#7B3FF2', festival: '#7B3FF2',
+  conference: '#7B3FF2', sport: '#7B3FF2', theater: '#9B65F5',
+  exhibition: '#7B3FF2', other: '#9290AE',
 };
 
 function toArray<T>(raw: unknown): T[] {
@@ -1080,10 +1080,10 @@ function useFollow() {
 
 // ── Author row ────────────────────────────────────────────────────────────────
 const KIND_BADGE: Record<string, { label: string; bg: string; color: string }> = {
-  concert:    { label: 'Concert',     bg: 'linear-gradient(135deg,#7B3FF2,#E0389A)', color: '#fff' },
-  event:      { label: 'Événement',   bg: 'linear-gradient(135deg,#FF7A2F,#F59E0B)', color: '#fff' },
+  concert:    { label: 'Concert',     bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' },
+  event:      { label: 'Événement',   bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' },
   post:       { label: 'Post',        bg: 'rgba(123,63,242,0.12)',                   color: 'var(--primary)' },
-  reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#F0365A,#E0389A)', color: '#fff' },
+  reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' },
 };
 
 function AuthorRow({
@@ -1479,10 +1479,10 @@ function ActionBar({
         {/* Like */}
         <button onClick={handleLike}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
-          style={{ color: liked ? '#E0389A' : 'var(--text-secondary)' }}
+          style={{ color: liked ? '#7B3FF2' : 'var(--text-secondary)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <Heart size={15} fill={liked ? '#E0389A' : 'none'} strokeWidth={liked ? 0 : 2} />
+          <Heart size={15} fill={liked ? '#7B3FF2' : 'none'} strokeWidth={liked ? 0 : 2} />
           {likeCount > 0 && <span>{fmtCount(likeCount)}</span>}
         </button>
 
@@ -1577,7 +1577,7 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
             {ad.cta_url && (
               <button onClick={handleClick}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                 {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={12} />
               </button>
             )}
@@ -1585,7 +1585,7 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
         </div>
       ) : (
         <div className="p-5 relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(224,56,154,0.08))' }}>
+          style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(123,63,242,0.08))' }}>
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex items-center gap-2 text-[10px] font-bold px-2.5 py-1 rounded-full"
               style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>
@@ -1599,7 +1599,7 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
           {ad.cta_url && (
             <button onClick={handleClick}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={12} />
             </button>
           )}
@@ -1650,11 +1650,11 @@ function LiveHero({ concert }: { concert: Concert }) {
       <div className="absolute inset-0"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.1) 100%)' }} />
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        style={{ background: 'linear-gradient(135deg, rgba(123,63,242,0.2), rgba(224,56,154,0.1))' }} />
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
 
       <div className="absolute top-4 left-4 right-4 flex items-center gap-2">
         <span className="flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full text-white tracking-wide"
-          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 24px rgba(240,54,90,0.6)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 24px rgba(123,63,242,0.6)' }}>
           <Radio size={11} strokeWidth={3} />EN DIRECT
         </span>
         {(concert.current_viewers ?? 0) > 0 && (
@@ -1683,7 +1683,7 @@ function LiveHero({ concert }: { concert: Concert }) {
         <div className="mt-3">
           <button onClick={e => e.stopPropagation()}
             className="flex items-center gap-2 text-sm font-black px-5 py-2.5 rounded-xl text-white transition-all active:scale-95 hover:scale-105"
-            style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 6px 24px rgba(240,54,90,0.55)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 24px rgba(123,63,242,0.55)' }}>
             <Play size={14} fill="white" />Regarder maintenant
           </button>
         </div>
@@ -1731,7 +1731,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {isLive && (
             <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full text-white"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
             </span>
           )}
@@ -1824,7 +1824,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
           {event.venue_city && <span className="flex items-center gap-1"><MapPin size={11} />{event.venue_city}{event.venue_country ? `, ${event.venue_country}` : ''}</span>}
           {event.starts_at && <span><Clock size={11} className="inline mr-1" />{format(new Date(event.starts_at), 'd MMM · HH:mm', { locale: fr })}</span>}
-          {event.access_type === 'free' && <span className="font-semibold" style={{ color: '#36D9A0' }}>Gratuit</span>}
+          {event.access_type === 'free' && <span className="font-semibold" style={{ color: '#7B3FF2' }}>Gratuit</span>}
           {event.access_type === 'ticket' && event.ticket_price && <span className="font-semibold" style={{ color: color }}>{event.ticket_price}€</span>}
         </div>
       </div>
@@ -1972,7 +1972,7 @@ function ReelCard({ reel, delay = 0 }: {
       {/* Reel badge */}
       <div className="absolute top-2.5 left-2.5">
         <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full text-white"
-          style={{ background: 'linear-gradient(135deg,#E0389A,#7B3FF2)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           <Film size={10} /> Reel
         </span>
       </div>
@@ -2001,7 +2001,7 @@ function ReelRowCard({ reels }: { reels: Reel[] }) {
       <div className="flex items-center justify-between px-4 py-3"
         style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
-          <Film size={13} style={{ color: '#E0389A' }} />
+          <Film size={13} style={{ color: '#7B3FF2' }} />
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Reels</p>
         </div>
         <button onClick={() => navigate('/reels')}
@@ -2029,7 +2029,7 @@ function ReelRowCard({ reels }: { reels: Reel[] }) {
               style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }} />
             {/* Badge Reel */}
             <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full text-white"
-              style={{ background: 'linear-gradient(135deg,#E0389A,#7B3FF2)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <Film size={9} /> Reel
             </span>
             {/* Caption */}
@@ -2172,7 +2172,7 @@ function UpcomingEventsPanel() {
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
-          <Calendar size={13} style={{ color: '#F59E0B' }} />
+          <Calendar size={13} style={{ color: '#7B3FF2' }} />
           <p className="font-black text-xs" style={{ color: 'var(--text-primary)' }}>À venir</p>
         </div>
         <button onClick={() => navigate('/events')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
@@ -2222,7 +2222,7 @@ function TrendingPanel() {
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
-          <Flame size={13} style={{ color: '#F0365A' }} />
+          <Flame size={13} style={{ color: '#7B3FF2' }} />
           <p className="font-black text-xs" style={{ color: 'var(--text-primary)' }}>Tendances</p>
         </div>
         <button onClick={() => navigate('/concerts')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
@@ -2239,7 +2239,7 @@ function TrendingPanel() {
             </span>
             {c.thumbnail_url
               ? <img src={c.thumbnail_url} alt={c.title} className="w-8 h-8 rounded-lg object-cover shrink-0" />
-              : <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)' }}><Music size={12} className="text-white" /></div>}
+              : <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}><Music size={12} className="text-white" /></div>}
             <div className="min-w-0">
               <p className="text-xs font-semibold truncate leading-snug" style={{ color: 'var(--text-primary)' }}>{c.title}</p>
               {c.genre && <p className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>{c.genre}</p>}
@@ -2253,8 +2253,8 @@ function TrendingPanel() {
 
 // ── CommunitiesInline ─────────────────────────────────────────────────────────
 const COMM_GRADIENTS = [
-  ['#7B3FF2','#E0389A'],['#0EA5E9','#6366F1'],['#10B981','#0EA5E9'],
-  ['#F59E0B','#EF4444'],['#EC4899','#8B5CF6'],['#14B8A6','#3B82F6'],
+  ['#7B3FF2','#5B2EC4'],['#7B3FF2','#7B3FF2'],['#10B981','#7B3FF2'],
+  ['#7B3FF2','#EF4444'],['#7B3FF2','#7B3FF2'],['#14B8A6','#7B3FF2'],
 ];
 function commGradient(name: string): [string, string] {
   return COMM_GRADIENTS[(name.charCodeAt(0) || 0) % COMM_GRADIENTS.length] as [string, string];
@@ -2802,7 +2802,7 @@ export default function FeedPage() {
               <SectionHead
                 icon={
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-full text-white"
-                    style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 14px rgba(240,54,90,0.5)' }}>
+                    style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 14px rgba(123,63,242,0.5)' }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
                   </span>
                 }
@@ -2838,7 +2838,7 @@ export default function FeedPage() {
             <div className="rounded-2xl p-12 text-center animate-scale-in"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(224,56,154,0.08))', border: '1px solid rgba(123,63,242,0.15)' }}>
+                style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.08))', border: '1px solid rgba(123,63,242,0.15)' }}>
                 <Flame size={28} style={{ color: 'var(--primary)' }} />
               </div>
               <p className="font-black text-lg" style={{ color: 'var(--text-primary)' }}>Rien ici pour l'instant</p>

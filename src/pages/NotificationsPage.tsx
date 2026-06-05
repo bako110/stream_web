@@ -16,10 +16,10 @@ const NOTIF_ICONS: Record<string, React.ReactNode> = {
 };
 
 const NOTIF_COLORS: Record<string, string> = {
-  like:    '#E0389A',
+  like:    '#7B3FF2',
   follow:  '#7B3FF2',
-  comment: '#3B82F6',
-  live:    '#F0365A',
+  comment: '#7B3FF2',
+  live:    '#7B3FF2',
   default: '#9290AE',
 };
 
@@ -121,7 +121,7 @@ export default function NotificationsPage() {
                   onClick={() => deleteNotif(n.id)}
                   className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                   style={{ color: 'var(--text-tertiary)' }}
-                  onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(240,54,90,0.1)'); (e.currentTarget.style.color = '#F0365A'); }}
+                  onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.1)'); (e.currentTarget.style.color = '#7B3FF2'); }}
                   onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = 'var(--text-tertiary)'); }}>
                   <Trash2 size={13} />
                 </button>

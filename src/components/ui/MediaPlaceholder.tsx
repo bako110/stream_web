@@ -1,10 +1,10 @@
 const PALETTES = [
-  ['#1a0533','#7B3FF2','#E0389A'],
-  ['#0f172a','#3B82F6','#06B6D4'],
-  ['#0c1a0f','#22C55E','#36D9A0'],
-  ['#1a0f00','#F59E0B','#FF7A2F'],
-  ['#1a000d','#F0365A','#E0389A'],
-  ['#0d0d1a','#8B5CF6','#7B3FF2'],
+  ['#1a0533','#7B3FF2','#7B3FF2'],
+  ['#0f172a','#7B3FF2','#06B6D4'],
+  ['#0c1a0f','#22C55E','#7B3FF2'],
+  ['#1a0f00','#7B3FF2','#7B3FF2'],
+  ['#1a000d','#7B3FF2','#7B3FF2'],
+  ['#0d0d1a','#7B3FF2','#7B3FF2'],
 ];
 
 export function paletteBySeed(seed: string): [string, string, string] {

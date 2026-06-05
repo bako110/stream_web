@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const PLAN_LABELS: Record<string, string> = { free: 'Gratuit', basic: 'Basic', premium: 'Premium', family: 'Family' };
-const PLAN_COLORS: Record<string, string> = { free: '#9390AB', basic: '#3B82F6', premium: '#7B3FF2', family: '#E0389A' };
+const PLAN_COLORS: Record<string, string> = { free: '#9390AB', basic: '#7B3FF2', premium: '#7B3FF2', family: '#7B3FF2' };
 
 type VerifStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
@@ -118,7 +118,7 @@ export default function SettingsPage() {
     },
     {
       key: 'apparence',
-      icon: <Palette size={17} />, label: 'Apparence', color: '#F59E0B',
+      icon: <Palette size={17} />, label: 'Apparence', color: '#7B3FF2',
       right: (
         <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{isDark ? 'Sombre' : 'Clair'}</span>
@@ -130,7 +130,7 @@ export default function SettingsPage() {
     },
     {
       key: 'notifications',
-      icon: <Bell size={17} />, label: 'Notifications', color: '#3B82F6',
+      icon: <Bell size={17} />, label: 'Notifications', color: '#7B3FF2',
       sub: unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : undefined,
       onClick: () => navigate('/settings/notifications'),
     },
@@ -146,12 +146,12 @@ export default function SettingsPage() {
     },
     {
       key: 'contenu',
-      icon: <Film size={17} />, label: 'Contenu', color: '#E0389A',
+      icon: <Film size={17} />, label: 'Contenu', color: '#7B3FF2',
       onClick: () => navigate('/settings/content'),
     },
     {
       key: 'apropos',
-      icon: <Info size={17} />, label: 'À propos', color: '#6366F1',
+      icon: <Info size={17} />, label: 'À propos', color: '#7B3FF2',
       onClick: () => navigate('/settings/about'),
     },
     {

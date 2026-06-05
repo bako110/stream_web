@@ -54,7 +54,7 @@ type Tab = 'events' | 'concerts';
 
 const TIER_CONFIG: Record<string, { label: string; color: string; qrColor: string; icon: React.ReactNode }> = {
   simple: { label: 'STANDARD', color: '#4F46E5', qrColor: '#4F46E5', icon: <Tag size={12} /> },
-  vip:    { label: 'VIP',      color: '#F59E0B', qrColor: '#92400E', icon: <Star size={12} /> },
+  vip:    { label: 'VIP',      color: '#7B3FF2', qrColor: '#92400E', icon: <Star size={12} /> },
   vvip:   { label: 'VVIP',     color: '#7C3AED', qrColor: '#5B21B6', icon: <Award size={12} /> },
   vvvip:  { label: 'VVVIP',    color: '#EF4444', qrColor: '#991B1B', icon: <Zap size={12} /> },
 };

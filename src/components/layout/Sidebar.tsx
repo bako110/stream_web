@@ -17,29 +17,29 @@ const SECTIONS = [
     label: 'DÉCOUVRIR',
     items: [
       { to: '/feed',    label: 'Accueil',       icon: Home,   color: '#7B3FF2', end: true },
-      { to: '/reels',   label: 'Reels',         icon: Play,   color: '#E0389A' },
-      { to: '/films',   label: 'Films',         icon: Film,   color: '#3B82F6' },
+      { to: '/reels',   label: 'Reels',         icon: Play,   color: '#7B3FF2' },
+      { to: '/films',   label: 'Films',         icon: Film,   color: '#7B3FF2' },
       { to: '/series',  label: 'Séries',        icon: Film,   color: '#9B65F5' },
-      { to: '/live',    label: 'Live concerts', icon: Radio,  color: '#F0365A' },
-      { to: '/lives',   label: 'Lives',         icon: Video,  color: '#E0389A' },
+      { to: '/live',    label: 'Live concerts', icon: Radio,  color: '#7B3FF2' },
+      { to: '/lives',   label: 'Lives',         icon: Video,  color: '#7B3FF2' },
     ],
   },
   {
     label: 'SOCIAL',
     items: [
-      { to: '/communities',    label: 'Communautés',   icon: Users,         color: '#36D9A0' },
-      { to: '/messages',       label: 'Messages',      icon: MessageCircle, color: '#3B82F6' },
-      { to: '/notifications',  label: 'Notifications', icon: Bell,          color: '#E0389A' },
-      { to: '/search',         label: 'Recherche',     icon: Search,        color: '#F59E0B' },
-      { to: '/activity',       label: 'Activité',      icon: Activity,      color: '#36D9A0' },
-      { to: '/following',      label: 'Abonnements',   icon: UserPlus,      color: '#6366F1' },
+      { to: '/communities',    label: 'Communautés',   icon: Users,         color: '#7B3FF2' },
+      { to: '/messages',       label: 'Messages',      icon: MessageCircle, color: '#7B3FF2' },
+      { to: '/notifications',  label: 'Notifications', icon: Bell,          color: '#7B3FF2' },
+      { to: '/search',         label: 'Recherche',     icon: Search,        color: '#7B3FF2' },
+      { to: '/activity',       label: 'Activité',      icon: Activity,      color: '#7B3FF2' },
+      { to: '/following',      label: 'Abonnements',   icon: UserPlus,      color: '#7B3FF2' },
     ],
   },
   {
     label: 'MES CONTENUS',
     items: [
-      { to: '/my-concerts',   label: 'Mes Concerts',   icon: Music2,       color: '#FF7A2F' },
-      { to: '/my-events',     label: 'Mes Événements', icon: Calendar,     color: '#F59E0B' },
+      { to: '/my-concerts',   label: 'Mes Concerts',   icon: Music2,       color: '#7B3FF2' },
+      { to: '/my-events',     label: 'Mes Événements', icon: Calendar,     color: '#7B3FF2' },
       { to: '/planning',      label: 'Mon Planning',   icon: CalendarDays,  color: '#7B3FF2' },
       { to: '/favorites',     label: 'Favoris',        icon: Heart,         color: '#EF4444' },
       { to: '/watch-history', label: 'Historique',     icon: Clock,         color: '#06B6D4' },
@@ -50,7 +50,7 @@ const SECTIONS = [
     items: [
       { to: '/wallet',           label: 'Portefeuille', icon: Wallet,     color: '#22C55E' },
       { to: '/wallet/referral',  label: 'Parrainage',   icon: UserPlus,   color: '#10B981' },
-      { to: '/trending',         label: 'Tendances',    icon: TrendingUp,  color: '#8B5CF6' },
+      { to: '/trending',         label: 'Tendances',    icon: TrendingUp,  color: '#7B3FF2' },
     ],
   },
 ];
@@ -223,11 +223,11 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         {/* Déconnexion */}
         <button onClick={handleLogout} title={collapsed ? 'Déconnexion' : undefined}
           className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150 group"
-          style={{ color: '#F0365A' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(240,54,90,0.08)')}
+          style={{ color: '#7B3FF2' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.08)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
           <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5"
-            style={{ background: 'rgba(240,54,90,0.08)', color: '#F0365A' }}>
+            style={{ background: 'rgba(123,63,242,0.08)', color: '#7B3FF2' }}>
             <LogOut size={16} />
           </div>
           {!collapsed && <span className="text-sm font-semibold">Déconnexion</span>}

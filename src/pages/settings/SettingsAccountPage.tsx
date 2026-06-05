@@ -80,7 +80,7 @@ export default function SettingsAccountPage() {
 
         {pwError && (
           <div className="text-xs px-3 py-2 rounded-xl"
-            style={{ background: 'rgba(240,54,90,0.08)', border: '1px solid rgba(240,54,90,0.2)', color: '#F0365A' }}>
+            style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.2)', color: '#7B3FF2' }}>
             {pwError}
           </div>
         )}

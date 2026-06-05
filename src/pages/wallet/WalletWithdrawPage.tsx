@@ -73,7 +73,7 @@ export default function WalletWithdrawPage() {
 
       {/* Balance info */}
       <div className="rounded-2xl p-5 flex items-center justify-between"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
         <div>
           <p className="text-xs text-white/70 font-medium">Solde disponible</p>
           <p className="text-3xl font-black text-white">{(balance?.coins_balance ?? 0).toLocaleString('fr-FR')}</p>
@@ -89,8 +89,8 @@ export default function WalletWithdrawPage() {
 
       {/* Info */}
       <div className="rounded-xl px-4 py-3 flex items-start gap-2.5"
-        style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
-        <Info size={15} style={{ color: '#F59E0B', flexShrink: 0, marginTop: 2 }} />
+        style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.2)' }}>
+        <Info size={15} style={{ color: '#7B3FF2', flexShrink: 0, marginTop: 2 }} />
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
           Minimum {MIN_WITHDRAW} coins ({coinsToEur(MIN_WITHDRAW)} €). Taux : 100 coins = 0,35 €. Délai : 3-5 jours ouvrés.
         </p>

@@ -19,12 +19,12 @@ function fmtCount(n: number): string {
 }
 
 const GRADIENTS = [
-  ['#7B3FF2', '#E0389A'],
-  ['#0EA5E9', '#6366F1'],
-  ['#10B981', '#0EA5E9'],
-  ['#F59E0B', '#EF4444'],
-  ['#EC4899', '#8B5CF6'],
-  ['#14B8A6', '#3B82F6'],
+  ['#7B3FF2', '#5B2EC4'],
+  ['#7B3FF2', '#7B3FF2'],
+  ['#10B981', '#7B3FF2'],
+  ['#7B3FF2', '#EF4444'],
+  ['#7B3FF2', '#7B3FF2'],
+  ['#14B8A6', '#7B3FF2'],
 ];
 function gradientFor(name: string): [string, string] {
   const i = (name.charCodeAt(0) || 0) % GRADIENTS.length;
@@ -141,7 +141,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   const [creating,  setCreating]  = useState(false);
   const [error,     setError]     = useState('');
 
-  const [g1, g2] = name ? gradientFor(name) : ['#7B3FF2', '#E0389A'];
+  const [g1, g2] = name ? gradientFor(name) : ['#7B3FF2', '#5B2EC4'];
 
   async function handleCreate() {
     if (!name.trim()) { setError('Le nom est requis'); return; }
@@ -232,8 +232,8 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               <p className="text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>CONFIDENTIALITE</p>
 
               {[
-                { val: false, icon: <Globe size={18} />, color: '#3B82F6', label: 'Publique',  sub: 'Tout le monde peut rejoindre' },
-                { val: true,  icon: <Lock size={18} />,  color: '#E0389A', label: 'Privée',    sub: 'Sur invitation uniquement' },
+                { val: false, icon: <Globe size={18} />, color: '#7B3FF2', label: 'Publique',  sub: 'Tout le monde peut rejoindre' },
+                { val: true,  icon: <Lock size={18} />,  color: '#7B3FF2', label: 'Privée',    sub: 'Sur invitation uniquement' },
               ].map(opt => (
                 <button key={String(opt.val)} onClick={() => setIsPrivate(opt.val)}
                   className="w-full flex items-center gap-3 p-3.5 rounded-2xl text-left transition-all"
@@ -260,7 +260,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
               <button onClick={handleCreate} disabled={creating}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
-                style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+                style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
                 {creating ? <Spinner size="sm" /> : <><Users size={16} /> Créer la communauté</>}
               </button>
               <div className="h-4" />
@@ -345,7 +345,7 @@ export default function CommunitiesPage() {
               {t === 'discover' ? 'Découvrir' : 'Mes communautés'}
               {tab === t && (
                 <div className="absolute bottom-0 left-[15%] right-[15%] h-0.5 rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }} />
+                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }} />
               )}
             </button>
           ))}
@@ -373,7 +373,7 @@ export default function CommunitiesPage() {
             {tab === 'mine' && (
               <button onClick={() => setShowCreate(true)}
                 className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-white text-sm"
-                style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+                style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
                 <Plus size={16} /> Créer une communauté
               </button>
             )}

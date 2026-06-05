@@ -166,7 +166,7 @@ function ArtistControls({
       {!isLive ? (
         <button onClick={onStart} disabled={starting}
           className="btn-primary flex items-center gap-2 text-sm"
-          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           {starting ? <Spinner size="sm" /> : <Radio size={15} />}
           {starting ? 'Démarrage...' : 'Démarrer le live'}
         </button>
@@ -319,7 +319,7 @@ export default function LivePage() {
             {isLive ? (
               <>
                 <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-                  style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 0 10px rgba(240,54,90,0.5)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
                   <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
                 </span>
                 {!lkConnected ? (
@@ -373,7 +373,7 @@ export default function LivePage() {
               </div>
               <button onClick={handleBuyTicket} disabled={buying}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E0389A)', boxShadow: '0 4px 20px rgba(123,63,242,0.4)' }}>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 20px rgba(123,63,242,0.4)' }}>
                 {buying ? <Spinner size="sm" /> : <Ticket size={16} />}
                 {buying ? 'Traitement...' : `Adhérer — ${concert.ticket_price != null ? concert.ticket_price.toLocaleString() + ' FCFA' : 'Gratuit'}`}
               </button>
@@ -405,7 +405,7 @@ export default function LivePage() {
               {isArtist && (
                 <button onClick={handleStart} disabled={starting}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all"
-                  style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: '0 4px 20px rgba(240,54,90,0.4)' }}>
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 20px rgba(123,63,242,0.4)' }}>
                   {starting ? <Spinner size="sm" /> : <Radio size={18} />}
                   {starting ? 'Démarrage...' : 'Démarrer le live maintenant'}
                 </button>
@@ -470,7 +470,7 @@ export default function LivePage() {
             </div>
             <button onClick={handleStart} disabled={starting}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shrink-0 transition-all"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               {starting ? <Spinner size="sm" /> : <Radio size={14} />}
               {starting ? 'Démarrage...' : 'Go Live'}
             </button>

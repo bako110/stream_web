@@ -91,7 +91,7 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
       <div style={{ position:'absolute', inset:0, pointerEvents:'none',
         background:'radial-gradient(ellipse 90% 50% at 50% -5%, rgba(123,63,242,0.4) 0%, transparent 65%)' }} />
       <div style={{ position:'absolute', inset:0, pointerEvents:'none',
-        background:'radial-gradient(ellipse 70% 40% at 50% 105%, rgba(224,56,154,0.3) 0%, transparent 65%)' }} />
+        background:'radial-gradient(ellipse 70% 40% at 50% 105%, rgba(123,63,242,0.3) 0%, transparent 65%)' }} />
 
       {/* Logo */}
       <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:12, paddingTop:72 }}>
@@ -208,7 +208,7 @@ function AppBanner({ ios }: { ios: boolean }) {
         flexShrink:0,
         padding:'9px 18px',
         borderRadius:20,
-        background:'linear-gradient(135deg,#7B3FF2,#E0389A)',
+        background:'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
         color:'#fff', fontWeight:700, fontSize:13,
         textDecoration:'none', whiteSpace:'nowrap',
         boxShadow:'0 4px 16px rgba(123,63,242,0.45)',
@@ -228,7 +228,7 @@ function AppLogo({ size }: { size: number }) {
     <div style={{ position:'relative', width:size, height:size, flexShrink:0 }}>
       <div style={{
         position:'absolute', inset:0, borderRadius:size * 0.28,
-        background:'linear-gradient(135deg,#7B3FF2,#E0389A)',
+        background:'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
         transform:'rotate(10deg)',
       }} />
       <div style={{
@@ -239,7 +239,7 @@ function AppLogo({ size }: { size: number }) {
       }}>
         <span style={{
           fontSize:size * 0.32, fontWeight:900,
-          background:'linear-gradient(135deg,#7B3FF2,#E0389A)',
+          background:'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
           WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
         }}>FX</span>
       </div>
@@ -259,7 +259,7 @@ function PhoneMockup() {
       }}>
         <div style={{ width:52, height:5, borderRadius:3, background:'rgba(255,255,255,0.15)', marginTop:12 }} />
         <div style={{ flex:1, width:'100%', padding:'10px 10px 0', display:'flex', flexDirection:'column', gap:6 }}>
-          <div style={{ height:80, borderRadius:10, background:'linear-gradient(135deg,rgba(123,63,242,0.45),rgba(224,56,154,0.45))' }} />
+          <div style={{ height:80, borderRadius:10, background:'linear-gradient(135deg,rgba(123,63,242,0.45),rgba(123,63,242,0.45))' }} />
           {[0.85,0.65,0.75].map((w,i) => (
             <div key={i} style={{ height:30, borderRadius:8, background:'rgba(255,255,255,0.06)', width:`${w*100}%` }} />
           ))}
@@ -272,7 +272,7 @@ function PhoneMockup() {
           {[0,1,2,3].map(i => (
             <div key={i} style={{
               width:i===1?22:16, height:i===1?22:16, borderRadius:'50%',
-              background: i===1 ? 'linear-gradient(135deg,#7B3FF2,#E0389A)' : 'rgba(255,255,255,0.15)',
+              background: i===1 ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' : 'rgba(255,255,255,0.15)',
             }} />
           ))}
         </div>
