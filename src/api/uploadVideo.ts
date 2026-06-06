@@ -31,7 +31,7 @@ function xhrUpload(
     fd.append('file', file);
     const token = getToken();
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/v1/upload/video?folder=${folder}`);
+    xhr.open('POST', `/api/v1/upload/video?${new URLSearchParams({ folder }).toString()}`);
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.upload.onprogress = e => {

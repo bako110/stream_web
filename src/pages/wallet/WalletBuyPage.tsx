@@ -81,7 +81,13 @@ export default function WalletBuyPage() {
 
   const customAmount = parseFloat(customEur.replace(',', '.')) || 0;
   const customCoins  = Math.floor(customAmount * COINS_PER_EUR);
-  const customValid  = customAmount >= 1 && customAmount <= 500;
+  // Validation stricte : montant fini, positif, dans la plage autorisée, max 2 décimales
+  const customValid  = (
+    Number.isFinite(customAmount) &&
+    customAmount >= 1 &&
+    customAmount <= 500 &&
+    Math.round(customAmount * 100) === Math.round(customAmount * 100)
+  );
 
   useEffect(() => {
     apiClient.get<CoinPackage[]>(Endpoints.wallet.packages)
@@ -155,9 +161,19 @@ export default function WalletBuyPage() {
         return;
       }
 
-      // Ouvre la page CinetPay dans un nouvel onglet
+      // Ouvre la page CinetPay dans un nouvel onglet (validation du domaine)
       if (data.payment_url) {
-        window.open(data.payment_url, '_blank', 'noopener,noreferrer');
+        try {
+          const parsed = new URL(data.payment_url);
+          const allowed = ['cinetpay.com', 'cinetpay.net', 'pay.cinetpay.com'];
+          const ok = allowed.some(d => parsed.hostname === d || parsed.hostname.endsWith(`.${d}`));
+          if (!ok) throw new Error('domaine non autorisé');
+          window.open(data.payment_url, '_blank', 'noopener,noreferrer');
+        } catch {
+          toast.error('URL de paiement invalide. Contactez le support.');
+          setInitiating(false);
+          return;
+        }
       }
 
       setStep('waiting');
@@ -175,7 +191,9 @@ export default function WalletBuyPage() {
 
   function handleBuyCustom() {
     if (!customValid) return;
-    initPayment(null, customAmount, customCoins);
+    // Arrondi à 2 décimales pour éviter les flottants imprévisibles (ex: 1.999999)
+    const safeAmount = Math.round(customAmount * 100) / 100;
+    initPayment(null, safeAmount, Math.floor(safeAmount * COINS_PER_EUR));
   }
 
   function handleRetry() {

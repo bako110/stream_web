@@ -73,15 +73,10 @@ export default function AttendeesPage() {
     if (!id) return;
     setExporting(true);
     try {
-      const token = (() => {
-        try { return JSON.parse(localStorage.getItem('gofolyx-auth-tokens') ?? '{}').access ?? ''; }
-        catch { return ''; }
-      })();
-      const res = await fetch(`/api/v1/events/${id}/attendees/pdf`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const res = await apiClient.get(`/api/v1/events/${id}/attendees/pdf`, {
+        responseType: 'blob',
       });
-      if (!res.ok) throw new Error('Export failed');
-      const blob = await res.blob();
+      const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href = url; a.download = `inscrits_${id}.pdf`; a.click();
