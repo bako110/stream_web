@@ -274,25 +274,38 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
 // ── CommunitiesPage ───────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 20;
+
 export default function CommunitiesPage() {
   const [tab,        setTab]        = useState<'discover' | 'mine'>('discover');
   const [all,        setAll]        = useState<Community[]>([]);
   const [query,      setQuery]      = useState('');
   const [loading,    setLoading]    = useState(true);
+  const [loadingMore,setLoadingMore]= useState(false);
+  const [page,       setPage]       = useState(1);
+  const [hasMore,    setHasMore]    = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (reset = true) => {
+    const nextPage = reset ? 1 : page + 1;
+    if (reset) { setLoading(true); setAll([]); setPage(1); setHasMore(true); }
+    else setLoadingMore(true);
     try {
-      const endpoint = tab === 'mine' ? Endpoints.communities.mine : Endpoints.communities.discover;
+      const endpoint = tab === 'mine'
+        ? Endpoints.communities.mine
+        : `${Endpoints.communities.discover}?page=${nextPage}&limit=${PAGE_SIZE}`;
       const res = await apiClient.get<any>(endpoint);
       const raw = res.data;
-      setAll(Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? raw?.results ?? []);
-    } catch { setAll([]); }
-    finally { setLoading(false); }
-  }, [tab]);
+      const items: Community[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? raw?.results ?? [];
+      if (reset) setAll(items);
+      else setAll(prev => [...prev, ...items]);
+      setPage(nextPage);
+      setHasMore(items.length === PAGE_SIZE);
+    } catch { if (reset) setAll([]); }
+    finally { setLoading(false); setLoadingMore(false); }
+  }, [tab, page]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(true); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const communities = query.trim()
     ? all.filter(c =>
@@ -301,12 +314,12 @@ export default function CommunitiesPage() {
     : all;
 
   async function handleJoin(id: string) {
-    try { await apiClient.post(Endpoints.communities.join(id)); load(); } catch {}
+    try { await apiClient.post(Endpoints.communities.join(id)); load(true); } catch {}
   }
 
   async function handleLeave(id: string) {
     if (!confirm('Quitter cette communauté ?')) return;
-    try { await apiClient.post(Endpoints.communities.leave(id)); load(); } catch {}
+    try { await apiClient.post(Endpoints.communities.leave(id)); load(true); } catch {}
   }
 
   return (
@@ -379,16 +392,29 @@ export default function CommunitiesPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {communities.map(c => (
-              <CommunityCard key={c.id} community={c} isMine={tab === 'mine'}
-                onJoin={() => handleJoin(c.id)} onLeave={() => handleLeave(c.id)} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {communities.map(c => (
+                <CommunityCard key={c.id} community={c} isMine={tab === 'mine'}
+                  onJoin={() => handleJoin(c.id)} onLeave={() => handleLeave(c.id)} />
+              ))}
+            </div>
+            {hasMore && !query && tab === 'discover' && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => load(false)}
+                  disabled={loadingMore}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-60"
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                  {loadingMore ? <Spinner size="sm" /> : 'Charger plus'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={load} />}
+      {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={() => load(true)} />}
     </div>
   );
 }
