@@ -135,49 +135,78 @@ export function ExploreLayout() {
           </div>
         </div>
 
-        {/* Mobile menu */}
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-96' : 'max-h-0'}`}>
-          <div className="border-t px-4 py-3 space-y-1" style={{ borderColor: 'var(--border)', background: 'var(--surface)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+      </header>
+
+      {/* Mobile menu — fullscreen, par-dessus tout */}
+      {menuOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-50 flex flex-col"
+          style={{ background: isDark ? '#2D1B69' : 'var(--surface)' }}
+        >
+          {/* Header du menu */}
+          <div className="flex items-center justify-between px-4 h-16 shrink-0" style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'var(--border)'}` }}>
+            <Link to="/" onClick={() => setMenuOpen(false)}>
+              <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-9 w-auto" />
+            </Link>
+            <button onClick={() => setMenuOpen(false)} style={{ color: isDark ? '#ffffff' : 'var(--text-primary)' }}>
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Liens nav */}
+          <nav className="flex flex-col px-6 pt-6 gap-1">
             {NAV_LINKS.map(({ to, label }) => (
               <NavLink key={to} to={to}
                 onClick={() => setMenuOpen(false)}
-                className="block px-3 py-2.5 text-sm rounded-xl transition-all duration-200"
+                className="py-4 text-xl font-medium transition-colors duration-200"
                 style={({ isActive }) => ({
-                  color:      isActive ? 'var(--primary)'      : 'var(--text-primary)',
-                  background: isActive ? 'var(--bg-secondary)' : 'transparent',
-                  fontWeight: isActive ? '600' : '400',
+                  color:        isActive ? (isDark ? '#ffffff' : 'var(--primary)') : (isDark ? 'rgba(255,255,255,0.85)' : 'var(--text-primary)'),
+                  borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'var(--border)'}`,
+                  fontWeight:   isActive ? '700' : '500',
                 })}
               >
                 {label}
               </NavLink>
             ))}
-            <form onSubmit={handleSearch} className="pt-1">
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                  style={{ color: 'var(--text-tertiary)' }} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher…"
-                  className="w-full pl-8 pr-4 py-2 text-sm rounded-xl focus:outline-none"
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    border:     '1px solid var(--border)',
-                    color:      'var(--text-primary)',
-                  }}
-                />
-              </div>
-            </form>
-            {!isAuthenticated && (
-              <div className="pt-1 flex gap-2">
-                <Link to="/auth/login"    className="flex-1 btn-secondary text-sm text-center py-2" onClick={() => setMenuOpen(false)}>Connexion</Link>
-                <Link to="/auth/register" className="flex-1 btn-primary  text-sm text-center py-2" onClick={() => setMenuOpen(false)}>S'inscrire</Link>
-              </div>
-            )}
-          </div>
+          </nav>
+
+          {/* Recherche */}
+          <form onSubmit={handleSearch} className="px-6 pt-6">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'var(--text-tertiary)' }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Rechercher…"
+                className="w-full pl-10 pr-4 py-3 text-base rounded-xl focus:outline-none"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.12)' : 'var(--bg-secondary)',
+                  border:     `1px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'var(--border)'}`,
+                  color:      isDark ? '#ffffff' : 'var(--text-primary)',
+                }}
+              />
+            </div>
+          </form>
+
+          {/* CTA Connexion / Inscription */}
+          {!isAuthenticated && (
+            <div className="px-6 pt-6 flex flex-col gap-3">
+              <Link to="/auth/register" className="text-base text-center py-3 rounded-xl font-semibold transition-all duration-200"
+                style={{ background: isDark ? '#ffffff' : 'var(--primary)', color: isDark ? '#2D1B69' : '#ffffff' }}
+                onClick={() => setMenuOpen(false)}>
+                S'inscrire
+              </Link>
+              <Link to="/auth/login" className="text-base text-center py-3 rounded-xl font-medium transition-all duration-200"
+                style={{ background: isDark ? 'rgba(255,255,255,0.15)' : 'var(--bg-secondary)', color: isDark ? '#ffffff' : 'var(--text-primary)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.25)' : 'var(--border)'}` }}
+                onClick={() => setMenuOpen(false)}>
+                Connexion
+              </Link>
+            </div>
+          )}
         </div>
-      </header>
+      )}
 
       {/* ── Page content ── */}
       <main className="pt-16">
