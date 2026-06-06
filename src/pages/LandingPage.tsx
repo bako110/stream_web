@@ -220,25 +220,55 @@ function Navbar() {
           </button>
         </div>
       </div>
-
-      {/* Mobile menu */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-96' : 'max-h-0'}`}>
-        <div className="glass border-t px-6 py-4 space-y-1" style={{ borderColor: 'var(--border)' }}>
-          {navLinks.map(({ label, href }) => (
-            <a key={href} href={href} onClick={() => setMenuOpen(false)}
-              className="block px-4 py-2.5 text-sm rounded-lg transition-all duration-200"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {label}
-            </a>
-          ))}
-          <div className="pt-3 flex gap-3">
-            <Link to="/auth/login"    className="flex-1 btn-secondary text-center text-sm">Connexion</Link>
-            <Link to="/auth/register" className="flex-1 btn-primary  text-center text-sm">S'inscrire</Link>
-          </div>
-        </div>
-      </div>
     </nav>
+
+      {/* Mobile menu — fullscreen */}
+      {menuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col" style={{ background: isDark ? '#2D1B69' : '#ffffff' }}>
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 h-16 shrink-0" style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : '#e5e7eb'}` }}>
+            <Link to="/" onClick={() => setMenuOpen(false)}>
+              <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-9 w-auto" />
+            </Link>
+            <button onClick={() => setMenuOpen(false)} style={{ color: isDark ? '#ffffff' : '#0E0D1F' }}>
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Liens */}
+          <nav className="flex flex-col px-6 pt-6 gap-1">
+            {navLinks.map(({ label, href }) => (
+              <a key={href} href={href} onClick={() => setMenuOpen(false)}
+                className="py-4 text-xl font-medium transition-colors duration-200"
+                style={{
+                  color:        isDark ? 'rgba(255,255,255,0.85)' : '#0E0D1F',
+                  borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : '#e5e7eb'}`,
+                }}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+
+          {/* CTA */}
+          {!isAuthenticated && (
+            <div className="px-6 pt-8 flex flex-col gap-3">
+              <Link to="/auth/register"
+                className="text-base text-center py-3 rounded-xl font-semibold"
+                style={{ background: isDark ? '#ffffff' : '#7B3FF2', color: isDark ? '#2D1B69' : '#ffffff' }}
+                onClick={() => setMenuOpen(false)}>
+                S'inscrire
+              </Link>
+              <Link to="/auth/login"
+                className="text-base text-center py-3 rounded-xl font-medium"
+                style={{ background: isDark ? 'rgba(255,255,255,0.15)' : '#f3f4f6', color: isDark ? '#ffffff' : '#0E0D1F', border: `1px solid ${isDark ? 'rgba(255,255,255,0.25)' : '#e5e7eb'}` }}
+                onClick={() => setMenuOpen(false)}>
+                Connexion
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
   );
 }
 
