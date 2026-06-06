@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
   Home, Play, Film, Radio, Music2, Video,
-  Users, MessageCircle, Bell, Search, Activity, UserPlus,
+  Users, MessageCircle, Bell, Activity, UserPlus,
   Calendar, CalendarDays, Heart, Clock,
   Wallet, TrendingUp, HelpCircle, Settings, LogOut,
   Sun, Moon, ChevronLeft, ChevronRight,
@@ -30,7 +30,6 @@ const SECTIONS = [
       { to: '/communities',    label: 'Communautés',   icon: Users,         color: '#7B3FF2' },
       { to: '/messages',       label: 'Messages',      icon: MessageCircle, color: '#7B3FF2' },
       { to: '/notifications',  label: 'Notifications', icon: Bell,          color: '#7B3FF2' },
-      { to: '/search',         label: 'Recherche',     icon: Search,        color: '#7B3FF2' },
       { to: '/activity',       label: 'Activité',      icon: Activity,      color: '#7B3FF2' },
       { to: '/following',      label: 'Abonnements',   icon: UserPlus,      color: '#7B3FF2' },
     ],
