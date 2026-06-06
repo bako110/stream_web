@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, Bell, Radio, Sun, Moon } from 'lucide-react';
+import { Menu, Search, Bell, Radio, Sun, Moon, X, ArrowLeft } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -13,9 +13,12 @@ export function Topbar({ onMenuClick }: Props) {
   const { isDark, toggle } = useThemeStore();
   const navigate  = useNavigate();
   const location  = useLocation();
-  const [query, setQuery] = useState('');
+  const [query, setQuery]           = useState('');
+  const [mobileSearch, setMobileSearch] = useState(false);
+  const [mobileQuery,  setMobileQuery]  = useState('');
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync le champ avec le param URL quand on est sur /search
+  // Sync le champ desktop avec le param URL quand on est sur /search
   useEffect(() => {
     if (location.pathname === '/search') {
       const urlQ = new URLSearchParams(location.search).get('q') ?? '';
@@ -25,7 +28,15 @@ export function Topbar({ onMenuClick }: Props) {
     }
   }, [location.pathname, location.search]);
 
-  // Debounce sur toutes les pages : dès qu'on tape, on navigue vers /search
+  // Ferme la recherche mobile si on quitte /search
+  useEffect(() => {
+    if (location.pathname !== '/search') {
+      setMobileSearch(false);
+      setMobileQuery('');
+    }
+  }, [location.pathname]);
+
+  // Debounce desktop
   useEffect(() => {
     if (!query.trim()) {
       if (location.pathname === '/search') navigate('/search', { replace: true });
@@ -39,12 +50,69 @@ export function Topbar({ onMenuClick }: Props) {
     return () => clearTimeout(t);
   }, [query]); // eslint-disable-line
 
+  // Debounce mobile
+  useEffect(() => {
+    if (!mobileSearch) return;
+    if (!mobileQuery.trim()) {
+      navigate('/search', { replace: true });
+      return;
+    }
+    const t = setTimeout(() => {
+      navigate(`/search?q=${encodeURIComponent(mobileQuery.trim())}`, { replace: true });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [mobileQuery]); // eslint-disable-line
+
+  function openMobileSearch() {
+    setMobileSearch(true);
+    setMobileQuery('');
+    navigate('/search', { replace: false });
+    setTimeout(() => mobileInputRef.current?.focus(), 80);
+  }
+
+  function closeMobileSearch() {
+    setMobileSearch(false);
+    setMobileQuery('');
+    navigate(-1);
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
   }
 
   return (
+    <>
+    {/* Barre de recherche mobile fullscreen */}
+    {mobileSearch && (
+      <div className="lg:hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--surface)' }}>
+        <div className="flex items-center gap-2 px-3 h-14 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <button onClick={closeMobileSearch} className="p-2 shrink-0" style={{ color: 'var(--text-primary)' }}>
+            <ArrowLeft size={22} />
+          </button>
+          <div className="flex-1 relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: 'var(--text-tertiary)' }} />
+            <input
+              ref={mobileInputRef}
+              value={mobileQuery}
+              onChange={e => setMobileQuery(e.target.value)}
+              placeholder="Films, artistes, concerts…"
+              className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl focus:outline-none"
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+            />
+            {mobileQuery && (
+              <button onClick={() => setMobileQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: 'var(--text-tertiary)' }}>
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+
     <header
       className="sticky top-0 z-30 flex items-center gap-3 px-4 h-14"
       style={{
@@ -93,9 +161,9 @@ export function Topbar({ onMenuClick }: Props) {
       {/* Right actions */}
       <div className="flex items-center gap-1.5 ml-auto">
 
-        {/* Mobile search icon → /search */}
+        {/* Mobile search icon → ouvre barre fullscreen */}
         <button
-          onClick={() => navigate('/search')}
+          onClick={openMobileSearch}
           className="p-2 rounded-xl transition-all lg:hidden"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
@@ -168,5 +236,6 @@ export function Topbar({ onMenuClick }: Props) {
         )}
       </div>
     </header>
+    </>
   );
 }
