@@ -2133,7 +2133,7 @@ function SuggestionsInline({ users, loading }: { users: any[]; loading: boolean 
           <Sparkles size={14} style={{ color: 'var(--primary)' }} />
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Personnes à suivre</p>
         </div>
-        <button onClick={() => navigate('/search')}
+        <button onClick={() => navigate('/following')}
           className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
           Voir plus →
         </button>
@@ -2461,7 +2461,7 @@ function SuggestionsPanel() {
           <Sparkles size={14} style={{ color: 'var(--primary)' }} />
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Suggestions</p>
         </div>
-        <button onClick={() => navigate('/search')}
+        <button onClick={() => navigate('/following')}
           className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
           Voir plus →
         </button>
@@ -2505,7 +2505,7 @@ function SuggestionsPanel() {
             );
           })}
           <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-            <button onClick={() => navigate('/search')}
+            <button onClick={() => navigate('/following')}
               className="text-xs font-bold w-full text-center py-1.5 rounded-xl transition-all"
               style={{ color: 'var(--primary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.07)')}
