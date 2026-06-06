@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, Bell, Radio, Sun, Moon, X, ArrowLeft } from 'lucide-react';
+import { Menu, Search, Bell, Radio, Sun, Moon, X, ArrowLeft, MessageCircle } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { useWs } from '../../context/WebSocketContext';
 import { Images } from '../assets';
 
 interface Props { onMenuClick: () => void; }
@@ -11,6 +12,7 @@ interface Props { onMenuClick: () => void; }
 export function Topbar({ onMenuClick }: Props) {
   const { user }  = useAuthStore();
   const { isDark, toggle } = useThemeStore();
+  const { unreadMessages } = useWs();
   const navigate  = useNavigate();
   const location  = useLocation();
   const [query, setQuery]           = useState('');
@@ -195,6 +197,23 @@ export function Topbar({ onMenuClick }: Props) {
           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
         >
           {isDark ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
+        {/* Messages */}
+        <button
+          onClick={() => navigate('/messages')}
+          className="relative p-2 rounded-xl transition-all"
+          style={{ color: 'var(--text-secondary)' }}
+          onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
+          onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
+        >
+          <MessageCircle size={20} />
+          {unreadMessages > 0 && (
+            <span className="absolute top-1 right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full text-white text-[10px] font-bold px-1"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', lineHeight: 1 }}>
+              {unreadMessages > 99 ? '99+' : unreadMessages}
+            </span>
+          )}
         </button>
 
         {/* Notifications */}
