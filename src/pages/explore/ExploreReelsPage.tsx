@@ -11,11 +11,11 @@ import { toProxiedUrl } from '../../utils/constants';
 import type { Reel, PaginatedResponse } from '../../types';
 
 export default function ExploreReelsPage() {
-  const { data, loading } = useApi<PaginatedResponse<Reel>>(
-    () => publicClient.get<PaginatedResponse<Reel>>(Endpoints.reels.feed),
+  const { data, loading } = useApi<PaginatedResponse<Reel> | Reel[]>(
+    () => publicClient.get<PaginatedResponse<Reel> | Reel[]>(Endpoints.reels.feed),
     []
   );
-  const reels = data?.items ?? [];
+  const reels = Array.isArray(data) ? data : (data?.items ?? []);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
