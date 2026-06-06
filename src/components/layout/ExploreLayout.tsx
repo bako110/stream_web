@@ -136,14 +136,14 @@ export function ExploreLayout() {
         </div>
 
         {/* Mobile menu */}
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-80' : 'max-h-0'}`}>
-          <div className="glass border-t px-4 py-3 space-y-1" style={{ borderColor: 'var(--border)' }}>
+        <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-96' : 'max-h-0'}`}>
+          <div className="border-t px-4 py-3 space-y-1" style={{ borderColor: 'var(--border)', background: 'var(--surface)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
             {NAV_LINKS.map(({ to, label }) => (
               <NavLink key={to} to={to}
                 onClick={() => setMenuOpen(false)}
                 className="block px-3 py-2.5 text-sm rounded-xl transition-all duration-200"
                 style={({ isActive }) => ({
-                  color:      isActive ? 'var(--primary)'      : 'var(--text-secondary)',
+                  color:      isActive ? 'var(--primary)'      : 'var(--text-primary)',
                   background: isActive ? 'var(--bg-secondary)' : 'transparent',
                   fontWeight: isActive ? '600' : '400',
                 })}
