@@ -1,11 +1,35 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
-import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink, UserPlus } from 'lucide-react';
+import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink, Clock, X } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
+
+// ── Historique local (localStorage, max 15) ───────────────────────────────────
+const HISTORY_KEY = 'search:history';
+const MAX_HISTORY = 15;
+
+interface HistoryItem { query: string; ts: number; }
+
+const searchHistory = {
+  getAll(): HistoryItem[] {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]'); } catch { return []; }
+  },
+  add(query: string) {
+    const q = query.trim();
+    if (!q) return;
+    const list = searchHistory.getAll().filter(h => h.query.toLowerCase() !== q.toLowerCase());
+    list.unshift({ query: q, ts: Date.now() });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, MAX_HISTORY)));
+  },
+  remove(query: string) {
+    const list = searchHistory.getAll().filter(h => h.query !== query);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  },
+  clear() { localStorage.removeItem(HISTORY_KEY); },
+};
 
 interface SearchAd {
   id: string; title: string; description?: string | null;
@@ -84,69 +108,42 @@ export default function SearchPage() {
   const [loading,  setLoading]  = useState(false);
   const [trending, setTrending] = useState<{ id: string; title: string; thumbnail_url?: string | null }[]>([]);
   const [searchAd, setSearchAd] = useState<SearchAd | null>(null);
-  const [suggestions,    setSuggestions]    = useState<any[]>([]);
-  const [followedIds,    setFollowedIds]    = useState<Set<string>>(new Set());
-  const [followingIds,   setFollowingIds]   = useState<Set<string>>(new Set());
+  const [history,  setHistory]  = useState<HistoryItem[]>([]);
 
+  // Charger historique local + tendances au montage
   useEffect(() => {
-    apiClient.get<SearchAd>(Endpoints.ads.feedNext('search'))
-      .then(r => { if (r.data?.id) setSearchAd(r.data); })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
+    setHistory(searchHistory.getAll());
+    apiClient.get<SearchAd>(Endpoints.ads.feedNext('search')).then(r => { if (r.data?.id) setSearchAd(r.data); }).catch(() => {});
     apiClient.get<unknown>(Endpoints.search.trending)
       .then(r => {
         const raw = r.data as any;
-        const list = Array.isArray(raw) ? raw
-          : Array.isArray(raw?.items) ? raw.items
-          : Array.isArray(raw?.data)  ? raw.data
-          : [];
+        const list = Array.isArray(raw) ? raw : Array.isArray(raw?.items) ? raw.items : [];
         setTrending(list);
-      })
-      .catch(() => {});
-    apiClient.get<any>(`${Endpoints.users.suggestions}?limit=20`)
-      .then(r => {
-        const raw = r.data as any;
-        const list = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
-        setSuggestions(list);
-      })
-      .catch(() => {});
+      }).catch(() => {});
   }, []);
-
-  async function follow(userId: string) {
-    if (followingIds.has(userId)) return;
-    setFollowingIds(s => new Set(s).add(userId));
-    try {
-      await apiClient.post(`/api/v1/users/${userId}/follow`);
-      setFollowedIds(s => new Set(s).add(userId));
-    } catch { /* silencieux */ }
-    finally { setFollowingIds(s => { const n = new Set(s); n.delete(userId); return n; }); }
-  }
-
-  async function unfollow(userId: string) {
-    if (followingIds.has(userId)) return;
-    setFollowingIds(s => new Set(s).add(userId));
-    try {
-      await apiClient.delete(`/api/v1/users/${userId}/follow`);
-      setFollowedIds(s => { const n = new Set(s); n.delete(userId); return n; });
-    } catch { /* silencieux */ }
-    finally { setFollowingIds(s => { const n = new Set(s); n.delete(userId); return n; }); }
-  }
 
   const doSearch = useCallback((term: string) => {
     if (!term.trim()) { setResults(null); setLoading(false); return; }
     setLoading(true);
+    searchHistory.add(term);
+    setHistory(searchHistory.getAll());
     apiClient.get<SearchResult>(`${Endpoints.search.query}?q=${encodeURIComponent(term.trim())}&limit=15`)
       .then(r => { setResults(r.data); })
       .catch(() => setResults(null))
       .finally(() => setLoading(false));
   }, []);
 
-  // React to URL param changes (set by Topbar debounce)
-  useEffect(() => {
-    doSearch(q);
-  }, [q]); // eslint-disable-line
+  useEffect(() => { doSearch(q); }, [q]); // eslint-disable-line
+
+  function removeHistory(query: string) {
+    searchHistory.remove(query);
+    setHistory(searchHistory.getAll());
+  }
+
+  function clearHistory() {
+    searchHistory.clear();
+    setHistory([]);
+  }
 
   const total = results
     ? (results.users?.length    ?? 0)
@@ -204,44 +201,35 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Suggestions de personnes */}
-      {!q && !loading && suggestions.length > 0 && (
+      {/* Historique de recherche local */}
+      {!q && !loading && history.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <User size={15} style={{ color: 'var(--primary)' }} />
-            <h2 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Personnes à suivre</h2>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Clock size={15} style={{ color: 'var(--primary)' }} />
+              <h2 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Recherches récentes</h2>
+            </div>
+            <button onClick={clearHistory} className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              Tout effacer
+            </button>
           </div>
           <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            {suggestions.map((u: any, i: number) => {
-              const isFollowed  = followedIds.has(u.id);
-              const isFollowing = followingIds.has(u.id);
-              return (
-                <div key={u.id}
-                  className="flex items-center gap-3 px-4 py-3 transition-all"
-                  style={{ borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="shrink-0">
-                    <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="sm" verified={u.is_verified} />
-                  </button>
-                  <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="min-w-0 flex-1 text-left">
-                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                      {u.display_name ?? u.username}
-                    </p>
-                    {u.username && <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>}
-                  </button>
-                  <button
-                    onClick={() => isFollowed ? unfollow(u.id) : follow(u.id)}
-                    disabled={isFollowing}
-                    className="shrink-0 flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all"
-                    style={isFollowed
-                      ? { background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
-                      : { background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}>
-                    {isFollowing ? <Spinner size="sm" /> : isFollowed ? 'Abonné' : <><UserPlus size={11} /> Suivre</>}
-                  </button>
-                </div>
-              );
-            })}
+            {history.slice(0, 8).map((h, i) => (
+              <div key={h.query}
+                className="flex items-center gap-3 px-4 py-3 transition-all cursor-pointer"
+                style={{ borderBottom: i < Math.min(history.length, 8) - 1 ? '1px solid var(--border)' : 'none' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                onClick={() => navigate(`/search?q=${encodeURIComponent(h.query)}`)}>
+                <Clock size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                <span className="flex-1 text-sm truncate" style={{ color: 'var(--text-primary)' }}>{h.query}</span>
+                <button onClick={e => { e.stopPropagation(); removeHistory(h.query); }}
+                  className="p-1 rounded-lg shrink-0"
+                  style={{ color: 'var(--text-tertiary)' }}>
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
