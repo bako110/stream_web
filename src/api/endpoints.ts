@@ -275,6 +275,8 @@ export const Endpoints = {
     referralUsers:  `${V1}/wallet/referral/users`,
     monetizationStatus: `${V1}/wallet/monetization/status`,
     monetizationRequest:`${V1}/wallet/monetization/request`,
+    cinetpayInit:   `${V1}/wallet/purchase/cinetpay/init`,
+    cinetpayStatus: (merchantTxId: string) => `${V1}/wallet/purchase/cinetpay/${merchantTxId}/status`,
   },
   favorites: {
     list:   (type: string) => `${V1}/favorites?type=${type}`,
