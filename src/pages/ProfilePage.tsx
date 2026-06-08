@@ -430,6 +430,7 @@ function PublicationsTab({ userId }: { userId: string }) {
 
 // ── Reels tab ─────────────────────────────────────────────────────────────────
 function ReelsTab({ userId }: { userId: string }) {
+  const navigate = useNavigate();
   const { items: reels, loading } = usePaginatedApi<Reel>(
     (p) => apiClient.get<PaginatedResponse<Reel>>(`${Endpoints.users.userReels(userId)}?page=${p}&limit=18`),
     [userId],
@@ -451,6 +452,7 @@ function ReelsTab({ userId }: { userId: string }) {
     <div className="grid grid-cols-3 gap-0.5 p-1">
       {reels.map(reel => (
         <div key={reel.id}
+          onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}
           className="relative overflow-hidden cursor-pointer group"
           style={{ aspectRatio: '9/16', maxHeight: 200, background: 'var(--bg-tertiary)' }}>
           {reel.thumbnail_url
