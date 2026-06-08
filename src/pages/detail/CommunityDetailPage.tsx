@@ -811,8 +811,8 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
                     </p>
                     <div className="space-y-1.5">
                       {msg.poll.options.map(opt => {
-                        const total = msg.poll!.total_votes || 1;
-                        const pct   = Math.round((opt.votes_count / total) * 100);
+                        const total = msg.poll!.total_votes || 0;
+                        const pct   = total > 0 ? Math.round(((opt.votes_count ?? 0) / total) * 100) : 0;
                         const voted = (msg.poll!.my_vote ?? []).includes(opt.id);
                         const isVoting = votingId === opt.id;
                         return (
@@ -849,7 +849,7 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
                       {canManage && !msg.poll.is_closed && (
                         <button onClick={() => onClosePoll(msg.id)}
                           className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
+                          style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>
                           Clôturer
                         </button>
                       )}
