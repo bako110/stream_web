@@ -847,8 +847,6 @@ function Footer() {
     { title: 'GoFolyX', links: [
       { label: 'À propos',  href: '/a-propos'   },
       { label: 'Blog',      href: '/blog'        },
-      { label: 'Presse',    href: '/presse'      },
-      { label: 'Carrières', href: '/carrieres'   },
     ]},
   ];
 
