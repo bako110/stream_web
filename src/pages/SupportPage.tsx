@@ -186,7 +186,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-w-2xl mx-auto w-full">
       {/* Header */}
       <div className="flex items-center gap-3 px-3 py-2.5 shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
@@ -294,21 +294,19 @@ export default function SupportPage() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto" style={{ background: 'var(--bg)' }}>
-      {/* Header */}
-      <div className="px-4 py-5" style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+      <div className="max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'rgba(123,63,242,0.12)' }}>
             <HelpCircle size={22} style={{ color: 'var(--primary)' }} />
           </div>
-          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Aide & Support</h1>
+          <div>
+            <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Aide & Support</h1>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Trouvez des réponses ou contactez notre équipe.</p>
+          </div>
         </div>
-        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          Trouvez des réponses ou contactez notre équipe.
-        </p>
-      </div>
 
-      <div className="p-4 space-y-6">
         {/* Canaux de contact */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button onClick={() => setShowChat(true)}
@@ -362,10 +360,11 @@ export default function SupportPage() {
 
         {/* Footer */}
         <div className="p-4 rounded-2xl text-center"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoFolyX v1.0 · © 2026 Sahelys</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Intégrateur de solutions informatiques</p>
         </div>
+
       </div>
     </div>
   );
