@@ -67,9 +67,9 @@ Le système d'abonnement vous permet de proposer un accès exclusif à votre con
 
 GoFolyX prend une commission de 20% — en dessous de la plupart des plateformes du marché. Les paiements sont versés chaque mois, directement sur votre compte mobile money ou bancaire.
 
-## 2. Les GoCoins
+## 2. Les coins
 
-Les fans peuvent acheter des GoCoins et vous les offrir pendant vos lives ou en réaction à vos posts. 1 GoCoin = 0,01 € côté créateur. Les dons sont instantanément visibles et créent un lien fort entre vous et votre communauté.
+Les fans peuvent acheter des coins et vous les offrir pendant vos lives ou en réaction à vos posts. 1 coin = 0,01 € côté créateur. Les dons sont instantanément visibles et créent un lien fort entre vous et votre communauté.
 
 Astuce : les créateurs qui activent les dons sur leurs lives voient en moyenne 3× plus d'engagement que ceux qui ne le font pas.
 
@@ -112,7 +112,7 @@ Les membres peuvent réagir, commenter et partager directement dans les canaux. 
 
 ## La trésorerie commune
 
-Les membres peuvent contribuer à une trésorerie partagée avec leurs GoCoins. Cette cagnotte peut financer un événement, un cadeau pour le créateur ou un projet communautaire. Toutes les transactions sont transparentes et visibles par tous les membres.
+Les membres peuvent contribuer à une trésorerie partagée avec leurs coins. Cette cagnotte peut financer un événement, un cadeau pour le créateur ou un projet communautaire. Toutes les transactions sont transparentes et visibles par tous les membres.
 
 Le trésorier est élu par vote et gère les dépenses avec validation collective. C'est une vraie démocratie participative.
 
@@ -255,7 +255,7 @@ Plus besoin de passer par une plateforme tierce. GoFolyX gère la vente de bille
 
 ## Ce que disent les artistes
 
-"Mon premier live sur GoFolyX m'a rapporté plus que six mois de concerts en salle. La différence, c'est l'audience mondiale et les GoCoins que les fans envoient en direct."
+"Mon premier live sur GoFolyX m'a rapporté plus que six mois de concerts en salle. La différence, c'est l'audience mondiale et les coins que les fans envoient en direct."
 
 "Je pouvais parler à mes fans pendant que je jouais. C'est quelque chose d'impossible dans une grande salle — sur GoFolyX, c'est la base."
 
