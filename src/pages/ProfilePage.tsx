@@ -449,26 +449,36 @@ function ReelsTab({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-0.5 p-1">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
       {reels.map(reel => (
         <div key={reel.id}
           onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}
-          className="relative overflow-hidden cursor-pointer group"
-          style={{ aspectRatio: '9/16', maxHeight: 200, background: 'var(--bg-tertiary)' }}>
+          className="relative cursor-pointer group overflow-hidden"
+          style={{ aspectRatio: '9/16', background: 'var(--bg-tertiary)' }}>
+
+          {/* Thumbnail */}
           {reel.thumbnail_url
-            ? <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-            : <div className="w-full h-full flex items-center justify-center">
-                <Play size={20} style={{ color: 'var(--text-tertiary)' }} />
+            ? <img src={reel.thumbnail_url} alt=""
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            : <div className="w-full h-full flex items-center justify-center"
+                style={{ background: 'var(--bg-secondary)' }}>
+                <Play size={28} style={{ color: 'var(--text-tertiary)' }} />
               </div>
           }
-          <div className="absolute inset-0 flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)' }}>
-            <span className="flex items-center gap-1 text-white text-xs font-semibold">
-              <Eye size={12} />{reel.view_count >= 1000 ? `${(reel.view_count / 1000).toFixed(1)}k` : reel.view_count}
+
+          {/* Overlay hover — vues + icône play */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1
+                          opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            style={{ background: 'rgba(0,0,0,0.45)' }}>
+            <Play size={28} color="#fff" fill="#fff" />
+            <span className="text-white text-xs font-bold">
+              {reel.view_count >= 1000 ? `${(reel.view_count / 1000).toFixed(1)}k` : reel.view_count} vues
             </span>
           </div>
-          <div className="absolute top-1.5 right-1.5">
-            <Play size={12} color="#fff" fill="#fff" className="opacity-60" />
+
+          {/* Badge play discret (coin haut droit) */}
+          <div className="absolute top-1.5 right-1.5 opacity-80 group-hover:opacity-0 transition-opacity">
+            <Play size={11} color="#fff" fill="#fff" />
           </div>
         </div>
       ))}
