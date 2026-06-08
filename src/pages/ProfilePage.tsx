@@ -5,7 +5,7 @@ import {
   Camera, Edit3, MapPin, Globe, Calendar, Play, Eye,
   Grid3x3, Info, BadgeCheck, Heart, ImagePlus, Users, FileText, Phone, Gift,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { User, Reel, Event, Concert, PaginatedResponse } from '../types';
@@ -537,6 +537,7 @@ function AboutTab({ user }: { user: User }) {
 export default function ProfilePage() {
   const { user, fetchMe } = useAuthStore();
   const navigate          = useNavigate();
+  const location          = useLocation();
   const [tab,             setTab]             = useState<Tab>('reels');
   const [editOpen,        setEditOpen]        = useState(false);
   const [followModal,     setFollowModal]     = useState<'followers' | 'following' | null>(null);
@@ -561,11 +562,11 @@ export default function ProfilePage() {
     } catch { /* silencieux */ }
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // S'exécute à chaque montage du composant (navigation vers /profile)
+  // Se relance à chaque navigation vers /profile (équivalent useFocusEffect mobile)
   useEffect(() => {
     loadCounts();
-    setRefreshKey(k => k + 1); // force remontage des tabs pour recharger les données
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    setRefreshKey(k => k + 1);
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSaved = useCallback(async () => {
     await loadCounts();
@@ -732,7 +733,7 @@ export default function ProfilePage() {
 
       {/* Modals */}
       {editOpen && (
-        <EditProfileModal user={user} onClose={() => setEditOpen(false)} onSaved={handleSaved} />
+        <EditProfileModal user={user} onClose={() => { setEditOpen(false); loadCounts(); }} onSaved={handleSaved} />
       )}
       {followModal && user && (
         <FollowListModal userId={user.id} type={followModal} onClose={() => setFollowModal(null)} />
