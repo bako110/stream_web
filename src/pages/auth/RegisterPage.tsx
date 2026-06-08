@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [gLoading, setGLoading] = useState(false);
+  const [formError, setFormError] = useState('');
 
   async function handleGoogle() {
     setGLoading(true);
@@ -57,6 +58,12 @@ export default function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     clearError();
+    setFormError('');
+    if (form.first_name.trim().length < 2) return setFormError('Le prénom doit faire au moins 2 caractères');
+    if (form.last_name.trim().length < 2)  return setFormError('Le nom doit faire au moins 2 caractères');
+    if (!form.email.trim())                return setFormError('L\'email est requis');
+    if (form.password.length < 8)          return setFormError('Le mot de passe doit faire au moins 8 caractères');
+    if (form.username.trim() && form.username.trim().length < 3) return setFormError('Le nom d\'utilisateur doit faire au moins 3 caractères');
     try {
       await signup(form);
       navigate('/feed', { replace: true });
@@ -172,10 +179,10 @@ export default function RegisterPage() {
             <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
           </div>
 
-          {error && (
+          {(error || formError) && (
             <div className="mb-4 px-4 py-3 rounded-xl text-sm"
-              style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.3)', color: '#7B3FF2' }}>
-              {error}
+              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
+              {formError || error}
             </div>
           )}
 
@@ -203,9 +210,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Nom d'utilisateur</label>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                Nom d'utilisateur <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(optionnel)</span>
+              </label>
               <input className="input" type="text" placeholder="jean_dupont"
-                value={form.username} onChange={field('username')} required
+                value={form.username} onChange={field('username')}
                 onFocus={() => setFocused('un')} onBlur={() => setFocused(null)} style={inp('un')} />
             </div>
 
