@@ -231,8 +231,15 @@ export interface Community {
 
 // ── Notification ──────────────────────────────────────────────────────────
 export interface Notification {
-  id: string; user_id: string; type: string; title: string; body: string;
-  is_read: boolean; data?: Record<string, unknown>; created_at: string;
+  id: string;
+  notification_type: string;
+  title: string;
+  body: string;
+  ref_id?: string | null;
+  ref_type?: string | null;
+  is_read: boolean;
+  created_at: string;
+  actor?: { id: string; username: string; display_name: string; avatar_url: string | null };
 }
 
 // ── Message ───────────────────────────────────────────────────────────────
