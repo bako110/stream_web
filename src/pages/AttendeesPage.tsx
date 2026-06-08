@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { decodeId } from '../utils/slugId';
 import { ArrowLeft, Search, X, Download, Users, Check, Clock } from 'lucide-react';
 import { apiClient } from '../api';
+import { API_BASE_URL } from '../utils/constants';
 import { Spinner } from '../components/ui/Spinner';
 import toast from 'react-hot-toast';
 
@@ -73,10 +74,13 @@ export default function AttendeesPage() {
     if (!id) return;
     setExporting(true);
     try {
-      const res = await apiClient.get(`/api/v1/events/${id}/attendees/pdf`, {
-        responseType: 'blob',
+      const raw   = localStorage.getItem('gofolyx-auth-tokens');
+      const token = raw ? (JSON.parse(raw)?.access ?? JSON.parse(raw)?.access_token ?? null) : null;
+      const res   = await fetch(`${API_BASE_URL}/api/v1/events/${id}/attendees/pdf`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href = url; a.download = `inscrits_${id}.pdf`; a.click();
