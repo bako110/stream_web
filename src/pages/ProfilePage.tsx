@@ -38,7 +38,7 @@ function Stat({ value, label, onClick }: { value: number; label: string; onClick
 
 // ── Edit Profile Modal ────────────────────────────────────────────────────────
 function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: () => void }) {
-  const { updateUser } = useAuthStore();
+  const { updateUser, fetchMe } = useAuthStore();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [localUser, setLocalUser] = useState<User>(user);
@@ -79,7 +79,7 @@ function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () 
       const res = await apiClient.upload<{ uploaded: { url: string }[] }>(Endpoints.upload.images('avatars'), fd);
       const url = res.data.uploaded?.[0]?.url ?? (res.data as any).url;
       await apiClient.patch<User>(Endpoints.users.updateMe, { avatar_url: url });
-      updateUser({ ...localUser, avatar_url: url });
+      await fetchMe();
       setLocalUser(u => ({ ...u, avatar_url: url }));
       setAvatarPreview(null);
       URL.revokeObjectURL(preview);
@@ -104,7 +104,7 @@ function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () 
       const res = await apiClient.upload<{ uploaded: { url: string }[] }>(Endpoints.upload.images('banners'), fd);
       const url = res.data.uploaded?.[0]?.url ?? (res.data as any).url;
       await apiClient.patch<User>(Endpoints.users.updateMe, { banner_url: url });
-      updateUser({ ...localUser, banner_url: url });
+      await fetchMe();
       setLocalUser(u => ({ ...u, banner_url: url }));
       setBannerPreview(null);
       URL.revokeObjectURL(preview);
