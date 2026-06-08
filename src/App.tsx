@@ -257,16 +257,8 @@ function AppShell() {
             <Route path="/privacy"                        element={<PrivacyPage />} />
             <Route path="/my-events"                      element={<MyEventsPage />} />
             <Route path="/my-concerts"                    element={<MyConcertsPage />} />
-            <Route path="/cgu"                            element={<CGUPage />} />
-            <Route path="/politique-confidentialite"      element={<PolitiqueConfidentialitePage />} />
-            <Route path="/a-propos"                       element={<AboutPage />} />
-            <Route path="/blog"                           element={<BlogPage />} />
-            <Route path="/presse"                         element={<PressePage />} />
-            <Route path="/carrieres"                      element={<CarrieresPage />} />
-            <Route path="/cookies"                        element={<CookiesPage />} />
             <Route path="/blocked-users"                  element={<BlockedUsersPage />} />
             <Route path="/planning"          element={<PlanningPage />} />
-            <Route path="/support"           element={<SupportPage />} />
             <Route path="/stories/:id/viewers"                    element={<StoryViewersPage />} />
             <Route path="/stories"                                element={<StoryPage />} />
             <Route path="/communities/:id/channels"               element={<CommunityChannelsPage />} />
@@ -283,6 +275,16 @@ function AppShell() {
             <Route path="/communities/:id/invite"                 element={<CommunityInvitePage />} />
           </Route>
         </Route>
+
+        {/* Pages publiques — accessibles sans connexion */}
+        <Route path="/cgu"                            element={<CGUPage />} />
+        <Route path="/politique-confidentialite"      element={<PolitiqueConfidentialitePage />} />
+        <Route path="/cookies"                        element={<CookiesPage />} />
+        <Route path="/a-propos"                       element={<AboutPage />} />
+        <Route path="/blog"                           element={<BlogPage />} />
+        <Route path="/presse"                         element={<PressePage />} />
+        <Route path="/carrieres"                      element={<CarrieresPage />} />
+        <Route path="/support"                        element={<SupportPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
