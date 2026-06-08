@@ -66,7 +66,7 @@ export default function SettingsAboutPage() {
         style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(123,63,242,0.05))', border: '1px solid rgba(123,63,242,0.18)' }}>
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 font-black text-xl"
           style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
-          FX
+          GX
         </div>
         <div>
           <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>GoFolyX</p>

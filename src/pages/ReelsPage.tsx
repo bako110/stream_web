@@ -1340,7 +1340,7 @@ export default function ReelsPage() {
             <div className="absolute inset-0 rounded-2xl rotate-12"
               style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', animation: 'spin-slow 3s linear infinite' }} />
             <div className="absolute inset-1 rounded-xl flex items-center justify-center bg-black">
-              <span className="text-base font-black gradient-text">FX</span>
+              <span className="text-base font-black gradient-text">GX</span>
             </div>
           </div>
           <div className="flex gap-1.5">

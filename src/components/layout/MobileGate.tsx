@@ -241,7 +241,7 @@ function AppLogo({ size }: { size: number }) {
           fontSize:size * 0.32, fontWeight:900,
           background:'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
           WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
-        }}>FX</span>
+        }}>GX</span>
       </div>
     </div>
   );
