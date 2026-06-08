@@ -239,6 +239,7 @@ function AppShell() {
             <Route path="/communities/:id/treasurer"              element={<CommunityTreasurerPage />} />
             <Route path="/communities/:id/members"                element={<CommunityMembersPage />} />
             <Route path="/communities/:id/invite"                 element={<CommunityInvitePage />} />
+            <Route path="/support"                                element={<SupportPage />} />
           </Route>
         </Route>
 

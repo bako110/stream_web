@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Coins, CreditCard, Check, AlertTriangle, Monitor, Tv, Users, Download,
-} from 'lucide-react';
+  ArrowLeft, Coins, CreditCard, Check, AlertTriangle, Monitor, Tv, Users, Download } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
@@ -47,8 +46,7 @@ const PLANS: Record<string, PlanConfig> = {
     downloads: 0,
     gradient: 'linear-gradient(135deg,#6B7280,#9CA3AF)',
     color: '#6B7280',
-    features: ['Contenu standard uniquement', '1 ecran simultane', 'Qualite SD', '1 profil utilisateur'],
-  },
+    features: ['Contenu standard uniquement', '1 ecran simultane', 'Qualite SD', '1 profil utilisateur'] },
   basic: {
     id: 'basic',
     label: 'Basic',
@@ -59,8 +57,7 @@ const PLANS: Record<string, PlanConfig> = {
     downloads: 5,
     gradient: 'linear-gradient(135deg,#7B3FF2,#9B65F5)',
     color: '#7B3FF2',
-    features: ['Tout le contenu Basic', '2 ecrans simultanes', 'Qualite HD', '2 profils', '5 telechargements / mois'],
-  },
+    features: ['Tout le contenu Basic', '2 ecrans simultanes', 'Qualite HD', '2 profils', '5 telechargements / mois'] },
   premium: {
     id: 'premium',
     label: 'Premium',
@@ -71,8 +68,7 @@ const PLANS: Record<string, PlanConfig> = {
     downloads: 25,
     gradient: 'linear-gradient(135deg,#7B3FF2,#A855F7)',
     color: '#7B3FF2',
-    features: ['Tout le contenu Premium', '4 ecrans simultanes', 'Qualite 4K Ultra HD', '4 profils', '25 telechargements / mois', 'Audio Dolby Atmos'],
-  },
+    features: ['Tout le contenu Premium', '4 ecrans simultanes', 'Qualite 4K Ultra HD', '4 profils', '25 telechargements / mois', 'Audio Dolby Atmos'] },
   family: {
     id: 'family',
     label: 'Famille',
@@ -83,9 +79,7 @@ const PLANS: Record<string, PlanConfig> = {
     downloads: 50,
     gradient: 'linear-gradient(135deg,#10B981,#34D399)',
     color: '#10B981',
-    features: ['Tout le contenu Premium', '6 ecrans simultanes', 'Qualite 4K Ultra HD', '6 profils', '50 telechargements / mois', 'Controle parental avance'],
-  },
-};
+    features: ['Tout le contenu Premium', '6 ecrans simultanes', 'Qualite 4K Ultra HD', '6 profils', '50 telechargements / mois', 'Controle parental avance'] } };
 
 // 1 EUR = 100 coins (taux unifié plateforme)
 const eurToCoins = (eur: number) => Math.ceil(eur * 100);
@@ -253,8 +247,7 @@ export default function WalletSubscriptionPaymentPage() {
               className="w-full rounded-2xl p-4 text-left transition-all"
               style={{
                 background: method === 'coins' ? 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.08))' : 'var(--surface)',
-                border: method === 'coins' ? '2px solid var(--primary)' : '1px solid var(--border)',
-              }}
+                border: method === 'coins' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -281,8 +274,7 @@ export default function WalletSubscriptionPaymentPage() {
                   className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                   style={{
                     borderColor: method === 'coins' ? 'var(--primary)' : 'var(--border)',
-                    background: method === 'coins' ? 'var(--primary)' : 'transparent',
-                  }}
+                    background: method === 'coins' ? 'var(--primary)' : 'transparent' }}
                 >
                   {method === 'coins' && <Check size={10} strokeWidth={3} className="text-white" />}
                 </div>
@@ -314,8 +306,7 @@ export default function WalletSubscriptionPaymentPage() {
               className="w-full rounded-2xl p-4 text-left transition-all"
               style={{
                 background: method === 'stripe' ? 'linear-gradient(135deg,rgba(123,63,242,0.1),rgba(96,165,250,0.07))' : 'var(--surface)',
-                border: method === 'stripe' ? '2px solid #7B3FF2' : '1px solid var(--border)',
-              }}
+                border: method === 'stripe' ? '2px solid #7B3FF2' : '1px solid var(--border)' }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -334,8 +325,7 @@ export default function WalletSubscriptionPaymentPage() {
                   className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                   style={{
                     borderColor: method === 'stripe' ? '#7B3FF2' : 'var(--border)',
-                    background: method === 'stripe' ? '#7B3FF2' : 'transparent',
-                  }}
+                    background: method === 'stripe' ? '#7B3FF2' : 'transparent' }}
                 >
                   {method === 'stripe' && <Check size={10} strokeWidth={3} className="text-white" />}
                 </div>

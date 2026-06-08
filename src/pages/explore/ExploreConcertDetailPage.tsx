@@ -6,7 +6,7 @@ import { fr } from 'date-fns/locale';
 import { useApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner , PageLoader} from '../../components/ui/Spinner';
 import type { Concert } from '../../types';
 
 export default function ExploreConcertDetailPage() {
@@ -18,13 +18,7 @@ export default function ExploreConcertDetailPage() {
     [id]
   );
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   if (!concert) {
     return (

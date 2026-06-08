@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -101,13 +101,7 @@ export default function WalletPage() {
     { icon: <Ticket size={20} />,       label: 'Mes billets',  color: '#7B3FF2', path: '/my-tickets' },
   ];
 
-  if (loading) {
-    return (
-      <div className="max-w-2xl mx-auto p-6 flex justify-center py-20">
-        <Spinner />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   if (error && !balance) {
     return (

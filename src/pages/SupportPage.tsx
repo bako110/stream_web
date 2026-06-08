@@ -186,7 +186,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="flex flex-col h-full max-w-2xl mx-auto w-full">
+    <div className="flex flex-col h-full min-h-0 max-w-2xl mx-auto w-full">
       {/* Header */}
       <div className="flex items-center gap-3 px-3 py-2.5 shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
@@ -293,7 +293,7 @@ export default function SupportPage() {
   if (showChat) return <SupportChat onClose={() => setShowChat(false)} />;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto" style={{ background: 'var(--bg)' }}>
+    <div className="flex flex-col h-full min-h-screen overflow-y-auto" style={{ background: 'var(--bg)' }}>
       <div className="max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">

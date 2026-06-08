@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { PageLoader } from '../components/ui/Spinner';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
 import {

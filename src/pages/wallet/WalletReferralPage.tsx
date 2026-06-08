@@ -5,7 +5,7 @@ import {
   Share2, Users, Award, UserCheck, Gift, Percent,
 } from 'lucide-react';
 import { apiClient } from '../../api';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner , PageLoader} from '../../components/ui/Spinner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -117,11 +117,7 @@ export default function WalletReferralPage() {
       </div>
 
       {/* ── Loading ─────────────────────────────────────────────────────────── */}
-      {loading && (
-        <div className="flex justify-center py-20">
-          <Spinner />
-        </div>
-      )}
+      {loading && <PageLoader />}
 
       {!loading && (
         <>

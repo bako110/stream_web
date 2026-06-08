@@ -4,7 +4,7 @@ import {
   Calendar, Music, Play, FileText, Users, Bookmark, BookmarkCheck,
 } from 'lucide-react';
 import { apiClient } from '../api';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 
 type FavTab = 'event' | 'concert' | 'reel' | 'post' | 'community';
 
@@ -282,9 +282,7 @@ export default function FavoritesPage() {
 
       {/* Content */}
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Spinner />
-        </div>
+        <PageLoader />
       ) : currentList.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-20" style={{ color: 'var(--text-tertiary)' }}>
           <span style={{ color: config.pillColor + '80' }}>{config.emptyIcon}</span>

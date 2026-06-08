@@ -5,7 +5,7 @@ import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLin
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 
 // ── Historique local (localStorage, max 15) ───────────────────────────────────
 const HISTORY_KEY = 'search:history';
@@ -193,13 +193,7 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Loading */}
-      {loading && (
-        <div className="flex items-center justify-center gap-3 py-12">
-          <Spinner />
-          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Recherche en cours…</span>
-        </div>
-      )}
+      {loading && <PageLoader />}
 
       {/* Historique de recherche local */}
       {!q && !loading && history.length > 0 && (

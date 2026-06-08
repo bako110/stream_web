@@ -9,7 +9,7 @@ import type { Event, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { usePaginatedApi, useApi } from '../hooks/useApi';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -219,9 +219,7 @@ function AllEventsTab() {
       </div>
 
       {loading && items.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-20"><Spinner />
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
-        </div>
+        <PageLoader />
       ) : items.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-secondary)' }}>
@@ -270,11 +268,7 @@ function MyEventsTab() {
 
   const handleDelete = (id: string) => setItems(prev => prev.filter(e => e.id !== id));
 
-  if (loading || apiLoading) return (
-    <div className="flex flex-col items-center gap-3 py-20"><Spinner />
-      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
-    </div>
-  );
+  if (loading || apiLoading) return <PageLoader />;
 
   return (
     <div className="space-y-5">

@@ -6,7 +6,7 @@ import {
 import type { Concert } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
@@ -244,11 +244,7 @@ export default function MyConcertsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        {loading ? (
-          <div className="flex flex-col items-center gap-3 py-20"><Spinner />
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
-          </div>
-        ) : filtered.length === 0 ? (
+        {loading ? <PageLoader /> : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
               style={{ background: 'rgba(123,63,242,0.1)' }}>

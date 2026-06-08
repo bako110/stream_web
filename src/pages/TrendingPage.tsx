@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 
 type Tab = 'contenus' | 'reels';
 
@@ -37,9 +37,7 @@ function ContenusTab({ items, loading }: { items: any[]; loading: boolean }) {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner />
-      </div>
+      <PageLoader />
     );
   }
 
@@ -117,9 +115,7 @@ function ReelsTab({ items, loading }: { items: any[]; loading: boolean }) {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner />
-      </div>
+      <PageLoader />
     );
   }
 

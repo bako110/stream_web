@@ -3,7 +3,7 @@ import type { Notification } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -76,12 +76,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center gap-3 py-20">
-          <Spinner />
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
-        </div>
-      ) : notifications.length === 0 ? (
+      {loading ? <PageLoader /> : notifications.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
             style={{ background: 'var(--bg-secondary)' }}>

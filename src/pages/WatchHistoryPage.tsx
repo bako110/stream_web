@@ -2,7 +2,7 @@ import { Film, Tv, CheckCircle2, History } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -172,9 +172,7 @@ export default function WatchHistoryPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Spinner />
-        </div>
+        <PageLoader />
       ) : raw.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-20" style={{ color: 'var(--text-tertiary)' }}>
           <History size={40} strokeWidth={1.2} />

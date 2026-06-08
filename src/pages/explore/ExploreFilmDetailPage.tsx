@@ -4,7 +4,7 @@ import { decodeId } from '../../utils/slugId';
 import { useApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner , PageLoader} from '../../components/ui/Spinner';
 import type { Content } from '../../types';
 
 interface Props { type?: 'film' | 'serie' }
@@ -22,13 +22,7 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
     [id]
   );
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   if (!content) {
     return (

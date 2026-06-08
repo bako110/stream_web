@@ -6,7 +6,7 @@ import type { Content, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { usePaginatedApi } from '../hooks/useApi';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 
 type SortKey = 'recent' | 'rating' | 'year' | 'views';
 type FilterKey = 'all' | 'free' | 'premium';
@@ -233,10 +233,7 @@ export default function FilmsPage({ type = 'film' }: Props) {
 
       {/* Grid */}
       {loading && items.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-20">
-          <Spinner />
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
-        </div>
+        <PageLoader />
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"

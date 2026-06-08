@@ -13,7 +13,7 @@ import {
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import type { StoryGroup } from '../types';
 
@@ -54,13 +54,7 @@ export default function StoryPage() {
     return idx >= 0 ? idx : initialIndex;
   })();
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader dark />;
 
   if (groups.length === 0) {
     navigate(-1);

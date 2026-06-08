@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Upload, X, Zap, Image as ImageIcon, Video, Globe,
-  Play, BarChart2, CheckCircle, Loader2, Megaphone,
-} from 'lucide-react';
+  Play, BarChart2, CheckCircle, Loader2, Megaphone } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
@@ -145,8 +144,7 @@ export default function WalletCreateAdPage() {
       placement,
       budget_eur:      budgetNum,
       cpm_eur:         cpmEur,
-      daily_budget_eur:dailyBudgetEur ? parseFloat(dailyBudgetEur) : undefined,
-    };
+      daily_budget_eur:dailyBudgetEur ? parseFloat(dailyBudgetEur) : undefined };
 
     try {
       if (isEdit) {
@@ -320,8 +318,7 @@ export default function WalletCreateAdPage() {
               className="flex flex-col items-start p-3 rounded-xl transition-all text-left"
               style={{
                 border: `1.5px solid ${placement === p.value ? 'var(--primary)' : 'var(--border)'}`,
-                background: placement === p.value ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)',
-              }}>
+                background: placement === p.value ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)' }}>
               <div className="flex items-center gap-1.5 mb-0.5">
                 {placement === p.value && <CheckCircle size={12} style={{ color: 'var(--primary)' }} />}
                 <span className="text-sm font-bold" style={{ color: placement === p.value ? 'var(--primary)' : 'var(--text-primary)' }}>
@@ -344,8 +341,7 @@ export default function WalletCreateAdPage() {
               style={{
                 border: `1.5px solid ${format === f.value ? 'var(--primary)' : 'var(--border)'}`,
                 background: format === f.value ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)',
-                color: format === f.value ? 'var(--primary)' : 'var(--text-secondary)',
-              }}>
+                color: format === f.value ? 'var(--primary)' : 'var(--text-secondary)' }}>
               {f.icon} {f.label}
             </button>
           ))}
@@ -363,8 +359,7 @@ export default function WalletCreateAdPage() {
               className="flex flex-col items-center p-3 rounded-xl transition-all"
               style={{
                 border: `1.5px solid ${cpmEur === o.cpm ? o.color : 'var(--border)'}`,
-                background: cpmEur === o.cpm ? `${o.color}12` : 'var(--bg-secondary)',
-              }}>
+                background: cpmEur === o.cpm ? `${o.color}12` : 'var(--bg-secondary)' }}>
               <span className="text-[10px] font-bold mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{o.label}</span>
               <span className="text-base font-black" style={{ color: o.color }}>{o.coins}</span>
               <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>coins</span>

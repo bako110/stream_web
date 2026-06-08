@@ -7,8 +7,7 @@ import {
   Heart, MessageCircle, Share2, Bookmark, Film, RefreshCw,
   X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3, Copy,
   Image as ImageIcon, Video, Type, MoreHorizontal, Lock,
-  Megaphone, ExternalLink, Zap,
-} from 'lucide-react';
+  Megaphone, ExternalLink, Zap } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
@@ -96,8 +95,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
         thumbnail_url,
         caption: caption.trim() || undefined,
         duration_sec,
-        background_color,
-      });
+        background_color });
 
       setSuccess(true);
       setTimeout(() => { onCreated(); onClose(); }, 2000);
@@ -253,8 +251,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
 // ── Story Viewer ──────────────────────────────────────────────────────────────
 function StoryViewer({
-  groups, initialIndex, initialStoryIndex = 0, currentUserId, onClose, onReload,
-}: {
+  groups, initialIndex, initialStoryIndex = 0, currentUserId, onClose, onReload }: {
   groups: StoryGroup[];
   initialIndex: number;
   initialStoryIndex?: number;
@@ -358,8 +355,7 @@ function StoryViewer({
           width: 'calc(100dvh * 9 / 16)',
           maxWidth: '100vw',
           background: '#000',
-          overflow: 'hidden',
-        }}
+          overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}>
 
         {/* ── Progress bars ── */}
@@ -559,8 +555,7 @@ function MyStoriesPage({
   onClose,
   onViewStory,
   onNewStory,
-  onReload,
-}: {
+  onReload }: {
   myGroup: StoryGroup | undefined;
   user: any;
   onClose: () => void;
@@ -1022,8 +1017,7 @@ type FeedItem =
 const EVENT_COLORS: Record<string, string> = {
   concert: '#7B3FF2', birthday: '#7B3FF2', festival: '#7B3FF2',
   conference: '#7B3FF2', sport: '#7B3FF2', theater: '#9B65F5',
-  exhibition: '#7B3FF2', other: '#9290AE',
-};
+  exhibition: '#7B3FF2', other: '#9290AE' };
 
 function toArray<T>(raw: unknown): T[] {
   if (!raw) return [];
@@ -1083,12 +1077,10 @@ const KIND_BADGE: Record<string, { label: string; bg: string; color: string }> =
   concert:    { label: 'Concert',     bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' },
   event:      { label: 'Événement',   bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' },
   post:       { label: 'Post',        bg: 'rgba(123,63,242,0.12)',                   color: 'var(--primary)' },
-  reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' },
-};
+  reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' } };
 
 function AuthorRow({
-  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind,
-}: {
+  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind }: {
   author: { display_name?: string | null; username?: string | null; avatar_url?: string | null; is_verified?: boolean } | undefined;
   authorId: string | undefined;
   publishedAt?: string | null;
@@ -1134,8 +1126,7 @@ function AuthorRow({
 
 // ── Comments sheet (style mobile — monte depuis le bas) ───────────────────────
 function CommentsModal({
-  open, onClose, targetKind, targetId, initialCount: _initialCount, onCountChange,
-}: {
+  open, onClose, targetKind, targetId, initialCount: _initialCount, onCountChange }: {
   open: boolean;
   onClose: () => void;
   targetKind: 'event' | 'concert' | 'post' | 'reel';
@@ -1302,8 +1293,7 @@ function CommentsModal({
             style={{
               background: 'var(--bg-secondary)',
               border: '1px solid transparent',
-              color: 'var(--text-primary)',
-            }}
+              color: 'var(--text-primary)' }}
             onFocus={e => (e.target.style.border = '1px solid var(--primary)')}
             onBlur={e  => (e.target.style.border = '1px solid transparent')}
           />
@@ -1311,8 +1301,7 @@ function CommentsModal({
             className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
             style={{
               background: body.trim() ? 'var(--primary)' : 'var(--bg-secondary)',
-              color: body.trim() ? '#fff' : 'var(--text-tertiary)',
-            }}>
+              color: body.trim() ? '#fff' : 'var(--text-tertiary)' }}>
             {sending ? <Spinner size="sm" /> : <Send size={15} />}
           </button>
         </form>
@@ -1407,8 +1396,7 @@ function SharePreviewModal({ url, title, desc, image, onClose }: {
 function ActionBar({
   id, kind, initialLiked, initialLikeCount, initialCommentCount = 0,
   commentCountOverride, shareCount = 0,
-  titleForShare, imageForShare, descForShare, onOpenComments,
-}: {
+  titleForShare, imageForShare, descForShare, onOpenComments }: {
   id: string;
   kind: 'event' | 'concert' | 'post' | 'reel';
   initialLiked: boolean;
@@ -1448,8 +1436,7 @@ function ActionBar({
           ...(kind === 'event'   ? { event_id: id }   :
               kind === 'concert' ? { concert_id: id } :
                                    { reel_id: id }),
-          reaction_type: 'like',
-        });
+          reaction_type: 'like' });
       }
     } catch {
       setLiked(was);
@@ -1468,8 +1455,7 @@ function ActionBar({
           kind === 'concert' ? { concert_id: id } :
           kind === 'reel'    ? { reel_id: id }    :
                                { post_id: id }),
-      platform: 'link',
-    }).catch(() => {});
+      platform: 'link' }).catch(() => {});
   }
 
   return (
@@ -2283,8 +2269,7 @@ function CommunityCard({ c, isJoined, isJoining, onJoin, onClick }: {
         width: 160,
         scrollSnapAlign: 'start',
         background: 'var(--bg-secondary)',
-        border: '1px solid var(--border)',
-      }}
+        border: '1px solid var(--border)' }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
       onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
       onClick={onClick}>
@@ -2858,8 +2843,7 @@ export default function FeedPage() {
                   background: tab === t ? 'var(--primary)' : 'var(--surface)',
                   color:      tab === t ? '#fff' : 'var(--text-secondary)',
                   border:     `1px solid ${tab === t ? 'var(--primary)' : 'var(--border)'}`,
-                  boxShadow:  tab === t ? '0 4px 16px rgba(123,63,242,0.35)' : 'none',
-                }}>
+                  boxShadow:  tab === t ? '0 4px 16px rgba(123,63,242,0.35)' : 'none' }}>
                 {t === 'all' ? 'Tout' : t === 'concerts' ? 'Concerts' : 'Événements'}
               </button>
             ))}

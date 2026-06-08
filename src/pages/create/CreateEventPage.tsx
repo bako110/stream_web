@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner , PageLoader} from '../../components/ui/Spinner';
 import { uploadVideoHls } from '../../api/uploadVideo';
 import toast from 'react-hot-toast';
 
@@ -279,14 +279,7 @@ export default function CreateEventPage() {
   const inputCls  = "w-full px-4 py-3 rounded-xl text-sm outline-none";
   const inputStyle = { background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)' };
 
-  if (loadingEdit) return (
-    <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--bg)' }}>
-      <div className="flex flex-col items-center gap-3">
-        <Spinner size="lg" />
-        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement de l'événement…</p>
-      </div>
-    </div>
-  );
+  if (loadingEdit) return <PageLoader />;
 
   return (
     <div className="max-w-2xl mx-auto" style={{ minHeight: '100vh', background: 'var(--bg)' }}>

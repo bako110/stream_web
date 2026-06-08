@@ -22,8 +22,7 @@ const DEFAULTS: PrivacySettings = {
   privacy_allow_messages:  true,
   privacy_show_online:     true,
   privacy_show_phone:      false,
-  privacy_show_birthday:   true,
-};
+  privacy_show_birthday:   true };
 
 function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (

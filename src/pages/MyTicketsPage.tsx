@@ -8,7 +8,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -590,9 +590,7 @@ export default function MyTicketsPage() {
   // ── Loading ──
   if (loading) {
     return (
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '1.5rem', display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
-        <Spinner size="lg" />
-      </div>
+      <PageLoader />
     );
   }
 

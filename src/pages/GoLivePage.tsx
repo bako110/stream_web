@@ -10,8 +10,7 @@ import type { LiveStartResponse } from '../types';
 // ── Carte de choix ────────────────────────────────────────────────────────────
 
 function ChoiceCard({
-  icon, title, description, badge, onClick, color,
-}: {
+  icon, title, description, badge, onClick, color }: {
   icon: React.ReactNode;
   title: string;
   description: string;
@@ -26,8 +25,7 @@ function ChoiceCard({
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: '1.25rem',
-        padding: '1.5rem',
-      }}
+        padding: '1.5rem' }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLButtonElement).style.borderColor = color;
         (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 4px 24px ${color}30`;
@@ -79,16 +77,13 @@ function QuickLiveForm({ onBack }: { onBack: () => void }) {
       const r = await apiClient.post<LiveStartResponse>(Endpoints.lives.start, {
         title:       title.trim(),
         description: desc.trim() || null,
-        is_private:  isPrivate,
-      });
+        is_private:  isPrivate });
       // Redirige vers la page live avec le token publisher en state
       navigate(`/lives/${encodeId(r.data.live.id)}`, {
         state: {
           publisherToken: r.data.token,
           livekitUrl:     r.data.livekit_url,
-          roomName:       r.data.room_name,
-        },
-      });
+          roomName:       r.data.room_name } });
     } catch (e: any) {
       setError(e?.response?.data?.detail ?? 'Impossible de démarrer le live');
     } finally {
@@ -147,8 +142,7 @@ function QuickLiveForm({ onBack }: { onBack: () => void }) {
             style={{
               borderColor:   !isPrivate ? '#10B981'                    : 'var(--border)',
               background:    !isPrivate ? 'rgba(16,185,129,0.08)'      : 'var(--bg-secondary)',
-              boxShadow:     !isPrivate ? '0 0 0 3px rgba(16,185,129,0.15)' : 'none',
-            }}>
+              boxShadow:     !isPrivate ? '0 0 0 3px rgba(16,185,129,0.15)' : 'none' }}>
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
               style={{ background: !isPrivate ? 'rgba(16,185,129,0.15)' : 'var(--bg-tertiary)' }}>
               <Globe size={16} style={{ color: !isPrivate ? '#10B981' : 'var(--text-tertiary)' }} />
@@ -169,8 +163,7 @@ function QuickLiveForm({ onBack }: { onBack: () => void }) {
             style={{
               borderColor:   isPrivate ? '#7B3FF2'                    : 'var(--border)',
               background:    isPrivate ? 'rgba(123,63,242,0.08)'      : 'var(--bg-secondary)',
-              boxShadow:     isPrivate ? '0 0 0 3px rgba(123,63,242,0.15)' : 'none',
-            }}>
+              boxShadow:     isPrivate ? '0 0 0 3px rgba(123,63,242,0.15)' : 'none' }}>
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
               style={{ background: isPrivate ? 'rgba(123,63,242,0.15)' : 'var(--bg-tertiary)' }}>
               <Lock size={16} style={{ color: isPrivate ? '#7B3FF2' : 'var(--text-tertiary)' }} />
