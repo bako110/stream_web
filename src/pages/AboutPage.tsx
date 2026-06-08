@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Globe, Zap, Heart, Target, Award, MapPin } from 'lucide-react';
+import { ArrowLeft, Users, Globe, Zap, Heart, Target, Award } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { Images } from '../components/assets';
 
 const VALEURS = [
   { Icon: Heart,  title: 'Passion culturelle',  desc: "Nous croyons que la culture est un vecteur d'identité et de lien social. Chaque concert, film ou événement est une opportunité de partager quelque chose d'universel." },
-  { Icon: Globe,  title: 'Portée africaine',     desc: "Nés en Afrique, pensés pour le monde. Nous mettons les créateurs africains sous les projecteurs tout en les connectant à une audience globale." },
-  { Icon: Zap,    title: 'Innovation locale',    desc: "Des paiements mobile money aux langues locales, GoFolyX est conçu pour les réalités du terrain, pas pour un utilisateur hypothétique." },
+  { Icon: Globe,  title: 'Portée mondiale',       desc: "Pensés pour tous, ouverts sur le monde. Nous mettons les créateurs sous les projecteurs et les connectons à une audience globale." },
+  { Icon: Zap,    title: 'Innovation concrète',  desc: "GoFolyX est conçu pour les réalités du terrain, avec des solutions adaptées à chaque utilisateur, pas pour un profil hypothétique." },
   { Icon: Users,  title: 'Communauté avant tout',desc: "La plateforme n'est pas juste un catalogue — c'est un espace de vie où fans, artistes et créateurs se retrouvent, discutent et grandissent ensemble." },
 ];
 
@@ -18,10 +18,10 @@ const CHIFFRES = [
 ];
 
 const EQUIPE = [
-  { name: 'Oumar Bako',     role: 'Co-fondateur & CEO',     img: '' },
-  { name: 'Fatoumata Diallo', role: 'CTO',                  img: '' },
-  { name: 'Awa Coulibaly',   role: 'Directrice Créative',   img: '' },
-  { name: 'Ismaël Traoré',   role: 'Head of Growth',        img: '' },
+  { name: 'Oumar Bako',       role: 'Co-fondateur & CEO'   },
+  { name: 'Fatoumata Diallo', role: 'CTO'                  },
+  { name: 'Awa Coulibaly',    role: 'Directrice Créative'  },
+  { name: 'Ismaël Traoré',    role: 'Head of Growth'       },
 ];
 
 export default function AboutPage() {
@@ -56,7 +56,7 @@ export default function AboutPage() {
           </span>
         </h1>
         <p className="max-w-2xl mx-auto text-lg leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          GoFolyX est né d'un constat simple : les créateurs africains manquent de visibilité et les fans manquent d'accès. Nous avons construit la plateforme qui change ça.
+          GoFolyX est né d'un constat simple : les créateurs manquent de visibilité et les fans manquent d'accès. Nous avons construit la plateforme qui change ça.
         </p>
       </section>
 
@@ -88,19 +88,19 @@ export default function AboutPage() {
               Connecter les talents et les audiences sans frontières
             </h2>
             <p className="leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-              GoFolyX est une plateforme de streaming culturel fondée en 2023. Nous combinons divertissement vidéo, billetterie événementielle, concerts en live et communautés pour offrir une expérience complète — pensée d'abord pour l'Afrique, ouverte sur le monde.
+              GoFolyX est une plateforme de streaming culturel fondée en 2026. Nous combinons divertissement vidéo, billetterie événementielle, concerts en live et communautés pour offrir une expérience complète — accessible partout dans le monde.
             </p>
             <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Notre siège est à Abidjan, avec des équipes à Dakar, Bamako et Paris. Nous collaborons avec des artistes, labels, promoteurs d'événements et studios pour rendre la culture accessible partout, même avec une connexion limitée.
+              Nous collaborons avec des artistes, labels, promoteurs d'événements et studios pour rendre la culture accessible à tous, même avec une connexion limitée.
             </p>
           </div>
           <div className="rounded-3xl overflow-hidden aspect-square flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg,#7B3FF215,#9B65F510)', border: '1px solid var(--border)' }}>
             <div className="text-center p-8">
-              <MapPin size={48} style={{ color: 'var(--primary)', margin: '0 auto 16px' }} />
-              <p className="font-bold text-lg mb-2">Abidjan, Côte d'Ivoire</p>
+              <Globe size={48} style={{ color: 'var(--primary)', margin: '0 auto 16px' }} />
+              <p className="font-bold text-lg mb-2">GoFolyX</p>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Siège social — avec des équipes<br />à Dakar, Bamako & Paris
+                Une plateforme mondiale<br />au service des créateurs
               </p>
             </div>
           </div>
