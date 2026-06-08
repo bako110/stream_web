@@ -27,12 +27,16 @@ import toast from 'react-hot-toast';
 interface MsgReaction { emoji: string; count: number; user_ids: string[]; }
 interface ReplyTo { id: string; sender_id: string; sender_display_name: string | null; sender_username: string | null; content: string | null; message_type: string; }
 
-interface PollOption { id: string; text: string; votes_count: number; voter_ids?: string[]; }
+interface PollOption { id: string; text: string; votes: number; votes_count?: number; }
 interface PollData {
-  id: string; question: string; options: PollOption[];
-  total_votes: number; allow_multiple: boolean;
-  is_closed: boolean; my_vote?: string[] | null;
-  deadline?: string | null;
+  id?: string; poll_id?: string;           // backend retourne poll_id
+  question: string;
+  options: PollOption[];
+  total_votes: number;
+  allow_multiple: boolean;
+  is_closed?: boolean; ended?: boolean;
+  my_vote?: string[] | null; my_votes?: string[] | null;  // backend retourne my_votes
+  ends_at?: string | null;
 }
 
 interface CommunityMessage {
@@ -812,12 +816,13 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
                     <div className="space-y-1.5">
                       {msg.poll.options.map(opt => {
                         const total = msg.poll!.total_votes || 0;
-                        const pct   = total > 0 ? Math.round(((opt.votes_count ?? 0) / total) * 100) : 0;
-                        const voted = (msg.poll!.my_vote ?? []).includes(opt.id);
+                        const pct   = total > 0 ? Math.round(((opt.votes ?? opt.votes_count ?? 0) / total) * 100) : 0;
+                        const myVotes = msg.poll!.my_votes ?? msg.poll!.my_vote ?? [];
+                        const voted = myVotes.includes(opt.id);
                         const isVoting = votingId === opt.id;
                         return (
                           <button key={opt.id}
-                            disabled={msg.poll!.is_closed || !!msg.poll!.my_vote?.length || isVoting}
+                            disabled={!!(msg.poll!.is_closed || msg.poll!.ended) || !!(msg.poll!.my_votes ?? msg.poll!.my_vote)?.length || isVoting}
                             onClick={() => { setVotingId(opt.id); onVotePoll(msg.id, opt.id); setTimeout(() => setVotingId(null), 1000); }}
                             className="w-full text-left relative rounded-xl overflow-hidden transition-all"
                             style={{
@@ -1160,13 +1165,14 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
     try {
       const msg = messages.find(m => m.id === msgId);
       if (!msg?.poll) return;
-      await apiClient.post(`/api/v1/communities/${id}/polls/${msg.poll.id}/vote`, { option_ids: [optionId] });
+      const pollId = msg.poll.poll_id ?? msg.poll.id;
+      await apiClient.post(`/api/v1/communities/${id}/polls/${pollId}/vote`, { option_ids: [optionId] });
       setMessages(prev => prev.map(m => {
         if (m.id !== msgId || !m.poll) return m;
         const options = m.poll.options.map(o =>
           o.id === optionId ? { ...o, votes_count: o.votes_count + 1 } : o
         );
-        return { ...m, poll: { ...m.poll, total_votes: m.poll.total_votes + 1, my_vote: [optionId], options } };
+        return { ...m, poll: { ...m.poll, total_votes: m.poll.total_votes + 1, my_votes: [optionId], options } };
       }));
     } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
   }
@@ -1176,7 +1182,8 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
     try {
       const msg = messages.find(m => m.id === msgId);
       if (!msg?.poll) return;
-      await apiClient.post(`/api/v1/communities/${id}/polls/${msg.poll.id}/close`);
+      const pollId = msg.poll.poll_id ?? msg.poll.id;
+      await apiClient.post(`/api/v1/communities/${id}/polls/${pollId}/close`);
       setMessages(prev => prev.map(m =>
         m.id === msgId && m.poll ? { ...m, poll: { ...m.poll, is_closed: true } } : m
       ));
