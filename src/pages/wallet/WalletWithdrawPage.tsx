@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, Info } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 
 interface WalletBalance {
@@ -48,9 +48,7 @@ export default function WalletWithdrawPage() {
     } finally { setWithdrawing(false); }
   }
 
-  if (loading) return (
-    <div className="max-w-2xl mx-auto p-6 flex justify-center py-20"><Spinner /></div>
-  );
+  if (loading) return <PageLoader />;
 
   const euros = coinsToEur(Number(amount) || 0);
 

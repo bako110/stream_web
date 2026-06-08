@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, RefreshCw, Share2, Check, Link } from 'lucide-react';
@@ -112,7 +113,7 @@ export default function CommunityInvitePage() {
       </div>
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : !code ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
           <Link size={32} style={{ color: 'var(--text-tertiary)' }} />

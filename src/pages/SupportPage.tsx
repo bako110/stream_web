@@ -1,3 +1,4 @@
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   HelpCircle, MessageCircle, ChevronDown, ChevronUp, Send, ArrowLeft,
@@ -220,7 +221,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2" style={{ background: 'var(--bg)' }}>
         {loading ? (
-          <div className="flex justify-center py-10"><Spinner /></div>
+          <PageLoader />
         ) : (
           <>
             {/* Message de bienvenue */}

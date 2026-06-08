@@ -12,7 +12,7 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
 import { Avatar } from '../components/ui/Avatar';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import type { WsPayload } from '../context/WebSocketContext';
@@ -205,7 +205,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
     } catch { toast.error('Erreur'); }
   }
 
-  if (loading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (loading) return <PageLoader />;
 
   return (
     <div className="flex flex-col h-full">
@@ -1016,7 +1016,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ background: 'var(--bg)' }}>
         {loading ? (
-          <div className="flex justify-center py-10"><Spinner /></div>
+          <PageLoader />
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Impossible de charger</p>

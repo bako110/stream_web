@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
@@ -110,7 +111,7 @@ export default function CommunityStatsPage() {
       </div>
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : !stats ? (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Statistiques indisponibles</p>

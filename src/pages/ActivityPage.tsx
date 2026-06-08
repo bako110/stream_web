@@ -1,3 +1,4 @@
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
@@ -314,7 +315,7 @@ export default function ActivityPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+          <PageLoader />
         ) : sections.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center"

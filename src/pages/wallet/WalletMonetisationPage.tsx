@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Users, FileText, CalendarDays, ShieldCheck, ChevronRight, AlertCircle } from 'lucide-react';
 import { apiClient } from '../../api';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 
 type MonetizationStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
@@ -30,9 +30,7 @@ export default function WalletMonetisationPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
-    <div className="max-w-2xl mx-auto p-6 flex justify-center py-20"><Spinner /></div>
-  );
+  if (loading) return <PageLoader />;
 
   const s = status?.status ?? 'none';
 

@@ -9,7 +9,7 @@ import type { Content, Season, Episode, VideoMeta } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { VideoPlayer } from '../../components/ui/VideoPlayer';
 import toast from 'react-hot-toast';
 
@@ -336,7 +336,7 @@ export default function SerieDetailPage() {
       .finally(() => setEpVidLoading(false));
   }
 
-  if (serie.loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (serie.loading) return <PageLoader />;
   if (!serie.data)   return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Série introuvable.</div>;
 
   const s            = serie.data;
@@ -486,7 +486,7 @@ export default function SerieDetailPage() {
         </h3>
 
         {epLoading ? (
-          <div className="flex justify-center py-6"><Spinner /></div>
+          <PageLoader />
         ) : episodes.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Aucun épisode disponible.</p>
         ) : (

@@ -11,7 +11,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { ExpandableText } from '../../components/ui/ExpandableText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { useAuthStore } from '../../store/authStore';
@@ -171,7 +171,7 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
         {/* List */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
           {loading ? (
-            <div className="flex justify-center py-10"><Spinner /></div>
+            <PageLoader />
           ) : comments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2 opacity-50">
               <MessageCircle size={28} style={{ color: 'var(--text-tertiary)' }} />
@@ -319,7 +319,7 @@ export default function EventDetailPage() {
   }, [event?.title, id]);
 
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading) return <PageLoader />;
   if (!event)  return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Événement introuvable.</div>;
 
   const ev    = event;

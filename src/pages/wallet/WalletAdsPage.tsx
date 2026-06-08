@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 
 export type AdStatus    = 'draft' | 'active' | 'paused' | 'ended' | 'rejected';
 export type AdPlacement = 'feed' | 'reels' | 'stories' | 'search';
@@ -238,9 +238,7 @@ export default function WalletAdsPage() {
     { label: 'Refusées',   icon: <XCircle size={14}/>,      color: '#EF4444', items: rejected },
   ].filter(g => g.items.length > 0);
 
-  if (loading) return (
-    <div className="max-w-4xl mx-auto p-6 flex justify-center py-20"><Spinner size="lg" /></div>
-  );
+  if (loading) return <PageLoader />;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-5 space-y-5">

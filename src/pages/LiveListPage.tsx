@@ -6,7 +6,7 @@ import type { Concert } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Avatar } from '../components/ui/Avatar';
 import { format } from 'date-fns';
@@ -232,7 +232,7 @@ export default function LiveListPage() {
     return () => clearInterval(iv);
   }, [livesApi]);
 
-  if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
+  if (loading) return <PageLoader />;
 
   return (
     <div className="max-w-full px-4 sm:px-6 py-6 space-y-10">

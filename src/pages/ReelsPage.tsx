@@ -15,7 +15,7 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
 import { Avatar } from '../components/ui/Avatar';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -95,7 +95,7 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
 
         {/* gift grid */}
         {loading ? (
-          <div className="flex justify-center py-10"><Spinner /></div>
+          <PageLoader />
         ) : gifts.length === 0 ? (
           <p className="text-center py-10 text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun cadeau disponible</p>
         ) : (
@@ -246,7 +246,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
       {/* Comments list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5" style={{ scrollbarWidth: 'thin' }}>
         {loading ? (
-          <div className="flex justify-center py-12"><Spinner /></div>
+          <PageLoader />
         ) : comments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center"

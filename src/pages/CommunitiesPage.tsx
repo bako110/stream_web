@@ -1,3 +1,4 @@
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
@@ -368,7 +369,7 @@ export default function CommunitiesPage() {
       {/* Liste */}
       <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
-          <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+          <PageLoader />
         ) : communities.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-20 h-20 rounded-full flex items-center justify-center"

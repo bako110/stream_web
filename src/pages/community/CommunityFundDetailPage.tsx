@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -203,7 +204,7 @@ export default function CommunityFundDetailPage() {
       </div>
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : !cot ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
           <AlertCircle size={32} style={{ color: 'var(--text-tertiary)' }} />

@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -173,7 +174,7 @@ export default function WalletMySubscriptionPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner /></div>
+        <PageLoader />
       ) : sub ? (
         <>
           {/* Active plan card */}
@@ -296,7 +297,7 @@ export default function WalletMySubscriptionPage() {
         </p>
 
         {loadingH ? (
-          <div className="flex justify-center py-8"><Spinner /></div>
+          <PageLoader />
         ) : history.length === 0 ? (
           <div
             className="rounded-2xl py-8 flex items-center justify-center"

@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
@@ -65,7 +66,7 @@ export default function CommunityLeaderboardPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-3 opacity-50">
           <Trophy size={40} style={{ color: 'var(--text-tertiary)' }} />

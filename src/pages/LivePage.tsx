@@ -1,3 +1,4 @@
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
@@ -285,7 +286,7 @@ export default function LivePage() {
     finally { setBuying(false); }
   }
 
-  if (concertApi.loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (concertApi.loading) return <PageLoader />;
   if (!concert) return <div className="p-6 text-[var(--text-secondary)]">Concert introuvable.</div>;
 
   const scheduledDate = concert.scheduled_at

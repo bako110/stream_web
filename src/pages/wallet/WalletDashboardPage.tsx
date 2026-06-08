@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Gift, Eye, Heart, Users, DollarSign } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -32,9 +32,7 @@ export default function WalletDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
-    <div className="max-w-2xl mx-auto p-6 flex justify-center py-20"><Spinner /></div>
-  );
+  if (loading) return <PageLoader />;
 
   const month = format(new Date(), 'MMMM yyyy', { locale: fr });
 

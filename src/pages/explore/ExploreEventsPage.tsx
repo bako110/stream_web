@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { encodeId } from '../../utils/slugId';
@@ -62,7 +63,7 @@ export default function ExploreEventsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : filtered.length === 0 ? (
         <div className="text-center py-20" style={{ color: 'var(--text-tertiary)' }}>
           {search ? `Aucun résultat pour "${search}"` : 'Aucun événement disponible'}

@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
@@ -254,7 +255,7 @@ export default function PostDetailPage() {
           {/* Comment list */}
           <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
             {commentsLoading ? (
-              <div className="flex justify-center py-8"><Spinner /></div>
+              <PageLoader />
             ) : comments.length === 0 ? (
               <div className="flex flex-col items-center py-10 gap-2">
                 <MessageCircle size={28} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />

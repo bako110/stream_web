@@ -7,7 +7,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { ExpandableText } from '../../components/ui/ExpandableText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { useAuthStore } from '../../store/authStore';
@@ -129,7 +129,7 @@ export default function ConcertDetailPage() {
     finally { setRemindLoading(false); }
   }, [id, remindLoading]);
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading) return <PageLoader />;
   if (!concert) return <div className="p-6 text-[var(--text-secondary)]">Concert introuvable.</div>;
 
   const c        = concert;

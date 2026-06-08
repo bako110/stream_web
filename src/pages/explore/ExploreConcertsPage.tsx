@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { encodeId } from '../../utils/slugId';
@@ -81,7 +82,7 @@ export default function ExploreConcertsPage() {
           <p className="text-[var(--text-secondary)]">{error}</p>
         </div>
       ) : loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : (
         <>
           {filtered.some(c => c.status === 'live') && (

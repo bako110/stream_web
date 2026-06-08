@@ -9,7 +9,7 @@ import {
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -125,14 +125,7 @@ export default function CommunityMemberProfilePage() {
     } catch { toast.error('Erreur'); } finally { setActionLoading(false); }
   }
 
-  if (loading) return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-        <button onClick={() => navigate(-1)} style={{ color: 'var(--text-primary)' }}><ArrowLeft size={20} /></button>
-      </div>
-      <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>
-    </div>
-  );
+  if (loading) return <PageLoader />;
 
   if (!profile) return (
     <div className="flex flex-col h-full">
@@ -253,7 +246,7 @@ export default function CommunityMemberProfilePage() {
 
         {showStats && (
           <div className="px-4 pb-4">
-            {statsLoading ? <div className="flex justify-center py-4"><Spinner /></div> :
+            {statsLoading ? <PageLoader /> :
               creatorStats ? (
                 <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   <StatRow icon={<FilmIcon size={15} />} label="Reels publiés" value={creatorStats.reels_count} color="#7B3FF2" />

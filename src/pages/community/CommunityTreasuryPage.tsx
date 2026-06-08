@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Briefcase, TrendingUp, TrendingDown, DollarSign, ChevronRight } from 'lucide-react';
@@ -97,7 +98,7 @@ export default function CommunityTreasuryPage() {
       </div>
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : (
         <div className="flex-1 overflow-y-auto">
           {/* Card solde principal */}

@@ -14,7 +14,7 @@ import { Endpoints } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { Avatar } from '../components/ui/Avatar';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { Modal } from '../components/ui/Modal';
 
 type Tab = 'reels' | 'publications' | 'about';
@@ -142,7 +142,7 @@ function FollowListModal({ userId, type, onClose }: {
   return (
     <Modal open onClose={onClose} title={type === 'followers' ? 'Abonnés' : 'Abonnements'} size="md">
       {loading ? (
-        <div className="flex justify-center py-10"><Spinner /></div>
+        <PageLoader />
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-10" style={{ color: 'var(--text-tertiary)' }}>
           <Users size={32} strokeWidth={1.2} />
@@ -196,7 +196,7 @@ function PublicationsTab({ userId }: { userId: string }) {
     ...posts.map(p   => ({ ...p,  _kind: 'post'    as const })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  if (evL || coL || poL) return <div className="flex justify-center py-16"><Spinner /></div>;
+  if (evL || coL || poL) return <PageLoader />;
 
   if (items.length === 0) {
     return (
@@ -269,7 +269,7 @@ function ReelsTab({ userId }: { userId: string }) {
     [userId],
   );
 
-  if (loading && reels.length === 0) return <div className="flex justify-center py-16"><Spinner /></div>;
+  if (loading && reels.length === 0) return <PageLoader />;
 
   if (reels.length === 0) {
     return (
@@ -431,7 +431,7 @@ export default function ProfilePage() {
     } finally { setUploadingBanner(false); e.target.value = ''; }
   }
 
-  if (!user) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (!user) return <PageLoader />;
 
   const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
   const displayName = user.display_name ?? (fullName || (user.username ?? 'Utilisateur'));

@@ -1,3 +1,4 @@
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
@@ -173,7 +174,7 @@ export default function LiveSimpleListPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : active.length === 0 ? (
         <EmptyState
           icon={<Radio size={48} />}

@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
@@ -396,7 +397,7 @@ export default function CommunityEventsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
-          <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+          <PageLoader />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>

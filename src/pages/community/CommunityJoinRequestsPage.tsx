@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
@@ -89,7 +90,7 @@ export default function CommunityJoinRequestsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : requests.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-3 opacity-50 px-6 text-center">
           <div className="w-16 h-16 rounded-full flex items-center justify-center"

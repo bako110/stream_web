@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
@@ -352,7 +353,7 @@ export default function CommunityChannelsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : channels.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 opacity-60">
           <Hash size={40} style={{ color: 'var(--text-tertiary)' }} />

@@ -1,3 +1,4 @@
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { decodeId } from '../utils/slugId';
@@ -887,7 +888,7 @@ export default function LiveSimplePage() {
     setHandRequests(prev => prev.filter(r => r.identity !== identity));
   }, []);
 
-  if (liveApi.loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
+  if (liveApi.loading) return <PageLoader />;
   if (!live) return <div className="p-6 text-[var(--text-secondary)]">Live introuvable.</div>;
 
   return (

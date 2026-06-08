@@ -9,7 +9,7 @@ import type { Content, VideoMeta } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { VideoPlayer } from '../../components/ui/VideoPlayer';
 import toast from 'react-hot-toast';
 
@@ -234,7 +234,7 @@ export default function FilmDetailPage() {
       });
   }, [id, film.data]);
 
-  if (film.loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (film.loading) return <PageLoader />;
   if (!film.data)   return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Contenu introuvable.</div>;
 
   const f            = film.data;

@@ -1,3 +1,4 @@
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { decodeId } from '../utils/slugId';
@@ -165,7 +166,7 @@ export default function AttendeesPage() {
 
       {/* List */}
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner /></div>
+        <PageLoader />
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16" style={{ color: 'var(--text-tertiary)' }}>
           <Users size={48} />

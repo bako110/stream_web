@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -492,7 +493,7 @@ export default function WalletBoostPage() {
       {tab === 'active' && (
         <div className="space-y-3">
           {loadingActive ? (
-            <div className="flex justify-center py-12"><Spinner /></div>
+            <PageLoader />
           ) : activeBoosts.length === 0 ? (
             <div className="flex flex-col items-center gap-4 py-16">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -535,7 +536,7 @@ export default function WalletBoostPage() {
       {tab === 'history' && (
         <div className="space-y-3">
           {loadingHistory ? (
-            <div className="flex justify-center py-12"><Spinner /></div>
+            <PageLoader />
           ) : historyBoosts.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16">
               <History size={32} style={{ color: 'var(--text-tertiary)' }} />

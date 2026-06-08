@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useRef, useEffect } from 'react';
 import Hls from 'hls.js';
 import { Link } from 'react-router-dom';
@@ -30,7 +31,7 @@ export default function ExploreReelsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <PageLoader />
       ) : reels.length === 0 ? (
         <div className="text-center py-20" style={{ color: 'var(--text-tertiary)' }}>
           Aucun reel disponible

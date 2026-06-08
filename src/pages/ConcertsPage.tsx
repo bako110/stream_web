@@ -6,7 +6,7 @@ import type { Concert, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
@@ -231,11 +231,7 @@ function MyConcertsTab() {
 
   const handleDelete = (id: string) => setItems(prev => prev.filter(c => c.id !== id));
 
-  if (loading) return (
-    <div className="flex flex-col items-center gap-3 py-20"><Spinner />
-      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Chargement…</p>
-    </div>
-  );
+  if (loading) return <PageLoader />;
 
   return (
     <div className="space-y-5">

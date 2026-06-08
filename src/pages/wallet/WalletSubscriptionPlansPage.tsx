@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -165,7 +166,7 @@ export default function WalletSubscriptionPlansPage() {
       </div>
 
       {loadingSub ? (
-        <div className="flex justify-center py-16"><Spinner /></div>
+        <PageLoader />
       ) : (
         <div className="space-y-4">
           {PLANS.map(plan => {

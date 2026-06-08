@@ -14,7 +14,7 @@ import { Endpoints } from '../api/endpoints';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { useAuthStore } from '../store/authStore';
 import { Avatar } from '../components/ui/Avatar';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner, PageLoader } from '../components/ui/Spinner';
 
 type Tab = 'publications' | 'reels' | 'about';
 
@@ -64,7 +64,7 @@ function PublicationsTab({ userId }: { userId: string }) {
     ...posts.map(p   => ({ ...p,  _kind: 'post'    as const })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  if (evL || coL || poL) return <div className="flex justify-center py-16"><Spinner /></div>;
+  if (evL || coL || poL) return <PageLoader />;
 
   if (items.length === 0) {
     return (
@@ -148,7 +148,7 @@ function ReelsTab({ userId }: { userId: string }) {
   );
 
   if (loading && reels.length === 0) {
-    return <div className="flex justify-center py-16"><Spinner /></div>;
+    return <PageLoader />;
   }
 
   if (reels.length === 0) {
@@ -275,7 +275,7 @@ export default function UserProfilePage() {
     setFollowersDelta(0);
   }
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading) return <PageLoader />;
   if (!profile) return <div className="p-6 text-sm" style={{ color: 'var(--text-secondary)' }}>Profil introuvable.</div>;
 
   const isMe       = me?.id === id;

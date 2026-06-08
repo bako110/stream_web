@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Shield, Check, CheckCircle, X, ArrowLeft, ArrowRight,
@@ -416,7 +417,7 @@ export default function SettingsVerificationPage() {
       </div>
 
       {fetching ? (
-        <div className="flex justify-center py-12"><Spinner /></div>
+        <PageLoader />
       ) : (
         <>
           {showWizard && (

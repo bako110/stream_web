@@ -1,3 +1,4 @@
+import { PageLoader } from '../../../components/ui/Spinner';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
@@ -237,7 +238,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
               <p className="px-4 py-1 text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
                 {filtered.length} MEMBRE{filtered.length !== 1 ? 'S' : ''}
               </p>
-              {loadingMembers ? <div className="flex justify-center py-8"><Spinner /></div> : filtered.map(member => {
+              {loadingMembers ? <PageLoader /> : filtered.map(member => {
                 const isSelf    = member.user_id === me?.id;
                 const isLoading = roleLoading === member.user_id || blockLoading === member.user_id;
                 const roleColor = ROLE_COLORS[member.role] ?? '#9390AB';
@@ -433,7 +434,7 @@ function PinnedDrawer({ communityId, onClose, onJump }: {
           <button onClick={onClose}><X size={18} style={{ color: 'var(--text-tertiary)' }} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {loading ? <div className="flex justify-center py-8"><Spinner /></div>
+          {loading ? <PageLoader />
             : pins.length === 0
             ? <p className="text-center text-sm py-8" style={{ color: 'var(--text-tertiary)' }}>Aucun message épinglé</p>
             : pins.map(p => (
@@ -1700,7 +1701,7 @@ export default function CommunityDetailPage() {
             <ArrowLeft size={20} />
           </button>
         </div>
-        <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>
+        <PageLoader />
       </div>
     );
   }
