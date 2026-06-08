@@ -64,6 +64,7 @@ export default function RegisterPage() {
     if (!form.email.trim())                return setFormError('L\'email est requis');
     if (form.password.length < 8)          return setFormError('Le mot de passe doit faire au moins 8 caractères');
     if (form.username.trim() && form.username.trim().length < 3) return setFormError('Le nom d\'utilisateur doit faire au moins 3 caractères');
+    if (form.username.trim() && !/^[\w\-\.]+$/.test(form.username.trim())) return setFormError('Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, _, - et . (sans espaces ni caractères spéciaux)');
     try {
       await signup(form);
       navigate('/feed', { replace: true });
@@ -216,6 +217,9 @@ export default function RegisterPage() {
               <input className="input" type="text" placeholder="jean_dupont"
                 value={form.username} onChange={field('username')}
                 onFocus={() => setFocused('un')} onBlur={() => setFocused(null)} style={inp('un')} />
+              <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                Lettres, chiffres, _ - . uniquement — pas d'espaces
+              </p>
             </div>
 
             <div>
