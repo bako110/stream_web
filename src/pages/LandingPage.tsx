@@ -843,8 +843,6 @@ function Footer() {
     { title: 'Compte', links: [
       { label: 'Se connecter', href: '/auth/login'    },
       { label: "S'inscrire",   href: '/auth/register' },
-      { label: 'Mon profil',   href: '/profile'       },
-      { label: 'Paramètres',   href: '/settings'      },
     ]},
     { title: 'GoFolyX', links: [
       { label: 'À propos',  href: '/a-propos'   },
