@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /feed
+Disallow: /notifications
+Disallow: /messages
+Disallow: /settings
+Disallow: /wallet
+Disallow: /profile
+
+Sitemap: https://gofolyx.com/sitemap.xml
