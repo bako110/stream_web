@@ -1170,7 +1170,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
       setMessages(prev => prev.map(m => {
         if (m.id !== msgId || !m.poll) return m;
         const options = m.poll.options.map(o =>
-          o.id === optionId ? { ...o, votes_count: o.votes_count + 1 } : o
+          o.id === optionId ? { ...o, votes: (o.votes ?? o.votes_count ?? 0) + 1 } : o
         );
         return { ...m, poll: { ...m.poll, total_votes: m.poll.total_votes + 1, my_votes: [optionId], options } };
       }));
