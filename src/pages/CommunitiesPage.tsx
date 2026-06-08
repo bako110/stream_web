@@ -1,4 +1,4 @@
-import { PageLoader } from '../../components/ui/Spinner';
+import { PageLoader } from '../components/ui/Spinner';
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';

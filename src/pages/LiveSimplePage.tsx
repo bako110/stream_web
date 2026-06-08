@@ -1,4 +1,4 @@
-import { PageLoader } from '../../components/ui/Spinner';
+import { PageLoader } from '../components/ui/Spinner';
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { decodeId } from '../utils/slugId';
