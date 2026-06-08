@@ -128,7 +128,7 @@ function GlobalLoader() {
             }} />
           <div className="absolute inset-1 rounded-xl flex items-center justify-center"
             style={{ background: 'var(--bg)' }}>
-            <span className="text-lg font-black gradient-text">FX</span>
+            <span className="text-lg font-black gradient-text">GX</span>
           </div>
           <div className="absolute inset-0 rounded-2xl rotate-12"
             style={{
