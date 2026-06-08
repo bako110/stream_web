@@ -1,11 +1,10 @@
-import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   HelpCircle, MessageCircle, ChevronDown, ChevronUp, Send, ArrowLeft,
   Headphones, Mail, Clock, Plus,
 } from 'lucide-react';
 import { apiClient } from '../api';
-import { Spinner } from '../components/ui/Spinner';
+import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
