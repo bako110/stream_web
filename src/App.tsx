@@ -9,6 +9,7 @@ import { PublicOnlyRoute } from './components/layout/PublicOnlyRoute';
 import { MobileGate }      from './components/layout/MobileGate';
 import { bootstrapAuth, useAuthStore } from './store/authStore';
 import { WebSocketProvider } from './context/WebSocketContext';
+import { PageLoader } from './components/ui/Spinner';
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
 const LoginPage          = lazy(() => import('./pages/auth/LoginPage'));
@@ -114,43 +115,7 @@ const EventDetailPage     = lazy(() => import('./pages/detail/EventDetailPage'))
 const PostDetailPage      = lazy(() => import('./pages/detail/PostDetailPage'));
 const CommunityDetailPage = lazy(() => import('./pages/detail/CommunityDetailPage'));
 
-// ── Loader animé partagé ──────────────────────────────────────────────────────
-function GlobalLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center"
-      style={{ background: 'var(--bg)' }}>
-      <div className="flex flex-col items-center gap-5">
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 rounded-2xl rotate-12"
-            style={{
-              background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
-              animation:  'spin-slow 3s linear infinite',
-            }} />
-          <div className="absolute inset-1 rounded-xl flex items-center justify-center"
-            style={{ background: 'var(--bg)' }}>
-            <span className="text-lg font-black gradient-text">GX</span>
-          </div>
-          <div className="absolute inset-0 rounded-2xl rotate-12"
-            style={{
-              background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
-              opacity:    0.25,
-              animation:  'ping-once 1.5s ease-out infinite',
-            }} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          {[0, 1, 2].map(i => (
-            <div key={i} className="w-2.5 h-2.5 rounded-full"
-              style={{
-                background: 'var(--primary)',
-                animation:  `blink 1.2s ease-in-out ${i * 0.2}s infinite`,
-              }} />
-          ))}
-        </div>
-        <p className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>GoFolyX</p>
-      </div>
-    </div>
-  );
-}
+function GlobalLoader() { return <PageLoader />; }
 
 // Exécuté une seule fois au chargement du module — avant tout render
 bootstrapAuth();
