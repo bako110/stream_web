@@ -847,10 +847,10 @@ function Footer() {
       { label: 'Paramètres',   href: '/settings'      },
     ]},
     { title: 'GoFolyX', links: [
-      { label: 'À propos',  href: '#' },
-      { label: 'Blog',      href: '#' },
-      { label: 'Presse',    href: '#' },
-      { label: 'Carrières', href: '#' },
+      { label: 'À propos',  href: '/a-propos'   },
+      { label: 'Blog',      href: '/blog'        },
+      { label: 'Presse',    href: '/presse'      },
+      { label: 'Carrières', href: '/carrieres'   },
     ]},
   ];
 

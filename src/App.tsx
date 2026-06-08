@@ -70,6 +70,10 @@ const CreateEventPage    = lazy(() => import('./pages/create/CreateEventPage'));
 const SubscriptionsPage              = lazy(() => import('./pages/SubscriptionsPage'));
 const PrivacyPage                    = lazy(() => import('./pages/PrivacyPage'));
 const CGUPage                        = lazy(() => import('./pages/CGUPage'));
+const AboutPage                      = lazy(() => import('./pages/AboutPage'));
+const BlogPage                       = lazy(() => import('./pages/BlogPage'));
+const PressePage                     = lazy(() => import('./pages/PressePage'));
+const CarrieresPage                  = lazy(() => import('./pages/CarrieresPage'));
 const PolitiqueConfidentialitePage   = lazy(() => import('./pages/PolitiqueConfidentialitePage'));
 const MyEventsPage                   = lazy(() => import('./pages/MyEventsPage'));
 const MyConcertsPage                 = lazy(() => import('./pages/MyConcertsPage'));
@@ -254,6 +258,10 @@ function AppShell() {
             <Route path="/my-concerts"                    element={<MyConcertsPage />} />
             <Route path="/cgu"                            element={<CGUPage />} />
             <Route path="/politique-confidentialite"      element={<PolitiqueConfidentialitePage />} />
+            <Route path="/a-propos"                       element={<AboutPage />} />
+            <Route path="/blog"                           element={<BlogPage />} />
+            <Route path="/presse"                         element={<PressePage />} />
+            <Route path="/carrieres"                      element={<CarrieresPage />} />
             <Route path="/blocked-users"                  element={<BlockedUsersPage />} />
             <Route path="/planning"          element={<PlanningPage />} />
             <Route path="/support"           element={<SupportPage />} />
