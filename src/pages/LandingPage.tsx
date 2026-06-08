@@ -892,11 +892,15 @@ function Footer() {
           style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
           <p>© 2025 GoFolyX. Tous droits réservés.</p>
           <div className="flex gap-6">
-            {['Confidentialité', 'Conditions', 'Cookies'].map(l => (
-              <a key={l} href="#" className="transition-colors"
+            {[
+              { label: 'Confidentialité', href: '/politique-confidentialite' },
+              { label: 'Conditions',      href: '/cgu'                       },
+              { label: 'Cookies',         href: '/cookies'                   },
+            ].map(({ label, href }) => (
+              <Link key={label} to={href} className="transition-colors"
                 onMouseEnter={e => (e.target as HTMLElement).style.color = 'var(--text-primary)'}
                 onMouseLeave={e => (e.target as HTMLElement).style.color = 'var(--text-tertiary)'}
-              >{l}</a>
+              >{label}</Link>
             ))}
           </div>
         </div>
