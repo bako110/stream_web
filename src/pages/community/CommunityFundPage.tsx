@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { decodeId, encodeId } from '../../utils/slugId';
-import { Spinner } from '../../../components/ui/Spinner';
+import { Spinner } from '../../components/ui/Spinner';
 import { formatDistanceToNow, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';

@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, PauseCircle, BarChart2, StopCircle, AlertTriangle,
 } from 'lucide-react';
 import { apiClient } from '../../../api';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner } from '../../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 import { BOOST_CATEGORIES, daysLeft, fmtNum, type BoostCategory } from './BoostCatalog';
 

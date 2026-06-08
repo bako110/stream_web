@@ -8,7 +8,7 @@ import {
 import { apiClient } from '../../api';
 import { decodeId } from '../../utils/slugId';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner } from '../../../components/ui/Spinner';
+import { Spinner } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';

@@ -9,7 +9,7 @@ import {
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner } from '../../../components/ui/Spinner';
+import { Spinner } from '../../components/ui/Spinner';
 
 interface CommunityStats {
   members: { total: number; new_week: number; new_month: number; growth: number; };

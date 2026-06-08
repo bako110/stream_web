@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, X, Link2, Play, ChevronRight } from 'lucide-react';
 import { apiClient } from '../../../api';
-import { Spinner, PageLoader } from '../../components/ui/Spinner';
+import { Spinner, PageLoader } from '../../../components/ui/Spinner';
 import { useAuthStore } from '../../../store/authStore';
 import type { ContentType } from './BoostCatalog';
 

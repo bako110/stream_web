@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Briefcase, TrendingUp, TrendingDown, DollarSign, ChevronRight } from 'lucide-react';
 import { apiClient } from '../../api';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { Spinner } from '../../../components/ui/Spinner';
+import { Spinner } from '../../components/ui/Spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 

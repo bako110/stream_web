@@ -6,7 +6,7 @@ import { Search, Film, Star } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner } from '../../../components/ui/Spinner';
+import { Spinner } from '../../components/ui/Spinner';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
 import type { Content, PaginatedResponse } from '../../types';
 

@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, RefreshCw, Share2, Check, Link } from 'lucide-react';
 import { apiClient } from '../../api';
 import { decodeId } from '../../utils/slugId';
-import { Spinner } from '../../../components/ui/Spinner';
+import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 
 export default function CommunityInvitePage() {

@@ -8,7 +8,7 @@ import { fr } from 'date-fns/locale';
 import { useApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner } from '../../../components/ui/Spinner';
+import { Spinner } from '../../components/ui/Spinner';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
 import type { Event, PaginatedResponse } from '../../types';
 
