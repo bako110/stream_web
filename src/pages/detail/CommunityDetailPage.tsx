@@ -1160,7 +1160,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
     try {
       const msg = messages.find(m => m.id === msgId);
       if (!msg?.poll) return;
-      await apiClient.post(`/api/v1/communities/${id}/polls/${msg.poll.id}/vote`, { option_id: optionId });
+      await apiClient.post(`/api/v1/communities/${id}/polls/${msg.poll.id}/vote`, { option_ids: [optionId] });
       setMessages(prev => prev.map(m => {
         if (m.id !== msgId || !m.poll) return m;
         const options = m.poll.options.map(o =>
@@ -1187,7 +1187,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   async function handleCreatePoll(question: string, options: string[], allowMultiple: boolean) {
     try {
       await apiClient.post(`/api/v1/communities/${id}/polls`, {
-        question, options: options.map(text => ({ text })), allow_multiple: allowMultiple,
+        question, options, allow_multiple: allowMultiple,
       });
       setShowPollModal(false);
       toast.success('Sondage créé');
