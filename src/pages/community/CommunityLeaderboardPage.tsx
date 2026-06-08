@@ -1,11 +1,11 @@
-import { PageLoader } from '../../../components/ui/Spinner';
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
 import { ArrowLeft, Trophy, Crown, Medal, Star } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner } from '../../../components/ui/Spinner';
 
 interface LeaderEntry {
   rank: number;

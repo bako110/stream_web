@@ -1,4 +1,4 @@
-import { PageLoader } from '../../../components/ui/Spinner';
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
@@ -9,7 +9,7 @@ import {
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner } from '../../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';

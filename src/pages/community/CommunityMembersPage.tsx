@@ -1,4 +1,4 @@
-import { PageLoader } from '../../../components/ui/Spinner';
+import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -8,7 +8,7 @@ import {
 import { apiClient } from '../../api';
 import { decodeId, encodeId } from '../../utils/slugId';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner } from '../../components/ui/Spinner';
+import { Spinner } from '../../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
