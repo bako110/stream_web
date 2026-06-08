@@ -65,7 +65,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; Ico
   cancelled:          { label: 'Annulé',             color: '#9390AB', bg: '#9390AB15', Icon: X    },
 };
 
-function coinsToEur(c: number) { return (c / 100).toFixed(2); }
+function coinsToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
 
 // ── Modal: demande de retrait (admin seulement) ───────────────────────────────
 function WithdrawModal({ communityId, balance, hasTreasurer, onClose, onCreated }: {

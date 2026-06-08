@@ -36,7 +36,7 @@ const TX_CONFIG: Record<string, { color: string; bg: string; icon: React.FC<any>
 };
 
 function coinsToEur(coins: number): string {
-  return (coins / 100).toFixed(2);
+  return ((coins / 100) * 0.35).toFixed(2);
 }
 
 export default function CommunityTreasuryPage() {

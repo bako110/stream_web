@@ -32,7 +32,7 @@ interface Cotisation {
   } | null;
 }
 
-function coinsToEur(c: number) { return (c / 100).toFixed(2); }
+function coinsToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
 
 function deadlineLabel(d: string) {
   const date = new Date(d);

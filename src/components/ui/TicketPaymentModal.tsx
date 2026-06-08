@@ -32,12 +32,12 @@ interface Props {
   onBuy:           (tierKey?: TicketTier['key']) => Promise<any>;
 }
 
-// ── Constantes (identiques au mobile) ──────────────────────────────────────────
+// ── Constantes — alignées sur coins.ts (source unique de vérité) ───────────────
 
 const FEES_RATE    = 0.10;
-const EUR_TO_COINS = 200;
+const EUR_TO_COINS = 100;   // achat : 1 € = 100 coins
 
-const coinsToEur = (c: number) => (c / 100) * 0.5;
+const coinsToEur = (c: number) => (c / 100) * 0.35;  // retrait : 100 coins = 0,35 €
 const eurToCoins = (e: number | string) => Math.ceil(Number(e) * EUR_TO_COINS);
 const fmtCoins   = (c: number) => c.toLocaleString('fr-FR');
 const fmtEur     = (e: number | string) => Number(e).toFixed(2).replace('.', ',') + ' €';

@@ -69,7 +69,7 @@ GoFolyX prend une commission de 20% — en dessous de la plupart des plateformes
 
 ## 2. Les coins
 
-Les fans peuvent acheter des coins et vous les offrir pendant vos lives ou en réaction à vos posts. 1 coin = 0,01 € côté créateur. Les dons sont instantanément visibles et créent un lien fort entre vous et votre communauté.
+Les fans peuvent acheter des coins et vous les offrir pendant vos lives ou en réaction à vos posts. 100 coins = 0,35 € reversés au créateur (achat : 1 € = 100 coins). Les dons sont instantanément visibles et créent un lien fort entre vous et votre communauté.
 
 Astuce : les créateurs qui activent les dons sur leurs lives voient en moyenne 3× plus d'engagement que ceux qui ne le font pas.
 

@@ -41,7 +41,7 @@ export interface Ad {
 }
 
 const EUR_TO_COINS = 100;
-const coinsToEur = (c: number) => ((c / EUR_TO_COINS) * 1).toFixed(2);
+const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
 const PLACEMENT_LABELS: Record<AdPlacement, string> = {
   feed: 'Feed principal', reels: 'Reels', stories: 'Stories', search: 'Recherche',

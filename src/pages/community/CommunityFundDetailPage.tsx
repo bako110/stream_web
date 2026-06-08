@@ -46,7 +46,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; Ico
   exempt:  { label: 'Exempté',    color: '#3B82F6', bg: '#3B82F615', Icon: Shield     },
 };
 
-function coinsToEur(c: number) { return (c / 100).toFixed(2); }
+function coinsToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
 
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function CommunityFundDetailPage() {
