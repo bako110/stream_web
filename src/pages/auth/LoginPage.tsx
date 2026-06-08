@@ -34,11 +34,11 @@ const COUNTRIES = [
 ];
 
 const FEATURES = [
-  { icon: Play,      label: 'Reels & Vidéos',     color: '#7B3FF2' },
-  { icon: Music2,    label: 'Concerts en direct',  color: '#7B3FF2' },
-  { icon: Calendar,  label: 'Événements',           color: '#7B3FF2' },
-  { icon: Film,      label: 'Films & Séries',       color: '#7B3FF2' },
-  { icon: Radio,     label: 'Live streaming',       color: '#7B3FF2' },
+  { icon: Film,      label: 'Films & séries en streaming HD',     color: '#7B3FF2' },
+  { icon: Play,      label: 'Reels, stories & contenu viral',     color: '#A855F7' },
+  { icon: Music2,    label: 'Concerts live & replays exclusifs',  color: '#EC4899' },
+  { icon: Calendar,  label: 'Événements & billets numériques',    color: '#F59E0B' },
+  { icon: Radio,     label: 'Communautés, wallet & monétisation', color: '#10B981' },
 ];
 
 export default function LoginPage() {
@@ -131,13 +131,13 @@ export default function LoginPage() {
         <div className="relative z-10 space-y-8">
           <div>
             <h1 className="text-4xl font-black text-white leading-tight mb-3">
-              Votre univers<br />
+              Tout l'univers<br />
               <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                culturel digital
+                GoFolyX
               </span>
             </h1>
             <p className="text-white/60 text-base leading-relaxed">
-              Concerts, événements, films, reels — tout ce qui vous passionne en un seul endroit.
+              Films, séries, reels, concerts live, événements, communautés, portefeuille et monétisation — la plateforme tout-en-un pensée pour l'Afrique et sa diaspora.
             </p>
           </div>
           <div className="space-y-3">

@@ -10,9 +10,9 @@ import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
 
 const PERKS = [
-  { icon: Zap,         label: 'Accès instantané au contenu',     color: '#7B3FF2' },
-  { icon: Globe,       label: 'Communauté internationale',        color: '#7B3FF2' },
-  { icon: ShieldCheck, label: 'Compte sécurisé et privé',         color: '#7B3FF2' },
+  { icon: Zap,         label: 'Films, séries & reels en streaming',  color: '#7B3FF2' },
+  { icon: Globe,       label: 'Concerts live & événements',           color: '#A855F7' },
+  { icon: ShieldCheck, label: 'Communautés, wallet & monétisation',   color: '#EC4899' },
 ];
 
 export default function RegisterPage() {
@@ -100,13 +100,13 @@ export default function RegisterPage() {
         <div className="relative z-10 space-y-8">
           <div>
             <h1 className="text-4xl font-black text-white leading-tight mb-3">
-              Rejoignez<br />
+              Bienvenue sur<br />
               <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                la communauté
+                GoFolyX
               </span>
             </h1>
             <p className="text-white/60 text-base leading-relaxed">
-              Des milliers de passionnés vous attendent. Créez votre compte en moins d'une minute.
+              La plateforme tout-en-un : films, séries, reels, concerts live, événements, communautés et bien plus. Rejoignez des milliers d'utilisateurs et profitez d'une expérience unique.
             </p>
           </div>
 
