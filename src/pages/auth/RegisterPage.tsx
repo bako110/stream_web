@@ -122,16 +122,10 @@ export default function RegisterPage() {
             ))}
           </div>
 
-          {/* Sahelys card */}
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <p className="text-white/40 text-[10px] uppercase tracking-widest font-semibold mb-2">Développé par</p>
-            <p className="text-white font-black text-base">Sahelys</p>
-            <p className="text-white/50 text-xs mt-0.5">Intégrateur de solutions informatiques</p>
-          </div>
         </div>
 
         <div className="relative z-10">
-          <p className="text-white/30 text-xs">© 2026 Sahelys · Tous droits réservés</p>
+          <p className="text-white/30 text-xs">© 2026 GoFolyX · Tous droits réservés</p>
         </div>
       </div>
 

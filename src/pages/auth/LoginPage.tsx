@@ -153,7 +153,7 @@ export default function LoginPage() {
           </div>
         </div>
         <div className="relative z-10">
-          <p className="text-white/30 text-xs">© 2026 Sahelys · Intégrateur de solutions informatiques</p>
+          <p className="text-white/30 text-xs">© 2026 GoFolyX · Tous droits réservés</p>
         </div>
       </div>
 
