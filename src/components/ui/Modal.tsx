@@ -24,14 +24,18 @@ export function Modal({ open, onClose, title, children, size = 'md' }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={clsx('relative w-full card p-6 animate-slide-up shadow-2xl', sizes[size])}>
+      <div className={clsx('relative w-full card animate-slide-up shadow-2xl flex flex-col', sizes[size])}
+        style={{ maxHeight: 'calc(100vh - 2rem)' }}>
         {title && (
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0"
+            style={{ borderBottom: '1px solid var(--border)' }}>
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h2>
             <button onClick={onClose} className="btn-ghost p-1.5 rounded-lg"><X size={18} /></button>
           </div>
         )}
-        {children}
+        <div className="overflow-y-auto flex-1 p-6">
+          {children}
+        </div>
       </div>
     </div>
   );

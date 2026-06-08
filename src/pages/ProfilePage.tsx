@@ -3,7 +3,7 @@ import { encodeId } from '../utils/slugId';
 import type { ChangeEvent } from 'react';
 import {
   Camera, Edit3, MapPin, Globe, Calendar, Play, Eye,
-  Grid3x3, Info, BadgeCheck, Heart, ImagePlus, Users, FileText,
+  Grid3x3, Info, BadgeCheck, Heart, ImagePlus, Users, FileText, Phone, Gift,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -39,14 +39,24 @@ function Stat({ value, label, onClick }: { value: number; label: string; onClick
 // ── Edit Profile Modal ────────────────────────────────────────────────────────
 function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: () => void }) {
   const { updateUser } = useAuthStore();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [localUser, setLocalUser] = useState<User>(user);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [form, setForm] = useState({
-    first_name:   user.first_name   ?? '',
-    last_name:    user.last_name    ?? '',
-    username:     user.username     ?? '',
-    display_name: user.display_name ?? '',
-    bio:          user.bio          ?? '',
-    location:     user.location     ?? '',
-    website:      user.website      ?? '',
+    first_name:    user.first_name    ?? '',
+    last_name:     user.last_name     ?? '',
+    username:      user.username      ?? '',
+    display_name:  user.display_name  ?? '',
+    bio:           user.bio           ?? '',
+    location:      user.location      ?? '',
+    website:       user.website       ?? '',
+    phone:         (user as any).phone         ?? '',
+    date_of_birth: (user as any).date_of_birth ?? '',
+    gender:        (user as any).gender        ?? '',
   });
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
@@ -56,16 +66,71 @@ function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () 
       setForm(f => ({ ...f, [k]: e.target.value }));
   }
 
+  async function handleUploadAvatar(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Prévisualisation locale immédiate
+    const preview = URL.createObjectURL(file);
+    setAvatarPreview(preview);
+    setUploadingAvatar(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await apiClient.upload<{ uploaded: { url: string }[] }>(Endpoints.upload.images('avatars'), fd);
+      const url = res.data.uploaded?.[0]?.url ?? (res.data as any).url;
+      await apiClient.patch<User>(Endpoints.users.updateMe, { avatar_url: url });
+      updateUser({ ...localUser, avatar_url: url });
+      setLocalUser(u => ({ ...u, avatar_url: url }));
+      setAvatarPreview(null);
+      URL.revokeObjectURL(preview);
+    } catch {
+      setAvatarPreview(null);
+      URL.revokeObjectURL(preview);
+      setError('Impossible de mettre à jour la photo de profil.');
+    }
+    finally { setUploadingAvatar(false); e.target.value = ''; }
+  }
+
+  async function handleUploadBanner(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Prévisualisation locale immédiate
+    const preview = URL.createObjectURL(file);
+    setBannerPreview(preview);
+    setUploadingBanner(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await apiClient.upload<{ uploaded: { url: string }[] }>(Endpoints.upload.images('banners'), fd);
+      const url = res.data.uploaded?.[0]?.url ?? (res.data as any).url;
+      await apiClient.patch<User>(Endpoints.users.updateMe, { banner_url: url });
+      updateUser({ ...localUser, banner_url: url });
+      setLocalUser(u => ({ ...u, banner_url: url }));
+      setBannerPreview(null);
+      URL.revokeObjectURL(preview);
+    } catch {
+      setBannerPreview(null);
+      URL.revokeObjectURL(preview);
+      setError('Impossible de mettre à jour la photo de couverture.');
+    }
+    finally { setUploadingBanner(false); e.target.value = ''; }
+  }
+
   async function save() {
     setSaving(true); setError('');
     try {
-      const res = await apiClient.patch<User>(Endpoints.users.updateMe, form);
+      const payload: Record<string, any> = {};
+      for (const [k, v] of Object.entries(form)) {
+        if (v !== '') payload[k] = v;
+      }
+      const res = await apiClient.patch<User>(Endpoints.users.updateMe, payload);
       updateUser(res.data);
       onSaved(); onClose();
     } catch { setError('Impossible de sauvegarder. Réessayez.'); }
     finally { setSaving(false); }
   }
 
+  const displayName = localUser.display_name ?? localUser.username ?? 'Utilisateur';
   const inputCls = "w-full px-3.5 py-2.5 rounded-xl text-sm outline-none transition-all";
   const inputStyle = { background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' };
 
@@ -78,6 +143,72 @@ function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () 
             {error}
           </div>
         )}
+
+        {/* ── Photos ── */}
+        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+          {/* Bannière */}
+          <div className="relative h-32 cursor-pointer group"
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}
+            onClick={() => !uploadingBanner && bannerInputRef.current?.click()}>
+            {(bannerPreview ?? localUser.banner_url) && (
+              <img src={bannerPreview ?? localUser.banner_url!} className="w-full h-full object-cover" alt="" />
+            )}
+            {/* overlay hover */}
+            <div className="absolute inset-0 flex items-center justify-center transition-opacity"
+              style={{ background: uploadingBanner ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0)',
+                       opacity: uploadingBanner ? 1 : undefined }}
+              onMouseEnter={e => { if (!uploadingBanner) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.4)'; }}
+              onMouseLeave={e => { if (!uploadingBanner) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0)'; }}>
+              {uploadingBanner ? (
+                <div className="flex flex-col items-center gap-2 text-white">
+                  <Spinner size="sm" />
+                  <span className="text-xs font-semibold">Téléchargement…</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-white text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera size={15} />
+                  {(bannerPreview ?? localUser.banner_url) ? 'Changer la couverture' : 'Ajouter une couverture'}
+                </div>
+              )}
+            </div>
+            <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadBanner} />
+          </div>
+
+          {/* Avatar superposé comme Facebook */}
+          <div className="px-4 pb-3" style={{ background: 'var(--surface)' }}>
+            <div className="flex items-end justify-between -mt-10 mb-2">
+              <div className="relative">
+                <div className="rounded-full p-1" style={{ background: 'var(--surface)', display: 'inline-block' }}>
+                  <div className="w-20 h-20 rounded-full overflow-hidden"
+                    style={{ border: '3px solid var(--surface)' }}>
+                    {(avatarPreview ?? localUser.avatar_url)
+                      ? <img src={avatarPreview ?? localUser.avatar_url!} className="w-full h-full object-cover" alt="" />
+                      : <div className="w-full h-full flex items-center justify-center text-white text-2xl font-black"
+                          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+                          {displayName[0]?.toUpperCase()}
+                        </div>
+                    }
+                  </div>
+                </div>
+                <button type="button"
+                  onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute bottom-1 right-1 p-1.5 rounded-full transition-all"
+                  style={{ background: uploadingAvatar ? 'var(--bg-secondary)' : '#7B3FF2',
+                           border: '2px solid var(--surface)', color: '#fff' }}>
+                  {uploadingAvatar ? <Spinner size="sm" /> : <Camera size={12} />}
+                </button>
+                <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} />
+              </div>
+              <p className="text-xs pb-1" style={{ color: 'var(--text-tertiary)' }}>
+                Cliquez sur la bannière ou l'avatar pour les modifier
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }} />
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Prénom</label>
@@ -112,6 +243,41 @@ function EditProfileModal({ user, onClose, onSaved }: { user: User; onClose: () 
         <div>
           <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Site web</label>
           <input className={inputCls} style={inputStyle} type="url" placeholder="https://" value={form.website} onChange={field('website')} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Téléphone</label>
+          <div className="relative">
+            <Phone size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
+            <input className={inputCls + ' pl-9'} style={inputStyle} type="tel" placeholder="+33..." value={form.phone} onChange={field('phone')} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Date de naissance</label>
+          <div className="relative">
+            <Gift size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
+            <input className={inputCls + ' pl-9'} style={inputStyle} type="date" value={form.date_of_birth} onChange={field('date_of_birth')}
+              max={new Date().toISOString().split('T')[0]} min="1920-01-01" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Genre</label>
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { key: 'male',              label: 'Homme'       },
+              { key: 'female',            label: 'Femme'       },
+              { key: 'other',             label: 'Autre'       },
+              { key: 'prefer_not_to_say', label: 'Non précisé' },
+            ].map(opt => (
+              <button key={opt.key} type="button"
+                onClick={() => setForm(f => ({ ...f, gender: f.gender === opt.key ? '' : opt.key }))}
+                className="flex-1 min-w-[100px] px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+                style={form.gender === opt.key
+                  ? { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', border: '1px solid #7B3FF2' }
+                  : { background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onClose}
@@ -412,8 +578,9 @@ export default function ProfilePage() {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await apiClient.upload<{ url: string }>(Endpoints.upload.images('avatars'), fd);
-      await apiClient.patch(Endpoints.users.updateMe, { avatar_url: res.data.url });
+      const res = await apiClient.upload<{ uploaded: { url: string }[] }>(Endpoints.upload.images('avatars'), fd);
+      const url = res.data.uploaded?.[0]?.url;
+      if (url) await apiClient.patch(Endpoints.users.updateMe, { avatar_url: url });
       await fetchMe();
     } finally { setUploadingAvatar(false); e.target.value = ''; }
   }
@@ -425,8 +592,9 @@ export default function ProfilePage() {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await apiClient.upload<{ url: string }>(Endpoints.upload.images('banners'), fd);
-      await apiClient.patch(Endpoints.users.updateMe, { banner_url: res.data.url });
+      const res = await apiClient.upload<{ uploaded: { url: string }[] }>(Endpoints.upload.images('banners'), fd);
+      const url = res.data.uploaded?.[0]?.url;
+      if (url) await apiClient.patch(Endpoints.users.updateMe, { banner_url: url });
       await fetchMe();
     } finally { setUploadingBanner(false); e.target.value = ''; }
   }
