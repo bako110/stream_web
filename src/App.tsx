@@ -72,6 +72,7 @@ const PrivacyPage                    = lazy(() => import('./pages/PrivacyPage'))
 const CGUPage                        = lazy(() => import('./pages/CGUPage'));
 const AboutPage                      = lazy(() => import('./pages/AboutPage'));
 const BlogPage                       = lazy(() => import('./pages/BlogPage'));
+const BlogArticlePage                = lazy(() => import('./pages/BlogArticlePage'));
 const PressePage                     = lazy(() => import('./pages/PressePage'));
 const CarrieresPage                  = lazy(() => import('./pages/CarrieresPage'));
 const CookiesPage                    = lazy(() => import('./pages/CookiesPage'));
@@ -282,6 +283,7 @@ function AppShell() {
         <Route path="/cookies"                        element={<CookiesPage />} />
         <Route path="/a-propos"                       element={<AboutPage />} />
         <Route path="/blog"                           element={<BlogPage />} />
+        <Route path="/blog/:slug"                     element={<BlogArticlePage />} />
         <Route path="/presse"                         element={<PressePage />} />
         <Route path="/carrieres"                      element={<CarrieresPage />} />
         <Route path="/support"                        element={<SupportPage />} />
