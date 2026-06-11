@@ -163,18 +163,21 @@ export function LiveReactionPicker({
         ))}
       </div>
 
-      {/* Picker panel */}
+      {/* Picker panel — s'ouvre à gauche du bouton */}
       {open && (
-        <div className="absolute bottom-14 right-0 p-2 rounded-2xl z-10"
+        <div className="absolute bottom-0 p-2 rounded-2xl z-50"
           style={{
-            background:    'rgba(0,0,0,0.75)',
-            backdropFilter:'blur(12px)',
-            border:        '1px solid rgba(255,255,255,0.15)',
+            right:         '120%',
+            background:    'rgba(0,0,0,0.82)',
+            backdropFilter:'blur(16px)',
+            border:        '1px solid rgba(255,255,255,0.18)',
+            boxShadow:     '0 8px 32px rgba(0,0,0,0.5)',
+            animation:     'slideInLeft 0.15s ease-out',
           }}>
           <div className="grid grid-cols-4 gap-1.5">
             {REACTIONS.map(e => (
               <button key={e} onClick={() => handleReact(e)}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-xl transition-all hover:scale-125"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-xl transition-all hover:scale-125 active:scale-95"
                 style={{ background: 'rgba(255,255,255,0.1)' }}>
                 {e}
               </button>
@@ -218,6 +221,10 @@ export function FloatingEmojiOverlay({ floats }: { floats: EmojiFloat[] }) {
 // ── CSS globale (à injecter une fois) ────────────────────────────────────────
 
 export const LIVE_ANIMATIONS_CSS = `
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(10px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
 @keyframes floatHeart {
   0%   { transform: translateY(0) scale(0.8); opacity: 1; }
   100% { transform: translateY(-200px) scale(1.2); opacity: 0; }
