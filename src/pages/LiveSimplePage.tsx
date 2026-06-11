@@ -15,7 +15,7 @@ import {
   RoomAudioRenderer,
   useLocalParticipant,
 } from '@livekit/components-react';
-import { Track } from 'livekit-client';
+import { Track, VideoPresets } from 'livekit-client';
 import type { LiveStream, StreamToken } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -38,6 +38,28 @@ import {
   GiftToast,
   type GiftNotif,
 } from '../components/live/LiveGiftModal';
+
+// ── LiveKit quality config ─────────────────────────────────────────────────────
+
+const CREATOR_ROOM_OPTIONS = {
+  adaptiveStream: true,
+  dynacast: true,
+  publishDefaults: {
+    videoCodec: 'h264' as const,
+    simulcast: true,
+    videoSimulcastLayers: [VideoPresets.h720],
+    videoEncoding: { maxBitrate: 4_000_000, maxFramerate: 30 },
+  },
+};
+
+const VIEWER_ROOM_OPTIONS = {
+  adaptiveStream: true,
+  dynacast: false,
+  publishDefaults: {
+    videoCodec: 'h264' as const,
+    videoSimulcastLayers: [VideoPresets.h720],
+  },
+};
 
 // ── Types internes ─────────────────────────────────────────────────────────────
 
@@ -898,7 +920,13 @@ export default function LiveSimplePage() {
       <div className="flex h-[calc(100vh-57px)] overflow-hidden bg-black">
         <div className="flex-1 flex flex-col min-w-0">
           {isActive && lkToken && lkUrl ? (
-            <LiveKitRoom token={lkToken} serverUrl={lkUrl} connect className="flex-1 flex flex-col min-w-0 min-h-0">
+            <LiveKitRoom
+              token={lkToken}
+              serverUrl={lkUrl}
+              connect
+              options={isHost ? CREATOR_ROOM_OPTIONS : VIEWER_ROOM_OPTIONS}
+              className="flex-1 flex flex-col min-w-0 min-h-0"
+            >
               <RoomAudioRenderer />
 
               {/* ── Header ───────────────────────────────────────────────── */}

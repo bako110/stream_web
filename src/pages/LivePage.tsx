@@ -15,7 +15,7 @@ import {
   useTracks,
   RoomAudioRenderer,
 } from '@livekit/components-react';
-import { Track } from 'livekit-client';
+import { Track, VideoPresets } from 'livekit-client';
 import type { Concert, StreamToken, StreamStatus } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -26,6 +26,17 @@ import { WS_BASE_URL } from '../utils/constants';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+// ── LiveKit quality config ─────────────────────────────────────────────────────
+
+const VIEWER_ROOM_OPTIONS = {
+  adaptiveStream: true,
+  dynacast: false,
+  publishDefaults: {
+    videoCodec: 'h264' as const,
+    videoSimulcastLayers: [VideoPresets.h720],
+  },
+};
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
 
@@ -387,6 +398,7 @@ export default function LivePage() {
               serverUrl={livekitUrl}
               connect={true}
               onConnected={() => setLkConnected(true)}
+              options={VIEWER_ROOM_OPTIONS}
               className="w-full h-full"
             >
               <RoomAudioRenderer />
