@@ -1044,10 +1044,8 @@ export default function LiveSimplePage() {
                       <LiveReactionPicker
                         liveId={id!}
                         onFloats={items => {
-                          setEmojiFloats(prev => [...prev.slice(-30), ...items]);
-                          items.forEach(f => {
-                            setTimeout(() => setEmojiFloats(prev => prev.filter(x => x.id !== f.id)), 1800);
-                          });
+                          setEmojiFloats(prev => [...prev.slice(-15), ...items]);
+                          items.forEach(f => setTimeout(() => setEmojiFloats(prev => prev.filter(x => x.id !== f.id)), 2000));
                         }}
                       />
                       {!isHost && live.user?.id && (

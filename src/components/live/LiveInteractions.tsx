@@ -107,6 +107,9 @@ interface EmojiFloat { id: number; emoji: string; x: number; size: number; }
 
 // ── LiveReactionPicker ────────────────────────────────────────────────────────
 
+// 3 colonnes fixes, espacement de 28px entre elles, centrées sur le bouton
+const COLS = [-28, 0, 28];
+
 export function LiveReactionPicker({
   liveId,
   onFloats,
@@ -114,17 +117,24 @@ export function LiveReactionPicker({
   liveId: string;
   onFloats: (items: EmojiFloat[]) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const floatId = useRef(0);
+  const [open,       setOpen]       = useState(false);
+  const [localFloats,setLocalFloats]= useState<EmojiFloat[]>([]);
+  const floatId  = useRef(0);
+  const colCursor = useRef(0);   // round-robin sur les 3 colonnes
 
   function spawnFloats(emoji: string) {
-    const items: EmojiFloat[] = Array.from({ length: 8 }, (_, i) => ({
+    // 1 emoji par colonne (3 au total), chaque appel décale d'une colonne
+    const col = COLS[colCursor.current % COLS.length];
+    colCursor.current++;
+    const item: EmojiFloat = {
       id:    ++floatId.current,
       emoji,
-      x:     (Math.random() - 0.5) * 40,   // offset ±20px autour du bouton
-      size:  Math.random() * 12 + 26,
-    }));
-    onFloats(items);
+      x:     col,
+      size:  30,
+    };
+    setLocalFloats(prev => [...prev.slice(-15), item]);
+    setTimeout(() => setLocalFloats(prev => prev.filter(x => x.id !== item.id)), 2000);
+    onFloats([item]);
   }
 
   function handleReact(emoji: string) {
@@ -135,13 +145,31 @@ export function LiveReactionPicker({
 
   return (
     <div className="relative flex flex-col items-center">
+      {/* Zone d'ascension — 3 colonnes alignées au-dessus du bouton */}
+      <div className="pointer-events-none absolute bottom-14 left-1/2"
+        style={{ width: 0, height: 0, overflow: 'visible' }}>
+        {localFloats.map(f => (
+          <div key={f.id}
+            style={{
+              position:  'absolute',
+              bottom:    0,
+              left:      f.x,
+              fontSize:  f.size,
+              transform: 'translateX(-50%)',
+              animation: 'floatEmojiUp 1800ms cubic-bezier(0.22,1,0.36,1) forwards',
+            }}>
+            {f.emoji}
+          </div>
+        ))}
+      </div>
+
       {/* Picker panel */}
       {open && (
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 p-2 rounded-2xl z-10"
+        <div className="absolute bottom-14 right-0 p-2 rounded-2xl z-10"
           style={{
-            background: 'rgba(0,0,0,0.75)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.15)',
+            background:    'rgba(0,0,0,0.75)',
+            backdropFilter:'blur(12px)',
+            border:        '1px solid rgba(255,255,255,0.15)',
           }}>
           <div className="grid grid-cols-4 gap-1.5">
             {REACTIONS.map(e => (
@@ -157,25 +185,28 @@ export function LiveReactionPicker({
 
       <button onClick={() => setOpen(v => !v)}
         className="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all"
-        style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
+        style={{ background: open ? 'rgba(123,63,242,0.3)' : 'rgba(255,255,255,0.12)', border: `1px solid ${open ? 'rgba(123,63,242,0.6)' : 'rgba(255,255,255,0.2)'}` }}>
         😊
       </button>
     </div>
   );
 }
 
-// ── FloatingEmojiOverlay — affiché dans le parent ────────────────────────────
+// ── FloatingEmojiOverlay — affiché dans le parent (réactions WS reçues) ────────
 
 export function FloatingEmojiOverlay({ floats }: { floats: EmojiFloat[] }) {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {floats.map(f => (
+    <div className="pointer-events-none absolute bottom-28 right-6"
+      style={{ width: 0, height: 0, overflow: 'visible' }}>
+      {floats.map((f, i) => (
         <div key={f.id}
-          className="absolute bottom-20"
           style={{
-            right: `calc(1.5rem + ${f.x}px)`,
-            fontSize: f.size,
-            animation: `floatEmojiUp ${1200 + Math.random() * 600}ms ease-out forwards`,
+            position:  'absolute',
+            bottom:    0,
+            left:      COLS[i % COLS.length],
+            fontSize:  30,
+            transform: 'translateX(-50%)',
+            animation: 'floatEmojiUp 1800ms cubic-bezier(0.22,1,0.36,1) forwards',
           }}>
           {f.emoji}
         </div>
