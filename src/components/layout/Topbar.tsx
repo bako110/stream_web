@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useWs } from '../../context/WebSocketContext';
 import { Images } from '../assets';
+import { MessagesPopover } from './MessagesPopover';
 
 interface Props { onMenuClick: () => void; }
 
@@ -18,6 +19,7 @@ export function Topbar({ onMenuClick }: Props) {
   const [query, setQuery]           = useState('');
   const [mobileSearch, setMobileSearch] = useState(false);
   const [mobileQuery,  setMobileQuery]  = useState('');
+  const [msgPopover,   setMsgPopover]   = useState(false);
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync le champ desktop avec le param URL quand on est sur /search
@@ -201,11 +203,14 @@ export function Topbar({ onMenuClick }: Props) {
 
         {/* Messages */}
         <button
-          onClick={() => navigate('/messages')}
+          onClick={() => setMsgPopover(v => !v)}
           className="relative p-2 rounded-xl transition-all"
-          style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
-          onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
+          style={{
+            color: msgPopover ? 'var(--primary)' : 'var(--text-secondary)',
+            background: msgPopover ? 'rgba(123,63,242,0.1)' : 'transparent',
+          }}
+          onMouseEnter={e => { if (!msgPopover) { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
+          onMouseLeave={e => { if (!msgPopover) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}
         >
           <MessageCircle size={20} />
           {unreadMessages > 0 && (
@@ -215,6 +220,7 @@ export function Topbar({ onMenuClick }: Props) {
             </span>
           )}
         </button>
+        {msgPopover && <MessagesPopover onClose={() => setMsgPopover(false)} />}
 
         {/* Notifications */}
         <button
