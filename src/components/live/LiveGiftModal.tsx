@@ -105,7 +105,7 @@ interface Props {
   onSent?: (notif: GiftNotif) => void;
 }
 
-export function LiveGiftModal({ liveId: _liveId, receiverId, receiverName, onClose, onSent }: Props) {
+export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSent }: Props) {
   const navigate = useNavigate();
   const [gifts,    setGifts]    = useState<GiftType[]>([]);
   const [balance,  setBalance]  = useState<number | null>(null);
@@ -140,8 +140,9 @@ export function LiveGiftModal({ liveId: _liveId, receiverId, receiverName, onClo
     setSending(true);
     try {
       await apiClient.post(Endpoints.wallet.sendGift, {
-        receiver_id: receiverId,
+        receiver_id:  receiverId,
         gift_type_id: selected.id,
+        live_id:      liveId,
       });
       spawnFloat(selected.emoji);
       setBalance(b => (b !== null ? b - selected.coins_cost : b));
