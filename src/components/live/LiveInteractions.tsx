@@ -119,19 +119,15 @@ export function LiveReactionPicker({
 }) {
   const [open,       setOpen]       = useState(false);
   const [localFloats,setLocalFloats]= useState<EmojiFloat[]>([]);
-  const floatId  = useRef(0);
-  const colCursor = useRef(0);   // round-robin sur les 3 colonnes
+  const [btnRect,    setBtnRect]    = useState<DOMRect | null>(null);
+  const btnRef    = useRef<HTMLButtonElement>(null);
+  const floatId   = useRef(0);
+  const colCursor = useRef(0);
 
   function spawnFloats(emoji: string) {
-    // 1 emoji par colonne (3 au total), chaque appel décale d'une colonne
     const col = COLS[colCursor.current % COLS.length];
     colCursor.current++;
-    const item: EmojiFloat = {
-      id:    ++floatId.current,
-      emoji,
-      x:     col,
-      size:  30,
-    };
+    const item: EmojiFloat = { id: ++floatId.current, emoji, x: col, size: 30 };
     setLocalFloats(prev => [...prev.slice(-15), item]);
     setTimeout(() => setLocalFloats(prev => prev.filter(x => x.id !== item.id)), 2000);
     onFloats([item]);
@@ -143,9 +139,16 @@ export function LiveReactionPicker({
     apiClient.post(Endpoints.lives.react(liveId), { emoji }).catch(() => {});
   }
 
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      setBtnRect(btnRef.current.getBoundingClientRect());
+    }
+    setOpen(v => !v);
+  }
+
   return (
     <div className="relative flex flex-col items-center">
-      {/* Zone d'ascension — 3 colonnes alignées au-dessus du bouton */}
+      {/* Zone d'ascension */}
       <div className="pointer-events-none absolute bottom-14 left-1/2"
         style={{ width: 0, height: 0, overflow: 'visible' }}>
         {localFloats.map(f => (
@@ -163,15 +166,18 @@ export function LiveReactionPicker({
         ))}
       </div>
 
-      {/* Picker panel — s'ouvre à gauche du bouton */}
-      {open && (
-        <div className="absolute bottom-0 p-2 rounded-2xl z-50"
+      {/* Picker panel — fixed, positionné à gauche du bouton */}
+      {open && btnRect && (
+        <div className="p-2 rounded-2xl"
           style={{
-            right:         '120%',
-            background:    'rgba(0,0,0,0.82)',
+            position:      'fixed',
+            top:           btnRect.top,
+            right:         window.innerWidth - btnRect.left + 8,
+            zIndex:        9999,
+            background:    'rgba(0,0,0,0.88)',
             backdropFilter:'blur(16px)',
             border:        '1px solid rgba(255,255,255,0.18)',
-            boxShadow:     '0 8px 32px rgba(0,0,0,0.5)',
+            boxShadow:     '0 8px 32px rgba(0,0,0,0.6)',
             animation:     'slideInLeft 0.15s ease-out',
           }}>
           <div className="grid grid-cols-4 gap-1.5">
@@ -186,7 +192,7 @@ export function LiveReactionPicker({
         </div>
       )}
 
-      <button onClick={() => setOpen(v => !v)}
+      <button ref={btnRef} onClick={handleToggle}
         className="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all"
         style={{ background: open ? 'rgba(123,63,242,0.3)' : 'rgba(255,255,255,0.12)', border: `1px solid ${open ? 'rgba(123,63,242,0.6)' : 'rgba(255,255,255,0.2)'}` }}>
         😊
