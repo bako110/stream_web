@@ -458,7 +458,7 @@ function LiveKitViewer({
       <RoomAudioRenderer />
 
       {spotlightTrack && (
-        <VideoTrack trackRef={spotlightTrack} className="w-full h-full object-cover" />
+        <VideoTrack trackRef={spotlightTrack} className="w-full h-full object-contain" />
       )}
 
       {spotlightTrack && (
