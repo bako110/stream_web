@@ -7,7 +7,11 @@ import { Endpoints } from '../../api/endpoints';
 
 const HEART_COLORS = ['#EF4444','#F97316','#EAB308','#A855F7','#7B3FF2','#7B3FF2'];
 const HEART_EMOJIS = ['❤️','🧡','💛','💜','💙','🩷'];
-const REACTIONS    = ['❤️','😂','😮','😢','😡','🔥','👏','🎉'];
+const REACTIONS    = [
+  '❤️','😂','😮','😢','😡','🔥','👏','🎉',
+  '😍','🤩','😎','🥳','🤣','💯','👍','💪',
+  '🙌','✨','💥','🎊','🫶','😱','🤯','💀',
+];
 
 // ── Floating Heart ─────────────────────────────────────────────────────────────
 
@@ -180,7 +184,7 @@ export function LiveReactionPicker({
             boxShadow:     '0 8px 32px rgba(0,0,0,0.6)',
             animation:     'slideInLeft 0.15s ease-out',
           }}>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-6 gap-1.5">
             {REACTIONS.map(e => (
               <button key={e} onClick={() => handleReact(e)}
                 className="w-9 h-9 rounded-xl flex items-center justify-center text-xl transition-all hover:scale-125 active:scale-95"
