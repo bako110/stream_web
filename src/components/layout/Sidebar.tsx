@@ -222,11 +222,11 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         {/* Déconnexion */}
         <button onClick={handleLogout} title={collapsed ? 'Déconnexion' : undefined}
           className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150 group"
-          style={{ color: '#7B3FF2' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.08)')}
+          style={{ color: '#EF4444' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
           <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5"
-            style={{ background: 'rgba(123,63,242,0.08)', color: '#7B3FF2' }}>
+            style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444' }}>
             <LogOut size={16} />
           </div>
           {!collapsed && <span className="text-sm font-semibold">Déconnexion</span>}

@@ -186,11 +186,11 @@ export function MobileDrawer({ onClose }: Props) {
         {/* Déconnexion */}
         <button onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-2.5 rounded-xl w-full text-left transition-all"
-          style={{ color: '#7B3FF2' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.08)')}
+          style={{ color: '#EF4444' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
           <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(123,63,242,0.08)', color: '#7B3FF2' }}>
+            style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444' }}>
             <LogOut size={16} />
           </div>
           <span className="text-sm font-semibold">Déconnexion</span>

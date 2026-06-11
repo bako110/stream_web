@@ -637,13 +637,13 @@ function MediaControls({
     icon: React.ReactNode; label: string; onClick?: () => void;
     active?: boolean; color?: string; badge?: number; danger?: boolean;
   }) {
-    const bg     = danger ? 'rgba(123,63,242,0.2)' : active ? `${color ?? '#7B3FF2'}25` : 'rgba(255,255,255,0.12)';
-    const border = danger ? '#7B3FF2' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.15)';
-    const txt    = danger ? '#7B3FF2' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)';
+    const bg     = danger ? 'rgba(239,68,68,0.2)' : active ? `${color ?? '#7B3FF2'}25` : 'rgba(255,255,255,0.12)';
+    const border = danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.15)';
+    const txt    = danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)';
     return (
       <button onClick={onClick} className="flex flex-col items-center gap-1 relative" style={{ minWidth: 52 }}>
         <div className="w-12 h-12 rounded-full flex items-center justify-center transition-all"
-          style={{ background: bg, border: `1.5px solid ${border}`, color: danger ? '#7B3FF2' : active ? (color ?? '#7B3FF2') : '#fff' }}>
+          style={{ background: bg, border: `1.5px solid ${border}`, color: danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : '#fff' }}>
           {icon}
         </div>
         {badge !== undefined && badge > 0 && (
