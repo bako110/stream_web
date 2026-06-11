@@ -112,10 +112,13 @@ const LiveChat = forwardRef<LiveChatHandle, {
           }]);
         }
         if (d.type === 'gift_received' && d.gift) {
+          const gName  = d.gift.gift_type?.name  ?? d.gift.name  ?? 'Cadeau';
+          const gEmoji = d.gift.gift_type?.emoji ?? d.gift.emoji ?? '🎁';
+          const gSender = d.gift.sender?.display_name ?? d.gift.sender?.username ?? 'Quelqu\'un';
           setMessages(prev => [...prev.slice(-149), {
             id:     `gift-${Date.now()}`,
-            user:   d.gift.sender?.display_name ?? 'Quelqu\'un',
-            text:   `🎁 ${d.gift.sender?.display_name ?? 'Quelqu\'un'} a envoyé ${d.gift.emoji} ${d.gift.name}`,
+            user:   gSender,
+            text:   `${gEmoji} ${gSender} a envoyé ${gName}`,
             isGift: true,
           }]);
         }
@@ -799,9 +802,9 @@ export default function LiveSimplePage() {
         const n: GiftNotif = {
           id:         d.gift?.id ?? String(Date.now()),
           senderName: d.gift?.sender?.display_name ?? d.gift?.sender?.username ?? 'Quelqu\'un',
-          emoji:      d.gift?.emoji ?? '🎁',
-          giftName:   d.gift?.name ?? 'Cadeau',
-          coins:      d.gift?.coins_cost ?? 0,
+          emoji:      d.gift?.gift_type?.emoji ?? d.gift?.emoji ?? '🎁',
+          giftName:   d.gift?.gift_type?.name  ?? d.gift?.name  ?? 'Cadeau',
+          coins:      d.gift?.coins_spent ?? d.gift?.coins_cost ?? 0,
         };
         setGiftNotifs(prev => [...prev.slice(-9), n]);
         setGiftHistory(prev => [...prev, { ...n }]);
