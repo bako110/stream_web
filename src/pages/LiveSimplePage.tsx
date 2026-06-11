@@ -813,7 +813,7 @@ export default function LiveSimplePage() {
         const floatId = Date.now();
         const items: EmojiFloat[] = Array.from({ length: 5 }, (_, i) => ({
           id: floatId + i, emoji,
-          x: Math.random() * 80 + 10, size: Math.random() * 16 + 24,
+          x: (Math.random() - 0.5) * 40, size: Math.random() * 12 + 26,
         }));
         setEmojiFloats(prev => [...prev.slice(-30), ...items]);
         items.forEach(f => {

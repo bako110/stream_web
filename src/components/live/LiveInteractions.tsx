@@ -118,11 +118,11 @@ export function LiveReactionPicker({
   const floatId = useRef(0);
 
   function spawnFloats(emoji: string) {
-    const items: EmojiFloat[] = Array.from({ length: 8 }, () => ({
+    const items: EmojiFloat[] = Array.from({ length: 8 }, (_, i) => ({
       id:    ++floatId.current,
       emoji,
-      x:     Math.random() * 80 + 10,
-      size:  Math.random() * 20 + 24,
+      x:     (Math.random() - 0.5) * 40,   // offset ±20px autour du bouton
+      size:  Math.random() * 12 + 26,
     }));
     onFloats(items);
   }
@@ -173,7 +173,7 @@ export function FloatingEmojiOverlay({ floats }: { floats: EmojiFloat[] }) {
         <div key={f.id}
           className="absolute bottom-20"
           style={{
-            left: `${f.x}%`,
+            right: `calc(1.5rem + ${f.x}px)`,
             fontSize: f.size,
             animation: `floatEmojiUp ${1200 + Math.random() * 600}ms ease-out forwards`,
           }}>
