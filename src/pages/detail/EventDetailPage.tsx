@@ -609,13 +609,6 @@ export default function EventDetailPage() {
                 <Ticket size={15} /> Acheter un billet
               </button>
             )}
-            {ev.access_type === 'free' && (
-              <button onClick={() => setPaySheet(true)}
-                className="w-full py-3.5 rounded-xl font-black text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95"
-                style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
-                <Ticket size={15} /> Je réserve ma place !
-              </button>
-            )}
           </div>
         )}
       </div>

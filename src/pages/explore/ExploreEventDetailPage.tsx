@@ -141,10 +141,10 @@ export default function ExploreEventDetailPage() {
           )}
 
           <div className="flex flex-wrap gap-3">
-            {!isPast && (
+            {!isPast && event.ticket_price !== 0 && (
               <Link to="/auth/register" className="btn-primary flex items-center gap-2">
                 <Ticket size={16} />
-                {event.ticket_price === 0 ? "S'inscrire gratuitement" : 'Acheter mon billet'}
+                Acheter mon billet
               </Link>
             )}
             <Link to="/auth/login" className="btn-secondary">J'ai déjà un compte</Link>
