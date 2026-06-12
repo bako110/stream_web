@@ -627,6 +627,8 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   const [searchResults,setSearchResults]= useState<ExtMessage[]>([]);
   const [forwardMsg,setForwardMsg]= useState<ExtMessage | null>(null);
   const [uploading,   setUploading]   = useState(false);
+  const [pendingFiles,setPendingFiles]= useState<File[] | null>(null);
+  const [pendingCaption,setPendingCaption]= useState('');
   const [recording,   setRecording]   = useState(false);
   const [recordTime,  setRecordTime]  = useState(0);
   const mediaRecRef   = useRef<MediaRecorder | null>(null);
@@ -800,26 +802,36 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     return { url, msgType, preview, meta };
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
+    setPendingFiles(files);
+    setPendingCaption('');
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
+  async function sendPendingFiles() {
+    if (!pendingFiles?.length) return;
     setUploading(true);
+    setPendingFiles(null);
+    const caption = pendingCaption.trim();
+    setPendingCaption('');
     try {
-      for (const file of files) {
+      for (const file of pendingFiles) {
         const { url, msgType, preview, meta } = await uploadFile(file);
         await apiClient.post(Endpoints.messages.conversation(userId), {
-          content: '',
+          content: caption,
           message_type: msgType,
           attachment_url: url,
           ...(Object.keys(meta).length > 0 ? { attachment_meta: meta } : {}),
         });
-        onMessageSent(preview);
+        onMessageSent(caption || preview);
       }
       await loadMessages(false);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? err?.message ?? 'Erreur lors de l\'upload');
     }
-    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
+    finally { setUploading(false); }
   }
 
   async function startRecording() {
@@ -938,6 +950,60 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
 
   return (
     <div className="flex flex-col h-full">
+
+      {/* Modal prévisualisation fichiers */}
+      {pendingFiles && (
+        <>
+          <div className="fixed inset-0 z-50" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+            onClick={() => { setPendingFiles(null); setPendingCaption(''); }} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col rounded-2xl overflow-hidden w-[calc(100vw-2rem)] max-w-sm"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            {/* Preview */}
+            <div className="relative flex items-center justify-center bg-black" style={{ minHeight: 220, maxHeight: 340 }}>
+              {pendingFiles[0].type.startsWith('image/') ? (
+                <img src={URL.createObjectURL(pendingFiles[0])} alt="" className="max-h-[340px] w-full object-contain" />
+              ) : pendingFiles[0].type.startsWith('video/') ? (
+                <video src={URL.createObjectURL(pendingFiles[0])} controls className="max-h-[340px] w-full object-contain" />
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-10 px-6">
+                  <Paperclip size={36} style={{ color: 'var(--text-tertiary)' }} />
+                  <p className="text-sm font-medium text-center" style={{ color: 'var(--text-primary)' }}>{pendingFiles[0].name}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{(pendingFiles[0].size / 1024).toFixed(0)} Ko</p>
+                </div>
+              )}
+              {pendingFiles.length > 1 && (
+                <span className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}>
+                  +{pendingFiles.length - 1}
+                </span>
+              )}
+              <button onClick={() => { setPendingFiles(null); setPendingCaption(''); }}
+                className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}>
+                <X size={14} />
+              </button>
+            </div>
+            {/* Légende + envoyer */}
+            <div className="flex items-center gap-2 px-3 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+              <input
+                autoFocus
+                value={pendingCaption}
+                onChange={e => setPendingCaption(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPendingFiles(); } }}
+                placeholder="Ajouter une légende…"
+                className="flex-1 bg-transparent text-sm outline-none"
+                style={{ color: 'var(--text-primary)' }}
+              />
+              <button onClick={sendPendingFiles}
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: 'var(--primary)' }}>
+                <Send size={15} style={{ color: '#fff' }} />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
