@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+import { ExpandableText } from '../../components/ui/ExpandableText';
 import { Calendar, MapPin, Ticket, ArrowLeft, Users, PartyPopper } from 'lucide-react';
 import { decodeId } from '../../utils/slugId';
 import { format } from 'date-fns';
@@ -130,7 +131,7 @@ export default function ExploreEventDetailPage() {
           {event.description && (
             <div className="mb-6">
               <h2 className="text-sm uppercase tracking-wider text-[var(--text-tertiary)] mb-2">À propos</h2>
-              <p className="text-[var(--text-secondary)] leading-relaxed">{event.description}</p>
+              <ExpandableText text={event.description} limit={200} className="text-[var(--text-secondary)] leading-relaxed" />
             </div>
           )}
 
