@@ -231,8 +231,8 @@ export default function CreateEventPage() {
         promo_video_url = uploaded.hls_url ?? uploaded.url;
       }
 
-      const start_at = startDate && startTime ? `${startDate}T${startTime}:00` : undefined;
-      const end_at   = endDate   && endTime   ? `${endDate}T${endTime}:00`     : undefined;
+      const starts_at = startDate && startTime ? `${startDate}T${startTime}:00` : undefined;
+      const ends_at   = endDate   && endTime   ? `${endDate}T${endTime}:00`     : undefined;
 
       const payload: Record<string, unknown> = {
         title:          title.trim(),
@@ -243,14 +243,14 @@ export default function CreateEventPage() {
         online_url:     isOnline ? (onlineUrl.trim() || undefined) : undefined,
         venue_name:     !isOnline ? (venueName.trim() || undefined) : undefined,
         venue_address:  !isOnline ? (venueAddr.trim() || undefined) : undefined,
-        venue_city:     !isOnline ? (venueCity.trim() || undefined) : undefined,
-        venue_country:  !isOnline ? (country.trim() || undefined)   : undefined,
-        start_at,
-        end_at,
+        venue_city:     venueCity.trim() || 'En ligne',
+        venue_country:  country.trim()   || 'International',
+        starts_at,
+        ends_at,
         max_attendees:  maxAttendees ? Number(maxAttendees) : undefined,
         thumbnail_url,
         gallery_urls:   gallery_urls.length > 0 ? gallery_urls : undefined,
-        promo_video_url,
+        video_url:      promo_video_url || undefined,
       };
 
       if (accessType === 'ticket') {
