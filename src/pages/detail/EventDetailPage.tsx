@@ -4,7 +4,7 @@ import { encodeId, decodeId } from '../../utils/slugId';
 import {
   Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
   Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
-  ChevronLeft, ChevronRight, ZoomIn, Edit3, Bell, BellOff,
+  ChevronLeft, ChevronRight, ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2,
 } from 'lucide-react';
 import type { Event } from '../../types';
 import { apiClient } from '../../api';
@@ -108,59 +108,130 @@ function LightboxModal({ urls, index, onClose }: { urls: string[]; index: number
   );
 }
 
+const QUICK_EMOJIS = ['❤️', '🔥', '👏', '😂', '😍', '🎉'];
+
+function timeAgo(dateStr: string) {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return 'à l\'instant';
+  if (diff < 3600) return `${Math.floor(diff / 60)}min`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}j`;
+}
+
 function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () => void }) {
   const { user: me } = useAuthStore();
-  const [comments, setComments] = useState<any[]>([]);
-  const [input,    setInput]    = useState('');
-  const [sending,  setSending]  = useState(false);
-  const [loading,  setLoading]  = useState(true);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [comments, setComments]   = useState<any[]>([]);
+  const [input,    setInput]      = useState('');
+  const [sending,  setSending]    = useState(false);
+  const [loading,  setLoading]    = useState(true);
+  const [visible,  setVisible]    = useState(false);
+  const [liked,    setLiked]      = useState<Record<string, boolean>>({});
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const inputRef  = useRef<HTMLTextAreaElement>(null);
+  const listRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
     setLoading(true);
     apiClient.get<any>(`${Endpoints.social.comments}?event_id=${targetId}&limit=50`)
       .then(res => {
         const raw = res.data;
-        setComments(Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? raw?.comments ?? []);
+        const list: any[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? raw?.comments ?? [];
+        setComments(list);
+        const counts: Record<string, number> = {};
+        list.forEach(c => { counts[c.id] = c.likes_count ?? 0; });
+        setLikeCounts(counts);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-    setTimeout(() => inputRef.current?.focus(), 100);
+    setTimeout(() => inputRef.current?.focus(), 350);
   }, [targetId]);
 
-  async function submit() {
-    if (!input.trim() || sending) return;
-    const text = input.trim();
+  function handleClose() {
+    setVisible(false);
+    setTimeout(onClose, 280);
+  }
+
+  async function submit(text?: string) {
+    const body = (text ?? input).trim();
+    if (!body || sending) return;
     setInput('');
     setSending(true);
     try {
-      const res = await apiClient.post<any>(Endpoints.social.comments, { event_id: targetId, body: text });
-      setComments(prev => [...prev, res.data]);
-    } catch { setInput(text); }
+      const res = await apiClient.post<any>(Endpoints.social.comments, { event_id: targetId, body });
+      const newComment = res.data;
+      setComments(prev => [...prev, newComment]);
+      setLikeCounts(prev => ({ ...prev, [newComment.id]: 0 }));
+      setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }), 50);
+    } catch { setInput(body); }
     finally { setSending(false); }
   }
 
+  function toggleLike(id: string) {
+    setLiked(prev => ({ ...prev, [id]: !prev[id] }));
+    setLikeCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) + (liked[id] ? -1 : 1) }));
+  }
+
+  async function deleteComment(id: string) {
+    setDeletingId(id);
+    try {
+      await apiClient.delete(`${Endpoints.social.comments}/${id}`);
+      setComments(prev => prev.filter(c => c.id !== id));
+    } catch {}
+    finally { setDeletingId(null); }
+  }
+
+  const sheetStyle: React.CSSProperties = {
+    background: 'var(--surface)',
+    borderRadius: '1.5rem 1.5rem 0 0',
+    maxHeight: '85vh',
+    boxShadow: '0 -24px 80px rgba(0,0,0,0.4)',
+    transform: visible ? 'translateY(0)' : 'translateY(100%)',
+    transition: 'transform 0.28s cubic-bezier(0.32,0.72,0,1)',
+    display: 'flex',
+    flexDirection: 'column',
+  };
+
   return (
     <>
-      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col"
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40"
         style={{
-          background: 'var(--surface)',
-          borderTop: '1px solid var(--border)',
-          borderRadius: '1.5rem 1.5rem 0 0',
-          maxHeight: '80vh',
-          boxShadow: '0 -16px 64px rgba(0,0,0,0.3)',
-        }}>
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(6px)',
+          opacity: visible ? 1 : 0,
+          transition: 'opacity 0.28s ease',
+        }}
+        onClick={handleClose}
+      />
+
+      {/* Sheet */}
+      <div className="fixed bottom-0 left-0 right-0 z-50" style={sheetStyle}>
+
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-2 cursor-pointer shrink-0" onClick={handleClose}>
           <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
         </div>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 shrink-0"
           style={{ borderBottom: '1px solid var(--border)' }}>
-          <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>Commentaires</h3>
-          <button onClick={onClose} className="p-1.5 rounded-xl transition-all"
+          <div className="flex items-center gap-2">
+            <MessageCircle size={18} style={{ color: 'var(--primary)' }} />
+            <h3 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
+              Commentaires
+            </h3>
+            {!loading && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: 'var(--primary)1a', color: 'var(--primary)' }}>
+                {comments.length}
+              </span>
+            )}
+          </div>
+          <button onClick={handleClose}
+            className="p-2 rounded-xl transition-all"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -168,47 +239,165 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
           </button>
         </div>
 
-        {/* List */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
+        {/* Comment list */}
+        <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-4 min-h-0"
+          style={{ scrollbarWidth: 'thin' }}>
           {loading ? (
-            <PageLoader />
+            <div className="flex flex-col gap-4">
+              {[1,2,3].map(i => (
+                <div key={i} className="flex gap-3 animate-pulse">
+                  <div className="w-9 h-9 rounded-full shrink-0" style={{ background: 'var(--bg-secondary)' }} />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 rounded-full w-1/3" style={{ background: 'var(--bg-secondary)' }} />
+                    <div className="h-3 rounded-full w-2/3" style={{ background: 'var(--bg-secondary)' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : comments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-2 opacity-50">
-              <MessageCircle size={28} style={{ color: 'var(--text-tertiary)' }} />
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun commentaire — soyez le premier !</p>
-            </div>
-          ) : comments.map((c, i) => (
-            <div key={c.id ?? i} className="flex gap-3">
-              <Avatar src={c.author?.avatar_url} name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
-              <div className="flex-1 rounded-2xl px-3.5 py-2.5" style={{ background: 'var(--bg-secondary)' }}>
-                <p className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
-                </p>
-                <p className="text-sm mt-0.5 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  {c.body ?? c.content}
-                </p>
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--bg-secondary)' }}>
+                <MessageCircle size={28} style={{ color: 'var(--text-tertiary)' }} />
               </div>
+              <p className="font-semibold text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                Aucun commentaire
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)', opacity: 0.6 }}>
+                Soyez le premier à réagir !
+              </p>
             </div>
+          ) : (
+            <div className="space-y-4">
+              {comments.map((c, i) => {
+                const isOwn = me?.id === (c.author?.id ?? c.user_id);
+                const likeCount = likeCounts[c.id] ?? 0;
+                return (
+                  <div key={c.id ?? i}
+                    className="flex gap-3 group"
+                    style={{ animation: `fadeSlideUp 0.2s ease both`, animationDelay: `${Math.min(i * 30, 200)}ms` }}>
+                    <Avatar src={c.author?.avatar_url} name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <div className="rounded-2xl px-3.5 py-2.5 inline-block max-w-full"
+                        style={{ background: 'var(--bg-secondary)' }}>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+                            {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                          </span>
+                          {c.author?.is_verified && (
+                            <span style={{ color: 'var(--primary)', fontSize: 10 }}>✓</span>
+                          )}
+                          {c.created_at && (
+                            <span className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+                              {timeAgo(c.created_at)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                          {c.body ?? c.content}
+                        </p>
+                      </div>
+                      {/* Actions */}
+                      <div className="flex items-center gap-3 mt-1.5 px-1">
+                        <button
+                          onClick={() => toggleLike(c.id)}
+                          className="flex items-center gap-1 text-xs transition-all"
+                          style={{ color: liked[c.id] ? '#f43f5e' : 'var(--text-tertiary)' }}>
+                          <Heart size={13} fill={liked[c.id] ? '#f43f5e' : 'none'} />
+                          {likeCount > 0 && <span>{likeCount}</span>}
+                        </button>
+                        <button
+                          onClick={() => setInput(`@${c.author?.username ?? c.author?.display_name ?? ''} `)}
+                          className="text-xs transition-all"
+                          style={{ color: 'var(--text-tertiary)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                          Répondre
+                        </button>
+                        {isOwn && (
+                          <button
+                            onClick={() => deleteComment(c.id)}
+                            disabled={deletingId === c.id}
+                            className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg"
+                            style={{ color: 'var(--error, #ef4444)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Quick emoji bar */}
+        <div className="px-4 pt-2 flex gap-2 shrink-0">
+          {QUICK_EMOJIS.map(e => (
+            <button key={e}
+              onClick={() => submit(e)}
+              className="text-lg rounded-xl px-2 py-1 transition-all hover:scale-110 active:scale-95"
+              style={{ background: 'var(--bg-secondary)' }}>
+              {e}
+            </button>
           ))}
         </div>
 
         {/* Input */}
-        <div className="shrink-0 px-4 py-3 flex gap-2 items-center"
-          style={{ borderTop: '1px solid var(--border)', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+        <div className="shrink-0 px-4 py-3 flex gap-3 items-end"
+          style={{
+            borderTop: '1px solid var(--border)',
+            marginTop: 8,
+            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+          }}>
           <Avatar src={me?.avatar_url} name={me?.display_name ?? me?.username ?? '?'} size="sm" />
           <div className="flex-1 relative">
-            <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => {
+                setInput(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
               placeholder="Écrire un commentaire…"
-              className="input text-sm w-full pr-10" />
-            <button onClick={submit} disabled={!input.trim() || sending}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all disabled:opacity-30"
-              style={{ color: 'var(--primary)' }}>
+              rows={1}
+              className="w-full text-sm resize-none rounded-2xl px-4 py-2.5 pr-10 outline-none"
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1.5px solid var(--border)',
+                color: 'var(--text-primary)',
+                lineHeight: '1.5',
+                maxHeight: 120,
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+            />
+            <button
+              onClick={() => submit()}
+              disabled={!input.trim() || sending}
+              className="absolute right-2.5 bottom-2.5 p-1.5 rounded-xl transition-all disabled:opacity-30"
+              style={{
+                background: input.trim() ? 'var(--primary)' : 'transparent',
+                color: input.trim() ? '#fff' : 'var(--primary)',
+              }}>
               {sending ? <Spinner size="sm" /> : <Send size={14} />}
             </button>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </>
   );
 }
