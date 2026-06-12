@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Ticket, ArrowLeft, Users } from 'lucide-react';
+import { Calendar, MapPin, Ticket, ArrowLeft, Users, PartyPopper } from 'lucide-react';
 import { decodeId } from '../../utils/slugId';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -137,6 +137,22 @@ export default function ExploreEventDetailPage() {
           {isPast && (
             <div className="mb-6 p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-tertiary)] text-sm">
               Cet événement est terminé.
+            </div>
+          )}
+
+          {!isPast && event.access_type === 'free' && (
+            <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-2xl"
+              style={{ background: 'linear-gradient(135deg,#10B98115,#059669 0a)', border: '1.5px solid #10B98140' }}>
+              <div className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
+                style={{ background: '#10B98120' }}>
+                <PartyPopper size={18} style={{ color: '#10B981' }} />
+              </div>
+              <div>
+                <p className="font-bold text-sm" style={{ color: '#10B981' }}>Entrée gratuite</p>
+                <p className="text-xs" style={{ color: '#10B981', opacity: 0.75 }}>
+                  Cet événement est accessible gratuitement — connectez-vous pour y participer.
+                </p>
+              </div>
             </div>
           )}
 
