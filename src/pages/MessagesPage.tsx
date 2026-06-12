@@ -687,6 +687,14 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       const w = wsPayload as any;
       setMessages(prev => prev.map(m => m.id === w.message_id ? { ...m, reaction: w.emoji } : m));
     }
+    if (wsPayload.type === 'message_pinned') {
+      const w = wsPayload as any;
+      setMessages(prev => prev.map(m => m.id === w.message_id ? { ...m, pinned: true } : m));
+    }
+    if (wsPayload.type === 'message_unpinned') {
+      const w = wsPayload as any;
+      setMessages(prev => prev.map(m => m.id === w.message_id ? { ...m, pinned: false } : m));
+    }
   }, [wsPayload, userId, me?.id]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -901,7 +909,10 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       else await apiClient.delete(Endpoints.messages.messagePin(id));
       setMessages(prev => prev.map(m => m.id === id ? { ...m, pinned: pin } : m));
       toast.success(pin ? 'Épinglé' : 'Désépinglé');
-    } catch { toast.error('Erreur'); }
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail ?? e?.message ?? 'Erreur';
+      toast.error(detail);
+    }
   }
 
   async function handleReact(id: string, emoji: string) {

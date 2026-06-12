@@ -350,7 +350,7 @@ export default function UserProfilePage() {
 
               {/* Message — masqué si l'utilisateur n'accepte pas les messages */}
               {profile.privacy_allow_messages !== false ? (
-                <button onClick={() => navigate('/messages', { state: { userId: id, userName: name } })}
+                <button onClick={() => navigate(`/messages/${encodeId(id)}`)}
                   className="flex items-center justify-center w-9 h-9 rounded-xl transition-all"
                   style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
