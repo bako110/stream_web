@@ -44,10 +44,10 @@ const TICKET_TIERS = [
 async function uploadImage(file: File, folder: string): Promise<string> {
   const form = new FormData();
   form.append('file', file);
-  const res = await apiClient.post<{ url: string }>(Endpoints.upload.images(folder), form, {
+  const res = await apiClient.post<any>(Endpoints.upload.images(folder), form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  return res.data.url;
+  return res.data?.uploaded?.[0]?.url ?? res.data?.url;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
