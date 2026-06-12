@@ -17,12 +17,18 @@ const FEELINGS = [
 const MAX_IMAGES = 6;
 
 async function uploadFile(file: File, folder: string): Promise<string> {
-  const form = new FormData();
-  form.append('file', file);
-  const res = await apiClient.post<{ url: string }>(Endpoints.upload.images(folder), form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  const contentType = file.type || 'image/jpeg';
+  const filename    = file.name || `photo_${Date.now()}.jpg`;
+  const r = await apiClient.post<{ upload_url: string; public_url: string }>(
+    '/api/v1/upload/presigned',
+    { folder, filename, content_type: contentType },
+  );
+  await fetch(r.data.upload_url, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: file,
   });
-  return res.data.url;
+  return r.data.public_url;
 }
 
 export default function CreatePostPage() {
