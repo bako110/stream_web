@@ -1455,7 +1455,7 @@ function ActionBar({
           kind === 'concert' ? { concert_id: id } :
           kind === 'reel'    ? { reel_id: id }    :
                                { post_id: id }),
-      platform: 'link' }).catch(() => {});
+      platform: 'external' }).catch(() => {});
   }
 
   return (

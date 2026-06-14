@@ -377,8 +377,9 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
               {msg.message_type === 'video' && ((msg as any).attachment_url || (msg as any).attachment_meta?.hls_url) && (
                 <video
                   src={(msg as any).attachment_meta?.hls_url ?? (msg as any).attachment_url}
-                  controls className="max-w-[240px] rounded-lg"
-                  style={{ display: 'block', maxHeight: 240 }}
+                  controls
+                  className="rounded-lg"
+                  style={{ display: 'block', maxWidth: 260, width: '100%', maxHeight: 460 }}
                 />
               )}
               {/* Audio / Vocal */}
