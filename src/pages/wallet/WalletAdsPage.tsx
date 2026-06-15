@@ -37,7 +37,9 @@ export interface Ad {
   starts_at: string | null;
   ends_at: string | null;
   created_at: string;
-  coins_debited?: number;
+  coins_debited?:   number;
+  coins_spent?:     number;
+  coins_remaining?: number;
 }
 
 const EUR_TO_COINS = 100;
@@ -69,9 +71,9 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
   onEdit:   (ad: Ad)     => void;
 }) {
   const cfg         = STATUS_CONFIG[ad.status];
-  const budgetCoins = Math.round(ad.budget_eur * EUR_TO_COINS);
-  const spentCoins  = Math.round(ad.spent_eur  * EUR_TO_COINS);
-  const remaining   = budgetCoins - spentCoins;
+  const budgetCoins = ad.coins_debited   ?? Math.round(ad.budget_eur * EUR_TO_COINS);
+  const spentCoins  = ad.coins_spent     ?? Math.round(ad.spent_eur  * EUR_TO_COINS);
+  const remaining   = ad.coins_remaining ?? Math.max(0, budgetCoins - spentCoins);
   const progress    = budgetCoins > 0 ? Math.min((spentCoins / budgetCoins) * 100, 100) : 0;
   const cpmCoins    = Math.round(ad.cpm_eur * EUR_TO_COINS);
 

@@ -12,7 +12,7 @@ import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
-import { ExpandableText } from '../../components/ui/ExpandableText';
+import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
@@ -730,7 +730,7 @@ export default function EventDetailPage() {
         {ev.description && (
           <div>
             <h3 className="font-bold mb-2" style={{ color: 'var(--text-primary)' }}>À propos</h3>
-            <ExpandableText text={ev.description} limit={300} style={{ color: 'var(--text-secondary)' }} />
+            <RichText text={ev.description} limit={300} style={{ color: 'var(--text-secondary)' }} />
           </div>
         )}
 

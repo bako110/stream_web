@@ -8,7 +8,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
-import { ExpandableText } from '../../components/ui/ExpandableText';
+import { RichText } from '../../components/ui/RichText';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -177,7 +177,7 @@ export default function PostDetailPage() {
           {/* Body */}
           {post.body && (
             <div className="px-4 pb-3">
-              <ExpandableText text={post.body} limit={400} preWrap style={{ color: 'var(--text-primary)' }} />
+              <RichText text={post.body} limit={400} style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }} />
               {post.feeling && (
                 <span className="inline-block mt-2 text-xs px-2.5 py-1 rounded-full"
                   style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>

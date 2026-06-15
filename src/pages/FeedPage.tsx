@@ -16,6 +16,8 @@ import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { ExpandableText } from '../components/ui/ExpandableText';
+import { RichText } from '../components/ui/RichText';
+import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
 import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
@@ -1527,70 +1529,65 @@ function ActionBar({
 
 // ── Native Ad Card ────────────────────────────────────────────────────────────
 function FeedAdCard({ ad }: { ad: FeedAd }) {
-  function handleClick() {
-    if (ad.cta_url) {
-      apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
-      window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
-    }
-  }
+  const impressionSent = useRef(false);
   useEffect(() => {
-    apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+    if (!impressionSent.current) {
+      impressionSent.current = true;
+      apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+    }
   }, [ad.id]);
+
+  function handleClick() {
+    if (!ad.cta_url) return;
+    apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
+    window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
+  }
 
   const hasCreative = !!ad.thumbnail_url || !!ad.creative_url;
 
   return (
     <div className="rounded-2xl overflow-hidden"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      {hasCreative ? (
-        <div className="relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+      {/* En-tête annonceur */}
+      <div className="flex items-center justify-between px-3 pt-3 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(123,63,242,0.12)' }}>
+            <Megaphone size={14} style={{ color: 'var(--primary)' }} />
+          </div>
+          <div>
+            <p className="text-sm font-bold leading-none" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
+            <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
+              <Zap size={8} style={{ color: 'var(--primary)' }} /> Sponsorisé
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Visuel */}
+      {hasCreative && (
+        <div className="overflow-hidden" style={{ aspectRatio: '16/9' }}>
           <img
             src={ad.thumbnail_url ?? ad.creative_url!}
             alt={ad.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)' }} />
-          <div className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full text-white"
-            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-            <Zap size={9} /> SPONSORISÉ
-          </div>
-          <div className="absolute bottom-4 left-4 right-4">
-            <p className="text-white font-black text-base leading-tight mb-1">{ad.title}</p>
-            {ad.description && (
-              <p className="text-white/70 text-xs line-clamp-2 mb-3">{ad.description}</p>
-            )}
-            {ad.cta_url && (
-              <button onClick={handleClick}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={12} />
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="p-5 relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(123,63,242,0.08))' }}>
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold px-2.5 py-1 rounded-full"
-              style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>
-              <Megaphone size={9} /> SPONSORISÉ
-            </div>
-          </div>
-          <p className="font-black text-base mb-1" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
-          {ad.description && (
-            <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
-          )}
-          {ad.cta_url && (
-            <button onClick={handleClick}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-              {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={12} />
-            </button>
-          )}
         </div>
       )}
+
+      {/* Description + CTA */}
+      <div className="px-3 py-3">
+        {ad.description && (
+          <p className="text-sm mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
+        )}
+        {ad.cta_url && (
+          <button onClick={handleClick}
+            className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-opacity hover:opacity-80"
+            style={{ border: '1.5px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+            {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={12} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1739,6 +1736,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         </div>
       </div>
 
+      <FriendsWhoLiked entityId={concert.id} kind="concert" totalLikes={concert.like_count ?? 0} />
       <ActionBar
         id={concert.id} kind="concert"
         initialLiked={concert.user_reaction === 'like'}
@@ -1815,6 +1813,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         </div>
       </div>
 
+      <FriendsWhoLiked entityId={event.id} kind="event" totalLikes={event.like_count ?? 0} />
       <ActionBar
         id={event.id} kind="event"
         initialLiked={event.user_reaction === 'like'}
@@ -1858,7 +1857,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
       {/* Body */}
       {body && (
         <div className="px-3 pt-1 pb-2 cursor-pointer" onClick={() => navigate(`/posts/${encodeId(post.id)}`)}>
-          <ExpandableText text={body} limit={280} style={{ color: 'var(--text-primary)' }} />
+          <RichText text={body} limit={280} style={{ color: 'var(--text-primary)' }} />
           {post.feeling && (
             <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
@@ -1876,6 +1875,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         </div>
       )}
 
+      <FriendsWhoLiked entityId={post.id} kind="post" totalLikes={post.like_count ?? 0} />
       <ActionBar
         id={post.id} kind="post"
         initialLiked={post.user_reaction === 'like'}

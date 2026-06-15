@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
-import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink, Clock, X } from 'lucide-react';
+import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink, Clock, X, Megaphone } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
@@ -38,39 +38,54 @@ interface SearchAd {
 }
 
 function SearchAdCard({ ad }: { ad: SearchAd }) {
+  const impressionSent = useRef(false);
   useEffect(() => {
-    if (ad?.id) apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+    if (ad?.id && !impressionSent.current) {
+      impressionSent.current = true;
+      apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+    }
   }, [ad?.id]);
+
+  function handleClick() {
+    if (!ad.cta_url) return;
+    apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
+    window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
+  }
 
   return (
     <div className="rounded-2xl overflow-hidden"
-      style={{ background: 'var(--surface)', border: '1px solid rgba(123,63,242,0.25)' }}>
-      <div className="flex gap-3 p-3 items-center">
-        {(ad.thumbnail_url || ad.creative_url) && (
-          <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
-            <img src={ad.thumbnail_url ?? ad.creative_url!} alt="" className="w-full h-full object-cover" />
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1"
-              style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}>
-              <Zap size={9} /> Sponsorisé
-            </span>
-          </div>
-          <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
-          {ad.description && (
-            <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
-          )}
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      {/* En-tête */}
+      <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(123,63,242,0.12)' }}>
+          <Megaphone size={12} style={{ color: 'var(--primary)' }} />
         </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold truncate leading-none" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
+          <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
+            <Zap size={8} style={{ color: 'var(--primary)' }} /> Sponsorisé
+          </p>
+        </div>
+      </div>
+
+      {/* Visuel */}
+      {(ad.thumbnail_url || ad.creative_url) && (
+        <div className="mx-3 rounded-xl overflow-hidden mb-2" style={{ aspectRatio: '16/9' }}>
+          <img src={ad.thumbnail_url ?? ad.creative_url!} alt="" className="w-full h-full object-cover" />
+        </div>
+      )}
+
+      {/* Description + CTA */}
+      <div className="px-3 pb-3">
+        {ad.description && (
+          <p className="text-xs mb-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
+        )}
         {ad.cta_url && (
-          <button onClick={() => {
-            apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
-            window.open(ad.cta_url!, '_blank', 'noopener,noreferrer');
-          }}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-            {ad.cta_text ?? 'Voir'} <ExternalLink size={11} />
+          <button onClick={handleClick}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-80"
+            style={{ border: '1.5px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+            {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={11} />
           </button>
         )}
       </div>

@@ -287,4 +287,11 @@ export const Endpoints = {
     entries: `${V1}/planning/entries`,
     entry:   (id: string) => `${V1}/planning/entries/${id}`,
   },
+  utils: {
+    linkPreview: (url: string) => `${V1}/utils/link-preview?url=${encodeURIComponent(url)}`,
+  },
+  social_ext: {
+    friendsWhoLiked: (entityType: string, entityId: string) =>
+      `${V1}/social/reactions/friends?entity_type=${entityType}&entity_id=${entityId}`,
+  },
 } as const;
