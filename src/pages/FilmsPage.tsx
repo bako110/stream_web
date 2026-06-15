@@ -24,6 +24,19 @@ const FILTER_OPTIONS: { key: FilterKey; label: string }[] = [
   { key: 'premium', label: 'Premium'  },
 ];
 
+const GENRES = [
+  'Action', 'Aventure', 'Animation', 'Comédie', 'Documentaire',
+  'Drame', 'Fantastique', 'Horreur', 'Musical', 'Romance',
+  'Science-Fiction', 'Thriller', 'Western', 'Policier', 'Historique',
+];
+
+const COUNTRIES = [
+  'Sénégal', 'Côte d\'Ivoire', 'Mali', 'Cameroun', 'Nigeria',
+  'Ghana', 'Maroc', 'Algérie', 'Tunisie', 'Égypte',
+  'Afrique du Sud', 'Kenya', 'France', 'États-Unis', 'Royaume-Uni',
+  'Inde', 'Brésil', 'Mexique', 'Chine', 'Japon', 'Corée du Sud',
+];
+
 // Track IDs of individually-purchased content
 let _accessCache: Set<string> | null = null;
 async function loadAccessCache(): Promise<Set<string>> {
@@ -129,6 +142,8 @@ export default function FilmsPage({ type = 'film' }: Props) {
   const [search,      setSearch]      = useState('');
   const [sort,        setSort]        = useState<SortKey>('recent');
   const [filter,      setFilter]      = useState<FilterKey>('all');
+  const [genre,       setGenre]       = useState('');
+  const [country,     setCountry]     = useState('');
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
   const [hasActiveSub, setHasActiveSub] = useState(false);
 
@@ -143,12 +158,14 @@ export default function FilmsPage({ type = 'film' }: Props) {
     });
     if (filter === 'free')    params.set('is_premium', 'false');
     if (filter === 'premium') params.set('is_premium', 'true');
+    if (genre)   params.set('genre',   genre);
+    if (country) params.set('country', country);
     return `${endpoint}?${params.toString()}`;
   };
 
   const { items, loading, loadMore, page, pages } = usePaginatedApi<Content>(
     (p) => apiClient.get<PaginatedResponse<Content>>(buildUrl(p)),
-    [type, sort, filter],
+    [type, sort, filter, genre, country],
   );
 
   // Load subscription status and purchased content once
@@ -214,6 +231,36 @@ export default function FilmsPage({ type = 'film' }: Props) {
             </button>
           ))}
         </div>
+
+        {/* Genre */}
+        <select
+          value={genre}
+          onChange={e => setGenre(e.target.value)}
+          className="text-xs px-3 py-1.5 rounded-xl focus:outline-none"
+          style={{
+            background: genre ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
+            border: `1px solid ${genre ? 'var(--primary)' : 'var(--border)'}`,
+            color: genre ? 'var(--primary)' : 'var(--text-secondary)',
+          }}
+        >
+          <option value="">Genre</option>
+          {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+        </select>
+
+        {/* Pays */}
+        <select
+          value={country}
+          onChange={e => setCountry(e.target.value)}
+          className="text-xs px-3 py-1.5 rounded-xl focus:outline-none"
+          style={{
+            background: country ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
+            border: `1px solid ${country ? 'var(--primary)' : 'var(--border)'}`,
+            color: country ? 'var(--primary)' : 'var(--text-secondary)',
+          }}
+        >
+          <option value="">Pays</option>
+          {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
 
         {/* Sort */}
         <div className="flex gap-1 ml-auto">

@@ -72,7 +72,7 @@ export interface Content {
   id: string; type: ContentType; title: string; original_title: string | null;
   year: number; synopsis: string | null; short_synopsis: string | null;
   director: string | null; cast: Record<string, string> | null; language: string;
-  country: string | null; rating: string | null; thumbnail_url: string | null;
+  genre: string | null; country: string | null; rating: string | null; thumbnail_url: string | null;
   banner_url: string | null; trailer_url: string | null; is_premium: boolean;
   price: number | null; status: ContentStatus; total_seasons: number;
   view_count: number; average_rating: number | null; published_at: string | null;
