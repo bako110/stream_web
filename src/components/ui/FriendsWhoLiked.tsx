@@ -49,8 +49,9 @@ export function FriendsWhoLiked({ entityId, kind, totalLikes }: Props) {
   if (!friends || friends.length === 0) return null;
 
   const visible = friends.slice(0, 3);
-  const avatarsWidth = AVATAR_SIZE + (visible.length - 1) * OVERLAP;
-  const others = totalLikes - friends.length;
+  // largeur = position du dernier avatar + sa taille complète
+  const avatarsWidth = (visible.length - 1) * OVERLAP + AVATAR_SIZE;
+  const others = Math.max(0, totalLikes - friends.length);
 
   let label = '';
   if (friends.length === 1) {

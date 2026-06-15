@@ -1,11 +1,17 @@
 import { useState } from 'react';
 import { LinkPreviewCard } from './LinkPreviewCard';
 
-const URL_REGEX = /(https?:\/\/[^\s<>"']+)/g;
+// Pas de flag `g` ici — on l'utilise uniquement via split/match avec new RegExp
+const URL_PATTERN = /https?:\/\/[^\s<>"']+/;
+const URL_SPLIT   = /(https?:\/\/[^\s<>"']+)/;
 
 function getDomain(url: string): string {
   try { return new URL(url).hostname.replace(/^www\./, ''); }
   catch { return url; }
+}
+
+function isUrl(str: string): boolean {
+  return URL_PATTERN.test(str);
 }
 
 interface Props {
@@ -22,31 +28,27 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
   const isLong = text.length > limit;
   const displayed = isLong && !expanded ? text.slice(0, limit).trimEnd() + '…' : text;
 
-  // Extraire toutes les URLs du texte complet pour la preview (1re seulement)
-  const allUrls = text.match(URL_REGEX) ?? [];
-  const firstUrl = allUrls[0] ?? null;
+  // 1re URL du texte complet (pour la preview OG)
+  const firstUrl = text.match(URL_SPLIT)?.[1] ?? null;
 
   function renderSegments(str: string) {
-    const parts = str.split(URL_REGEX);
-    return parts.map((part, i) => {
-      if (URL_REGEX.test(part)) {
-        URL_REGEX.lastIndex = 0;
-        return (
-          <a
-            key={i}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            className="underline font-medium"
-            style={{ color: 'var(--primary)' }}
-          >
-            {getDomain(part)}
-          </a>
-        );
-      }
-      return <span key={i}>{part}</span>;
-    });
+    return str.split(URL_SPLIT).map((part, i) =>
+      isUrl(part) ? (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="underline font-medium"
+          style={{ color: 'var(--primary)' }}
+        >
+          {getDomain(part)}
+        </a>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
   }
 
   return (

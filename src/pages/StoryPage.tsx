@@ -213,52 +213,67 @@ function StoryViewer({
 
   // Affichage de la pub entre groupes
   if (showAd && storyAd) {
+    const adCtaDomain = (() => {
+      try { return storyAd.cta_url ? new URL(storyAd.cta_url).hostname.replace(/^www\./, '') : null; }
+      catch { return null; }
+    })();
+
     return (
       <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
         <div className="relative w-full max-w-[500px] bg-black" style={{ height: '100dvh' }}>
-          {/* Progress bar ad */}
+          {/* Progress bar */}
           <div className="absolute top-0 inset-x-0 z-30 px-3 pt-3">
             <div className="h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.3)' }}>
               <div className="h-full rounded-full bg-white transition-none" style={{ width: `${adProgress}%` }} />
             </div>
           </div>
-          {/* Badge sponsorisé */}
-          <div className="absolute top-8 left-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-black"
-            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}>
-            <Zap size={10} /> SPONSORISÉ
-          </div>
+
           {/* Fond créatif */}
           {storyAd.thumbnail_url || storyAd.creative_url ? (
             <img src={storyAd.thumbnail_url ?? storyAd.creative_url!} alt={storyAd.title}
               className="absolute inset-0 w-full h-full object-cover" />
           ) : (
-            <div className="absolute inset-0"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,#1a0533,#2d0a5c)' }} />
           )}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%)' }} />
-          {/* Bouton skip */}
+
+          {/* Gradient sombre en bas */}
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 40%, transparent 70%)' }} />
+
+          {/* Badge Sponsorisé (haut gauche) */}
+          <div className="absolute top-10 left-4 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-[10px] font-bold"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            <Zap size={9} style={{ color: '#a78bfa' }} /> Sponsorisé
+          </div>
+
+          {/* Bouton Ignorer */}
           <button onClick={() => {
             if (adTimerRef.current) clearTimeout(adTimerRef.current);
             if (adProgressRef.current) clearInterval(adProgressRef.current);
             setShowAd(false); setPaused(false);
             setGroupIdx(nextGroupRef.current); setStoryIdx(0);
           }}
-            className="absolute top-8 right-4 z-30 text-white text-xs font-bold px-3 py-1.5 rounded-full"
-            style={{ background: 'rgba(255,255,255,0.15)' }}>
+            className="absolute top-10 right-4 z-30 text-white text-xs font-bold px-3 py-1.5 rounded-full"
+            style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
             Ignorer
           </button>
-          {/* Contenu */}
-          <div className="absolute bottom-12 left-4 right-4 z-30">
-            <p className="text-white font-black text-xl mb-1">{storyAd.title}</p>
-            {storyAd.description && <p className="text-white/70 text-sm mb-4">{storyAd.description}</p>}
+
+          {/* Contenu bas */}
+          <div className="absolute bottom-8 left-4 right-4 z-30">
+            <p className="text-white font-black text-xl leading-tight mb-1">{storyAd.title}</p>
+            {storyAd.description && (
+              <p className="text-white/75 text-sm mb-5 leading-relaxed line-clamp-2">{storyAd.description}</p>
+            )}
             {storyAd.cta_url && (
               <button onClick={() => {
                 apiClient.post(Endpoints.ads.click(storyAd.id)).catch(() => {});
                 window.open(storyAd.cta_url!, '_blank', 'noopener,noreferrer');
               }}
-                className="flex items-center gap-2 px-5 py-3 rounded-2xl text-white font-bold text-sm"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                {storyAd.cta_text ?? 'En savoir plus'} <ExternalLink size={14} />
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm w-full justify-center"
+                style={{ background: 'rgba(255,255,255,0.95)', color: '#1a0533' }}>
+                <ExternalLink size={14} />
+                {storyAd.cta_text ?? 'En savoir plus'}
+                {adCtaDomain && <span className="text-xs font-normal opacity-60 ml-1">· {adCtaDomain}</span>}
               </button>
             )}
           </div>

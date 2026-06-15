@@ -1004,6 +1004,8 @@ interface FeedAd {
   creative_url?: string | null;
   thumbnail_url?: string | null;
   format: string;
+  advertiser_name?: string | null;
+  advertiser_avatar?: string | null;
 }
 
 type FeedItem =
@@ -1544,29 +1546,56 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
   }
 
   const hasCreative = !!ad.thumbnail_url || !!ad.creative_url;
+  const advertiserInitial = (ad.advertiser_name ?? ad.title).charAt(0).toUpperCase();
+  const ctaDomain = (() => {
+    try { return ad.cta_url ? new URL(ad.cta_url).hostname.replace(/^www\./, '') : null; }
+    catch { return null; }
+  })();
 
   return (
     <div className="rounded-2xl overflow-hidden"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      {/* En-tête annonceur */}
-      <div className="flex items-center justify-between px-3 pt-3 pb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(123,63,242,0.12)' }}>
-            <Megaphone size={14} style={{ color: 'var(--primary)' }} />
-          </div>
-          <div>
-            <p className="text-sm font-bold leading-none" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
-            <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-              <Zap size={8} style={{ color: 'var(--primary)' }} /> Sponsorisé
-            </p>
+
+      {/* ── En-tête style Facebook ── */}
+      <div className="flex items-center gap-2.5 px-3 pt-3 pb-2">
+        {/* Avatar annonceur */}
+        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+          style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid var(--border)' }}>
+          {ad.advertiser_avatar ? (
+            <img src={ad.advertiser_avatar} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-sm font-black" style={{ color: 'var(--primary)' }}>{advertiserInitial}</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
+            {ad.advertiser_name ?? ad.title}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+              Sponsorisé ·
+            </span>
+            <Zap size={9} style={{ color: 'var(--text-tertiary)' }} />
           </div>
         </div>
       </div>
 
-      {/* Visuel */}
+      {/* ── Titre + description (comme un post Facebook) ── */}
+      {(ad.title || ad.description) && (
+        <div className="px-3 pb-2">
+          {ad.advertiser_name && (
+            <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
+          )}
+          {ad.description && (
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
+          )}
+        </div>
+      )}
+
+      {/* ── Visuel bord-à-bord ── */}
       {hasCreative && (
-        <div className="overflow-hidden" style={{ aspectRatio: '16/9' }}>
+        <div className="overflow-hidden" style={{ aspectRatio: '1.91/1' }}>
           <img
             src={ad.thumbnail_url ?? ad.creative_url!}
             alt={ad.title}
@@ -1575,19 +1604,26 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
         </div>
       )}
 
-      {/* Description + CTA */}
-      <div className="px-3 py-3">
-        {ad.description && (
-          <p className="text-sm mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
-        )}
-        {ad.cta_url && (
+      {/* ── Bande CTA Facebook-style (sous l'image, fond légèrement distinct) ── */}
+      {ad.cta_url && (
+        <div className="flex items-center justify-between px-3 py-2.5 gap-3"
+          style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
+          <div className="min-w-0">
+            {ctaDomain && (
+              <p className="text-[10px] uppercase tracking-wide font-semibold truncate"
+                style={{ color: 'var(--text-tertiary)' }}>{ctaDomain}</p>
+            )}
+            <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-secondary)' }}>
+              {ad.cta_text ?? 'En savoir plus'}
+            </p>
+          </div>
           <button onClick={handleClick}
-            className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-opacity hover:opacity-80"
-            style={{ border: '1.5px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
-            {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={12} />
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80"
+            style={{ background: 'var(--primary)', color: '#fff' }}>
+            {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={11} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

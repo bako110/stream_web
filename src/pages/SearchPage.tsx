@@ -35,6 +35,7 @@ interface SearchAd {
   id: string; title: string; description?: string | null;
   cta_text?: string | null; cta_url?: string | null;
   creative_url?: string | null; thumbnail_url?: string | null;
+  advertiser_name?: string | null;
 }
 
 function SearchAdCard({ ad }: { ad: SearchAd }) {
@@ -52,43 +53,64 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
     window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
   }
 
+  const ctaDomain = (() => {
+    try { return ad.cta_url ? new URL(ad.cta_url).hostname.replace(/^www\./, '') : null; }
+    catch { return null; }
+  })();
+  const advertiserInitial = (ad.advertiser_name ?? ad.title).charAt(0).toUpperCase();
+
   return (
     <div className="rounded-2xl overflow-hidden"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      {/* En-tête */}
-      <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: 'rgba(123,63,242,0.12)' }}>
-          <Megaphone size={12} style={{ color: 'var(--primary)' }} />
+
+      {/* En-tête annonceur */}
+      <div className="flex items-center gap-2.5 px-3 pt-3 pb-2">
+        <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center overflow-hidden"
+          style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid var(--border)' }}>
+          <span className="text-sm font-black" style={{ color: 'var(--primary)' }}>{advertiserInitial}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold truncate leading-none" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
-          <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-            <Zap size={8} style={{ color: 'var(--primary)' }} /> Sponsorisé
+          <p className="text-sm font-bold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
+            {ad.advertiser_name ?? ad.title}
           </p>
+          <p className="text-[10px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>Sponsorisé</p>
         </div>
       </div>
 
-      {/* Visuel */}
+      {/* Description */}
+      {ad.description && (
+        <p className="px-3 pb-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          {ad.description}
+        </p>
+      )}
+
+      {/* Visuel bord-à-bord */}
       {(ad.thumbnail_url || ad.creative_url) && (
-        <div className="mx-3 rounded-xl overflow-hidden mb-2" style={{ aspectRatio: '16/9' }}>
+        <div className="overflow-hidden" style={{ aspectRatio: '1.91/1' }}>
           <img src={ad.thumbnail_url ?? ad.creative_url!} alt="" className="w-full h-full object-cover" />
         </div>
       )}
 
-      {/* Description + CTA */}
-      <div className="px-3 pb-3">
-        {ad.description && (
-          <p className="text-xs mb-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
-        )}
-        {ad.cta_url && (
+      {/* Bande CTA */}
+      {ad.cta_url && (
+        <div className="flex items-center justify-between px-3 py-2.5 gap-3"
+          style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
+          <div className="min-w-0">
+            {ctaDomain && (
+              <p className="text-[10px] uppercase tracking-wide font-semibold truncate"
+                style={{ color: 'var(--text-tertiary)' }}>{ctaDomain}</p>
+            )}
+            <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-secondary)' }}>
+              {ad.cta_text ?? 'En savoir plus'}
+            </p>
+          </div>
           <button onClick={handleClick}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-80"
-            style={{ border: '1.5px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80"
+            style={{ background: 'var(--primary)', color: '#fff' }}>
             {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={11} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
