@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe } from 'lucide-react';
+import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { Images } from '../../components/assets';
@@ -256,6 +257,9 @@ export default function RegisterPage() {
               ← Continuer sans compte
             </Link>
           </p>
+
+          <AppDownloadBar className="mt-6" />
+
         </div>
       </div>
     </div>

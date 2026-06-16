@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio, QrCode, Smartphone, Mail, ChevronDown } from 'lucide-react';
+import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { Images } from '../../components/assets';
@@ -152,7 +153,8 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <div className="relative z-10">
+        <div className="relative z-10 space-y-4">
+          <AppDownloadBar variant="card" />
           <p className="text-white/30 text-xs">© 2026 GoFolyX · Tous droits réservés</p>
         </div>
       </div>
@@ -376,6 +378,10 @@ export default function LoginPage() {
               ← Continuer sans compte
             </Link>
           </p>
+
+          {/* Télécharger l'app — visible mobile uniquement (lg:hidden car le panel gauche le montre déjà) */}
+          <AppDownloadBar className="mt-6 lg:hidden" />
+
         </div>
       </div>
     </div>
