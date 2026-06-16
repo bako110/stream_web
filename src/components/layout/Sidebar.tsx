@@ -12,7 +12,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { Avatar } from '../ui/Avatar';
 import { Images } from '../assets';
 
-const APK_URL     = 'http://178.104.248.78/uploads/apk/gofolyx-1.0.0.apk';
+const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.0.0.apk';
 const APK_VERSION = '1.0.0';
 
 const SECTIONS = [
