@@ -294,4 +294,8 @@ export const Endpoints = {
     friendsWhoLiked: (entityType: string, entityId: string) =>
       `${V1}/social/reactions/friends?entity_type=${entityType}&entity_id=${entityId}`,
   },
+
+  app: {
+    version: `${V1}/app/version`,
+  },
 } as const;

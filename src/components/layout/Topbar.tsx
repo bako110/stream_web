@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, Bell, Radio, Sun, Moon, X, ArrowLeft, MessageCircle } from 'lucide-react';
+import { Menu, Search, Bell, Radio, Sun, Moon, X, ArrowLeft, MessageCircle, Download } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useWs } from '../../context/WebSocketContext';
 import { Images } from '../assets';
 import { MessagesPopover } from './MessagesPopover';
+import { publicClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
 
 interface Props { onMenuClick: () => void; }
 
@@ -20,7 +22,14 @@ export function Topbar({ onMenuClick }: Props) {
   const [mobileSearch, setMobileSearch] = useState(false);
   const [mobileQuery,  setMobileQuery]  = useState('');
   const [msgPopover,   setMsgPopover]   = useState(false);
+  const [apkUrl,       setApkUrl]       = useState<string | null>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    publicClient.get<{ apk_url: string | null }>(Endpoints.app.version)
+      .then(({ data }) => { if (data.apk_url) setApkUrl(data.apk_url); })
+      .catch(() => {});
+  }, []);
 
   // Sync le champ desktop avec le param URL quand on est sur /search
   useEffect(() => {
@@ -175,6 +184,22 @@ export function Topbar({ onMenuClick }: Props) {
         >
           <Search size={20} />
         </button>
+
+        {/* Télécharger l'app — mobile uniquement, si APK disponible */}
+        {apkUrl && (
+          <a
+            href={apkUrl}
+            download
+            title="Télécharger l'application Android"
+            className="flex lg:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all no-underline"
+            style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}
+            onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.22)'); }}
+            onMouseLeave={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.12)'); }}
+          >
+            <Download size={15} />
+            <span className="hidden sm:inline">App</span>
+          </a>
+        )}
 
         {/* Go Live */}
         <button

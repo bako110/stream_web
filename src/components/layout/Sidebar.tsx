@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
@@ -5,12 +6,22 @@ import {
   Users, MessageCircle, Bell, Activity, UserPlus,
   Calendar, CalendarDays, Heart, Clock,
   Wallet, TrendingUp, HelpCircle, Settings, LogOut,
-  Sun, Moon, ChevronLeft, ChevronRight,
+  Sun, Moon, ChevronLeft, ChevronRight, Download,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { Avatar } from '../ui/Avatar';
 import { Images } from '../assets';
+import { publicClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
+
+interface AppVersionInfo {
+  version_name: string;
+  version_code: number;
+  apk_url: string | null;
+  force_update: boolean;
+  changelog: string | null;
+}
 
 const SECTIONS = [
   {
@@ -60,6 +71,19 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
   const { user, logout } = useAuthStore();
   const { isDark, toggle } = useThemeStore();
   const navigate = useNavigate();
+  const [apkUrl, setApkUrl] = useState<string | null>(null);
+  const [apkVersion, setApkVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    publicClient.get<AppVersionInfo>(Endpoints.app.version)
+      .then(({ data }) => {
+        if (data.apk_url) {
+          setApkUrl(data.apk_url);
+          setApkVersion(data.version_name);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleLogout() {
     try { await logout(); } catch {}
@@ -160,6 +184,30 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
 
       {/* ── Footer ── */}
       <div className="px-2 pb-3 pt-2 space-y-0.5 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
+
+        {/* Télécharger l'app */}
+        {apkUrl && (
+          <a
+            href={apkUrl}
+            download
+            title={collapsed ? `Télécharger l'app v${apkVersion}` : undefined}
+            className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150 group no-underline"
+            style={{ color: 'var(--primary)', background: 'rgba(123,63,242,0.08)' }}
+            onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.16)'); }}
+            onMouseLeave={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.08)'); }}
+          >
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+              style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>
+              <Download size={16} />
+            </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="text-sm font-semibold leading-tight">Télécharger l'app</p>
+                {apkVersion && <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>v{apkVersion} · Android APK</p>}
+              </div>
+            )}
+          </a>
+        )}
 
         {/* Thème */}
         <button onClick={toggle} title={collapsed ? (isDark ? 'Mode clair' : 'Mode sombre') : undefined}
