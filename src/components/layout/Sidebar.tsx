@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
@@ -12,16 +11,9 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { Avatar } from '../ui/Avatar';
 import { Images } from '../assets';
-import { publicClient } from '../../api';
-import { Endpoints } from '../../api/endpoints';
 
-interface AppVersionInfo {
-  version_name: string;
-  version_code: number;
-  apk_url: string | null;
-  force_update: boolean;
-  changelog: string | null;
-}
+const APK_URL     = 'http://178.104.248.78/uploads/apk/gofolyx-1.0.0.apk';
+const APK_VERSION = '1.0.0';
 
 const SECTIONS = [
   {
@@ -71,19 +63,6 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
   const { user, logout } = useAuthStore();
   const { isDark, toggle } = useThemeStore();
   const navigate = useNavigate();
-  const [apkUrl, setApkUrl] = useState<string | null>(null);
-  const [apkVersion, setApkVersion] = useState<string | null>(null);
-
-  useEffect(() => {
-    publicClient.get<AppVersionInfo>(Endpoints.app.version)
-      .then(({ data }) => {
-        if (data.apk_url) {
-          setApkUrl(data.apk_url);
-          setApkVersion(data.version_name);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   async function handleLogout() {
     try { await logout(); } catch {}
@@ -186,11 +165,11 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
       <div className="px-2 pb-3 pt-2 space-y-0.5 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
 
         {/* Télécharger l'app */}
-        {apkUrl && (
+        {APK_URL && (
           <a
-            href={apkUrl}
+            href={APK_URL}
             download
-            title={collapsed ? `Télécharger l'app v${apkVersion}` : undefined}
+            title={collapsed ? `Télécharger l'app v${APK_VERSION}` : undefined}
             className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150 group no-underline"
             style={{ color: 'var(--primary)', background: 'rgba(123,63,242,0.08)' }}
             onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.16)'); }}
@@ -203,7 +182,7 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
             {!collapsed && (
               <div className="min-w-0">
                 <p className="text-sm font-semibold leading-tight">Télécharger l'app</p>
-                {apkVersion && <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>v{apkVersion} · Android APK</p>}
+                {APK_VERSION && <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>v{APK_VERSION} · Android APK</p>}
               </div>
             )}
           </a>
