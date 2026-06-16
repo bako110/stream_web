@@ -176,6 +176,7 @@ export interface Event {
 
 // ── Reel ──────────────────────────────────────────────────────────────────
 export type ReelStatus = 'processing' | 'published' | 'archived';
+export type ReelRemixType = 'remix' | 'repost' | null;
 
 export interface Reel {
   id: string; user_id: string; caption: string | null;
@@ -183,7 +184,11 @@ export interface Reel {
   thumbnail_url: string | null; duration_sec: number | null; status: ReelStatus;
   ref_content_id: string | null; ref_concert_id: string | null; ref_event_id: string | null;
   view_count: number; like_count: number; dislike_count: number; comment_count: number;
-  share_count: number; is_featured: boolean; created_at: string; updated_at: string;
+  share_count: number; remix_count: number; repost_count: number; cable_count: number;
+  comments_disabled: boolean;
+  remix_type?: ReelRemixType;
+  source_reel?: { id: string; thumbnail_url: string | null; author?: { display_name?: string | null; username?: string | null } } | null;
+  is_featured: boolean; created_at: string; updated_at: string;
   author?: User; user_reaction?: 'like' | 'dislike' | null;
 }
 

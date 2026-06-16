@@ -85,11 +85,17 @@ export const Endpoints = {
     remind:    (id: string) => `${V1}/events/${id}/remind`,
   },
   reels: {
-    feed:   `${V1}/reels`,
-    byId:   (id: string) => `${V1}/reels/${id}`,
-    view:   (id: string) => `${V1}/reels/${id}/view`,
-    byUser: (userId: string) => `${V1}/reels/user/${userId}`,
-    delete: (id: string) => `${V1}/reels/${id}`,
+    feed:           `${V1}/reels`,
+    byId:           (id: string) => `${V1}/reels/${id}`,
+    view:           (id: string) => `${V1}/reels/${id}/view`,
+    byUser:         (userId: string) => `${V1}/reels/user/${userId}`,
+    delete:         (id: string) => `${V1}/reels/${id}`,
+    repost:         (id: string) => `${V1}/reels/${id}/repost`,
+    toggleComments: (id: string) => `${V1}/social/reel/${id}/comments/toggle`,
+  },
+  cable: {
+    sendInvite: (reelId: string) => `${V1}/cable/reels/${reelId}`,
+    myInvites:  `${V1}/cable/invites/me`,
   },
   social: {
     comments:       `${V1}/social/comments`,

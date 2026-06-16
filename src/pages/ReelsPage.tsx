@@ -6,7 +6,8 @@ import {
   Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft,
   Gift, Zap, ExternalLink, Eye, Search, User, Film,
   Calendar, Music, MoreVertical, Edit3, Trash2, TrendingUp,
-  ChevronRight, ChevronLeft,
+  ChevronRight, ChevronLeft, Repeat2, GitMerge, Link2, Flag,
+  MessageSquareOff, MessageSquare, BarChart2,
 } from 'lucide-react';
 import Hls from 'hls.js';
 import type { Reel, Comment } from '../types';
@@ -355,8 +356,8 @@ function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
 const MAX_RETRIES   = 3;
 const STALL_TIMEOUT = 8000; // 8s identique mobile
 
-function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
-  reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void;
+function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMoreOpen }: {
+  reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void; onMoreOpen: () => void;
 }) {
   const navigate      = useNavigate();
   const { user: me }  = useAuthStore();
@@ -383,6 +384,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
   const [commentCount,    setCommentCount]   = useState(reel.comment_count ?? 0);
   const [shareCount,      setShareCount]     = useState(reel.share_count ?? 0);
   const [viewCount,       setViewCount]      = useState(reel.view_count ?? 0);
+  const [repostCount,     setRepostCount]    = useState(reel.repost_count ?? 0);
+  const [remixCount,      setRemixCount]     = useState(reel.remix_count ?? 0);
+  const [cableCount,      setCableCount]     = useState(reel.cable_count ?? 0);
+  const [commentsDisabled,setCommentsDisabled] = useState(reel.comments_disabled ?? false);
   const [showHeart,       setShowHeart]      = useState(false);
   const [heartPos,        setHeartPos]       = useState({ x: 0, y: 0 });
   const [skipAnim,        setSkipAnim]       = useState<{ side: 'left'|'right'; label: string } | null>(null);
@@ -404,11 +409,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
     setCommentCount(reel.comment_count ?? 0);
     setShareCount(reel.share_count ?? 0);
     setViewCount(reel.view_count ?? 0);
+    setRepostCount(reel.repost_count ?? 0);
+    setRemixCount(reel.remix_count ?? 0);
+    setCableCount(reel.cable_count ?? 0);
+    setCommentsDisabled(reel.comments_disabled ?? false);
     viewSentRef.current = false;
     retryCount.current = 0;
     setVideoError(false);
     followFetched.current = false;
-    // Réinitialiser depuis cache si disponible
     if (authorId) setFollowed(_followCache.get(String(authorId)) ?? false);
   }, [reel.id]); // eslint-disable-line
 
@@ -793,6 +801,26 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
             </button>
           )}
 
+          {/* Attribution remix/repost (source_reel) */}
+          {reel.source_reel && (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl mb-1"
+              style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', maxWidth: '85%' }}>
+              {reel.remix_type === 'remix'
+                ? <GitMerge size={11} className="text-purple-400 shrink-0" />
+                : <Repeat2 size={11} className="text-purple-400 shrink-0" />
+              }
+              {reel.source_reel.thumbnail_url && (
+                <img src={reel.source_reel.thumbnail_url} alt="" className="w-6 h-6 rounded-md object-cover shrink-0" />
+              )}
+              <p className="text-white/70 text-[10px] truncate">
+                {reel.remix_type === 'remix' ? 'Remix de' : 'Repost de'}{' '}
+                <span className="font-semibold text-white/90">
+                  {reel.source_reel.author?.display_name ?? reel.source_reel.author?.username ?? 'Artiste'}
+                </span>
+              </p>
+            </div>
+          )}
+
           {/* Author row */}
           <div className="flex items-center gap-2">
             {/* Avatar cliquable → profil (identique mobile) */}
@@ -925,6 +953,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen }: {
                 color: saved ? '#7B3FF2' : '#fff',
               }}>
               <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} />
+            </div>
+          </button>
+
+          {/* Plus d'options "..." */}
+          <button onClick={e => { e.stopPropagation(); onMoreOpen(); }} className="flex flex-col items-center gap-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
+              <MoreVertical size={17} />
             </div>
           </button>
 
@@ -1126,11 +1162,22 @@ export default function ReelsPage() {
   const [searching,     setSearching]   = useState(false);
   const searchInputRef                  = useRef<HTMLInputElement>(null);
   const searchTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Menu 3 points (mes reels)
+  // Menu 3 points (mes reels — grille)
   const [menuReel,      setMenuReel]    = useState<Reel | null>(null);
   const [editReel,      setEditReel]    = useState<Reel | null>(null);
   const [editCaption,   setEditCaption] = useState('');
   const [editSaving,    setEditSaving]  = useState(false);
+  // Bottom sheet "..." (feed — non-owner et owner)
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  // Compteurs optimistes pour le reel actif (repost/remix/cable)
+  const [activeRepostCount, setActiveRepostCount] = useState(0);
+  const [activeRemixCount,  setActiveRemixCount]  = useState(0);
+  const [activeCableCount,  setActiveCableCount]  = useState(0);
+  const [activeCommentsDisabled, setActiveCommentsDisabled] = useState(false);
+  // Actions en cours
+  const [reposting,     setReposting]   = useState(false);
+  const [cabling,       setCabling]     = useState(false);
+  const [togglingComments, setTogglingComments] = useState(false);
 
   const containerRef                    = useRef<HTMLDivElement>(null);
   const pageRef                         = useRef(1);
@@ -1266,6 +1313,58 @@ export default function ReelsPage() {
     } catch { /* silencieux */ }
   }, []);
 
+  // ── Repost ──
+  const handleRepost = useCallback(async () => {
+    const cur = reels[activeIndex] ?? null;
+    if (!cur || reposting) return;
+    setReposting(true);
+    setMoreSheetOpen(false);
+    try {
+      await apiClient.post(Endpoints.reels.repost(cur.id));
+      setActiveRepostCount(c => c + 1);
+      setReels(prev => prev.map(r => r.id === cur.id ? { ...r, repost_count: (r.repost_count ?? 0) + 1 } : r));
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail ?? e?.message ?? 'Impossible de republier';
+      alert(msg);
+    } finally { setReposting(false); }
+  }, [reels, activeIndex, reposting]); // eslint-disable-line
+
+  // ── Cable ──
+  const handleCable = useCallback(async () => {
+    const cur = reels[activeIndex] ?? null;
+    if (!cur || cabling) return;
+    const authorName = cur.author?.display_name ?? cur.author?.username ?? 'cet utilisateur';
+    if (!confirm(`Envoyer une invitation Cable à ${authorName} ?`)) return;
+    setCabling(true);
+    setMoreSheetOpen(false);
+    try {
+      await apiClient.post(Endpoints.cable.sendInvite(cur.id), { receiver_id: cur.author?.id });
+      setActiveCableCount(c => c + 1);
+      setReels(prev => prev.map(r => r.id === cur.id ? { ...r, cable_count: (r.cable_count ?? 0) + 1 } : r));
+      alert(`Invitation envoyée ! ${authorName} a reçu ton invitation Cable.`);
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail ?? e?.message ?? 'Impossible d\'envoyer l\'invitation';
+      alert(msg);
+    } finally { setCabling(false); }
+  }, [reels, activeIndex, cabling]); // eslint-disable-line
+
+  // ── Toggle comments (owner) ──
+  const handleToggleComments = useCallback(async () => {
+    const cur = reels[activeIndex] ?? null;
+    if (!cur || togglingComments) return;
+    setTogglingComments(true);
+    setMoreSheetOpen(false);
+    const newState = !activeCommentsDisabled;
+    setActiveCommentsDisabled(newState);
+    setReels(prev => prev.map(r => r.id === cur.id ? { ...r, comments_disabled: newState } : r));
+    try {
+      await apiClient.patch(Endpoints.reels.toggleComments(cur.id));
+    } catch {
+      setActiveCommentsDisabled(!newState);
+      setReels(prev => prev.map(r => r.id === cur.id ? { ...r, comments_disabled: !newState } : r));
+    } finally { setTogglingComments(false); }
+  }, [reels, activeIndex, activeCommentsDisabled, togglingComments]); // eslint-disable-line
+
   // Restaurer position uniquement lors d'une navigation interne (pas au F5)
   // _reelPosition est null après F5 (module rechargé) → index 0
   useEffect(() => {
@@ -1328,8 +1427,18 @@ export default function ReelsPage() {
 
   const activeReel = reels[activeIndex] ?? null;
 
-  // Fermer le drawer mobile quand on change de reel — doit être avant tout return conditionnel
-  useEffect(() => { setDrawerOpen(false); }, [activeIndex]);
+  // Fermer le drawer mobile et le more sheet quand on change de reel
+  useEffect(() => {
+    setDrawerOpen(false);
+    setMoreSheetOpen(false);
+    const r = reels[activeIndex];
+    if (r) {
+      setActiveRepostCount(r.repost_count ?? 0);
+      setActiveRemixCount(r.remix_count ?? 0);
+      setActiveCableCount(r.cable_count ?? 0);
+      setActiveCommentsDisabled(r.comments_disabled ?? false);
+    }
+  }, [activeIndex]); // eslint-disable-line
 
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading && reels.length === 0) {
@@ -1433,12 +1542,31 @@ export default function ReelsPage() {
                 <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Modifier la description</span>
               </button>
               <div style={{ height: 1, background: 'var(--border)' }} />
+              <button onClick={async () => {
+                  setMenuReel(null);
+                  try {
+                    await apiClient.patch(Endpoints.reels.toggleComments(menuReel.id));
+                    setMyReels(prev => prev.map(r => r.id === menuReel.id ? { ...r, comments_disabled: !r.comments_disabled } : r));
+                  } catch { alert('Erreur lors du changement'); }
+                }}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                {menuReel.comments_disabled
+                  ? <MessageSquare size={18} style={{ color: 'var(--text-primary)' }} />
+                  : <MessageSquareOff size={18} style={{ color: 'var(--text-primary)' }} />
+                }
+                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {menuReel.comments_disabled ? 'Activer les commentaires' : 'Désactiver les commentaires'}
+                </span>
+              </button>
+              <div style={{ height: 1, background: 'var(--border)' }} />
               <button onClick={() => handleDeleteReel(menuReel)}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.08)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <Trash2 size={18} style={{ color: '#7B3FF2' }} />
-                <span className="font-semibold" style={{ color: '#7B3FF2' }}>Supprimer le reel</span>
+                <Trash2 size={18} style={{ color: '#ef4444' }} />
+                <span className="font-semibold" style={{ color: '#ef4444' }}>Supprimer le reel</span>
               </button>
               <button onClick={() => setMenuReel(null)}
                 className="w-full py-4 font-bold text-sm" style={{ color: 'var(--text-tertiary)' }}>
@@ -1520,6 +1648,7 @@ export default function ReelsPage() {
                   globalMuted={globalMuted}
                   onUnmute={() => setGlobalMuted(v => !v)}
                   onCommentOpen={() => setDrawerOpen(true)}
+                  onMoreOpen={() => setMoreSheetOpen(true)}
                 />
               )}
             </div>
@@ -1644,6 +1773,216 @@ export default function ReelsPage() {
           </div>
         </>
       )}
+
+      {/* ── Bottom sheet "..." (feed) ── */}
+      {moreSheetOpen && activeReel && (() => {
+        const isMine = me?.id === activeReel.author?.id;
+        const authorName = activeReel.author?.display_name ?? activeReel.author?.username ?? 'Artiste';
+        const fmt = (n: number) => n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n/1_000).toFixed(1)}k` : String(n);
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center"
+            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setMoreSheetOpen(false)}>
+            <div className="w-full max-w-lg rounded-t-3xl overflow-hidden"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+              onClick={e => e.stopPropagation()}>
+
+              {/* Handle */}
+              <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-1" style={{ background: 'var(--border)' }} />
+
+              {/* Header auteur */}
+              <div className="flex items-center gap-3 px-5 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0" style={{ border: '2px solid var(--border)' }}>
+                  {activeReel.author?.avatar_url
+                    ? <img src={activeReel.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-white text-sm font-bold"
+                        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+                        {authorName[0]?.toUpperCase()}
+                      </div>
+                  }
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{authorName}</p>
+                  {activeReel.caption && (
+                    <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{activeReel.caption}</p>
+                  )}
+                </div>
+                <button onClick={() => setMoreSheetOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Stats bar */}
+              <div className="flex items-center justify-around px-4 py-3" style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+                {[
+                  { icon: GitMerge, label: 'Remix',   value: activeRemixCount },
+                  { icon: Repeat2,  label: 'Reposts', value: activeRepostCount },
+                  { icon: Link2,    label: 'Cables',  value: activeCableCount },
+                  { icon: Share2,   label: 'Partages',value: activeReel.share_count ?? 0 },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="flex flex-col items-center gap-0.5">
+                    <div className="flex items-center gap-1">
+                      <Icon size={12} style={{ color: 'var(--primary)' }} />
+                      <span className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>{fmt(value)}</span>
+                    </div>
+                    <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div className="py-2 pb-6">
+                {!isMine ? (
+                  <>
+                    {/* Republier */}
+                    <button onClick={handleRepost} disabled={reposting}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all disabled:opacity-50 text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+                        <Repeat2 size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                          Republier {reposting && <span style={{ color: 'var(--text-tertiary)' }}>…</span>}
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Partage ce reel sur ton profil avec attribution</p>
+                      </div>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+                        {fmt(activeRepostCount)}
+                      </span>
+                    </button>
+
+                    {/* Remixer */}
+                    <button onClick={() => { setMoreSheetOpen(false); navigate(`/create/reel?sourceReelId=${activeReel.id}`); }}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+                        <GitMerge size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Remixer</p>
+                        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Crée ta propre version de ce reel</p>
+                      </div>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+                        {fmt(activeRemixCount)}
+                      </span>
+                    </button>
+
+                    {/* Cable */}
+                    <button onClick={handleCable} disabled={cabling}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all disabled:opacity-50 text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+                        <Link2 size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                          Cable {cabling && <span style={{ color: 'var(--text-tertiary)' }}>…</span>}
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Invite ce créateur à collaborer avec toi</p>
+                      </div>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+                        {fmt(activeCableCount)}
+                      </span>
+                    </button>
+
+                    <div style={{ height: 1, background: 'var(--border)', margin: '4px 20px' }} />
+
+                    {/* Voir le profil */}
+                    <button onClick={() => { setMoreSheetOpen(false); if (activeReel.author?.id) navigate(`/user/${encodeId(activeReel.author.id)}`); }}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                        <User size={18} />
+                      </div>
+                      <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Voir le profil</p>
+                    </button>
+
+                    {/* Signaler */}
+                    <button onClick={() => { setMoreSheetOpen(false); alert('Signalement envoyé. Merci !'); }}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                        <Flag size={18} />
+                      </div>
+                      <p className="font-semibold text-sm" style={{ color: '#ef4444' }}>Signaler</p>
+                    </button>
+                  </>
+                ) : (
+                  /* Owner actions */
+                  <>
+                    {/* Modifier la description */}
+                    <button onClick={() => { setMoreSheetOpen(false); setEditReel(activeReel); setEditCaption(activeReel.caption ?? ''); }}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                        <Edit3 size={18} />
+                      </div>
+                      <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Modifier la description</p>
+                    </button>
+
+                    {/* Toggle commentaires */}
+                    <button onClick={handleToggleComments} disabled={togglingComments}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all disabled:opacity-50 text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                        {activeCommentsDisabled ? <MessageSquare size={18} /> : <MessageSquareOff size={18} />}
+                      </div>
+                      <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {activeCommentsDisabled ? 'Activer les commentaires' : 'Désactiver les commentaires'}
+                      </p>
+                    </button>
+
+                    {/* Stats */}
+                    <button onClick={() => { setMoreSheetOpen(false); navigate(`/reels/stats/${encodeId(activeReel.id)}`); }}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                        <BarChart2 size={18} />
+                      </div>
+                      <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Stats du reel</p>
+                    </button>
+
+                    <div style={{ height: 1, background: 'var(--border)', margin: '4px 20px' }} />
+
+                    {/* Supprimer */}
+                    <button onClick={() => { setMoreSheetOpen(false); handleDeleteReel(activeReel); }}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 transition-all text-left"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                        <Trash2 size={18} />
+                      </div>
+                      <p className="font-semibold text-sm" style={{ color: '#ef4444' }}>Supprimer le reel</p>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Overlay recherche (identique mobile) ── */}
       {searchOpen && (
