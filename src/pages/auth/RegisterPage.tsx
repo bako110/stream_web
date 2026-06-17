@@ -258,6 +258,18 @@ export default function RegisterPage() {
             </Link>
           </p>
 
+          <p className="text-center mt-5 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+            En créant un compte, vous acceptez nos{' '}
+            <Link to="/cgu" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+              Conditions Générales d'Utilisation
+            </Link>
+            {' '}et notre{' '}
+            <Link to="/politique-confidentialite" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+              Politique de confidentialité
+            </Link>
+            .
+          </p>
+
           <AppDownloadBar className="mt-6" />
 
         </div>

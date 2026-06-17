@@ -379,6 +379,18 @@ export default function LoginPage() {
             </Link>
           </p>
 
+          <p className="text-center mt-5 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+            En vous connectant, vous acceptez nos{' '}
+            <Link to="/cgu" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+              Conditions Générales d'Utilisation
+            </Link>
+            {' '}et notre{' '}
+            <Link to="/politique-confidentialite" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+              Politique de confidentialité
+            </Link>
+            .
+          </p>
+
           {/* Télécharger l'app — visible mobile uniquement (lg:hidden car le panel gauche le montre déjà) */}
           <AppDownloadBar className="mt-6 lg:hidden" />
 
