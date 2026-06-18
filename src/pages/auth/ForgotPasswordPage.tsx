@@ -60,12 +60,12 @@ export default function ForgotPasswordPage() {
               </span>
             </h1>
             <p className="text-white/60 text-sm leading-relaxed">
-              Pas de panique ! Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+              Pas de panique ! Entrez votre adresse email et nous vous enverrons un code à 6 chiffres pour réinitialiser votre mot de passe.
             </p>
           </div>
 
           <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            {['Vérifiez vos spams si vous ne recevez pas l\'email', 'Le lien expire après 24 heures', 'Vous pouvez renvoyer un nouveau lien à tout moment'].map((tip, i) => (
+            {['Vérifiez vos spams si vous ne recevez pas l\'email', 'Le code expire après 15 minutes', 'Vous pouvez renvoyer un nouveau code à tout moment'].map((tip, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: '#A78BFA' }} />
                 <p className="text-white/50 text-xs">{tip}</p>
@@ -110,12 +110,12 @@ export default function ForgotPasswordPage() {
               </div>
               <h2 className="text-xl font-black mb-2" style={{ color: 'var(--text-primary)' }}>Email envoyé !</h2>
               <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-                Un lien de réinitialisation a été envoyé à <strong>{email}</strong>.<br />
-                Vérifiez votre boîte mail (et vos spams).
+                Un code à 6 chiffres a été envoyé à <strong>{email}</strong>.<br />
+                Vérifiez votre boîte mail (et vos spams). Il expire dans 15 minutes.
               </p>
               <button onClick={() => setSent(false)}
                 className="text-sm font-semibold transition-colors" style={{ color: 'var(--primary)' }}>
-                Renvoyer un email
+                Renvoyer un code
               </button>
             </div>
           ) : (
@@ -123,7 +123,7 @@ export default function ForgotPasswordPage() {
               <div className="mb-7">
                 <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Mot de passe oublié ?</h2>
                 <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                  Entrez votre email pour recevoir un lien de réinitialisation.
+                  Entrez votre email pour recevoir un code de réinitialisation.
                 </p>
               </div>
 
@@ -161,7 +161,7 @@ export default function ForgotPasswordPage() {
                         style={{ animation: `blink 1s ease-in-out ${i*0.15}s infinite` }} />)}
                     </span>
                   ) : <Mail size={15} />}
-                  {loading ? 'Envoi en cours…' : 'Envoyer le lien'}
+                  {loading ? 'Envoi en cours…' : 'Envoyer le code'}
                 </button>
               </form>
             </>
