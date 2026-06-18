@@ -13,6 +13,39 @@ import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+function VideoPlayer({ src, thumbnail }: { src: string; thumbnail?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !src) return;
+    let hls: import('hls.js').default | null = null;
+    import('hls.js').then(({ default: Hls }) => {
+      if (src.includes('.m3u8') && Hls.isSupported()) {
+        hls = new Hls();
+        hls.loadSource(src);
+        hls.attachMedia(v);
+      } else {
+        v.src = src;
+      }
+    });
+    return () => { hls?.destroy(); };
+  }, [src]);
+
+  return (
+    <div style={{ background: '#000', maxHeight: 560 }} className="overflow-hidden">
+      <video
+        ref={videoRef}
+        poster={thumbnail}
+        controls
+        playsInline
+        className="w-full object-contain"
+        style={{ maxHeight: 560 }}
+      />
+    </div>
+  );
+}
+
 export default function PostDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id            = decodeId(slug!);
@@ -187,8 +220,13 @@ export default function PostDetailPage() {
             </div>
           )}
 
+          {/* Vidéo */}
+          {(post.hls_url || post.video_url) && !post.image_url && (
+            <VideoPlayer src={post.hls_url ?? post.video_url!} thumbnail={post.thumbnail_url ?? undefined} />
+          )}
+
           {/* Image */}
-          {post.image_url && (
+          {post.image_url && !post.video_url && (
             <div className="overflow-hidden" style={{ maxHeight: 480 }}>
               <img src={post.image_url} alt="" className="w-full object-cover" />
             </div>
