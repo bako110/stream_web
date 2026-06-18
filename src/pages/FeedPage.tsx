@@ -1865,6 +1865,55 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
   );
 }
 
+// ── Post video player ─────────────────────────────────────────────────────────
+function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?: string; onClick: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const wrapRef  = useRef<HTMLDivElement>(null);
+  const proxied  = toProxiedUrl(src);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !proxied) return;
+    let hls: import('hls.js').default | null = null;
+    import('hls.js').then(({ default: Hls }) => {
+      if (src.includes('.m3u8') && Hls.isSupported()) {
+        hls = new Hls();
+        hls.loadSource(proxied);
+        hls.attachMedia(v);
+      } else {
+        v.src = proxied;
+      }
+    });
+    return () => { hls?.destroy(); };
+  }, [proxied]);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    const v  = videoRef.current;
+    if (!el || !v) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { e.isIntersecting ? v.play().catch(() => {}) : v.pause(); },
+      { threshold: 0.5 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div ref={wrapRef} className="relative overflow-hidden cursor-pointer" style={{ background: '#000', maxHeight: 500 }} onClick={onClick}>
+      <video
+        ref={videoRef}
+        poster={thumbnail}
+        muted
+        loop
+        playsInline
+        className="w-full object-contain"
+        style={{ maxHeight: 500 }}
+      />
+    </div>
+  );
+}
+
 // ── Post card ─────────────────────────────────────────────────────────────────
 function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride }: {
   post: Post; delay?: number;
@@ -1903,8 +1952,17 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         </div>
       )}
 
+      {/* Vidéo */}
+      {(post.hls_url || post.video_url) && !post.image_url && (
+        <PostVideoPlayer
+          src={post.hls_url ?? post.video_url!}
+          thumbnail={post.thumbnail_url ?? undefined}
+          onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
+        />
+      )}
+
       {/* Image */}
-      {post.image_url && (
+      {post.image_url && !post.video_url && (
         <div onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
           className="relative overflow-hidden cursor-pointer group">
           <img src={post.image_url} alt="" className="w-full object-contain transition-transform duration-500 group-hover:scale-105" style={{ maxHeight: '600px' }} />
