@@ -19,11 +19,11 @@ const SECTIONS: Section[] = [
     body: `Responsable de traitement :
 GoFolyX SAS
 Siège social : Paris, France
-Email DPO : privacy@gofolyx.app
+Email DPO : privacy@gofolyx.com
 
 GoFolyX SAS est responsable du traitement de vos données personnelles collectées via l'application mobile GoFolyX et le site web gofolyx.app.
 
-Pour toute question relative à la protection de vos données, vous pouvez contacter notre Délégué à la Protection des Données (DPO) à l'adresse privacy@gofolyx.app. Nous nous engageons à répondre à toute demande dans un délai maximum de 30 jours.`,
+Pour toute question relative à la protection de vos données, vous pouvez contacter notre Délégué à la Protection des Données (DPO) à l'adresse privacy@gofolyx.com. Nous nous engageons à répondre à toute demande dans un délai maximum de 30 jours.`,
   },
   {
     key: 'collecte', Icon: Database, title: "2. Données collectées",
@@ -117,7 +117,7 @@ En cas de transfert hors UE (notamment pour certains services tiers comme Google
 • Décision d'adéquation de la Commission pour les pays reconnus équivalents
 • Certification Privacy Shield ou mécanisme équivalent en vigueur
 
-Vous pouvez obtenir une copie des garanties mises en place en contactant privacy@gofolyx.app.`,
+Vous pouvez obtenir une copie des garanties mises en place en contactant privacy@gofolyx.com.`,
   },
   {
     key: 'conservation', Icon: Clock, title: "7. Durée de conservation",
@@ -158,7 +158,7 @@ Consentements marketing :
 • Droit à la limitation du traitement (art. 18) : geler temporairement l'utilisation de vos données pendant une vérification ou un litige
 
 Comment exercer vos droits :
-→ Par email : privacy@gofolyx.app (réponse sous 30 jours maximum)
+→ Par email : privacy@gofolyx.com (réponse sous 30 jours maximum)
 → Depuis l'application : Paramètres > Confidentialité > Mes données
 
 Recours : si vous estimez que vos droits ne sont pas respectés, vous pouvez saisir la CNIL sur www.cnil.fr`,
@@ -218,7 +218,7 @@ Mesures en place :
 • Contenu sensible masqué par défaut pour les comptes mineurs
 • Signalement facilité des profils suspects
 
-Nous ne collectons pas sciemment de données personnelles d'enfants de moins de 13 ans. Si vous êtes un parent ou tuteur légal et pensez qu'un enfant de moins de 13 ans a créé un compte sur GoFolyX, contactez-nous immédiatement à privacy@gofolyx.app.`,
+Nous ne collectons pas sciemment de données personnelles d'enfants de moins de 13 ans. Si vous êtes un parent ou tuteur légal et pensez qu'un enfant de moins de 13 ans a créé un compte sur GoFolyX, contactez-nous immédiatement à privacy@gofolyx.com.`,
   },
   {
     key: 'ia', Icon: Cpu, title: "12. Intelligence artificielle et algorithmes",
@@ -239,7 +239,7 @@ Si une décision vous concernant (suspension de compte, restriction de visibilit
 • Exprimer votre point de vue
 • Contester la décision
 
-Contactez support@gofolyx.app pour toute demande en ce sens.`,
+Contactez support@gofolyx.com pour toute demande en ce sens.`,
   },
   {
     key: 'modifications', Icon: RefreshCw, title: "13. Modifications de la politique",
@@ -356,7 +356,7 @@ export default function PolitiqueConfidentialitePage() {
             <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
               Confidentialité GoFolyX
             </h2>
-            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>GoFolyX SAS · Paris, France · DPO : privacy@gofolyx.app</p>
+            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>GoFolyX SAS · Paris, France · DPO : privacy@gofolyx.com</p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Nous prenons la protection de vos données très au sérieux. Cette politique explique comment nous collectons, utilisons et protégeons vos informations personnelles.
             </p>
@@ -431,8 +431,8 @@ export default function PolitiqueConfidentialitePage() {
                 </p>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                   Questions sur vos données ?{' '}
-                  <a href="mailto:privacy@gofolyx.app" className="font-semibold" style={{ color: accent }}>
-                    privacy@gofolyx.app
+                  <a href="mailto:privacy@gofolyx.com" className="font-semibold" style={{ color: accent }}>
+                    privacy@gofolyx.com
                   </a>
                   {' '}— Réponse garantie sous 30 jours.
                 </p>

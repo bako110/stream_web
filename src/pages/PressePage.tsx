@@ -63,7 +63,7 @@ export default function PressePage() {
         <p className="max-w-xl mx-auto text-base" style={{ color: 'var(--text-secondary)' }}>
           Retrouvez ici tous nos communiqués, retombées médias et ressources pour journalistes.
         </p>
-        <a href="mailto:presse@gofolyx.app"
+        <a href="mailto:presse@gofolyx.com"
           className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl text-sm font-semibold text-white"
           style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           <Mail size={16} />
@@ -182,9 +182,9 @@ export default function PressePage() {
           <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
             Pour toute demande d'interview, de partenariat médias ou d'accréditation événement :
           </p>
-          <a href="mailto:presse@gofolyx.app"
+          <a href="mailto:presse@gofolyx.com"
             className="text-lg font-bold" style={{ color: 'var(--primary)' }}>
-            presse@gofolyx.app
+            presse@gofolyx.com
           </a>
           <p className="text-xs mt-4" style={{ color: 'var(--text-tertiary)' }}>
             Nous répondons sous 24h ouvrées.

@@ -218,7 +218,7 @@ Vous pensez que quelqu'un a copié votre contenu ? Le bouton "Signaler une viola
 2. Fournissez la preuve de création originale (date de publication, fichier source)
 3. Notre équipe traite le signalement et vous tient informé à chaque étape
 
-Pour les cas complexes (utilisation commerciale non autorisée, plagiat massif), contactez directement legal@gofolyx.app.
+Pour les cas complexes (utilisation commerciale non autorisée, plagiat massif), contactez directement legal@gofolyx.com.
 
 ## Les licences Creative Commons
 

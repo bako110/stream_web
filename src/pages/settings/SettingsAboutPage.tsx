@@ -32,7 +32,7 @@ export default function SettingsAboutPage() {
     {
       icon: <Mail size={16} />,
       label: 'Aide & Support',
-      value: 'support@gofolyx.app',
+      value: 'support@gofolyx.com',
       onClick: () => navigate('/support'),
     },
     {

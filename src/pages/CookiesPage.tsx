@@ -126,9 +126,9 @@ export default function CookiesPage() {
           <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
             Des questions sur notre usage des cookies ?
           </p>
-          <a href="mailto:privacy@gofolyx.app"
+          <a href="mailto:privacy@gofolyx.com"
             className="font-semibold text-sm" style={{ color: 'var(--primary)' }}>
-            privacy@gofolyx.app
+            privacy@gofolyx.com
           </a>
         </div>
       </div>

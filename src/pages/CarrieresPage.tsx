@@ -264,7 +264,7 @@ export default function CarrieresPage() {
                         </ul>
                       </div>
                     </div>
-                    <a href={`mailto:rh@gofolyx.app?subject=Candidature — ${offre.titre}`}
+                    <a href={`mailto:rh@gofolyx.com?subject=Candidature — ${offre.titre}`}
                       className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl text-sm font-semibold text-white"
                       style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                       Postuler par email
@@ -284,7 +284,7 @@ export default function CarrieresPage() {
           <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
             Envoyez-nous une candidature spontanée avec votre CV et une courte présentation de votre profil.
           </p>
-          <a href="mailto:rh@gofolyx.app?subject=Candidature spontanée"
+          <a href="mailto:rh@gofolyx.com?subject=Candidature spontanée"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold"
             style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
             Candidature spontanée

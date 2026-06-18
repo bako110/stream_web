@@ -328,7 +328,7 @@ export default function SupportPage() {
             </div>
           </button>
 
-          <a href="mailto:support@gofolyx.app"
+          <a href="mailto:support@gofolyx.com"
             className="flex items-center gap-3 p-4 rounded-2xl text-left transition-all"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', textDecoration: 'none' }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = '#7B3FF2')}
@@ -339,7 +339,7 @@ export default function SupportPage() {
             </div>
             <div>
               <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Email</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>support@gofolyx.app</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>support@gofolyx.com</p>
               <div className="flex items-center gap-1 mt-1">
                 <Clock size={10} style={{ color: 'var(--text-tertiary)' }} />
                 <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Réponse sous 24h</span>

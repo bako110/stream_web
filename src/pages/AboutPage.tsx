@@ -169,7 +169,7 @@ export default function AboutPage() {
               className="px-6 py-3 rounded-xl font-semibold text-sm bg-white text-purple-700 hover:opacity-90 transition-opacity">
               Voir les offres
             </button>
-            <a href="mailto:contact@gofolyx.app"
+            <a href="mailto:contact@gofolyx.com"
               className="px-6 py-3 rounded-xl font-semibold text-sm text-white border border-white/30 hover:bg-white/10 transition-colors">
               Nous contacter
             </a>
