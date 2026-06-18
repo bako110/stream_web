@@ -68,8 +68,15 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     const otp = code.join('');
     if (otp.length < 6) { setError('Entrez les 6 chiffres du code.'); return; }
-    setStep('password');
-    setError('');
+    setLoading(true); setError('');
+    try {
+      await apiClient.post(Endpoints.auth.verifyResetCode, { token: otp });
+      setStep('password');
+    } catch (err: any) {
+      setError(err.response?.data?.detail ?? 'Code invalide ou expiré');
+    } finally {
+      setLoading(false);
+    }
   }
 
   // ── Étape 3 : nouveau mot de passe ────────────────────────────────────────
@@ -286,9 +293,11 @@ export default function ForgotPasswordPage() {
                     />
                   ))}
                 </div>
-                <button type="submit" disabled={code.join('').length < 6} className="btn-primary w-full"
-                  style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', opacity: code.join('').length < 6 ? 0.5 : 1 }}>
-                  Vérifier le code
+                <button type="submit" disabled={code.join('').length < 6 || loading} className="btn-primary w-full"
+                  style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', opacity: (code.join('').length < 6 || loading) ? 0.5 : 1 }}>
+                  {loading
+                    ? <span className="inline-flex gap-1">{[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-white" style={{ animation: `blink 1s ease-in-out ${i*0.15}s infinite` }} />)}</span>
+                    : 'Vérifier le code'}
                 </button>
                 <div className="text-center">
                   <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Vous n'avez pas reçu le code ? </span>
