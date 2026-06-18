@@ -1,7 +1,7 @@
 import { Download, Smartphone } from 'lucide-react';
 
-const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.0.0.apk';
-const APK_VERSION = '1.0.0';
+const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.3.apk';
+const APK_VERSION = '1.3';
 
 // Liens stores (à remplir quand les apps seront publiées)
 const PLAY_STORE_URL  = null; // ex: 'https://play.google.com/store/apps/details?id=com.gofolyx.mobile'
