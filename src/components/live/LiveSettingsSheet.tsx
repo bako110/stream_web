@@ -1,19 +1,13 @@
-/**
- * LiveSettingsSheet — Paramètres du live (host uniquement).
- * Sections : Diffusion (cam/mic), Demandes de scène, Accès au live, Montée scène, Terminer.
- */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
-  X, VideoIcon, VideoOff, Mic, MicOff, UserCheck, Lock, Unlock,
-  LogIn, Edit2, Radio, Coins, Gift, ChevronLeft, Check, StopCircle, Hand,
+  X, VideoIcon, VideoOff, Mic, MicOff, UserCheck,
+  Lock, Unlock, Edit2, Coins, Gift, ChevronLeft, Check, Radio, LogIn,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../ui/Spinner';
 import { Avatar } from '../ui/Avatar';
 import type { GiftType } from './LiveGiftModal';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface HandRequest { identity: string; name: string; avatar?: string | null; }
 
@@ -23,13 +17,11 @@ interface LiveData {
   monetization_coins?: number | null;
   monetization_gift_id?: string | null;
   monetization_gift_name?: string | null;
-  monetization_gift_emoji?: string | null;
   stage_monetized?: boolean;
   stage_type?: string | null;
   stage_coins?: number | null;
   stage_gift_id?: string | null;
   stage_gift_name?: string | null;
-  stage_gift_emoji?: string | null;
 }
 
 interface Props {
@@ -47,20 +39,16 @@ interface Props {
   onClose: () => void;
 }
 
-// ── Formulaire monétisation réutilisable ─────────────────────────────────────
+// ── MonetForm compact ─────────────────────────────────────────────────────────
 
 function MonetForm({
   title, accentColor, isActive,
   currentType, currentCoins, currentGiftId, currentGiftName,
   onSave, onRemove,
 }: {
-  title: string;
-  accentColor: string;
-  isActive: boolean;
-  currentType?: string | null;
-  currentCoins?: number | null;
-  currentGiftId?: string | null;
-  currentGiftName?: string | null;
+  title: string; accentColor: string; isActive: boolean;
+  currentType?: string | null; currentCoins?: number | null;
+  currentGiftId?: string | null; currentGiftName?: string | null;
   onSave: (type: 'coins' | 'gift', coins: number | null, gift: GiftType | null) => Promise<void>;
   onRemove: () => void;
 }) {
@@ -81,112 +69,91 @@ function MonetForm({
       const r = await apiClient.get<any>(Endpoints.wallet.gifts);
       const list: GiftType[] = Array.isArray(r.data) ? r.data : r.data?.items ?? r.data?.data ?? [];
       setGifts(list);
-      if (currentGiftId) {
-        const found = list.find(g => g.id === currentGiftId);
-        if (found) setGift(found);
-      }
+      if (currentGiftId) { const f = list.find(g => g.id === currentGiftId); if (f) setGift(f); }
     } catch { /* ignore */ }
     setGiftsLoading(false);
   }
 
   async function save() {
     if (!type) return;
-    if (type === 'coins' && (!parseInt(coins, 10) || parseInt(coins, 10) < 1)) {
-      setError('Saisis un montant valide'); return;
-    }
+    if (type === 'coins' && (!parseInt(coins, 10) || parseInt(coins, 10) < 1)) { setError('Montant invalide'); return; }
     if (type === 'gift' && !gift) { setError('Choisis un cadeau'); return; }
-    setError(null);
-    setSaving(true);
-    try {
-      await onSave(type, type === 'coins' ? parseInt(coins, 10) : null, type === 'gift' ? gift : null);
-      setShowForm(false);
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Impossible de sauvegarder');
-    }
+    setError(null); setSaving(true);
+    try { await onSave(type, type === 'coins' ? parseInt(coins, 10) : null, type === 'gift' ? gift : null); setShowForm(false); }
+    catch (e: any) { setError(e?.response?.data?.detail ?? 'Erreur'); }
     setSaving(false);
   }
 
-  // Vue formulaire
   if (showForm) {
     return (
-      <div className="rounded-2xl border p-4 space-y-3"
+      <div className="rounded-xl border p-3 space-y-2.5"
         style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-        <button onClick={() => setShowForm(false)}
-          className="flex items-center gap-1.5 text-xs transition-colors"
+        <button onClick={() => setShowForm(false)} className="flex items-center gap-1 text-xs"
           style={{ color: 'var(--text-tertiary)' }}>
-          <ChevronLeft size={13} /> Retour
+          <ChevronLeft size={12} /> Retour
         </button>
 
-        {/* Type */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* Type selector — 2 boutons compacts */}
+        <div className="flex gap-2">
           {([
-            { key: 'coins', icon: <Coins size={15} />, label: 'Prix coins', color: '#F59E0B' },
-            { key: 'gift',  icon: <Gift size={15} />,  label: 'Cadeau requis', color: '#E85DAD' },
+            { key: 'coins', icon: <Coins size={13} />, label: 'Coins', color: '#F59E0B' },
+            { key: 'gift',  icon: <Gift  size={13} />, label: 'Cadeau', color: '#E85DAD' },
           ] as const).map(opt => (
             <button key={opt.key} type="button" onClick={() => setType(opt.key)}
-              className="relative flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all text-left"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg border-2 text-xs font-bold transition-all"
               style={{
                 borderColor: type === opt.key ? opt.color : 'var(--border)',
-                background:  type === opt.key ? `${opt.color}12` : 'var(--surface)',
+                background:  type === opt.key ? `${opt.color}14` : 'var(--surface)',
+                color:       type === opt.key ? opt.color : 'var(--text-secondary)',
               }}>
-              <span style={{ color: type === opt.key ? opt.color : 'var(--text-tertiary)' }}>{opt.icon}</span>
-              <span className="text-xs font-bold"
-                style={{ color: type === opt.key ? opt.color : 'var(--text-primary)' }}>{opt.label}</span>
-              {type === opt.key && <Check size={11} className="absolute top-1.5 right-1.5" style={{ color: opt.color }} />}
+              {opt.icon} {opt.label}
+              {type === opt.key && <Check size={10} />}
             </button>
           ))}
         </div>
 
-        {/* Coins input */}
         {type === 'coins' && (
-          <div className="flex items-center gap-2 rounded-xl border-2 px-3 h-11"
+          <div className="flex items-center gap-2 rounded-lg border px-2.5 h-9"
             style={{ borderColor: '#F59E0B', background: 'var(--surface)' }}>
-            <Coins size={15} style={{ color: '#F59E0B', flexShrink: 0 }} />
-            <input
-              type="number" min={1}
+            <Coins size={13} style={{ color: '#F59E0B', flexShrink: 0 }} />
+            <input type="number" min={1}
               className="flex-1 bg-transparent text-sm font-bold focus:outline-none"
               style={{ color: 'var(--text-primary)' }}
-              placeholder="Montant..."
-              value={coins}
+              placeholder="Montant..." value={coins}
               onChange={e => setCoins(e.target.value.replace(/[^0-9]/g, ''))}
-              autoFocus
-            />
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>coins</span>
+              autoFocus />
+            <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>coins</span>
           </div>
         )}
 
-        {/* Grille cadeaux */}
         {type === 'gift' && (
-          giftsLoading ? (
-            <div className="flex justify-center py-3"><Spinner size="sm" /></div>
-          ) : gifts.length === 0 ? (
-            <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>Aucun cadeau disponible</p>
-          ) : (
-            <div className="grid grid-cols-4 gap-1.5 max-h-28 overflow-y-auto">
-              {gifts.map(g => (
-                <button key={g.id} type="button" onClick={() => setGift(g)}
-                  className="relative flex flex-col items-center gap-0.5 p-1.5 rounded-xl border-2 transition-all"
-                  style={{
-                    borderColor: gift?.id === g.id ? '#E85DAD' : 'var(--border)',
-                    background:  gift?.id === g.id ? 'rgba(232,93,173,0.08)' : 'var(--surface)',
-                  }}>
-                  {gift?.id === g.id && (
-                    <div className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ background: '#E85DAD' }} />
-                  )}
-                  <span className="text-lg">{g.emoji}</span>
-                  <span className="text-[9px] truncate w-full text-center font-semibold"
-                    style={{ color: 'var(--text-primary)' }}>{g.name}</span>
-                  <span className="text-[9px] font-bold" style={{ color: '#fbbf24' }}>{g.coins_cost}</span>
-                </button>
-              ))}
-            </div>
-          )
+          giftsLoading
+            ? <div className="flex justify-center py-2"><Spinner size="sm" /></div>
+            : gifts.length === 0
+              ? <p className="text-xs text-center py-1" style={{ color: 'var(--text-tertiary)' }}>Aucun cadeau</p>
+              : (
+                <div className="grid grid-cols-5 gap-1 max-h-24 overflow-y-auto">
+                  {gifts.map(g => (
+                    <button key={g.id} type="button" onClick={() => setGift(g)}
+                      className="flex flex-col items-center gap-0.5 p-1 rounded-lg border-2 transition-all"
+                      style={{
+                        borderColor: gift?.id === g.id ? '#E85DAD' : 'var(--border)',
+                        background:  gift?.id === g.id ? 'rgba(232,93,173,0.1)' : 'var(--surface)',
+                      }}>
+                      <span className="text-base">{g.emoji}</span>
+                      <span className="text-[8px] truncate w-full text-center font-semibold"
+                        style={{ color: 'var(--text-primary)' }}>{g.name}</span>
+                      <span className="text-[8px] font-bold" style={{ color: '#fbbf24' }}>{g.coins_cost}</span>
+                    </button>
+                  ))}
+                </div>
+              )
         )}
 
         {error && <p className="text-xs" style={{ color: '#f87171' }}>{error}</p>}
 
         <button type="button" onClick={save} disabled={!type || saving}
-          className="w-full h-10 rounded-xl font-bold text-white text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+          className="w-full h-8 rounded-lg font-bold text-white text-xs disabled:opacity-40 flex items-center justify-center gap-1.5"
           style={{ background: `linear-gradient(135deg,${accentColor},${accentColor}BB)` }}>
           {saving ? <Spinner size="sm" /> : 'Confirmer'}
         </button>
@@ -194,41 +161,36 @@ function MonetForm({
     );
   }
 
-  // Vue état courant
   return (
-    <div className="rounded-2xl border p-3.5"
+    <div className="flex items-center gap-2 px-3 py-2 rounded-xl border"
       style={{
         borderColor: isActive ? `${accentColor}44` : 'var(--border)',
         background: 'var(--bg-secondary)',
       }}>
+      <Lock size={13} style={{ color: isActive ? accentColor : 'var(--text-tertiary)', flexShrink: 0 }} />
+      <span className="flex-1 text-xs truncate" style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+        {isActive
+          ? (currentType === 'coins' ? `${currentCoins} coins` : `Cadeau : ${currentGiftName ?? ''}`)
+          : title}
+      </span>
       {isActive ? (
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-2">
-            <Lock size={15} style={{ color: accentColor, flexShrink: 0 }} />
-            <span className="text-sm font-semibold flex-1" style={{ color: 'var(--text-primary)' }}>
-              {currentType === 'coins'
-                ? `${currentCoins} coins requis`
-                : `Cadeau requis : ${currentGiftName ?? ''}`}
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={open}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all"
-              style={{ borderColor: accentColor, color: accentColor }}>
-              <Edit2 size={11} /> Modifier
-            </button>
-            <button onClick={onRemove}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all"
-              style={{ borderColor: '#F0365A', color: '#F0365A' }}>
-              <Unlock size={11} /> Retirer
-            </button>
-          </div>
+        <div className="flex gap-1.5 shrink-0">
+          <button onClick={open}
+            className="flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-semibold"
+            style={{ borderColor: accentColor, color: accentColor }}>
+            <Edit2 size={10} /> Modifier
+          </button>
+          <button onClick={onRemove}
+            className="flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-semibold"
+            style={{ borderColor: '#F0365A', color: '#F0365A' }}>
+            <Unlock size={10} /> Retirer
+          </button>
         </div>
       ) : (
         <button onClick={open}
-          className="w-full h-11 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2"
+          className="shrink-0 px-3 py-1 rounded-lg font-bold text-white text-[11px]"
           style={{ background: `linear-gradient(135deg,${accentColor},${accentColor}AA)` }}>
-          <Lock size={15} /> {title}
+          Activer
         </button>
       )}
     </div>
@@ -243,48 +205,38 @@ export function LiveSettingsSheet({
   onStopLive, onMonetizationUpdated, onClose,
 }: Props) {
 
-  // Monétisation accès
   async function saveAccessMonet(type: 'coins' | 'gift', coins: number | null, gift: GiftType | null) {
-    const payload: any = {
-      is_monetized: true, monetization_type: type,
+    const payload: any = { is_monetized: true, monetization_type: type,
       monetization_coins: type === 'coins' ? coins : null,
-      monetization_gift_id: type === 'gift' ? gift!.id : null,
-    };
+      monetization_gift_id: type === 'gift' ? gift!.id : null };
     await apiClient.patch(Endpoints.lives.monetization(liveId), payload);
-    onMonetizationUpdated({
-      is_monetized: true, monetization_type: type,
+    onMonetizationUpdated({ is_monetized: true, monetization_type: type,
       monetization_coins: type === 'coins' ? coins : undefined,
       monetization_gift_id: type === 'gift' ? gift!.id : undefined,
-      monetization_gift_name: type === 'gift' ? gift!.name : undefined,
-    });
+      monetization_gift_name: type === 'gift' ? gift!.name : undefined });
   }
 
   async function removeAccessMonet() {
-    if (!window.confirm('Les prochains viewers pourront rejoindre gratuitement.')) return;
+    if (!window.confirm('Retirer la condition d\'accès ?')) return;
     try {
       await apiClient.patch(Endpoints.lives.monetization(liveId), { is_monetized: false });
       onMonetizationUpdated({ is_monetized: false, monetization_type: null, monetization_coins: null });
     } catch { /* ignore */ }
   }
 
-  // Monétisation montée scène
   async function saveStageMonet(type: 'coins' | 'gift', coins: number | null, gift: GiftType | null) {
-    const payload: any = {
-      stage_monetized: true, stage_type: type,
+    const payload: any = { stage_monetized: true, stage_type: type,
       stage_coins: type === 'coins' ? coins : null,
-      stage_gift_id: type === 'gift' ? gift!.id : null,
-    };
+      stage_gift_id: type === 'gift' ? gift!.id : null };
     await apiClient.patch(Endpoints.lives.stageMonetization(liveId), payload);
-    onMonetizationUpdated({
-      stage_monetized: true, stage_type: type,
+    onMonetizationUpdated({ stage_monetized: true, stage_type: type,
       stage_coins: type === 'coins' ? coins : undefined,
       stage_gift_id: type === 'gift' ? gift!.id : undefined,
-      stage_gift_name: type === 'gift' ? gift!.name : undefined,
-    });
+      stage_gift_name: type === 'gift' ? gift!.name : undefined });
   }
 
   async function removeStageMonet() {
-    if (!window.confirm('Les viewers pourront lever la main gratuitement.')) return;
+    if (!window.confirm('Retirer la condition de montée en scène ?')) return;
     try {
       await apiClient.patch(Endpoints.lives.stageMonetization(liveId), { stage_monetized: false });
       onMonetizationUpdated({ stage_monetized: false, stage_type: null, stage_coins: null });
@@ -292,141 +244,112 @@ export function LiveSettingsSheet({
   }
 
   function confirmStop() {
-    if (!window.confirm('Terminer le live ? Tous les viewers seront déconnectés.')) return;
+    if (!window.confirm('Terminer le live ?')) return;
     onStopLive();
   }
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-50" style={{ background: 'rgba(0,0,0,0.55)' }} onClick={onClose} />
+      <div className="fixed inset-0 z-50" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
 
-      {/* Sheet */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 flex flex-col"
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col"
         style={{
-          maxHeight: '88vh',
+          maxHeight: '72vh',
           background: 'var(--surface)',
-          borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          borderTopLeftRadius: 24, borderTopRightRadius: 24,
           borderTop: '1px solid var(--border)',
-          animation: 'slideUpSheet 0.28s cubic-bezier(0.32,0.72,0,1)',
+          animation: 'slideUpSheet 0.25s cubic-bezier(0.32,0.72,0,1)',
         }}>
 
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+        <div className="flex justify-center pt-2.5 pb-0.5 shrink-0">
+          <div className="w-9 h-1 rounded-full" style={{ background: 'var(--border)' }} />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 shrink-0">
-          <h2 className="text-base font-black" style={{ color: 'var(--text-primary)' }}>Paramètres du live</h2>
-          <button onClick={onClose} style={{ color: 'var(--text-tertiary)' }}>
-            <X size={18} />
-          </button>
+        <div className="flex items-center justify-between px-4 py-2 shrink-0">
+          <h2 className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>Paramètres</h2>
+          <button onClick={onClose} style={{ color: 'var(--text-tertiary)' }}><X size={16} /></button>
         </div>
 
-        {/* Contenu scrollable */}
-        <div className="flex-1 overflow-y-auto px-5 pb-8 space-y-5 min-h-0">
+        {/* Contenu */}
+        <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-4 min-h-0">
 
-          {/* ── Diffusion ─────────────────────────────────────────────── */}
-          <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5"
-              style={{ color: 'var(--text-tertiary)' }}>Diffusion</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={onToggleCam}
-                className="flex flex-col items-center gap-2 py-3 rounded-2xl border-2 transition-all"
-                style={{
-                  borderColor: camOn ? '#4ade80' : 'var(--border)',
-                  background: camOn ? 'rgba(74,222,128,0.08)' : 'var(--bg-secondary)',
-                }}>
-                <div className="w-11 h-11 rounded-full flex items-center justify-center"
-                  style={{ background: camOn ? 'rgba(74,222,128,0.15)' : 'rgba(240,54,90,0.1)' }}>
-                  {camOn
-                    ? <VideoIcon size={20} style={{ color: '#4ade80' }} />
-                    : <VideoOff size={20} style={{ color: '#F0365A' }} />}
-                </div>
-                <span className="text-xs font-bold" style={{ color: camOn ? '#4ade80' : '#F0365A' }}>
-                  {camOn ? 'Caméra ON' : 'Caméra OFF'}
-                </span>
-                <div className="w-2 h-2 rounded-full" style={{ background: camOn ? '#4ade80' : '#F0365A' }} />
-              </button>
+          {/* ── Diffusion : 2 boutons horizontaux compacts ── */}
+          <div className="flex gap-2">
+            <button onClick={onToggleCam}
+              className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all"
+              style={{
+                borderColor: camOn ? '#4ade80' : 'var(--border)',
+                background: camOn ? 'rgba(74,222,128,0.07)' : 'var(--bg-secondary)',
+              }}>
+              {camOn
+                ? <VideoIcon size={16} style={{ color: '#4ade80', flexShrink: 0 }} />
+                : <VideoOff  size={16} style={{ color: '#F0365A', flexShrink: 0 }} />}
+              <span className="text-xs font-bold" style={{ color: camOn ? '#4ade80' : '#F0365A' }}>
+                {camOn ? 'Caméra ON' : 'Caméra OFF'}
+              </span>
+              <span className="ml-auto w-2 h-2 rounded-full shrink-0"
+                style={{ background: camOn ? '#4ade80' : '#F0365A' }} />
+            </button>
 
-              <button onClick={onToggleMic}
-                className="flex flex-col items-center gap-2 py-3 rounded-2xl border-2 transition-all"
-                style={{
-                  borderColor: micOn ? '#4ade80' : 'var(--border)',
-                  background: micOn ? 'rgba(74,222,128,0.08)' : 'var(--bg-secondary)',
-                }}>
-                <div className="w-11 h-11 rounded-full flex items-center justify-center"
-                  style={{ background: micOn ? 'rgba(74,222,128,0.15)' : 'rgba(240,54,90,0.1)' }}>
-                  {micOn
-                    ? <Mic size={20} style={{ color: '#4ade80' }} />
-                    : <MicOff size={20} style={{ color: '#F0365A' }} />}
-                </div>
-                <span className="text-xs font-bold" style={{ color: micOn ? '#4ade80' : '#F0365A' }}>
-                  {micOn ? 'Micro ON' : 'Micro OFF'}
-                </span>
-                <div className="w-2 h-2 rounded-full" style={{ background: micOn ? '#4ade80' : '#F0365A' }} />
-              </button>
-            </div>
-          </section>
+            <button onClick={onToggleMic}
+              className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all"
+              style={{
+                borderColor: micOn ? '#4ade80' : 'var(--border)',
+                background: micOn ? 'rgba(74,222,128,0.07)' : 'var(--bg-secondary)',
+              }}>
+              {micOn
+                ? <Mic    size={16} style={{ color: '#4ade80', flexShrink: 0 }} />
+                : <MicOff size={16} style={{ color: '#F0365A', flexShrink: 0 }} />}
+              <span className="text-xs font-bold" style={{ color: micOn ? '#4ade80' : '#F0365A' }}>
+                {micOn ? 'Micro ON' : 'Micro OFF'}
+              </span>
+              <span className="ml-auto w-2 h-2 rounded-full shrink-0"
+                style={{ background: micOn ? '#4ade80' : '#F0365A' }} />
+            </button>
+          </div>
 
-          {/* ── Demandes de scène ─────────────────────────────────────── */}
-          <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5"
+          {/* ── Demandes de scène ── */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
               style={{ color: 'var(--text-tertiary)' }}>
-              Demandes de scène
-              {handRequests.length > 0 && (
-                <span style={{ color: '#F0365A' }}> ({handRequests.length})</span>
-              )}
+              Demandes{handRequests.length > 0 && <span style={{ color: '#F0365A' }}> ({handRequests.length})</span>}
             </p>
             {handRequests.length === 0 ? (
-              <div className="flex items-center justify-center py-4 rounded-2xl"
+              <div className="flex items-center justify-center py-3 rounded-xl"
                 style={{ background: 'var(--bg-secondary)' }}>
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucune demande en attente</p>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucune demande</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
                 {handRequests.map(req => (
                   <div key={req.identity}
-                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border"
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border"
                     style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                      <Avatar src={req.avatar} name={req.name} size="sm" className="shrink-0" />
-                      <span className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                        {req.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button onClick={() => onInvite(req.identity)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white"
-                        style={{ background: 'linear-gradient(135deg,#4ade80,#22c55e)' }}>
-                        <UserCheck size={12} /> Inviter
-                      </button>
-                      <button onClick={() => onDismissHand(req.identity)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors"
-                        style={{ borderColor: 'var(--border)', color: 'var(--text-tertiary)' }}>
-                        <X size={13} />
-                      </button>
-                    </div>
+                    <Avatar src={req.avatar} name={req.name} size="xs" className="shrink-0" />
+                    <span className="text-xs font-semibold truncate flex-1"
+                      style={{ color: 'var(--text-primary)' }}>{req.name}</span>
+                    <button onClick={() => onInvite(req.identity)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#4ade80,#22c55e)' }}>
+                      <UserCheck size={11} /> Inviter
+                    </button>
+                    <button onClick={() => onDismissHand(req.identity)}
+                      className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: 'var(--surface)', color: 'var(--text-tertiary)' }}>
+                      <X size={11} />
+                    </button>
                   </div>
                 ))}
               </div>
             )}
-          </section>
+          </div>
 
-          {/* ── Monétisation accès au live ────────────────────────────── */}
-          <section>
-            <div className="flex items-center gap-2.5 mb-2.5">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(245,158,11,0.12)' }}>
-                <LogIn size={15} style={{ color: '#F59E0B' }} />
-              </div>
-              <div>
-                <p className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>Accès au live</p>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Condition pour rejoindre le live</p>
-              </div>
-            </div>
+          {/* ── Accès au live ── */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+              style={{ color: 'var(--text-tertiary)' }}>Accès au live</p>
             <MonetForm
               title="Monétiser l'accès"
               accentColor="#F59E0B"
@@ -438,22 +361,14 @@ export function LiveSettingsSheet({
               onSave={saveAccessMonet}
               onRemove={removeAccessMonet}
             />
-          </section>
+          </div>
 
-          {/* ── Monétisation montée sur scène ─────────────────────────── */}
-          <section>
-            <div className="flex items-center gap-2.5 mb-2.5">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(155,101,245,0.12)' }}>
-                <Mic size={15} style={{ color: '#9B65F5' }} />
-              </div>
-              <div>
-                <p className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>Montée sur scène</p>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Condition pour lever la main</p>
-              </div>
-            </div>
+          {/* ── Montée sur scène ── */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+              style={{ color: 'var(--text-tertiary)' }}>Montée sur scène</p>
             <MonetForm
-              title="Monétiser la montée scène"
+              title="Monétiser la montée"
               accentColor="#9B65F5"
               isActive={live?.stage_monetized ?? false}
               currentType={live?.stage_type}
@@ -463,18 +378,15 @@ export function LiveSettingsSheet({
               onSave={saveStageMonet}
               onRemove={removeStageMonet}
             />
-          </section>
+          </div>
 
-          {/* ── Terminer le live ──────────────────────────────────────── */}
-          <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5"
-              style={{ color: 'var(--text-tertiary)' }}>Actions</p>
-            <button onClick={confirmStop}
-              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl border-2 font-bold text-sm transition-all"
-              style={{ borderColor: '#F0365A', color: '#F0365A' }}>
-              <Radio size={17} /> Terminer le live
-            </button>
-          </section>
+          {/* ── Terminer ── */}
+          <button onClick={confirmStop}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-all"
+            style={{ borderColor: '#F0365A', color: '#F0365A' }}>
+            <Radio size={15} /> Terminer le live
+          </button>
+
         </div>
       </div>
     </>
