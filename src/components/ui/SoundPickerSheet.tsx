@@ -368,23 +368,12 @@ function UploadSoundButton({ onUploaded }: { onUploaded: (s: Sound) => void }) {
 
     setUploading(true);
     try {
-      // 1. Upload the file
+      const name = file.name.replace(/\.[^.]+$/, '');
       const form = new FormData();
       form.append('file', file);
-      const uploadRes = await apiClient.upload<{ url: string }>(
-        '/api/v1/upload/audio?folder=sounds',
-        form,
-      );
-      const fileUrl = (uploadRes.data as any)?.url ?? (uploadRes.data as any)?.uploaded?.[0]?.url;
-
-      // 2. Register the sound
-      const name = file.name.replace(/\.[^.]+$/, '');
-      const soundRes = await apiClient.post<Sound>(Endpoints.sounds.create, {
-        title: name,
-        file_url: fileUrl,
-        is_original: true,
-      });
-      onUploaded(soundRes.data);
+      form.append('title', name);
+      const res = await apiClient.upload<Sound>(Endpoints.sounds.upload, form);
+      onUploaded(res.data);
     } catch {
       // silent — user sees nothing changes
     } finally {
