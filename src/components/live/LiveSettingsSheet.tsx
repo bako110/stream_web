@@ -3,6 +3,7 @@ import {
   X, VideoIcon, VideoOff, Mic, MicOff, UserCheck,
   Lock, Unlock, Edit2, Coins, Gift, ChevronLeft, Check, Radio,
 } from 'lucide-react';
+import { useConfirm } from '../ui/Dialog';
 import { useLocalParticipant } from '@livekit/components-react';
 import { Track, ParticipantEvent } from 'livekit-client';
 import { apiClient } from '../../api';
@@ -202,6 +203,8 @@ export function LiveSettingsSheet({
   handRequests, onInvite, onDismissHand,
   onStopLive, onMonetizationUpdated, onClose,
 }: Props) {
+  const { confirm, ConfirmDialog } = useConfirm();
+
   // ── État cam/mic lu directement depuis LiveKit ──
   const { localParticipant } = useLocalParticipant();
 
@@ -258,7 +261,8 @@ export function LiveSettingsSheet({
   }
 
   async function removeAccessMonet() {
-    if (!window.confirm('Retirer la condition d\'accès ?')) return;
+    const ok = await confirm({ title: 'Retirer la monétisation ?', message: 'Les prochains viewers pourront rejoindre gratuitement.', danger: true, confirmLabel: 'Retirer' });
+    if (!ok) return;
     try {
       await apiClient.patch(Endpoints.lives.monetization(liveId), { is_monetized: false });
       onMonetizationUpdated({ is_monetized: false, monetization_type: null, monetization_coins: null });
@@ -277,20 +281,23 @@ export function LiveSettingsSheet({
   }
 
   async function removeStageMonet() {
-    if (!window.confirm('Retirer la condition de montée en scène ?')) return;
+    const ok = await confirm({ title: 'Retirer la condition ?', message: 'Les viewers pourront lever la main gratuitement.', danger: true, confirmLabel: 'Retirer' });
+    if (!ok) return;
     try {
       await apiClient.patch(Endpoints.lives.stageMonetization(liveId), { stage_monetized: false });
       onMonetizationUpdated({ stage_monetized: false, stage_type: null, stage_coins: null });
     } catch { /* ignore */ }
   }
 
-  function confirmStop() {
-    if (!window.confirm('Terminer le live ?')) return;
+  async function confirmStop() {
+    const ok = await confirm({ title: 'Terminer le live ?', message: 'Tous les viewers seront déconnectés.', danger: true, confirmLabel: 'Terminer' });
+    if (!ok) return;
     onStopLive();
   }
 
   return (
     <>
+      {ConfirmDialog}
       <div className="fixed inset-0 z-50" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
 
       <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">

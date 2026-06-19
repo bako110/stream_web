@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { encodeId } from '../utils/slugId';
 import {
   Music, MapPin, Clock, Users, Play, Calendar,
@@ -102,7 +103,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
       setSuccess(true);
       setTimeout(() => { onCreated(); onClose(); }, 2000);
     } catch (e: any) {
-      alert(e?.message ?? 'Erreur lors de la publication');
+      toast.error(e?.message ?? 'Erreur lors de la publication');
     } finally { setUploading(false); }
   }
 
@@ -326,7 +327,7 @@ function StoryViewer({
       onReload();
       if (totalInGroup > 1) setStoryIdx(storyIdx < totalInGroup - 1 ? storyIdx : storyIdx - 1);
       else onClose();
-    } catch { alert('Erreur lors de la suppression'); }
+    } catch { toast.error('Erreur lors de la suppression'); }
   }
 
   async function saveEdit() {

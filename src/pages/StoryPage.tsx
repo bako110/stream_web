@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { decodeId } from '../utils/slugId';
 import {
   X, ChevronLeft, ChevronRight, Eye, MoreHorizontal,
@@ -201,7 +202,7 @@ function StoryViewer({
       onReload();
       if (totalInGroup > 1) setStoryIdx(storyIdx < totalInGroup - 1 ? storyIdx : storyIdx - 1);
       else onClose();
-    } catch { alert('Erreur lors de la suppression'); }
+    } catch { toast.error('Erreur lors de la suppression'); }
   }
 
   async function saveEdit() {

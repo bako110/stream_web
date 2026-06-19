@@ -54,131 +54,115 @@ function MonetModal({
   const canConfirm = type === 'coins' ? parseInt(coins, 10) > 0 : type === 'gift' ? gift !== null : false;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end"
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.6)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="rounded-t-3xl p-5 pb-8 space-y-5 max-h-[90vh] overflow-y-auto"
+      <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl overflow-hidden"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
 
-        {/* Handle */}
-        <div className="flex justify-center -mt-2 mb-2">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+        {/* Handle mobile */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-8 h-1 rounded-full" style={{ background: 'var(--border)' }} />
         </div>
 
-        <div>
-          <h3 className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>Monétiser le live</h3>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            Les viewers devront satisfaire la condition pour accéder au live.
-          </p>
-        </div>
-
-        {/* Choix du type */}
-        <div className="grid grid-cols-2 gap-3">
-          <button type="button" onClick={() => setType('coins')}
-            className="relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all"
-            style={{
-              borderColor: type === 'coins' ? '#F59E0B' : 'var(--border)',
-              background:  type === 'coins' ? 'rgba(245,158,11,0.08)' : 'var(--bg-secondary)',
-            }}>
-            {type === 'coins' && (
-              <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
-                style={{ background: '#F59E0B' }}>
-                <Check size={11} color="white" strokeWidth={3} />
-              </div>
-            )}
-            <Coins size={28} style={{ color: type === 'coins' ? '#F59E0B' : 'var(--text-tertiary)' }} />
-            <span className="text-sm font-bold" style={{ color: type === 'coins' ? '#F59E0B' : 'var(--text-primary)' }}>
-              Prix en coins
-            </span>
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Montant fixe à payer</span>
-          </button>
-
-          <button type="button" onClick={() => setType('gift')}
-            className="relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all"
-            style={{
-              borderColor: type === 'gift' ? '#E85DAD' : 'var(--border)',
-              background:  type === 'gift' ? 'rgba(232,93,173,0.08)' : 'var(--bg-secondary)',
-            }}>
-            {type === 'gift' && (
-              <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
-                style={{ background: '#E85DAD' }}>
-                <Check size={11} color="white" strokeWidth={3} />
-              </div>
-            )}
-            <Gift size={28} style={{ color: type === 'gift' ? '#E85DAD' : 'var(--text-tertiary)' }} />
-            <span className="text-sm font-bold" style={{ color: type === 'gift' ? '#E85DAD' : 'var(--text-primary)' }}>
-              Cadeau requis
-            </span>
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Envoyer un cadeau</span>
+        <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+          <h3 className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>Monétiser le live</h3>
+          <button onClick={onClose} style={{ color: 'var(--text-tertiary)' }}>
+            <X size={16} />
           </button>
         </div>
 
-        {/* Saisie coins */}
-        {type === 'coins' && (
-          <div className="flex items-center gap-3 rounded-2xl border-2 px-4 h-14"
-            style={{ borderColor: '#F59E0B', background: 'var(--bg-secondary)' }}>
-            <Coins size={20} style={{ color: '#F59E0B', flexShrink: 0 }} />
-            <input
-              type="number" min={1} max={999999}
-              className="flex-1 bg-transparent text-xl font-bold focus:outline-none"
-              style={{ color: 'var(--text-primary)' }}
-              placeholder="Ex: 50"
-              value={coins}
-              onChange={e => setCoins(e.target.value.replace(/[^0-9]/g, ''))}
-              autoFocus
-            />
-            <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>coins</span>
+        <div className="px-4 pb-5 space-y-3">
+          {/* Choix du type — 2 boutons compacts */}
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => setType('coins')}
+              className="relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 transition-all text-left"
+              style={{
+                borderColor: type === 'coins' ? '#F59E0B' : 'var(--border)',
+                background:  type === 'coins' ? 'rgba(245,158,11,0.08)' : 'var(--bg-secondary)',
+              }}>
+              <Coins size={18} style={{ color: type === 'coins' ? '#F59E0B' : 'var(--text-tertiary)', flexShrink: 0 }} />
+              <div>
+                <p className="text-xs font-bold" style={{ color: type === 'coins' ? '#F59E0B' : 'var(--text-primary)' }}>Coins</p>
+                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Montant fixe</p>
+              </div>
+              {type === 'coins' && <Check size={12} className="absolute top-2 right-2" style={{ color: '#F59E0B' }} />}
+            </button>
+
+            <button type="button" onClick={() => setType('gift')}
+              className="relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 transition-all text-left"
+              style={{
+                borderColor: type === 'gift' ? '#E85DAD' : 'var(--border)',
+                background:  type === 'gift' ? 'rgba(232,93,173,0.08)' : 'var(--bg-secondary)',
+              }}>
+              <Gift size={18} style={{ color: type === 'gift' ? '#E85DAD' : 'var(--text-tertiary)', flexShrink: 0 }} />
+              <div>
+                <p className="text-xs font-bold" style={{ color: type === 'gift' ? '#E85DAD' : 'var(--text-primary)' }}>Cadeau</p>
+                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Cadeau requis</p>
+              </div>
+              {type === 'gift' && <Check size={12} className="absolute top-2 right-2" style={{ color: '#E85DAD' }} />}
+            </button>
           </div>
-        )}
 
-        {/* Grille cadeaux */}
-        {type === 'gift' && (
-          <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-              Choisis le cadeau requis
-            </p>
-            {loading ? (
-              <div className="flex justify-center py-6"><Spinner /></div>
+          {/* Saisie coins */}
+          {type === 'coins' && (
+            <div className="flex items-center gap-2 rounded-xl border-2 px-3 h-11"
+              style={{ borderColor: '#F59E0B', background: 'var(--bg-secondary)' }}>
+              <Coins size={16} style={{ color: '#F59E0B', flexShrink: 0 }} />
+              <input
+                type="number" min={1} max={999999}
+                className="flex-1 bg-transparent text-base font-bold focus:outline-none"
+                style={{ color: 'var(--text-primary)' }}
+                placeholder="Montant..."
+                value={coins}
+                onChange={e => setCoins(e.target.value.replace(/[^0-9]/g, ''))}
+                autoFocus
+              />
+              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>coins</span>
+            </div>
+          )}
+
+          {/* Grille cadeaux compacte */}
+          {type === 'gift' && (
+            loading ? (
+              <div className="flex justify-center py-4"><Spinner size="sm" /></div>
             ) : gifts.length === 0 ? (
-              <p className="text-sm text-center py-4" style={{ color: 'var(--text-tertiary)' }}>Aucun cadeau disponible</p>
+              <p className="text-xs text-center py-3" style={{ color: 'var(--text-tertiary)' }}>Aucun cadeau disponible</p>
             ) : (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto">
                 {gifts.map(g => (
                   <button key={g.id} type="button" onClick={() => setGift(g)}
-                    className="relative flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all"
+                    className="relative flex flex-col items-center gap-0.5 p-1.5 rounded-xl border-2 transition-all"
                     style={{
                       borderColor: gift?.id === g.id ? '#E85DAD' : 'var(--border)',
                       background:  gift?.id === g.id ? 'rgba(232,93,173,0.08)' : 'var(--bg-secondary)',
                     }}>
                     {gift?.id === g.id && (
-                      <div className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full" style={{ background: '#E85DAD' }} />
+                      <div className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full" style={{ background: '#E85DAD' }} />
                     )}
-                    <span className="text-2xl">{g.emoji}</span>
-                    <span className="text-[10px] font-semibold truncate w-full text-center"
+                    <span className="text-xl">{g.emoji}</span>
+                    <span className="text-[9px] font-semibold truncate w-full text-center"
                       style={{ color: 'var(--text-primary)' }}>{g.name}</span>
-                    <span className="text-[9px] font-bold flex items-center gap-0.5"
-                      style={{ color: '#fbbf24' }}>
-                      <Coins size={8} />{g.coins_cost}
-                    </span>
+                    <span className="text-[9px] font-bold" style={{ color: '#fbbf24' }}>{g.coins_cost}</span>
                   </button>
                 ))}
               </div>
-            )}
-          </div>
-        )}
+            )
+          )}
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-1">
-          <button type="button" onClick={onClose}
-            className="flex-1 h-13 rounded-2xl border font-bold text-sm transition-all"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', height: 52 }}>
-            Annuler
-          </button>
-          <button type="button" onClick={handleConfirm} disabled={!canConfirm}
-            className="flex-[2] h-13 rounded-2xl font-black text-white text-sm transition-all disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg,#F59E0B,#F97316)', height: 52 }}>
-            Confirmer
-          </button>
+          {/* Actions */}
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 rounded-xl border font-semibold text-sm transition-all"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', height: 44 }}>
+              Annuler
+            </button>
+            <button type="button" onClick={handleConfirm} disabled={!canConfirm}
+              className="flex-[2] rounded-xl font-black text-white text-sm transition-all disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg,#F59E0B,#F97316)', height: 44 }}>
+              Confirmer
+            </button>
+          </div>
         </div>
       </div>
     </div>

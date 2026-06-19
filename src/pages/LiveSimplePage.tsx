@@ -41,6 +41,7 @@ import {
   type GiftNotif,
 } from '../components/live/LiveGiftModal';
 import { LiveSettingsSheet } from '../components/live/LiveSettingsSheet';
+import { useConfirm } from '../components/ui/Dialog';
 
 // ── LiveKit quality config ─────────────────────────────────────────────────────
 
@@ -93,6 +94,7 @@ const LiveChat = forwardRef<LiveChatHandle, {
   const wsRef     = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { user }  = useAuthStore();
+  const { confirm: confirmChat, ConfirmDialog: ConfirmChatDialog } = useConfirm();
 
   useEffect(() => {
     if (!accessToken) return;
@@ -159,7 +161,8 @@ const LiveChat = forwardRef<LiveChatHandle, {
   }
 
   async function banFromMsg(identity: string, name: string) {
-    if (!window.confirm(`Exclure ${name} du live ?`)) return;
+    const ok = await confirmChat({ title: `Exclure ${name} ?`, message: 'Le viewer sera banni de ce live.', danger: true, confirmLabel: 'Exclure' });
+    if (!ok) return;
     try { await apiClient.post(Endpoints.lives.ban(liveId, identity)); } catch { /* ignore */ }
     addSysMsg(`${name} a été exclu du live`);
   }
@@ -222,6 +225,7 @@ const LiveChat = forwardRef<LiveChatHandle, {
           <Send size={13} className="text-white" />
         </button>
       </div>
+      {ConfirmChatDialog}
     </div>
   );
 });
@@ -809,6 +813,7 @@ export default function LiveSimplePage() {
   const navigate       = useNavigate();
   const location       = useLocation();
   const { user, accessToken } = useAuthStore();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const stateToken: string | null = (location.state as any)?.publisherToken ?? null;
   const stateLkUrl: string | null = (location.state as any)?.livekitUrl ?? null;
@@ -956,19 +961,23 @@ export default function LiveSimplePage() {
 
   const handleStop = useCallback(async () => {
     if (!id) return;
-    if (!window.confirm('Terminer le live ? Tous les viewers seront déconnectés.')) return;
+    const ok = await confirm({ title: 'Terminer le live ?', message: 'Tous les viewers seront déconnectés.', danger: true, confirmLabel: 'Terminer' });
+    if (!ok) return;
     setStopping(true);
     try {
       await apiClient.post(Endpoints.lives.stop(id));
       liveApi.refetch();
     } catch { /* error */ }
     finally { setStopping(false); }
-  }, [id, liveApi]);
+  }, [id, liveApi, confirm]);
 
-  const handleLeave = useCallback(() => {
-    if (isActive && !window.confirm('Quitter ce live ?')) return;
+  const handleLeave = useCallback(async () => {
+    if (isActive) {
+      const ok = await confirm({ title: 'Quitter le live ?', danger: false, confirmLabel: 'Quitter' });
+      if (!ok) return;
+    }
     navigate(-1);
-  }, [navigate, isActive]);
+  }, [navigate, isActive, confirm]);
 
   const handleHandRaise = useCallback(async () => {
     if (!id || !user) return;
@@ -1337,6 +1346,7 @@ export default function LiveSimplePage() {
         />
       )}
 
+      {ConfirmDialog}
     </>
   );
 }

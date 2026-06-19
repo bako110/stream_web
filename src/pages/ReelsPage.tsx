@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { useConfirm } from '../components/ui/Dialog';
 import { encodeId, decodeId } from '../utils/slugId';
 import {
   Heart, MessageCircle, Share2,
@@ -58,7 +60,7 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
       setSent(true);
       setTimeout(onClose, 1800);
     } catch (e: any) {
-      alert(e?.message ?? 'Impossible d\'envoyer le cadeau');
+      toast.error(e?.message ?? 'Impossible d\'envoyer le cadeau');
     } finally { setSending(false); }
   }
 
@@ -1142,6 +1144,7 @@ export default function ReelsPage() {
   const targetId                        = searchParams.get('id') ? (() => { try { return decodeId(searchParams.get('id')!); } catch { return searchParams.get('id'); } })() : null;
 
   const { user: me }                    = useAuthStore();
+  const { confirm, ConfirmDialog }      = useConfirm();
 
   const [reels,         setReels]       = useState<Reel[]>([]);
   const [myReels,       setMyReels]     = useState<Reel[]>([]);
@@ -1305,13 +1308,14 @@ export default function ReelsPage() {
   }, [editReel, editCaption]);
   const handleDeleteReel = useCallback(async (r: Reel) => {
     setMenuReel(null);
-    if (!confirm(`Supprimer ce reel ?`)) return;
+    const ok = await confirm({ title: 'Supprimer ce reel ?', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     try {
       await apiClient.delete(Endpoints.reels.delete(r.id));
       setMyReels(prev => prev.filter(x => x.id !== r.id));
       setReels(prev => prev.filter(x => x.id !== r.id));
     } catch { /* silencieux */ }
-  }, []);
+  }, [confirm]);
 
   // ── Repost ──
   const handleRepost = useCallback(async () => {
@@ -1325,7 +1329,7 @@ export default function ReelsPage() {
       setReels(prev => prev.map(r => r.id === cur.id ? { ...r, repost_count: (r.repost_count ?? 0) + 1 } : r));
     } catch (e: any) {
       const msg = e?.response?.data?.detail ?? e?.message ?? 'Impossible de republier';
-      alert(msg);
+      toast.error(msg);
     } finally { setReposting(false); }
   }, [reels, activeIndex, reposting]); // eslint-disable-line
 
@@ -1334,19 +1338,20 @@ export default function ReelsPage() {
     const cur = reels[activeIndex] ?? null;
     if (!cur || cabling) return;
     const authorName = cur.author?.display_name ?? cur.author?.username ?? 'cet utilisateur';
-    if (!confirm(`Envoyer une invitation Cable à ${authorName} ?`)) return;
+    const ok = await confirm({ title: `Envoyer une invitation Cable à ${authorName} ?`, danger: false });
+    if (!ok) return;
     setCabling(true);
     setMoreSheetOpen(false);
     try {
       await apiClient.post(Endpoints.cable.sendInvite(cur.id), { receiver_id: cur.author?.id });
       setActiveCableCount(c => c + 1);
       setReels(prev => prev.map(r => r.id === cur.id ? { ...r, cable_count: (r.cable_count ?? 0) + 1 } : r));
-      alert(`Invitation envoyée ! ${authorName} a reçu ton invitation Cable.`);
+      toast.success(`Invitation envoyée ! ${authorName} a reçu ton invitation Cable.`);
     } catch (e: any) {
       const msg = e?.response?.data?.detail ?? e?.message ?? 'Impossible d\'envoyer l\'invitation';
-      alert(msg);
+      toast.error(msg);
     } finally { setCabling(false); }
-  }, [reels, activeIndex, cabling]); // eslint-disable-line
+  }, [reels, activeIndex, cabling, confirm]); // eslint-disable-line
 
   // ── Toggle comments (owner) ──
   const handleToggleComments = useCallback(async () => {
@@ -1547,7 +1552,7 @@ export default function ReelsPage() {
                   try {
                     await apiClient.patch(Endpoints.reels.toggleComments(menuReel.id));
                     setMyReels(prev => prev.map(r => r.id === menuReel.id ? { ...r, comments_disabled: !r.comments_disabled } : r));
-                  } catch { alert('Erreur lors du changement'); }
+                  } catch { toast.error('Erreur lors du changement'); }
                 }}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
@@ -1911,7 +1916,7 @@ export default function ReelsPage() {
                     </button>
 
                     {/* Signaler */}
-                    <button onClick={() => { setMoreSheetOpen(false); alert('Signalement envoyé. Merci !'); }}
+                    <button onClick={() => { setMoreSheetOpen(false); toast.success('Signalement envoyé. Merci !'); }}
                       className="w-full flex items-center gap-4 px-5 py-3.5 transition-all text-left"
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -2057,6 +2062,8 @@ export default function ReelsPage() {
           </div>
         </div>
       )}
+
+      {ConfirmDialog}
     </div>
   );
 }

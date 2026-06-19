@@ -1,6 +1,7 @@
 import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfirm } from '../../components/ui/Dialog';
 import {
   ArrowLeft, Monitor, Tv, Users, Download, RefreshCw, Trash2, Calendar, Clock,
 } from 'lucide-react';
@@ -108,6 +109,7 @@ function StatusPill({ status }: { status: string }) {
 
 export default function WalletMySubscriptionPage() {
   const navigate = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const [sub,        setSub]        = useState<ActiveSubscription | null>(null);
   const [history,    setHistory]    = useState<HistoryEntry[]>([]);
@@ -133,9 +135,12 @@ export default function WalletMySubscriptionPage() {
   }, [fetchSub]);
 
   async function handleCancel() {
-    const confirmed = window.confirm(
-      'Etes-vous sur de vouloir annuler votre abonnement ? Vous conservez l\'acces jusqu\'a la fin de la periode en cours.'
-    );
+    const confirmed = await confirm({
+      title: 'Annuler l\'abonnement ?',
+      message: 'Vous conservez l\'accès jusqu\'à la fin de la période en cours.',
+      danger: true,
+      confirmLabel: 'Annuler l\'abonnement',
+    });
     if (!confirmed) return;
 
     setCancelling(true);
@@ -289,6 +294,8 @@ export default function WalletMySubscriptionPage() {
           </button>
         </div>
       )}
+
+      {ConfirmDialog}
 
       {/* Subscription history */}
       <div>
