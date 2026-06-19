@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Video, Upload, X, Play } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Video, Upload, X, Play, Repeat2 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints'; // used for reels.feed
 import { Spinner } from '../../components/ui/Spinner';
@@ -11,6 +11,8 @@ import toast from 'react-hot-toast';
 
 export default function CreateReelPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const sourceReelId = params.get('sourceReelId') ?? undefined;
 
   const [caption,      setCaption]      = useState('');
   const [videoFile,    setVideoFile]    = useState<File | null>(null);
@@ -56,12 +58,14 @@ export default function CreateReelPage() {
       const uploaded = await uploadVideoHls(videoFile, 'reels', setUploadPct);
 
       await apiClient.post(Endpoints.reels.feed, {
-        hls_url:       uploaded.hls_url,
-        thumbnail_url: uploaded.thumbnail_url,
-        duration_sec:  uploaded.duration ? Math.round(uploaded.duration) : undefined,
-        caption:       caption.trim() || undefined,
-        music_url:     sound?.file_url,
-        music_name:    sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
+        hls_url:        uploaded.hls_url,
+        thumbnail_url:  uploaded.thumbnail_url,
+        duration_sec:   uploaded.duration ? Math.round(uploaded.duration) : undefined,
+        caption:        caption.trim() || undefined,
+        music_url:      sound?.file_url,
+        music_name:     sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
+        source_reel_id: sourceReelId,
+        remix_type:     sourceReelId ? 'remix' : undefined,
       });
 
       toast.success('Reel publié !');
@@ -84,7 +88,10 @@ export default function CreateReelPage() {
           style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>
           <ArrowLeft size={20} />
         </button>
-        <p className="flex-1 font-black text-lg" style={{ color: 'var(--text-primary)' }}>Nouveau Reel</p>
+        <p className="flex-1 font-black text-lg flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          {sourceReelId && <Repeat2 size={16} style={{ color: 'var(--primary)' }} />}
+          {sourceReelId ? 'Remixer' : 'Nouveau Reel'}
+        </p>
         <button onClick={handlePublish} disabled={!canPublish || publishing}
           className="px-4 py-2 rounded-xl text-sm font-black disabled:opacity-40 transition-all"
           style={{ background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
