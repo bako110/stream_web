@@ -1296,15 +1296,17 @@ export default function LiveSimplePage() {
           </button>
         )}
         {showChat && (
-          <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end"
+          <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end items-center"
             style={{ background: 'rgba(0,0,0,0.5)' }}
             onClick={e => { if (e.target === e.currentTarget) setShowChat(false); }}>
-            <div className="flex flex-col"
+            <div className="flex flex-col w-full sm:max-w-sm"
               style={{
                 height: '65vh',
                 background: '#0a0a14',
                 borderRadius: '1.25rem 1.25rem 0 0',
                 borderTop: '1px solid rgba(255,255,255,0.1)',
+                borderLeft: '1px solid rgba(255,255,255,0.08)',
+                borderRight: '1px solid rgba(255,255,255,0.08)',
                 animation: 'slideUpSheet 0.3s ease-out',
               }}>
               <div className="flex items-center justify-between px-4 py-3 border-b shrink-0"
