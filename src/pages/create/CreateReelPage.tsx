@@ -5,6 +5,8 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints'; // used for reels.feed
 import { Spinner } from '../../components/ui/Spinner';
 import { uploadVideoHls } from '../../api/uploadVideo';
+import { SoundPickerSheet, SoundBar } from '../../components/ui/SoundPickerSheet';
+import type { Sound } from '../../types';
 import toast from 'react-hot-toast';
 
 export default function CreateReelPage() {
@@ -16,6 +18,8 @@ export default function CreateReelPage() {
   const [paused,       setPaused]       = useState(false);
   const [publishing,   setPublishing]   = useState(false);
   const [uploadPct,    setUploadPct]    = useState(0);
+  const [sound,        setSound]        = useState<Sound | null>(null);
+  const [soundOpen,    setSoundOpen]    = useState(false);
 
   const videoInputRef = useRef<HTMLInputElement>(null);
   const videoRef      = useRef<HTMLVideoElement>(null);
@@ -56,6 +60,8 @@ export default function CreateReelPage() {
         thumbnail_url: uploaded.thumbnail_url,
         duration_sec:  uploaded.duration ? Math.round(uploaded.duration) : undefined,
         caption:       caption.trim() || undefined,
+        music_url:     sound?.file_url,
+        music_name:    sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
       });
 
       toast.success('Reel publié !');
@@ -159,6 +165,14 @@ export default function CreateReelPage() {
         <input ref={videoInputRef} type="file" accept="video/*" hidden onChange={handlePickVideo} />
       </div>
 
+      {/* Son */}
+      <div className="px-4 pt-5">
+        <p className="text-xs font-black uppercase tracking-wider mb-3" style={{ color: 'var(--text-tertiary)' }}>
+          Son
+        </p>
+        <SoundBar sound={sound} onOpen={() => setSoundOpen(true)} onRemove={() => setSound(null)} />
+      </div>
+
       {/* Caption */}
       <div className="px-4 py-5">
         <p className="text-xs font-black uppercase tracking-wider mb-3" style={{ color: 'var(--text-tertiary)' }}>
@@ -179,6 +193,14 @@ export default function CreateReelPage() {
         />
         <p className="text-xs text-right mt-1" style={{ color: 'var(--text-tertiary)' }}>{caption.length}/300</p>
       </div>
+
+      {/* Sound picker */}
+      <SoundPickerSheet
+        open={soundOpen}
+        onClose={() => setSoundOpen(false)}
+        onSelect={setSound}
+        selected={sound}
+      />
 
       {/* Publish CTA */}
       <div className="px-4 pb-8">

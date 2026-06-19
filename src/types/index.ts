@@ -186,6 +186,20 @@ export interface Event {
   user_reaction?: 'like' | 'dislike' | null;
 }
 
+// ── Sound ─────────────────────────────────────────────────────────────────
+export interface Sound {
+  id: string;
+  title: string;
+  artist_name: string | null;
+  duration_seconds: number | null;
+  file_url: string;
+  cover_url: string | null;
+  usage_count: number;
+  is_original: boolean;
+  created_at: string;
+  created_by?: UserPublic | null;
+}
+
 // ── Reel ──────────────────────────────────────────────────────────────────
 export type ReelStatus = 'processing' | 'published' | 'archived';
 export type ReelRemixType = 'remix' | 'repost' | null;

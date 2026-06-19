@@ -13,6 +13,8 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
 import { toProxiedUrl } from '../utils/constants';
+import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
+import type { Sound } from '../types';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
@@ -36,6 +38,8 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const [mediaType, setMediaType] = useState<'image'|'video'>('image');
   const [uploading, setUploading] = useState(false);
   const [success,   setSuccess]   = useState(false);
+  const [sound,     setSound]     = useState<Sound | null>(null);
+  const [soundOpen, setSoundOpen] = useState(false);
   const fileRef  = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -98,7 +102,10 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
         thumbnail_url,
         caption: caption.trim() || undefined,
         duration_sec,
-        background_color });
+        background_color,
+        audio_url: sound?.file_url,
+      });
+      if (sound) apiClient.post(Endpoints.sounds.use(sound.id)).catch(() => {});
 
       setSuccess(true);
       setTimeout(() => { onCreated(); onClose(); }, 2000);
@@ -117,6 +124,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
         onClick={e => e.stopPropagation()}>
 
         <input ref={fileRef} type="file" className="hidden" onChange={onFileChange} />
+        <SoundPickerSheet open={soundOpen} onClose={() => setSoundOpen(false)} onSelect={setSound} selected={sound} />
 
         {success ? (
           /* ── Succès ── */
@@ -199,6 +207,9 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
                 onBlur={e => (e.target.style.borderColor = 'var(--border)')}
               />
             </div>
+            <div className="px-4 pb-2">
+              <SoundBar sound={sound} onOpen={() => setSoundOpen(true)} onRemove={() => setSound(null)} />
+            </div>
             <div className="px-4 pb-5">
               <button onClick={publish} disabled={!caption.trim() || uploading}
                 className="w-full py-3 rounded-xl font-black text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-40"
@@ -237,6 +248,9 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
                 onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
                 onBlur={e => (e.target.style.borderColor = 'var(--border)')}
               />
+            </div>
+            <div className="px-4 pb-2">
+              <SoundBar sound={sound} onOpen={() => setSoundOpen(true)} onRemove={() => setSound(null)} />
             </div>
             <div className="px-4 pb-5">
               <button onClick={publish} disabled={uploading}
