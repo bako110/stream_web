@@ -6,17 +6,17 @@ import type { Post } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
-import { Spinner, PageLoader } from '../../components/ui/Spinner';
+import { Spinner } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-// ── Video HLS player ──────────────────────────────────────────────────────────
+/* ── HLS video player ──────────────────────────────────────────────────────── */
 function VideoPlayer({ src, thumbnail }: { src: string; thumbnail?: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    const v = videoRef.current;
+    const v = ref.current;
     if (!v || !src) return;
     let hls: import('hls.js').default | null = null;
     import('hls.js').then(({ default: Hls }) => {
@@ -31,13 +31,14 @@ function VideoPlayer({ src, thumbnail }: { src: string; thumbnail?: string }) {
     return () => { hls?.destroy(); };
   }, [src]);
   return (
-    <div style={{ background: '#000' }} className="w-full overflow-hidden rounded-2xl">
-      <video ref={videoRef} poster={thumbnail} controls playsInline className="w-full object-contain" style={{ maxHeight: 520 }} />
+    <div className="w-full rounded-2xl overflow-hidden bg-black">
+      <video ref={ref} poster={thumbnail} controls playsInline
+        className="w-full object-contain" style={{ maxHeight: 480 }} />
     </div>
   );
 }
 
-// ── Mini post card (colonne droite) ───────────────────────────────────────────
+/* ── Mini post card ─────────────────────────────────────────────────────────── */
 function MiniPostCard({ post }: { post: Post }) {
   const navigate = useNavigate();
   const hasVideo = !!(post.hls_url || post.video_url);
@@ -45,27 +46,29 @@ function MiniPostCard({ post }: { post: Post }) {
   return (
     <button
       onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
-      className="flex gap-3 p-3 rounded-2xl w-full text-left transition-all"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-      {thumb ? (
-        <div className="relative shrink-0 rounded-xl overflow-hidden" style={{ width: 64, height: 64 }}>
-          <img src={thumb} alt="" className="w-full h-full object-cover" />
-          {hasVideo && (
-            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
-              <Play size={16} color="#fff" fill="#fff" />
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="shrink-0 rounded-xl flex items-center justify-center" style={{ width: 64, height: 64, background: 'rgba(123,63,242,0.1)' }}>
-          {hasVideo ? <Play size={18} style={{ color: 'var(--primary)' }} /> : <MessageCircle size={18} style={{ color: 'var(--primary)' }} />}
-        </div>
-      )}
+      className="flex gap-3 p-3 rounded-xl w-full text-left transition-colors hover:bg-[var(--bg-secondary)]">
+      {/* Thumbnail */}
+      <div className="shrink-0 rounded-lg overflow-hidden bg-[var(--bg-secondary)]"
+        style={{ width: 56, height: 56 }}>
+        {thumb
+          ? <img src={thumb} alt="" className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center">
+              {hasVideo
+                ? <Play size={18} style={{ color: 'var(--primary)' }} />
+                : <MessageCircle size={16} style={{ color: 'var(--text-tertiary)' }} />}
+            </div>}
+        {thumb && hasVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+            <Play size={14} color="#fff" fill="#fff" />
+          </div>
+        )}
+      </div>
+      {/* Text */}
       <div className="flex-1 min-w-0">
-        {post.body && <p className="text-sm font-medium leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>{post.body}</p>}
-        {!post.body && hasVideo && <p className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>Vidéo</p>}
+        <p className="text-sm leading-snug line-clamp-2"
+          style={{ color: 'var(--text-primary)' }}>
+          {post.body || (hasVideo ? 'Vidéo' : 'Publication')}
+        </p>
         <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
           {format(new Date(post.created_at), 'd MMM yyyy', { locale: fr })}
         </p>
@@ -74,12 +77,12 @@ function MiniPostCard({ post }: { post: Post }) {
   );
 }
 
-// ── Page principale ───────────────────────────────────────────────────────────
+/* ── Page ───────────────────────────────────────────────────────────────────── */
 export default function PostDetailPage() {
-  const { id: slug }  = useParams<{ id: string }>();
-  const id             = decodeId(slug!);
-  const navigate       = useNavigate();
-  const { user: me }  = useAuthStore();
+  const { id: slug } = useParams<{ id: string }>();
+  const id           = decodeId(slug!);
+  const navigate     = useNavigate();
+  const { user: me } = useAuthStore();
 
   const [post,            setPost]            = useState<Post | null>(null);
   const [loading,         setLoading]         = useState(true);
@@ -94,7 +97,6 @@ export default function PostDetailPage() {
   const [otherPosts,      setOtherPosts]      = useState<Post[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Charger le post
   useEffect(() => {
     if (!id) return;
     setLoading(true); setError(false);
@@ -108,7 +110,6 @@ export default function PostDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Charger les commentaires
   useEffect(() => {
     if (!id) return;
     setCommentsLoading(true);
@@ -121,7 +122,6 @@ export default function PostDetailPage() {
       .finally(() => setCommentsLoading(false));
   }, [id]);
 
-  // Charger autres posts de l'auteur
   useEffect(() => {
     if (!post?.author?.id) return;
     apiClient.get<any>(Endpoints.posts.byUser(post.author.id))
@@ -135,10 +135,10 @@ export default function PostDetailPage() {
 
   async function toggleLike() {
     if (!id) return;
-    const newLiked = !liked;
-    setLiked(newLiked); setLikes(l => l + (newLiked ? 1 : -1));
+    const next = !liked;
+    setLiked(next); setLikes(l => l + (next ? 1 : -1));
     try { await apiClient.post(`${Endpoints.posts.react(id)}?reaction_type=like`); }
-    catch { setLiked(!newLiked); setLikes(l => l + (newLiked ? -1 : 1)); }
+    catch { setLiked(!next); setLikes(l => l + (next ? -1 : 1)); }
   }
 
   async function submitComment() {
@@ -156,16 +156,20 @@ export default function PostDetailPage() {
     try { await apiClient.delete(Endpoints.posts.byId(id)); navigate(-1); } catch {}
   }
 
+  /* ── Loading / Error states ── */
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-[60vh] flex items-center justify-center">
       <Spinner />
     </div>
   );
-
   if (error || !post) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'var(--bg)' }}>
-      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Ce post est introuvable ou indisponible.</p>
-      <button onClick={() => navigate(-1)} className="btn-secondary text-sm flex items-center gap-2">
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+        Ce post est introuvable ou indisponible.
+      </p>
+      <button onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
         <ArrowLeft size={14} /> Retour
       </button>
     </div>
@@ -176,60 +180,69 @@ export default function PostDetailPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Back */}
         <button onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 mb-6 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
-          style={{ color: 'var(--text-secondary)', background: 'var(--surface)', border: '1px solid var(--border)' }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-          <ArrowLeft size={15} /> Retour
+          className="inline-flex items-center gap-2 mb-6 text-sm font-semibold transition-colors"
+          style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+          <ArrowLeft size={16} /> Retour
         </button>
 
-        {/* Layout 2 colonnes */}
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)' }}>
+        {/* Grid 2 colonnes : gauche 3/5, droite 2/5 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1.5rem', alignItems: 'start' }}>
 
-          {/* ── Colonne gauche : détail ── */}
-          <div className="flex flex-col gap-4">
+          {/* ══ Colonne gauche ══════════════════════════════════════════════════ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-            {/* Card principale */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            {/* Card post principale */}
+            <div className="rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
 
-              {/* Header auteur */}
-              <div className="flex items-center gap-3 px-5 pt-5 pb-4">
+              {/* Header */}
+              <div className="flex items-center gap-3 px-5 py-4">
                 <button onClick={() => author?.id && navigate(`/user/${encodeId(author.id)}`)}>
-                  <Avatar src={author?.avatar_url} name={author?.display_name ?? author?.username ?? '?'} size="md" verified={author?.is_verified} />
+                  <Avatar src={author?.avatar_url}
+                    name={author?.display_name ?? author?.username ?? '?'}
+                    size="md" verified={author?.is_verified} />
                 </button>
                 <div className="flex-1 min-w-0">
                   <button onClick={() => author?.id && navigate(`/user/${encodeId(author.id)}`)}
-                    className="text-sm font-black block truncate text-left" style={{ color: 'var(--text-primary)' }}>
+                    className="font-bold text-sm block truncate text-left hover:underline"
+                    style={{ color: 'var(--text-primary)' }}>
                     {author?.display_name ?? author?.username ?? 'Utilisateur'}
                   </button>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                    {format(new Date(post.created_at), 'd MMMM yyyy · HH:mm', { locale: fr })}
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    {format(new Date(post.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                   </p>
                 </div>
-                <span className="text-[10px] font-black px-2.5 py-1 rounded-full text-white shrink-0"
-                  style={{ background: 'rgba(123,63,242,0.8)' }}>
+
+                {/* Badge type */}
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white shrink-0"
+                  style={{ background: 'var(--primary)' }}>
                   Post
                 </span>
+
+                {/* Menu owner */}
                 {isOwn && (
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     <button onClick={() => setMenuOpen(v => !v)}
-                      className="p-2 rounded-xl transition-all"
-                      style={{ color: 'var(--text-secondary)', background: 'var(--bg-secondary)' }}>
+                      className="p-1.5 rounded-lg transition-colors"
+                      style={{ color: 'var(--text-tertiary)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                       <MoreHorizontal size={16} />
                     </button>
                     {menuOpen && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                        <div className="absolute right-0 top-10 z-20 rounded-xl overflow-hidden shadow-xl"
-                          style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: 160 }}>
+                        <div className="absolute right-0 top-9 z-20 rounded-xl shadow-xl min-w-[140px]"
+                          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                           <button onClick={deletePost}
-                            className="flex items-center gap-3 px-4 py-3 w-full text-sm font-semibold"
+                            className="flex items-center gap-2 px-4 py-3 w-full text-sm font-medium transition-colors"
                             style={{ color: '#ef4444' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                             <Trash2 size={14} /> Supprimer
                           </button>
@@ -240,10 +253,11 @@ export default function PostDetailPage() {
                 )}
               </div>
 
-              {/* Corps texte */}
+              {/* Contenu texte */}
               {post.body && (
                 <div className="px-5 pb-4">
-                  <RichText text={post.body} style={{ color: 'var(--text-primary)', lineHeight: 1.6, fontSize: 15, whiteSpace: 'pre-wrap' }} />
+                  <RichText text={post.body}
+                    style={{ color: 'var(--text-primary)', lineHeight: 1.7, fontSize: 15 }} />
                   {post.feeling && (
                     <span className="inline-block mt-3 text-xs px-3 py-1 rounded-full font-semibold"
                       style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
@@ -254,24 +268,28 @@ export default function PostDetailPage() {
               )}
 
               {/* Vidéo */}
-              {(post.hls_url || post.video_url) && !post.image_url && (
+              {(post.hls_url || post.video_url) && (
                 <div className="px-5 pb-4">
-                  <VideoPlayer src={post.hls_url ?? post.video_url!} thumbnail={post.thumbnail_url ?? undefined} />
+                  <VideoPlayer src={post.hls_url ?? post.video_url!}
+                    thumbnail={post.thumbnail_url ?? undefined} />
                 </div>
               )}
 
-              {/* Image */}
-              {post.image_url && !post.video_url && (
-                <div className="overflow-hidden mx-5 mb-4 rounded-2xl">
-                  <img src={post.image_url} alt="" className="w-full object-cover" style={{ maxHeight: 520 }} />
+              {/* Image unique */}
+              {!post.video_url && !post.hls_url && post.image_url && !post.image_urls?.length && (
+                <div className="mx-5 mb-4 rounded-xl overflow-hidden">
+                  <img src={post.image_url} alt="" className="w-full object-cover"
+                    style={{ maxHeight: 480 }} />
                 </div>
               )}
 
               {/* Images multiples */}
               {post.image_urls && post.image_urls.length > 1 && (
-                <div className="px-5 pb-4 grid gap-2" style={{ gridTemplateColumns: post.image_urls.length === 2 ? '1fr 1fr' : 'repeat(3,1fr)' }}>
+                <div className="px-5 pb-4"
+                  style={{ display: 'grid', gap: 6,
+                    gridTemplateColumns: post.image_urls.length === 2 ? '1fr 1fr' : 'repeat(3,1fr)' }}>
                   {post.image_urls.map((u, i) => (
-                    <div key={i} className="rounded-xl overflow-hidden aspect-square">
+                    <div key={i} className="rounded-xl overflow-hidden" style={{ aspectRatio: '1' }}>
                       <img src={u} alt="" className="w-full h-full object-cover" />
                     </div>
                   ))}
@@ -279,28 +297,34 @@ export default function PostDetailPage() {
               )}
 
               {/* Action bar */}
-              <div className="flex items-center gap-1 px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-0.5 px-4 py-3"
+                style={{ borderTop: '1px solid var(--border)' }}>
+                {/* Like */}
                 <button onClick={toggleLike}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
-                  style={{ color: liked ? '#7B3FF2' : 'var(--text-secondary)', background: liked ? 'rgba(123,63,242,0.08)' : 'transparent' }}>
-                  <Heart size={16} fill={liked ? '#7B3FF2' : 'none'} />
+                  style={{ color: liked ? 'var(--primary)' : 'var(--text-secondary)',
+                    background: liked ? 'rgba(123,63,242,0.08)' : 'transparent' }}>
+                  <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
                   {likes > 0 && <span>{likes}</span>}
                 </button>
+                {/* Commenter */}
                 <button onClick={() => inputRef.current?.focus()}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                   style={{ color: 'var(--text-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <MessageCircle size={16} />
                   {comments.length > 0 && <span>{comments.length}</span>}
                 </button>
-                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+                {/* Partager */}
+                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                   style={{ color: 'var(--text-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <Share2 size={16} />
                 </button>
-                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ml-auto"
+                {/* Sauvegarder */}
+                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ml-auto"
                   style={{ color: 'var(--text-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -309,108 +333,127 @@ export default function PostDetailPage() {
               </div>
             </div>
 
-            {/* Commentaires */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            {/* Section commentaires */}
+            <div className="rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+
+              {/* Titre */}
               <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-                <h3 className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>
-                  Commentaires {comments.length > 0 && <span style={{ color: 'var(--text-tertiary)' }}>({comments.length})</span>}
+                <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                  Commentaires
+                  {comments.length > 0 && (
+                    <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full"
+                      style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+                      {comments.length}
+                    </span>
+                  )}
                 </h3>
               </div>
 
               {/* Input */}
-              <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
-                <Avatar src={me?.avatar_url} name={me?.display_name ?? me?.username ?? '?'} size="sm" />
-                <input
-                  ref={inputRef}
-                  value={input}
+              <div className="flex items-center gap-3 px-5 py-3.5"
+                style={{ borderBottom: '1px solid var(--border)' }}>
+                <Avatar src={me?.avatar_url}
+                  name={me?.display_name ?? me?.username ?? '?'} size="sm" />
+                <input ref={inputRef} value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && !e.shiftKey && submitComment()}
-                  placeholder="Ajouter un commentaire…"
+                  placeholder="Écrire un commentaire…"
                   className="flex-1 text-sm px-4 py-2.5 rounded-xl outline-none"
                   style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                   onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
-                  onBlur={e => (e.target.style.borderColor = 'var(--border)')}
-                />
+                  onBlur={e => (e.target.style.borderColor = 'var(--border)')} />
                 <button onClick={submitComment} disabled={!input.trim() || sending}
-                  className="p-2.5 rounded-xl transition-all disabled:opacity-40"
+                  className="p-2 rounded-xl transition-all disabled:opacity-40 shrink-0"
                   style={{ background: 'var(--primary)', color: '#fff' }}>
                   {sending ? <Spinner size="sm" /> : <Send size={14} />}
                 </button>
               </div>
 
-              {/* Liste */}
-              <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                {commentsLoading ? (
-                  <div className="py-8 flex justify-center"><Spinner /></div>
-                ) : comments.length === 0 ? (
-                  <div className="flex flex-col items-center py-12 gap-2">
-                    <MessageCircle size={28} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
-                    <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun commentaire — soyez le premier !</p>
-                  </div>
-                ) : comments.map((c, i) => (
-                  <div key={c.id ?? i} className="flex gap-3 px-5 py-4">
-                    <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
-                      <Avatar src={c.author?.avatar_url} name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
-                        <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                          {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+              {/* Liste commentaires */}
+              {commentsLoading ? (
+                <div className="py-10 flex justify-center"><Spinner /></div>
+              ) : comments.length === 0 ? (
+                <div className="flex flex-col items-center py-12 gap-3">
+                  <MessageCircle size={32} style={{ color: 'var(--text-tertiary)', opacity: 0.3 }} />
+                  <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                    Aucun commentaire — soyez le premier !
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  {comments.map((c, i) => (
+                    <div key={c.id ?? i} className="flex gap-3 px-5 py-4"
+                      style={{ borderBottom: i < comments.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
+                        <Avatar src={c.author?.avatar_url}
+                          name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="rounded-2xl px-4 py-3"
+                          style={{ background: 'var(--bg-secondary)' }}>
+                          <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                            {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                          </p>
+                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                            {c.body}
+                          </p>
+                        </div>
+                        <p className="text-[10px] mt-1.5 px-1" style={{ color: 'var(--text-tertiary)' }}>
+                          {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
                         </p>
-                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
                       </div>
-                      <p className="text-[10px] mt-1 px-1" style={{ color: 'var(--text-tertiary)' }}>
-                        {c.created_at ? format(new Date(c.created_at), 'd MMM · HH:mm', { locale: fr }) : ''}
-                      </p>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
-
           </div>
 
-          {/* ── Colonne droite : auteur + autres posts ── */}
-          <div className="flex flex-col gap-4">
+          {/* ══ Colonne droite ══════════════════════════════════════════════════ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {/* Card auteur */}
             {author && (
-              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="rounded-2xl p-5 text-center"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <button onClick={() => author.id && navigate(`/user/${encodeId(author.id)}`)}
-                  className="flex flex-col items-center gap-3 w-full text-center">
-                  <Avatar src={author.avatar_url} name={author.display_name ?? author.username ?? '?'} size="xl" verified={author.is_verified} />
+                  className="flex flex-col items-center gap-3 w-full">
+                  <Avatar src={author.avatar_url}
+                    name={author.display_name ?? author.username ?? '?'}
+                    size="xl" verified={author.is_verified} />
                   <div>
-                    <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>
+                    <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                       {author.display_name ?? author.username}
                     </p>
                     {author.username && author.display_name && (
-                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>@{author.username}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                        @{author.username}
+                      </p>
                     )}
                   </div>
                 </button>
-                <button
-                  onClick={() => author.id && navigate(`/user/${encodeId(author.id)}`)}
-                  className="btn-primary w-full mt-4 text-sm"
-                  style={{ paddingTop: '0.6rem', paddingBottom: '0.6rem' }}>
+                <button onClick={() => author.id && navigate(`/user/${encodeId(author.id)}`)}
+                  className="btn-primary w-full text-sm mt-4"
+                  style={{ paddingTop: '0.55rem', paddingBottom: '0.55rem' }}>
                   Voir le profil
                 </button>
               </div>
             )}
 
-            {/* Autres posts */}
+            {/* Autres publications */}
             {otherPosts.length > 0 && (
-              <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="rounded-2xl"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <div className="px-4 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <h3 className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>
+                  <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                     Autres publications
-                  </h3>
+                  </p>
                 </div>
-                <div className="p-3 flex flex-col gap-2">
+                <div className="p-2">
                   {otherPosts.map(p => <MiniPostCard key={p.id} post={p} />)}
                 </div>
               </div>
             )}
-
           </div>
         </div>
       </div>

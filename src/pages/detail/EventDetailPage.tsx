@@ -405,35 +405,40 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
   );
 }
 
-// ── Mini event card (colonne droite) ────────────────────────────────────────
+/* ── Shared tokens ─────────────────────────────────────────────────────────── */
+const CARD: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16 };
+const ICON_BOX = (bg: string): React.CSSProperties => ({
+  width: 32, height: 32, borderRadius: 10, background: bg,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+});
+
+/* ── Mini event card ─────────────────────────────────────────────────────────── */
 function MiniEventCard({ ev }: { ev: Event }) {
   const navigate = useNavigate();
   const color = TYPE_COLORS[ev.event_type] ?? '#7B3FF2';
   const thumb = ev.thumbnail_url ?? ev.banner_url;
   return (
-    <button
-      onClick={() => navigate(`/events/${encodeId(ev.id)}`)}
-      className="flex gap-3 p-3 rounded-2xl w-full text-left transition-all"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-      {thumb ? (
-        <div className="shrink-0 rounded-xl overflow-hidden" style={{ width: 64, height: 64 }}>
-          <img src={thumb} alt="" className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="shrink-0 rounded-xl flex items-center justify-center" style={{ width: 64, height: 64, background: `${color}18` }}>
-          <Calendar size={20} style={{ color }} />
-        </div>
-      )}
+    <button onClick={() => navigate(`/events/${encodeId(ev.id)}`)}
+      className="flex gap-3 p-3 rounded-xl w-full text-left transition-colors hover:bg-[var(--bg-secondary)]">
+      <div className="shrink-0 rounded-xl overflow-hidden"
+        style={{ width: 56, height: 56, background: `${color}18` }}>
+        {thumb
+          ? <img src={thumb} alt="" className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center">
+              <Calendar size={18} style={{ color }} />
+            </div>}
+      </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>{ev.title}</p>
+        <p className="text-sm font-semibold leading-snug line-clamp-2"
+          style={{ color: 'var(--text-primary)' }}>{ev.title}</p>
         <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
           {format(new Date(ev.starts_at), 'd MMM yyyy', { locale: fr })}
         </p>
         {ev.access_type === 'free' && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1 inline-block"
-            style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>Gratuit</span>
+          <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}>
+            Gratuit
+          </span>
         )}
       </div>
     </button>
@@ -577,213 +582,232 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* Back */}
+        {/* ── Bouton retour (même design que les autres pages) ── */}
         <button onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 mb-6 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
-          style={{ color: 'var(--text-secondary)', background: 'var(--surface)', border: '1px solid var(--border)' }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-          <ArrowLeft size={15} /> Retour
+          className="inline-flex items-center gap-2 mb-6 text-sm font-semibold transition-colors"
+          style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+          <ArrowLeft size={16} /> Retour
         </button>
 
-        {/* Hero banner (pleine largeur) */}
-        <div className="relative overflow-hidden rounded-2xl mb-6" style={{ aspectRatio: '21/8', background: 'var(--bg-tertiary)', minHeight: 160 }}>
+        {/* ── Banner ── */}
+        <div className="relative rounded-2xl overflow-hidden mb-6"
+          style={{ aspectRatio: '21/8', minHeight: 160, background: 'var(--bg-secondary)' }}>
           {ev.banner_url || ev.thumbnail_url
             ? <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={ev.title} />
             : <div className="w-full h-full flex items-center justify-center">
-                <Calendar size={56} style={{ color, opacity: 0.4 }} />
-              </div>
-          }
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)' }} />
-          <span className="absolute top-4 left-4 text-xs font-bold px-3 py-1.5 rounded-full text-white" style={{ background: color }}>
+                <Calendar size={48} style={{ color, opacity: 0.3 }} />
+              </div>}
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 55%)' }} />
+          <span className="absolute top-4 left-4 text-xs font-bold px-3 py-1.5 rounded-full text-white"
+            style={{ background: color }}>
             {label}
           </span>
           {ev.access_type === 'free' && (
             <span className="absolute top-4 right-4 text-xs font-semibold px-3 py-1.5 rounded-full"
-              style={{ background: 'rgba(34,197,94,0.25)', color: '#22c55e', border: '1px solid #22c55e40' }}>
+              style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}>
               Gratuit
             </span>
           )}
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h1 className="text-2xl font-black text-white leading-tight" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
+          <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
+            <h1 className="text-2xl font-black text-white leading-tight"
+              style={{ textShadow: '0 2px 16px rgba(0,0,0,0.6)' }}>
               {ev.title}
             </h1>
-            <div className="flex items-center gap-2 mt-2 text-white/70 text-sm">
+            <p className="text-sm mt-1 flex items-center gap-1.5"
+              style={{ color: 'rgba(255,255,255,0.7)' }}>
               <Clock size={12} />
               {format(new Date(ev.starts_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
-            </div>
+            </p>
           </div>
         </div>
 
-        {/* Layout 2 colonnes */}
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)' }}>
+        {/* ── Grid 2 colonnes ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1.5rem', alignItems: 'start' }}>
 
-          {/* ── Colonne gauche : détails complets ── */}
-          <div className="flex flex-col gap-5">
+          {/* ═══ Colonne gauche ═══ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-            {/* Action bar */}
-            <div className="flex flex-wrap items-center gap-2 p-4 rounded-2xl"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            {/* Barre d'actions */}
+            <div style={{ ...CARD, padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              {/* Like */}
               <button onClick={toggleLike}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
-                  background: liked ? 'rgba(240,62,62,0.12)' : 'var(--bg-secondary)',
+                  background: liked ? 'rgba(240,62,62,0.1)' : 'var(--bg-secondary)',
                   color: liked ? '#f03e3e' : 'var(--text-secondary)',
-                  border: `1px solid ${liked ? '#f03e3e40' : 'var(--border)'}`,
+                  border: `1px solid ${liked ? 'rgba(240,62,62,0.3)' : 'var(--border)'}`,
                 }}>
-                <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+                <Heart size={15} fill={liked ? 'currentColor' : 'none'} />
                 {likeCount > 0 && <span>{likeCount}</span>}
                 <span>J'aime</span>
               </button>
-
+              {/* Commenter */}
               <button onClick={() => setShowComments(v => !v)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
-                  background: showComments ? 'rgba(123,63,242,0.12)' : 'var(--bg-secondary)',
+                  background: showComments ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
                   color: showComments ? 'var(--primary)' : 'var(--text-secondary)',
                   border: `1px solid ${showComments ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
                 }}>
-                <MessageCircle size={16} />
+                <MessageCircle size={15} />
                 <span>Commenter</span>
               </button>
-
+              {/* Partager */}
               <button onClick={share}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
-                  background: shareOk ? 'rgba(34,197,94,0.12)' : 'var(--bg-secondary)',
+                  background: shareOk ? 'rgba(34,197,94,0.1)' : 'var(--bg-secondary)',
                   color: shareOk ? '#22c55e' : 'var(--text-secondary)',
-                  border: `1px solid ${shareOk ? '#22c55e40' : 'var(--border)'}`,
+                  border: `1px solid ${shareOk ? 'rgba(34,197,94,0.3)' : 'var(--border)'}`,
                 }}>
-                <Share2 size={16} />
+                <Share2 size={15} />
                 <span>{shareOk ? 'Copié !' : 'Partager'}</span>
               </button>
-
+              {/* Rappel */}
               {!isOwner && (
                 <button onClick={toggleReminder} disabled={remindLoading}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                   style={{
-                    background: reminder ? 'rgba(123,63,242,0.12)' : 'var(--bg-secondary)',
-                    color: reminder ? '#7B3FF2' : 'var(--text-secondary)',
-                    border: `1px solid ${reminder ? '#7B3FF240' : 'var(--border)'}`,
+                    background: reminder ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
+                    color: reminder ? 'var(--primary)' : 'var(--text-secondary)',
+                    border: `1px solid ${reminder ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
                   }}>
-                  {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={16} /> : <Bell size={16} />}
+                  {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={15} /> : <Bell size={15} />}
                   <span>{reminder ? 'Rappel actif' : 'Me rappeler'}</span>
                 </button>
               )}
-
+              {/* Boutons owner à droite */}
               {isOwner ? (
                 <div className="ml-auto flex items-center gap-2">
                   <button onClick={() => navigate(`/events/${slug}/attendees`)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
                     style={{ background: 'var(--bg-secondary)', color: '#10B981', border: '1px solid var(--border)' }}>
-                    <Users size={15} /> Inscrits
+                    <Users size={14} /> Inscrits
                   </button>
                   <button onClick={() => navigate(`/events/${slug}/edit`)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
                     style={{ background: 'var(--bg-secondary)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
-                    <Edit3 size={15} /> Modifier
+                    <Edit3 size={14} /> Modifier
                   </button>
                 </div>
               ) : ev.organizer && (
                 <button onClick={toggleFollow}
-                  className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                  className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
                   style={{
-                    background: following ? 'rgba(123,63,242,0.12)' : 'var(--primary)',
+                    background: following ? 'rgba(123,63,242,0.1)' : 'var(--primary)',
                     color: following ? 'var(--primary)' : '#fff',
                     border: `1px solid ${following ? 'rgba(123,63,242,0.3)' : 'transparent'}`,
                   }}>
-                  {following ? <UserCheck size={15} /> : <UserPlus size={15} />}
+                  {following ? <UserCheck size={14} /> : <UserPlus size={14} />}
                   {following ? 'Suivi' : 'Suivre'}
                 </button>
               )}
             </div>
 
-            {/* Infos */}
-            <div className="rounded-2xl p-5 space-y-4"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <h2 className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Informations</h2>
-              <div className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}18` }}>
-                  <Calendar size={15} style={{ color }} />
-                </div>
-                <div>
-                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {format(new Date(ev.starts_at), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                  </p>
-                  {ev.ends_at && <p className="text-xs mt-0.5">Jusqu'à {format(new Date(ev.ends_at), 'HH:mm')}</p>}
-                </div>
-              </div>
-
-              {ev.is_online ? (
-                <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
-                    <Globe size={15} style={{ color: '#22c55e' }} />
+            {/* Informations */}
+            <div style={{ ...CARD, padding: 20 }}>
+              <p className="font-bold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Informations</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Date */}
+                <div className="flex items-start gap-3">
+                  <div style={ICON_BOX(`${color}18`)}>
+                    <Calendar size={14} style={{ color }} />
                   </div>
                   <div>
-                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>En ligne</p>
-                    {ev.online_url && (
-                      <a href={ev.online_url} target="_blank" rel="noreferrer"
-                        className="text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--primary)' }}>
-                        Rejoindre <ExternalLink size={10} />
-                      </a>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      {format(new Date(ev.starts_at), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                    </p>
+                    {ev.ends_at && (
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                        Jusqu'à {format(new Date(ev.ends_at), 'HH:mm')}
+                      </p>
                     )}
                   </div>
                 </div>
-              ) : (ev.venue_city || ev.venue_name) && (
-                <div className="flex items-start gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.12)' }}>
-                    <MapPin size={15} style={{ color: '#ef4444' }} />
-                  </div>
-                  <div>
-                    {ev.venue_name && <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{ev.venue_name}</p>}
-                    <p className="text-xs mt-0.5">
-                      {[ev.venue_address, ev.venue_city, ev.venue_country].filter(Boolean).join(', ')}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {ev.max_attendees != null && (
-                <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.12)' }}>
-                    <Users size={15} style={{ color: '#7B3FF2' }} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                      {ev.current_attendees ?? 0} / {ev.max_attendees} participants
-                    </p>
-                    <div className="mt-1.5 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
-                      <div className="h-full rounded-full transition-all"
-                        style={{ width: `${Math.min(100, ((ev.current_attendees ?? 0) / ev.max_attendees) * 100)}%`, background: color }} />
+                {/* Lieu */}
+                {ev.is_online ? (
+                  <div className="flex items-center gap-3">
+                    <div style={ICON_BOX('rgba(34,197,94,0.1)')}>
+                      <Globe size={14} style={{ color: '#22c55e' }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>En ligne</p>
+                      {ev.online_url && (
+                        <a href={ev.online_url} target="_blank" rel="noreferrer"
+                          className="text-xs flex items-center gap-1 mt-0.5"
+                          style={{ color: 'var(--primary)' }}>
+                          Rejoindre <ExternalLink size={10} />
+                        </a>
+                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                ) : (ev.venue_city || ev.venue_name) && (
+                  <div className="flex items-start gap-3">
+                    <div style={ICON_BOX('rgba(239,68,68,0.1)')}>
+                      <MapPin size={14} style={{ color: '#ef4444' }} />
+                    </div>
+                    <div>
+                      {ev.venue_name && (
+                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{ev.venue_name}</p>
+                      )}
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                        {[ev.venue_address, ev.venue_city, ev.venue_country].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {/* Participants */}
+                {ev.max_attendees != null && (
+                  <div className="flex items-center gap-3">
+                    <div style={ICON_BOX('rgba(123,63,242,0.1)')}>
+                      <Users size={14} style={{ color: 'var(--primary)' }} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {ev.current_attendees ?? 0}
+                        </span> / {ev.max_attendees} participants
+                      </p>
+                      <div className="mt-1.5 rounded-full overflow-hidden" style={{ height: 4, background: 'var(--bg-secondary)' }}>
+                        <div className="h-full rounded-full"
+                          style={{ width: `${Math.min(100, ((ev.current_attendees ?? 0) / ev.max_attendees) * 100)}%`, background: color }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Description */}
             {ev.description && (
-              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <h3 className="font-black text-sm mb-3" style={{ color: 'var(--text-primary)' }}>À propos</h3>
-                <RichText text={ev.description} limit={400} style={{ color: 'var(--text-secondary)', fontSize: 14 }} />
+              <div style={{ ...CARD, padding: 20 }}>
+                <p className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>À propos</p>
+                <RichText text={ev.description} limit={400}
+                  style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7 }} />
               </div>
             )}
 
-            {/* Gallery */}
+            {/* Galerie */}
             {ev.gallery_urls && ev.gallery_urls.length > 0 && (
-              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <h3 className="font-black text-sm mb-3" style={{ color: 'var(--text-primary)' }}>Galerie</h3>
-                <div className="grid grid-cols-3 gap-2">
+              <div style={{ ...CARD, padding: 20 }}>
+                <p className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>Galerie</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
                   {ev.gallery_urls.map((url, i) => (
                     <button key={i} onClick={() => setLightbox(i)}
-                      className="relative group aspect-square rounded-xl overflow-hidden"
-                      style={{ background: 'var(--bg-tertiary)' }}>
-                      <img src={url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
+                      className="relative group rounded-xl overflow-hidden"
+                      style={{ aspectRatio: '1', background: 'var(--bg-secondary)' }}>
+                      <img src={url} className="w-full h-full object-cover" alt=""
+                        style={{ transition: 'transform 0.3s' }}
+                        onMouseOver={e => (e.currentTarget.style.transform = 'scale(1.05)')}
+                        onMouseOut={e => (e.currentTarget.style.transform = 'scale(1)')} />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         style={{ background: 'rgba(0,0,0,0.35)' }}>
-                        <ZoomIn size={22} color="#fff" />
+                        <ZoomIn size={20} color="#fff" />
                       </div>
                     </button>
                   ))}
@@ -792,24 +816,28 @@ export default function EventDetailPage() {
             )}
           </div>
 
-          {/* ── Colonne droite : organizer + CTA + autres événements ── */}
-          <div className="flex flex-col gap-4">
+          {/* ═══ Colonne droite ═══ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-            {/* Organizer card */}
+            {/* Card organisateur */}
             {ev.organizer && (
-              <div className="rounded-2xl p-5 flex flex-col items-center gap-3 text-center"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <button onClick={() => ev.organizer?.id && navigate(`/user/${encodeId(ev.organizer.id)}`)}>
-                  <Avatar src={ev.organizer.avatar_url} name={ev.organizer.display_name ?? ev.organizer.username ?? '?'} size="xl" />
-                </button>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Organisé par</p>
-                  <p className="font-black text-sm mt-0.5" style={{ color: 'var(--text-primary)' }}>
-                    {ev.organizer.display_name ?? ev.organizer.username}
-                  </p>
-                </div>
+              <div style={{ ...CARD, padding: 20, textAlign: 'center' }}>
                 <button onClick={() => ev.organizer?.id && navigate(`/user/${encodeId(ev.organizer.id)}`)}
-                  className="btn-primary w-full text-sm" style={{ paddingTop: '0.6rem', paddingBottom: '0.6rem' }}>
+                  className="flex flex-col items-center gap-3 w-full">
+                  <Avatar src={ev.organizer.avatar_url}
+                    name={ev.organizer.display_name ?? ev.organizer.username ?? '?'}
+                    size="xl" />
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide mb-0.5"
+                      style={{ color: 'var(--text-tertiary)' }}>Organisé par</p>
+                    <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      {ev.organizer.display_name ?? ev.organizer.username}
+                    </p>
+                  </div>
+                </button>
+                <button onClick={() => ev.organizer?.id && navigate(`/user/${encodeId(ev.organizer.id)}`)}
+                  className="w-full mt-4 py-2.5 rounded-xl text-sm font-bold text-white"
+                  style={{ background: 'var(--primary)' }}>
                   Voir le profil
                 </button>
               </div>
@@ -817,51 +845,55 @@ export default function EventDetailPage() {
 
             {/* CTA billet */}
             {ev.status === 'published' && (
-              <div className="rounded-2xl p-4 space-y-3"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <div>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Accès</p>
-                  <p className="font-black text-xl mt-0.5" style={{ color: 'var(--text-primary)' }}>
-                    {ev.access_type === 'free' ? 'Gratuit' : ev.access_type === 'ticket' ? `À partir de ${ev.ticket_price ?? '?'}€` : 'Sur invitation'}
+              <div style={{ ...CARD, padding: 20 }}>
+                <div className="mb-4">
+                  <p className="text-xs font-medium uppercase tracking-wide mb-1"
+                    style={{ color: 'var(--text-tertiary)' }}>Accès</p>
+                  <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>
+                    {ev.access_type === 'free'   ? 'Gratuit'
+                    : ev.access_type === 'ticket' ? `À partir de ${ev.ticket_price ?? '?'} €`
+                    : 'Sur invitation'}
                   </p>
                 </div>
                 {ev.access_type === 'ticket' && allTiers.length > 1 && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {allTiers.map(tier => (
                       <button key={tier.key} onClick={() => setSelectedTier(tier.key)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                         style={{
-                          background: selectedTier === tier.key ? tier.color + '18' : 'var(--bg-secondary)',
+                          background: selectedTier === tier.key ? `${tier.color}18` : 'var(--bg-secondary)',
                           border: `1.5px solid ${selectedTier === tier.key ? tier.color : 'var(--border)'}`,
                           color: selectedTier === tier.key ? tier.color : 'var(--text-secondary)',
                         }}>
-                        {tier.label} — {tier.price}€
+                        {tier.label} · {tier.price} €
                       </button>
                     ))}
                   </div>
                 )}
                 {ev.access_type === 'ticket' && (
                   <button onClick={() => setPaySheet(true)}
-                    className="w-full py-3.5 rounded-xl font-black text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95"
-                    style={{ background: `linear-gradient(135deg,${tierColor},${tierColor}BB)` }}>
-                    <Ticket size={15} /> Acheter un billet
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white"
+                    style={{ background: tierColor }}>
+                    <Ticket size={14} /> Acheter un billet
                   </button>
                 )}
                 {ev.access_type === 'free' && (
-                  <div className="text-center py-2 text-sm font-semibold" style={{ color: '#22c55e' }}>Entrée libre</div>
+                  <p className="text-center text-sm font-semibold py-1" style={{ color: '#22c55e' }}>
+                    Entrée libre
+                  </p>
                 )}
               </div>
             )}
 
-            {/* Autres événements de l'organisateur */}
+            {/* Autres événements */}
             {otherEvents.length > 0 && (
-              <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div style={{ ...CARD, overflow: 'hidden' }}>
                 <div className="px-4 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <h3 className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>
+                  <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                     Autres événements
-                  </h3>
+                  </p>
                 </div>
-                <div className="p-3 flex flex-col gap-2">
+                <div className="p-2">
                   {otherEvents.map(e => <MiniEventCard key={e.id} ev={e} />)}
                 </div>
               </div>
@@ -876,17 +908,11 @@ export default function EventDetailPage() {
       )}
 
       <TicketPaymentModal
-        open={paySheet}
-        onClose={() => setPaySheet(false)}
-        onSuccess={() => setPaySheet(false)}
-        itemId={ev.id}
-        title={ev.title}
-        thumbnail={ev.thumbnail_url}
-        kind="event"
-        accessType={ev.access_type as any}
-        tiers={safeTiers}
-        selectedTierKey={selectedTier}
-        onBuy={(tierKey) => apiClient.post(Endpoints.events.buyTicket(ev.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
+        open={paySheet} onClose={() => setPaySheet(false)} onSuccess={() => setPaySheet(false)}
+        itemId={ev.id} title={ev.title} thumbnail={ev.thumbnail_url}
+        kind="event" accessType={ev.access_type as any}
+        tiers={safeTiers} selectedTierKey={selectedTier}
+        onBuy={tierKey => apiClient.post(Endpoints.events.buyTicket(ev.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
       />
     </div>
   );

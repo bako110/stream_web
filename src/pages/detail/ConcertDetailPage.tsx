@@ -14,72 +14,74 @@ import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-// ── Boost modal ───────────────────────────────────────────────────────────────
+/* ── Shared tokens (évite la répétition) ───────────────────────────────────── */
+const CARD: React.CSSProperties  = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16 };
+const ICON_BOX = (bg: string): React.CSSProperties => ({
+  width: 32, height: 32, borderRadius: 10, background: bg,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+});
 
+/* ── Boost modal ───────────────────────────────────────────────────────────── */
 function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: () => void; onDone: () => void }) {
   const [days,    setDays]    = useState(1);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
-
   const PRICE_PER_DAY = 500;
 
   async function handleBoost() {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
-      await apiClient.post(Endpoints.wallet.boostsPurchase, {
-        target_type: 'concert',
-        target_id:   concert.id,
-        days,
-      });
-      onDone();
-      onClose();
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Erreur lors du boost');
-    } finally {
-      setLoading(false);
-    }
+      await apiClient.post(Endpoints.wallet.boostsPurchase, { target_type: 'concert', target_id: concert.id, days });
+      onDone(); onClose();
+    } catch (e: any) { setError(e?.response?.data?.detail ?? 'Erreur lors du boost'); }
+    finally { setLoading(false); }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
       onClick={onClose}>
-      <div className="card p-6 max-w-sm w-full space-y-5" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-            <Zap size={18} className="text-yellow-400" /> Booster le concert
-          </h2>
-          <button onClick={onClose} className="btn-ghost p-1 text-[var(--text-tertiary)]">✕</button>
+      <div style={{ ...CARD, padding: 24, maxWidth: 360, width: '100%' }}
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <p className="font-bold text-sm flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <Zap size={16} style={{ color: '#fbbf24' }} /> Booster le concert
+          </p>
+          <button onClick={onClose} className="p-1 rounded-lg text-sm" style={{ color: 'var(--text-tertiary)' }}>✕</button>
         </div>
-
-        <p className="text-sm text-[var(--text-secondary)]">
-          <span className="font-semibold text-[var(--text-primary)]">{concert.title}</span> sera mis en avant dans les recommandations et la liste des lives.
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{concert.title}</span>{' '}
+          sera mis en avant dans les recommandations.
         </p>
-
-        <div className="space-y-2">
-          <label className="text-xs text-[var(--text-tertiary)] font-medium">Durée du boost</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[1, 3, 7].map(d => (
-              <button key={d} onClick={() => setDays(d)}
-                className={`py-2.5 rounded-xl text-sm font-semibold border transition-all ${days === d ? 'border-brand-primary text-brand-primary bg-brand-primary/10' : 'border-[var(--border)] text-[var(--text-secondary)]'}`}>
-                {d}j
-              </button>
-            ))}
-          </div>
+        {/* Duration picker */}
+        <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-tertiary)' }}>Durée du boost</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
+          {[1, 3, 7].map(d => (
+            <button key={d} onClick={() => setDays(d)}
+              style={{
+                padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                border: `1.5px solid ${days === d ? '#7B3FF2' : 'var(--border)'}`,
+                background: days === d ? 'rgba(123,63,242,0.1)' : 'transparent',
+                color: days === d ? '#7B3FF2' : 'var(--text-secondary)',
+              }}>
+              {d}j
+            </button>
+          ))}
         </div>
-
-        <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: 'var(--bg-secondary)' }}>
-          <span className="text-sm text-[var(--text-secondary)]">Total</span>
-          <span className="font-bold text-[var(--text-primary)]">{(days * PRICE_PER_DAY).toLocaleString()} coins</span>
+        {/* Total */}
+        <div className="flex items-center justify-between px-3 py-2.5 rounded-xl mb-4"
+          style={{ background: 'var(--bg-secondary)' }}>
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total</span>
+          <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+            {(days * PRICE_PER_DAY).toLocaleString()} coins
+          </span>
         </div>
-
-        {error && <p className="text-xs text-red-400">{error}</p>}
-
+        {error && <p className="text-xs mb-3" style={{ color: '#ef4444' }}>{error}</p>}
         <button onClick={handleBoost} disabled={loading}
-          className="btn-primary w-full flex items-center justify-center gap-2"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60"
           style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-          {loading ? <Spinner size="sm" /> : <Zap size={15} />}
+          {loading ? <Spinner size="sm" /> : <Zap size={14} />}
           {loading ? 'Traitement...' : 'Confirmer le boost'}
         </button>
       </div>
@@ -87,71 +89,62 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
   );
 }
 
-// ── Mini concert card (colonne droite) ────────────────────────────────────────
+/* ── Mini concert card ─────────────────────────────────────────────────────── */
 function MiniConcertCard({ c }: { c: Concert }) {
   const navigate = useNavigate();
   const thumb = c.thumbnail_url ?? c.banner_url;
   return (
-    <button
-      onClick={() => navigate(`/concerts/${encodeId(c.id)}`)}
-      className="flex gap-3 p-3 rounded-2xl w-full text-left transition-all"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-      {thumb ? (
-        <div className="shrink-0 rounded-xl overflow-hidden" style={{ width: 64, height: 64 }}>
-          <img src={thumb} alt="" className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="shrink-0 rounded-xl flex items-center justify-center" style={{ width: 64, height: 64, background: 'rgba(123,63,242,0.1)' }}>
-          <Radio size={20} style={{ color: 'var(--primary)' }} />
-        </div>
-      )}
+    <button onClick={() => navigate(`/concerts/${encodeId(c.id)}`)}
+      className="flex gap-3 p-3 rounded-xl w-full text-left transition-colors hover:bg-[var(--bg-secondary)]">
+      <div className="shrink-0 rounded-xl overflow-hidden" style={{ width: 56, height: 56, background: 'var(--bg-secondary)' }}>
+        {thumb
+          ? <img src={thumb} alt="" className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center">
+              <Radio size={18} style={{ color: 'var(--primary)' }} />
+            </div>}
+      </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>{c.title}</p>
+        <p className="text-sm font-semibold leading-snug line-clamp-2"
+          style={{ color: 'var(--text-primary)' }}>{c.title}</p>
         <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
           {format(new Date(c.scheduled_at), 'd MMM yyyy', { locale: fr })}
         </p>
         {c.status === 'live' && (
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block text-white"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>LIVE</span>
+          <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+            style={{ background: '#7B3FF2' }}>LIVE</span>
         )}
       </div>
     </button>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
+/* ── Page ───────────────────────────────────────────────────────────────────── */
 export default function ConcertDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id            = decodeId(slug!);
   const navigate      = useNavigate();
-  const { user } = useAuthStore();
+  const { user }      = useAuthStore();
 
   const { data: concert, loading, refetch } = useApi<Concert>(
     () => apiClient.get<Concert>(Endpoints.concerts.byId(id!)), [id],
   );
 
-  const [starting,     setStarting]     = useState(false);
-  const [stopping,     setStopping]     = useState(false);
-  const [showBoost,    setShowBoost]    = useState(false);
-  const [paySheet,     setPaySheet]     = useState(false);
-  const [selectedTier, setSelectedTier] = useState<TicketTier['key']>('simple');
-  const [reminder,     setReminder]     = useState(false);
-  const [remindLoading,setRemindLoading]= useState(false);
-  const [otherConcerts,setOtherConcerts]= useState<Concert[]>([]);
+  const [starting,      setStarting]     = useState(false);
+  const [stopping,      setStopping]     = useState(false);
+  const [showBoost,     setShowBoost]    = useState(false);
+  const [paySheet,      setPaySheet]     = useState(false);
+  const [selectedTier,  setSelectedTier] = useState<TicketTier['key']>('simple');
+  const [reminder,      setReminder]     = useState(false);
+  const [remindLoading, setRemindLoading]= useState(false);
+  const [otherConcerts, setOtherConcerts]= useState<Concert[]>([]);
 
-  // Charge l'état rappel (seulement si non-artiste)
   useEffect(() => {
-    if (!id || !concert || !user) return;
-    if (concert.artist_id === user.id) return;
+    if (!id || !concert || !user || concert.artist_id === user.id) return;
     apiClient.get<any>(Endpoints.concerts.remind(id))
       .then(r => setReminder(r.data?.active === true))
       .catch(() => {});
   }, [id, concert, user]);
 
-  // Charger autres concerts de l'artiste
   useEffect(() => {
     if (!concert?.artist_id) return;
     apiClient.get<any>(Endpoints.concerts.byUser(concert.artist_id))
@@ -169,40 +162,33 @@ export default function ConcertDetailPage() {
     try {
       const r = await apiClient.post<any>(Endpoints.concerts.remind(id));
       setReminder(r.data?.active === true);
-      import('react-hot-toast').then(({ default: toast }) => {
-        toast.success(r.data?.active ? 'Rappel activé !' : 'Rappel désactivé');
-      });
-    } catch { }
+      import('react-hot-toast').then(({ default: toast }) =>
+        toast.success(r.data?.active ? 'Rappel activé !' : 'Rappel désactivé'));
+    } catch {}
     finally { setRemindLoading(false); }
   }, [id, remindLoading]);
 
   if (loading) return <PageLoader />;
-  if (!concert) return <div className="p-6 text-[var(--text-secondary)]">Concert introuvable.</div>;
+  if (!concert) return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Concert introuvable.</p>
+    </div>
+  );
 
   const c        = concert;
   const isLive   = c.status === 'live';
   const isEnded  = c.status === 'ended';
-  const isArtist = user && c.artist_id === user.id;
+  const isArtist = !!(user && c.artist_id === user.id);
 
   async function handleStart() {
-    if (!id) return;
-    setStarting(true);
-    try {
-      await apiClient.post<StreamToken>(Endpoints.streaming.start(id));
-      await refetch();
-      navigate(`/live/${encodeId(id)}`);
-    } catch { /* error */ }
-    finally { setStarting(false); }
+    if (!id) return; setStarting(true);
+    try { await apiClient.post<StreamToken>(Endpoints.streaming.start(id)); await refetch(); navigate(`/live/${encodeId(id)}`); }
+    catch {} finally { setStarting(false); }
   }
-
   async function handleStop() {
-    if (!id) return;
-    setStopping(true);
-    try {
-      await apiClient.post(Endpoints.streaming.stop(id));
-      await refetch();
-    } catch { /* error */ }
-    finally { setStopping(false); }
+    if (!id) return; setStopping(true);
+    try { await apiClient.post(Endpoints.streaming.stop(id)); await refetch(); }
+    catch {} finally { setStopping(false); }
   }
 
   const allTiers = ([
@@ -212,277 +198,320 @@ export default function ConcertDetailPage() {
     { key: 'vvvip'  as const, label: 'VVVIP',  color: '#EF4444', price: c.ticket_price_vvvip ?? 0, sub: 'All-inclusive' },
   ] as TicketTier[]).filter(t => t.price > 0);
 
+  const activeTierColor = allTiers.find(t => t.key === selectedTier)?.color ?? '#7B3FF2';
+  const safeTiers = allTiers.length > 0
+    ? allTiers
+    : [{ key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: c.ticket_price ?? 0, sub: 'Accès standard' }];
+
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* Back */}
+        {/* ── Bouton retour ── */}
         <button onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 mb-6 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
-          style={{ color: 'var(--text-secondary)', background: 'var(--surface)', border: '1px solid var(--border)' }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-          <ArrowLeft size={15} /> Retour
+          className="inline-flex items-center gap-2 mb-6 text-sm font-semibold transition-colors"
+          style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+          <ArrowLeft size={16} /> Retour
         </button>
 
-        {/* Banner pleine largeur */}
-        <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: '21/8', background: 'var(--bg-tertiary)', minHeight: 160 }}>
-          {c.banner_url || c.thumbnail_url ? (
-            <img src={c.banner_url ?? c.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={c.title} />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,var(--bg-secondary),var(--bg-tertiary))' }}>
-              <Radio size={48} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
-            </div>
-          )}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 55%)' }} />
-
+        {/* ── Banner ── */}
+        <div className="relative rounded-2xl overflow-hidden mb-6"
+          style={{ aspectRatio: '21/8', minHeight: 160, background: 'var(--bg-secondary)' }}>
+          {c.banner_url || c.thumbnail_url
+            ? <img src={c.banner_url ?? c.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={c.title} />
+            : <div className="w-full h-full flex items-center justify-center">
+                <Radio size={48} style={{ color: 'var(--text-tertiary)', opacity: 0.3 }} />
+              </div>}
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 55%)' }} />
+          {/* Live badge */}
           {isLive && (
             <div className="absolute top-4 left-4 flex items-center gap-2">
-              <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
-                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
+              <span className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full text-white"
+                style={{ background: '#7B3FF2' }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                LIVE
               </span>
-              <span className="text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1"
-                style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-                <Users size={12} /> {c.current_viewers.toLocaleString()} spectateurs
-              </span>
-            </div>
-          )}
-          {c.is_featured && (
-            <div className="absolute top-4 right-4">
-              <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-yellow-300"
-                style={{ background: 'rgba(123,63,242,0.25)', border: '1px solid rgba(123,63,242,0.4)', backdropFilter: 'blur(4px)' }}>
-                <Zap size={11} /> Boosté
+              <span className="flex items-center gap-1 text-xs text-white px-2 py-1 rounded-full"
+                style={{ background: 'rgba(0,0,0,0.55)' }}>
+                <Users size={11} /> {c.current_viewers.toLocaleString()}
               </span>
             </div>
           )}
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h1 className="text-2xl font-black text-white leading-tight" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
+          {/* Boosted badge */}
+          {c.is_featured && !isLive && (
+            <span className="absolute top-4 right-4 flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(0,0,0,0.5)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.4)' }}>
+              <Zap size={11} /> Boosté
+            </span>
+          )}
+          {/* Title */}
+          <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
+            <h1 className="text-2xl font-black text-white leading-tight"
+              style={{ textShadow: '0 2px 16px rgba(0,0,0,0.6)' }}>
               {c.title}
             </h1>
             {c.artist && (
-              <p className="text-white/70 text-sm mt-1">{c.artist.display_name ?? c.artist.username}</p>
+              <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                {c.artist.display_name ?? c.artist.username}
+              </p>
             )}
           </div>
         </div>
 
-        {/* Layout 2 colonnes */}
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)' }}>
+        {/* ── Grid 2 colonnes ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1.5rem', alignItems: 'start' }}>
 
-          {/* ── Colonne gauche : infos détaillées ── */}
-          <div className="flex flex-col gap-5">
+          {/* ═══ Colonne gauche ═══ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-            {/* Header artiste + badges */}
-            <div className="rounded-2xl p-5 flex items-start gap-4"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            {/* Card artiste + badges */}
+            <div style={{ ...CARD, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
               <button onClick={() => c.artist?.id && navigate(`/user/${encodeId(c.artist.id)}`)}>
-                <Avatar src={c.artist?.avatar_url} name={c.artist?.display_name ?? c.artist?.username} size="lg" />
+                <Avatar src={c.artist?.avatar_url}
+                  name={c.artist?.display_name ?? c.artist?.username}
+                  size="lg" verified={c.artist?.is_verified} />
               </button>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-lg leading-tight" style={{ color: 'var(--text-primary)' }}>{c.title}</p>
+                <p className="font-bold text-base leading-snug" style={{ color: 'var(--text-primary)' }}>
+                  {c.title}
+                </p>
                 <button onClick={() => c.artist?.id && navigate(`/user/${encodeId(c.artist.id)}`)}
-                  className="text-sm font-semibold mt-0.5 text-left" style={{ color: 'var(--text-secondary)' }}>
+                  className="text-sm mt-0.5 hover:underline text-left"
+                  style={{ color: 'var(--text-secondary)' }}>
                   {c.artist?.display_name ?? c.artist?.username}
                 </button>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {c.genre && (
                     <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold"
-                      style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}>{c.genre}</span>
+                      style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+                      {c.genre}
+                    </span>
                   )}
                   <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold"
                     style={{
-                      background: c.access_type === 'free' ? 'rgba(34,197,94,0.12)' : c.access_type === 'ticket' ? 'rgba(251,146,60,0.12)' : 'rgba(123,63,242,0.12)',
-                      color: c.access_type === 'free' ? '#22c55e' : c.access_type === 'ticket' ? '#f97316' : 'var(--primary)',
+                      background: c.access_type === 'free'
+                        ? 'rgba(34,197,94,0.1)'
+                        : c.access_type === 'ticket'
+                        ? 'rgba(249,115,22,0.1)'
+                        : 'rgba(123,63,242,0.1)',
+                      color: c.access_type === 'free' ? '#22c55e'
+                        : c.access_type === 'ticket' ? '#f97316'
+                        : 'var(--primary)',
                     }}>
-                    {c.access_type === 'free' ? 'Gratuit' : c.access_type === 'ticket' ? 'Ticket' : 'Abonnement'}
+                    {c.access_type === 'free' ? 'Gratuit'
+                      : c.access_type === 'ticket' ? 'Ticket'
+                      : 'Abonnement'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Infos pratiques */}
-            <div className="rounded-2xl p-5 space-y-3"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <h3 className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Informations</h3>
-              {c.scheduled_at && (
-                <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.1)' }}>
-                    <Clock size={15} style={{ color: 'var(--primary)' }} />
+            {/* Informations pratiques */}
+            <div style={{ ...CARD, padding: 20 }}>
+              <p className="font-bold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>
+                Informations
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {c.scheduled_at && (
+                  <div className="flex items-center gap-3">
+                    <div style={ICON_BOX('rgba(123,63,242,0.1)')}>
+                      <Clock size={14} style={{ color: 'var(--primary)' }} />
+                    </div>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      {format(new Date(c.scheduled_at), "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr })}
+                    </span>
                   </div>
-                  <span>{format(new Date(c.scheduled_at), "d MMMM yyyy 'à' HH'h'mm", { locale: fr })}</span>
-                </div>
-              )}
-              {c.venue_city && (
-                <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
-                    <MapPin size={15} style={{ color: '#ef4444' }} />
+                )}
+                {c.venue_city && (
+                  <div className="flex items-center gap-3">
+                    <div style={ICON_BOX('rgba(239,68,68,0.1)')}>
+                      <MapPin size={14} style={{ color: '#ef4444' }} />
+                    </div>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      {[c.venue_name, c.venue_city, c.venue_country].filter(Boolean).join(', ')}
+                    </span>
                   </div>
-                  <span>{c.venue_name ? `${c.venue_name}, ` : ''}{c.venue_city}{c.venue_country ? `, ${c.venue_country}` : ''}</span>
-                </div>
-              )}
-              {c.duration_min != null && (
-                <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.1)' }}>
-                    <Clock size={15} style={{ color: 'var(--primary)' }} />
+                )}
+                {c.duration_min != null && (
+                  <div className="flex items-center gap-3">
+                    <div style={ICON_BOX('rgba(123,63,242,0.1)')}>
+                      <Clock size={14} style={{ color: 'var(--primary)' }} />
+                    </div>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      {c.duration_min} minutes
+                    </span>
                   </div>
-                  <span>{c.duration_min} minutes</span>
-                </div>
-              )}
-              {c.view_count > 0 && (
-                <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.1)' }}>
-                    <Users size={15} style={{ color: 'var(--primary)' }} />
+                )}
+                {c.view_count > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div style={ICON_BOX('rgba(123,63,242,0.1)')}>
+                      <Users size={14} style={{ color: 'var(--primary)' }} />
+                    </div>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      {c.view_count.toLocaleString()} vues
+                    </span>
                   </div>
-                  <span>{c.view_count.toLocaleString()} vues</span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Description */}
             {c.description && (
-              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <h3 className="font-black text-sm mb-3" style={{ color: 'var(--text-primary)' }}>À propos</h3>
-                <RichText text={c.description} limit={400} style={{ color: 'var(--text-secondary)', fontSize: 14 }} />
+              <div style={{ ...CARD, padding: 20 }}>
+                <p className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>À propos</p>
+                <RichText text={c.description} limit={400}
+                  style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7 }} />
               </div>
             )}
           </div>
 
-          {/* ── Colonne droite : artiste + CTA + autres concerts ── */}
-          <div className="flex flex-col gap-4">
+          {/* ═══ Colonne droite ═══ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-            {/* Artiste card */}
+            {/* Card artiste */}
             {c.artist && (
-              <div className="rounded-2xl p-5 flex flex-col items-center gap-3 text-center"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <button onClick={() => c.artist?.id && navigate(`/user/${encodeId(c.artist.id)}`)}>
-                  <Avatar src={c.artist.avatar_url} name={c.artist.display_name ?? c.artist.username ?? '?'} size="xl" verified={c.artist.is_verified} />
-                </button>
-                <div>
-                  <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>
-                    {c.artist.display_name ?? c.artist.username}
-                  </p>
-                </div>
+              <div style={{ ...CARD, padding: 20, textAlign: 'center' }}>
                 <button onClick={() => c.artist?.id && navigate(`/user/${encodeId(c.artist.id)}`)}
-                  className="btn-primary w-full text-sm" style={{ paddingTop: '0.6rem', paddingBottom: '0.6rem' }}>
+                  className="flex flex-col items-center gap-3 w-full">
+                  <Avatar src={c.artist.avatar_url}
+                    name={c.artist.display_name ?? c.artist.username ?? '?'}
+                    size="xl" verified={c.artist.is_verified} />
+                  <div>
+                    <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      {c.artist.display_name ?? c.artist.username}
+                    </p>
+                  </div>
+                </button>
+                <button onClick={() => c.artist?.id && navigate(`/user/${encodeId(c.artist.id)}`)}
+                  className="w-full mt-4 py-2.5 rounded-xl text-sm font-bold text-white"
+                  style={{ background: 'var(--primary)' }}>
                   Voir le profil
                 </button>
               </div>
             )}
 
             {/* CTA card */}
-            <div className="rounded-2xl p-5 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>Accès</p>
-                <p className="font-black text-2xl mt-1" style={{ color: 'var(--text-primary)' }}>
-                  {c.access_type === 'free' ? 'Gratuit'
-                   : c.access_type === 'ticket' ? `À partir de ${c.ticket_price != null ? c.ticket_price + ' €' : '?'}`
-                   : c.access_type === 'subscription' ? 'Abonnement'
+            <div style={{ ...CARD, padding: 20 }}>
+              {/* Prix */}
+              <div className="mb-4">
+                <p className="text-xs font-medium uppercase tracking-wide mb-1"
+                  style={{ color: 'var(--text-tertiary)' }}>Accès</p>
+                <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>
+                  {c.access_type === 'free'         ? 'Gratuit'
+                   : c.access_type === 'ticket'     ? `À partir de ${c.ticket_price ?? '?'} €`
+                   : c.access_type === 'subscription'? 'Abonnement'
                    : 'PPV'}
                 </p>
               </div>
 
+              {/* Sélecteur tiers */}
               {(c.access_type === 'ticket' || c.access_type === 'ppv') && allTiers.length > 1 && !isLive && !isEnded && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {allTiers.map(tier => (
                     <button key={tier.key} onClick={() => setSelectedTier(tier.key)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                       style={{
-                        background: selectedTier === tier.key ? tier.color + '18' : 'var(--bg-secondary)',
+                        background: selectedTier === tier.key ? `${tier.color}18` : 'var(--bg-secondary)',
                         border: `1.5px solid ${selectedTier === tier.key ? tier.color : 'var(--border)'}`,
                         color: selectedTier === tier.key ? tier.color : 'var(--text-secondary)',
                       }}>
-                      {tier.label} — {tier.price}€
+                      {tier.label} · {tier.price} €
                     </button>
                   ))}
                 </div>
               )}
 
+              {/* CTA principal */}
               {isLive ? (
                 <button onClick={() => navigate(`/live/${encodeId(c.id)}`)}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                  <Radio size={16} /> Regarder en direct
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
+                  style={{ background: '#7B3FF2' }}>
+                  <Radio size={15} /> Regarder en direct
                 </button>
               ) : isEnded && c.video_url ? (
                 <button onClick={() => navigate(`/live/${encodeId(c.id)}`)}
-                  className="btn-primary w-full flex items-center justify-center gap-2">
-                  <Play size={16} fill="white" /> Voir le replay
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
+                  style={{ background: 'var(--primary)' }}>
+                  <Play size={15} fill="white" /> Voir le replay
                 </button>
               ) : isEnded ? (
-                <div className="text-center text-sm py-2" style={{ color: 'var(--text-tertiary)' }}>Ce concert est terminé.</div>
-              ) : (c.access_type === 'ticket' || c.access_type === 'ppv') ? (
+                <p className="text-center text-sm py-3 mb-3" style={{ color: 'var(--text-tertiary)' }}>
+                  Ce concert est terminé.
+                </p>
+              ) : c.access_type === 'ticket' || c.access_type === 'ppv' ? (
                 <button onClick={() => setPaySheet(true)}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
-                  style={{ background: `linear-gradient(135deg,${allTiers.find(t => t.key === selectedTier)?.color ?? '#7B3FF2'},${allTiers.find(t => t.key === selectedTier)?.color ?? '#7B3FF2'}BB)` }}>
-                  <Ticket size={16} /> Acheter un billet
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
+                  style={{ background: activeTierColor }}>
+                  <Ticket size={15} /> Acheter un billet
                 </button>
               ) : c.access_type === 'free' ? (
                 <button onClick={() => setPaySheet(true)}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
-                  <Ticket size={16} /> Je réserve ma place !
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
+                  style={{ background: '#10B981' }}>
+                  <Ticket size={15} /> Réserver ma place
                 </button>
               ) : (
-                <div className="text-center text-sm py-2" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-center text-sm py-3 mb-3" style={{ color: 'var(--text-secondary)' }}>
                   Le concert n'a pas encore commencé.
-                </div>
+                </p>
               )}
 
+              {/* Rappel */}
               {!isArtist && !isEnded && (
                 <button onClick={toggleReminder} disabled={remindLoading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors"
                   style={{
-                    background: reminder ? 'rgba(123,63,242,0.12)' : 'var(--bg-secondary)',
-                    color: reminder ? '#7B3FF2' : 'var(--text-secondary)',
-                    border: `1px solid ${reminder ? '#7B3FF240' : 'var(--border)'}`,
+                    background: reminder ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)',
+                    border: `1px solid ${reminder ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
+                    color: reminder ? 'var(--primary)' : 'var(--text-secondary)',
                   }}>
-                  {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={15} /> : <Bell size={15} />}
-                  {reminder ? 'Rappel actif — désactiver' : 'Me rappeler'}
+                  {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={14} /> : <Bell size={14} />}
+                  {reminder ? 'Rappel actif' : 'Me rappeler'}
                 </button>
               )}
 
+              {/* Actions artiste */}
               {isArtist && (
-                <div className="pt-3 space-y-2" style={{ borderTop: '1px solid var(--border)' }}>
-                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>Ton concert</p>
+                <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <p className="text-xs font-semibold uppercase tracking-wide"
+                    style={{ color: 'var(--text-tertiary)' }}>Ton concert</p>
                   {!isLive && !isEnded && (
                     <button onClick={handleStart} disabled={starting}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
-                      {starting ? <Spinner size="sm" /> : <Radio size={15} />}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+                      style={{ background: '#7B3FF2' }}>
+                      {starting ? <Spinner size="sm" /> : <Radio size={14} />}
                       {starting ? 'Démarrage...' : 'Démarrer le live'}
                     </button>
                   )}
                   {isLive && (
                     <button onClick={handleStop} disabled={stopping}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                      style={{ color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                      {stopping ? <Spinner size="sm" /> : <StopCircle size={15} />}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60"
+                      style={{ color: '#ef4444', border: '1px solid rgba(239,68,68,0.35)', background: 'transparent' }}>
+                      {stopping ? <Spinner size="sm" /> : <StopCircle size={14} />}
                       {stopping ? 'Arrêt...' : 'Arrêter le live'}
                     </button>
                   )}
                   <button onClick={() => setShowBoost(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                    style={{ color: '#fbbf24', border: '1px solid rgba(251,191,36,0.4)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251,191,36,0.08)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <Zap size={15} /> Booster ce concert
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
+                    style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.35)', background: 'transparent' }}>
+                    <Zap size={14} /> Booster ce concert
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Autres concerts de l'artiste */}
+            {/* Autres concerts */}
             {otherConcerts.length > 0 && (
-              <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div style={{ ...CARD, overflow: 'hidden' }}>
                 <div className="px-4 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <h3 className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>
+                  <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                     Autres concerts
-                  </h3>
+                  </p>
                 </div>
-                <div className="p-3 flex flex-col gap-2">
+                <div className="p-2">
                   {otherConcerts.map(cc => <MiniConcertCard key={cc.id} c={cc} />)}
                 </div>
               </div>
@@ -491,26 +520,16 @@ export default function ConcertDetailPage() {
         </div>
       </div>
 
-      {showBoost && (
-        <BoostModal concert={c} onClose={() => setShowBoost(false)} onDone={refetch} />
-      )}
+      {showBoost && <BoostModal concert={c} onClose={() => setShowBoost(false)} onDone={refetch} />}
 
       <TicketPaymentModal
         open={paySheet}
         onClose={() => setPaySheet(false)}
-        onSuccess={() => {
-          setPaySheet(false);
-          if (c.access_type === 'free') return;
-          navigate(`/live/${encodeId(c.id)}`);
-        }}
-        itemId={c.id}
-        title={c.title}
-        thumbnail={c.thumbnail_url}
-        kind="concert"
-        accessType={c.access_type as any}
-        tiers={allTiers.length > 0 ? allTiers : [{ key: 'simple', label: 'Simple', color: '#7B3FF2', price: c.ticket_price ?? 0, sub: 'Accès standard' }]}
-        selectedTierKey={selectedTier}
-        onBuy={(tierKey) => apiClient.post(Endpoints.concerts.buyTicket(c.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
+        onSuccess={() => { setPaySheet(false); if (c.access_type !== 'free') navigate(`/live/${encodeId(c.id)}`); }}
+        itemId={c.id} title={c.title} thumbnail={c.thumbnail_url}
+        kind="concert" accessType={c.access_type as any}
+        tiers={safeTiers} selectedTierKey={selectedTier}
+        onBuy={tierKey => apiClient.post(Endpoints.concerts.buyTicket(c.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
       />
     </div>
   );
