@@ -569,9 +569,9 @@ function ViewerAvatars({ onGiftClick }: { onGiftClick: (identity: string, name: 
         );
       })}
       {extra > 0 && (
-        <div style={{ marginLeft: -8 }}
+        <div
           className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold border-2 border-black/60"
-          style={{ background: 'rgba(255,255,255,0.2)' }}>
+          style={{ marginLeft: -8, background: 'rgba(255,255,255,0.2)' }}>
           +{extra}
         </div>
       )}
