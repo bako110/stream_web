@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Play } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Play, X, ChevronDown } from 'lucide-react';
 import type { Post } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -78,6 +78,116 @@ function MiniPostCard({ post }: { post: Post }) {
   );
 }
 
+/* ── Comments bottom sheet (mobile) ─────────────────────────────────────────── */
+function CommentsSheet({
+  comments, me, input, setInput, sending, onSubmit, onClose, inputRef,
+}: {
+  comments: any[]; me: any; input: string; setInput: (v: string) => void;
+  sending: boolean; onSubmit: () => void; onClose: () => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+}) {
+  const navigate = useNavigate();
+  const [visible, setVisible] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
+  function handleClose() { setVisible(false); setTimeout(onClose, 280); }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40"
+        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          opacity: visible ? 1 : 0, transition: 'opacity 0.28s ease' }}
+        onClick={handleClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col"
+        style={{
+          background: 'var(--surface)', borderRadius: '1.25rem 1.25rem 0 0',
+          maxHeight: '85vh', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto',
+          boxShadow: '0 -20px 60px rgba(0,0,0,0.35)',
+          transform: visible ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.28s cubic-bezier(0.32,0.72,0,1)',
+        }}>
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1 cursor-pointer shrink-0" onClick={handleClose}>
+          <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+        </div>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 shrink-0"
+          style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-2">
+            <MessageCircle size={16} style={{ color: 'var(--primary)' }} />
+            <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+              Commentaires
+            </span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+              {comments.length}
+            </span>
+          </div>
+          <button onClick={handleClose} className="p-1.5 rounded-xl"
+            style={{ color: 'var(--text-tertiary)' }}>
+            <X size={16} />
+          </button>
+        </div>
+        {/* Liste */}
+        <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 min-h-0"
+          style={{ scrollbarWidth: 'thin' }}>
+          {comments.length === 0 ? (
+            <div className="flex flex-col items-center py-12 gap-3">
+              <MessageCircle size={28} style={{ color: 'var(--text-tertiary)', opacity: 0.3 }} />
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun commentaire</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {comments.map((c, i) => (
+                <div key={c.id ?? i} className="flex gap-3">
+                  <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
+                    <Avatar src={c.author?.avatar_url}
+                      name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="rounded-2xl px-3.5 py-2.5"
+                      style={{ background: 'var(--bg-secondary)' }}>
+                      <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
+                        {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                      </p>
+                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        {c.body}
+                      </p>
+                    </div>
+                    <p className="text-[10px] mt-1 px-1" style={{ color: 'var(--text-tertiary)' }}>
+                      {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Input */}
+        <div className="shrink-0 flex items-center gap-3 px-4 py-3"
+          style={{ borderTop: '1px solid var(--border)',
+            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <Avatar src={me?.avatar_url} name={me?.display_name ?? me?.username ?? '?'} size="sm" />
+          <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && onSubmit()}
+            placeholder="Écrire un commentaire…"
+            className="flex-1 text-sm px-4 py-2.5 rounded-xl outline-none"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+            onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
+            onBlur={e => (e.target.style.borderColor = 'var(--border)')} />
+          <button onClick={onSubmit} disabled={!input.trim() || sending}
+            className="p-2 rounded-xl transition-all disabled:opacity-40 shrink-0"
+            style={{ background: 'var(--primary)', color: '#fff' }}>
+            {sending ? <Spinner size="sm" /> : <Send size={14} />}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 /* ── Page ───────────────────────────────────────────────────────────────────── */
 export default function PostDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
@@ -96,8 +206,11 @@ export default function PostDetailPage() {
   const [sending,         setSending]         = useState(false);
   const [menuOpen,        setMenuOpen]        = useState(false);
   const [otherPosts,      setOtherPosts]      = useState<Post[]>([]);
-  const [lightbox,        setLightbox]        = useState<number | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [lightbox,           setLightbox]           = useState<number | null>(null);
+  const [showCommentsSheet,  setShowCommentsSheet]  = useState(false);
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const sheetInputRef = useRef<HTMLInputElement>(null);
+  const PREVIEW_COUNT = 3;
 
   useEffect(() => {
     if (!id) return;
@@ -341,7 +454,8 @@ export default function PostDetailPage() {
             <div className="rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
 
               {/* Titre */}
-              <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="flex items-center justify-between px-5 py-4"
+                style={{ borderBottom: '1px solid var(--border)' }}>
                 <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                   Commentaires
                   {comments.length > 0 && (
@@ -351,9 +465,17 @@ export default function PostDetailPage() {
                     </span>
                   )}
                 </h3>
+                {/* Sur mobile: bouton pour ouvrir le sheet */}
+                {comments.length > PREVIEW_COUNT && (
+                  <button onClick={() => setShowCommentsSheet(true)}
+                    className="lg:hidden flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl"
+                    style={{ background: 'var(--bg-secondary)', color: 'var(--primary)' }}>
+                    Voir tout <ChevronDown size={12} />
+                  </button>
+                )}
               </div>
 
-              {/* Input */}
+              {/* Input — desktop toujours visible, mobile toujours visible */}
               <div className="flex items-center gap-3 px-5 py-3.5"
                 style={{ borderBottom: '1px solid var(--border)' }}>
                 <Avatar src={me?.avatar_url}
@@ -385,16 +507,16 @@ export default function PostDetailPage() {
                 </div>
               ) : (
                 <div>
-                  {comments.map((c, i) => (
+                  {/* Mobile: aperçu 3 commentaires seulement */}
+                  {comments.slice(0, PREVIEW_COUNT).map((c, i) => (
                     <div key={c.id ?? i} className="flex gap-3 px-5 py-4"
-                      style={{ borderBottom: i < comments.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      style={{ borderBottom: '1px solid var(--border)' }}>
                       <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
                         <Avatar src={c.author?.avatar_url}
                           name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
                       </button>
                       <div className="flex-1 min-w-0">
-                        <div className="rounded-2xl px-4 py-3"
-                          style={{ background: 'var(--bg-secondary)' }}>
+                        <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
                           <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
                             {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
                           </p>
@@ -408,6 +530,46 @@ export default function PostDetailPage() {
                       </div>
                     </div>
                   ))}
+
+                  {/* Desktop: affiche le reste inline. Mobile: bouton "Voir les X restants" */}
+                  {comments.length > PREVIEW_COUNT && (
+                    <>
+                      {/* Desktop uniquement — les commentaires restants */}
+                      <div className="hidden lg:block">
+                        {comments.slice(PREVIEW_COUNT).map((c, i) => (
+                          <div key={c.id ?? i} className="flex gap-3 px-5 py-4"
+                            style={{ borderBottom: i < comments.length - PREVIEW_COUNT - 1 ? '1px solid var(--border)' : 'none' }}>
+                            <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
+                              <Avatar src={c.author?.avatar_url}
+                                name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
+                                <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                                  {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                                </p>
+                                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                  {c.body}
+                                </p>
+                              </div>
+                              <p className="text-[10px] mt-1.5 px-1" style={{ color: 'var(--text-tertiary)' }}>
+                                {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Mobile uniquement — bouton voir tout */}
+                      <button onClick={() => setShowCommentsSheet(true)}
+                        className="lg:hidden w-full flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-colors"
+                        style={{ color: 'var(--primary)', borderTop: '1px solid var(--border)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <MessageCircle size={15} />
+                        Voir les {comments.length - PREVIEW_COUNT} autres commentaires
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -461,6 +623,19 @@ export default function PostDetailPage() {
           </div>
         </div>
       </div>
+
+      {showCommentsSheet && (
+        <CommentsSheet
+          comments={comments}
+          me={me}
+          input={input}
+          setInput={setInput}
+          sending={sending}
+          onSubmit={submitComment}
+          onClose={() => setShowCommentsSheet(false)}
+          inputRef={sheetInputRef}
+        />
+      )}
 
       {lightbox !== null && (
         <Lightbox
