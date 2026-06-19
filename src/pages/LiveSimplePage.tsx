@@ -6,7 +6,7 @@ import {
   Radio, Eye, MessageCircle, Send, X, StopCircle, ChevronLeft,
   Mic, MicOff, VideoIcon, VideoOff, Gift, Hand, FlipHorizontal,
   ShieldOff, Ban, Lock, Users, Trash2, Slash, RefreshCw,
-  Smile, ArrowDown, UserCheck,
+  Smile, ArrowDown, UserCheck, Settings,
 } from 'lucide-react';
 import {
   LiveKitRoom,
@@ -15,9 +15,9 @@ import {
   useTracks,
   RoomAudioRenderer,
   useLocalParticipant,
-  useActiveSpeakers,
+  useRoomContext,
 } from '@livekit/components-react';
-import { Track, VideoPresets } from 'livekit-client';
+import { Track, VideoPresets, RoomEvent } from 'livekit-client';
 import type { LiveStream, StreamToken } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -40,6 +40,7 @@ import {
   GiftToast,
   type GiftNotif,
 } from '../components/live/LiveGiftModal';
+import { LiveSettingsSheet } from '../components/live/LiveSettingsSheet';
 
 // ── LiveKit quality config ─────────────────────────────────────────────────────
 
@@ -411,6 +412,17 @@ function ParticipantContextMenu({
 
 // ── Zone vidéo ────────────────────────────────────────────────────────────────
 
+function useActiveSpeakersSet(): Set<string> {
+  const room = useRoomContext();
+  const [ids, setIds] = useState<Set<string>>(() => new Set(room.activeSpeakers.map(p => p.identity)));
+  useEffect(() => {
+    const handler = () => setIds(new Set(room.activeSpeakers.map(p => p.identity)));
+    room.on(RoomEvent.ActiveSpeakersChanged, handler);
+    return () => { room.off(RoomEvent.ActiveSpeakersChanged, handler); };
+  }, [room]);
+  return ids;
+}
+
 function LiveKitViewer({
   isHost, liveId, stageIdentities, participantNames, onGiftClick,
 }: {
@@ -418,10 +430,9 @@ function LiveKitViewer({
   participantNames: Map<string, string>;
   onGiftClick: (identity: string, name: string) => void;
 }) {
-  const tracks          = useTracks([Track.Source.Camera], { onlySubscribed: false });
-  const participants    = useParticipants();
-  const activeSpeakers  = useActiveSpeakers();
-  const speakingIds     = new Set(activeSpeakers.map(p => p.identity));
+  const tracks       = useTracks([Track.Source.Camera], { onlySubscribed: false });
+  const participants = useParticipants();
+  const speakingIds  = useActiveSpeakersSet();
   const [spotlightId,   setSpotlightId]   = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
 
@@ -586,7 +597,8 @@ function MediaControls({
   isHost, liveId, onStop, stopping, onLeave, onHandRaise, handRaised,
   onToggleRequests, pendingCount, onToggleOnStage, onStageCount,
   onToggleGifts, giftsCount, onGiftToHost,
-  isOnStage, onLeaveStage,
+  isOnStage, onLeaveStage, onToggleSettings,
+  onCamChange, onMicChange, onRegisterToggles,
 }: {
   isHost: boolean; liveId: string;
   onStop: () => void; stopping: boolean; onLeave: () => void;
@@ -596,6 +608,10 @@ function MediaControls({
   onToggleGifts: () => void; giftsCount: number;
   onGiftToHost?: () => void;
   isOnStage?: boolean; onLeaveStage?: () => void;
+  onToggleSettings?: () => void;
+  onCamChange?: (v: boolean) => void;
+  onMicChange?: (v: boolean) => void;
+  onRegisterToggles?: (toggleCam: () => void, toggleMic: () => void) => void;
 }) {
   const { localParticipant } = useLocalParticipant();
   const [camOn, setCamOn] = useState(false);
@@ -608,9 +624,9 @@ function MediaControls({
     async function enableMedia() {
       try {
         await localParticipant.setCameraEnabled(true);
-        if (!cancelled) setCamOn(true);
+        if (!cancelled) { setCamOn(true); onCamChange?.(true); }
         await localParticipant.setMicrophoneEnabled(true);
-        if (!cancelled) setMicOn(true);
+        if (!cancelled) { setMicOn(true); onMicChange?.(true); }
       } catch { /* permission refusée */ }
     }
     enableMedia();
@@ -621,12 +637,19 @@ function MediaControls({
     const next = !camOn;
     await localParticipant.setCameraEnabled(next);
     setCamOn(next);
+    onCamChange?.(next);
   }
   async function toggleMic() {
     const next = !micOn;
     await localParticipant.setMicrophoneEnabled(next);
     setMicOn(next);
+    onMicChange?.(next);
   }
+  useEffect(() => {
+    if (isHost) onRegisterToggles?.(toggleCam, toggleMic);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, localParticipant]);
+
   async function flipCam() {
     try {
       const devices    = await navigator.mediaDevices.enumerateDevices();
@@ -722,6 +745,8 @@ function MediaControls({
             <SideBtn icon={<Gift size={19} />} label="Cadeaux"
               onClick={onToggleGifts} active color="#fbbf24" badge={giftsCount} />
           )}
+          <SideBtn icon={<Settings size={19} />}
+            label="Paramètres" onClick={onToggleSettings} />
           <SideBtn icon={<StopCircle size={19} />}
             label={stopping ? '...' : 'Terminer'} onClick={onStop} danger />
         </>
@@ -823,19 +848,29 @@ export default function LiveSimplePage() {
   const [isOnStage,  setIsOnStage]  = useState(false);
 
   // Panels
-  const [showRequests, setShowRequests] = useState(false);
-  const [showOnStage,  setShowOnStage]  = useState(false);
-  const [showGifts,    setShowGifts]    = useState(false);
+  const [showRequests,  setShowRequests]  = useState(false);
+  const [showOnStage,   setShowOnStage]   = useState(false);
+  const [showGifts,     setShowGifts]     = useState(false);
+  const [showSettings,  setShowSettings]  = useState(false);
+
+  // Données live localement mutable (monétisation)
+  const [liveOverride, setLiveOverride] = useState<Partial<LiveStream>>({});
+
+  // Cam/mic host — remontés ici pour être partagés avec le sheet
+  const [hostCamOn, setHostCamOn] = useState(false);
+  const [hostMicOn, setHostMicOn] = useState(false);
 
   const chatRef             = useRef<LiveChatHandle>(null);
   const participantNamesRef = useRef<Map<string, string>>(new Map());
+  const toggleCamRef        = useRef<() => void>(() => {});
+  const toggleMicRef        = useRef<() => void>(() => {});
 
   useEffect(() => { participantNamesRef.current = participantNames; }, [participantNames]);
 
   const liveApi = useApi<LiveStream>(() => apiClient.get<LiveStream>(Endpoints.lives.byId(id!)), [id]);
   const { lastLiveEnded } = useWs();
 
-  const live     = liveApi.data;
+  const live     = liveApi.data ? { ...liveApi.data, ...liveOverride } as LiveStream : null;
   const isHost   = !!(live && user && live.user_id === user.id);
   const isActive = live?.status === 'active';
 
@@ -1134,11 +1169,11 @@ export default function LiveSimplePage() {
                         onStop={handleStop} stopping={stopping}
                         onLeave={handleLeave}
                         onHandRaise={handleHandRaise} handRaised={handRaised}
-                        onToggleRequests={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); }}
+                        onToggleRequests={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
                         pendingCount={handRequests.length}
-                        onToggleOnStage={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); }}
+                        onToggleOnStage={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); setShowSettings(false); }}
                         onStageCount={stageIdentities.size}
-                        onToggleGifts={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); }}
+                        onToggleGifts={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); setShowSettings(false); }}
                         giftsCount={giftHistory.length}
                         onGiftToHost={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Host' })}
                         isOnStage={isOnStage}
@@ -1146,6 +1181,10 @@ export default function LiveSimplePage() {
                           try { await apiClient.post(Endpoints.lives.demote(id!, user?.id ?? '')); } catch {}
                           setIsOnStage(false);
                         }}
+                        onToggleSettings={() => setShowSettings(v => !v)}
+                        onCamChange={setHostCamOn}
+                        onMicChange={setHostMicOn}
+                        onRegisterToggles={(tc, tm) => { toggleCamRef.current = tc; toggleMicRef.current = tm; }}
                       />
                     </div>
 
@@ -1297,6 +1336,24 @@ export default function LiveSimplePage() {
             setGiftHistory(prev => [...prev, { ...notif }]);
             setGiftTarget(null);
           }}
+        />
+      )}
+
+      {/* Paramètres host */}
+      {isHost && showSettings && (
+        <LiveSettingsSheet
+          liveId={id!}
+          live={live}
+          camOn={hostCamOn}
+          micOn={hostMicOn}
+          onToggleCam={() => toggleCamRef.current()}
+          onToggleMic={() => toggleMicRef.current()}
+          handRequests={handRequests}
+          onInvite={handleInvite}
+          onDismissHand={handleDismiss}
+          onStopLive={() => { setShowSettings(false); handleStop(); }}
+          onMonetizationUpdated={patch => setLiveOverride(prev => ({ ...prev, ...patch }))}
+          onClose={() => setShowSettings(false)}
         />
       )}
     </>
