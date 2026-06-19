@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X, VideoIcon, VideoOff, Mic, MicOff, UserCheck,
-  Lock, Unlock, Edit2, Coins, Gift, ChevronLeft, Check, Radio, LogIn,
+  Lock, Unlock, Edit2, Coins, Gift, ChevronLeft, Check, Radio,
 } from 'lucide-react';
+import { useLocalParticipant } from '@livekit/components-react';
+import { Track, ParticipantEvent } from 'livekit-client';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../ui/Spinner';
@@ -27,10 +29,6 @@ interface LiveData {
 interface Props {
   liveId: string;
   live: LiveData | null;
-  camOn: boolean;
-  micOn: boolean;
-  onToggleCam: () => void;
-  onToggleMic: () => void;
   handRequests: HandRequest[];
   onInvite: (identity: string) => void;
   onDismissHand: (identity: string) => void;
@@ -200,10 +198,53 @@ function MonetForm({
 // ── Sheet principal ───────────────────────────────────────────────────────────
 
 export function LiveSettingsSheet({
-  liveId, live, camOn, micOn, onToggleCam, onToggleMic,
+  liveId, live,
   handRequests, onInvite, onDismissHand,
   onStopLive, onMonetizationUpdated, onClose,
 }: Props) {
+  // ── État cam/mic lu directement depuis LiveKit ──
+  const { localParticipant } = useLocalParticipant();
+
+  function getCamOn() {
+    const pub = localParticipant.getTrackPublication(Track.Source.Camera);
+    return !!pub && !pub.isMuted;
+  }
+  function getMicOn() {
+    const pub = localParticipant.getTrackPublication(Track.Source.Microphone);
+    return !!pub && !pub.isMuted;
+  }
+
+  const [camOn, setCamOn] = useState(getCamOn);
+  const [micOn, setMicOn] = useState(getMicOn);
+
+  // Re-sync quand les tracks changent
+  useEffect(() => {
+    function sync() {
+      setCamOn(getCamOn());
+      setMicOn(getMicOn());
+    }
+    localParticipant.on(ParticipantEvent.TrackMuted,   sync);
+    localParticipant.on(ParticipantEvent.TrackUnmuted, sync);
+    localParticipant.on(ParticipantEvent.LocalTrackPublished,   sync);
+    localParticipant.on(ParticipantEvent.LocalTrackUnpublished, sync);
+    return () => {
+      localParticipant.off(ParticipantEvent.TrackMuted,   sync);
+      localParticipant.off(ParticipantEvent.TrackUnmuted, sync);
+      localParticipant.off(ParticipantEvent.LocalTrackPublished,   sync);
+      localParticipant.off(ParticipantEvent.LocalTrackUnpublished, sync);
+    };
+  }, [localParticipant]);
+
+  async function toggleCam() {
+    const next = !camOn;
+    await localParticipant.setCameraEnabled(next);
+    setCamOn(next);
+  }
+  async function toggleMic() {
+    const next = !micOn;
+    await localParticipant.setMicrophoneEnabled(next);
+    setMicOn(next);
+  }
 
   async function saveAccessMonet(type: 'coins' | 'gift', coins: number | null, gift: GiftType | null) {
     const payload: any = { is_monetized: true, monetization_type: type,
@@ -280,7 +321,7 @@ export function LiveSettingsSheet({
 
           {/* ── Diffusion : 2 boutons horizontaux compacts ── */}
           <div className="flex gap-2">
-            <button onClick={onToggleCam}
+            <button onClick={toggleCam}
               className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all"
               style={{
                 borderColor: camOn ? '#4ade80' : 'var(--border)',
@@ -296,7 +337,7 @@ export function LiveSettingsSheet({
                 style={{ background: camOn ? '#4ade80' : '#F0365A' }} />
             </button>
 
-            <button onClick={onToggleMic}
+            <button onClick={toggleMic}
               className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all"
               style={{
                 borderColor: micOn ? '#4ade80' : 'var(--border)',

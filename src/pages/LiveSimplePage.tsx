@@ -598,7 +598,6 @@ function MediaControls({
   onToggleRequests, pendingCount, onToggleOnStage, onStageCount,
   onToggleGifts, giftsCount, onGiftToHost,
   isOnStage, onLeaveStage, onToggleSettings,
-  onCamChange, onMicChange, onRegisterToggles,
 }: {
   isHost: boolean; liveId: string;
   onStop: () => void; stopping: boolean; onLeave: () => void;
@@ -609,9 +608,6 @@ function MediaControls({
   onGiftToHost?: () => void;
   isOnStage?: boolean; onLeaveStage?: () => void;
   onToggleSettings?: () => void;
-  onCamChange?: (v: boolean) => void;
-  onMicChange?: (v: boolean) => void;
-  onRegisterToggles?: (toggleCam: () => void, toggleMic: () => void) => void;
 }) {
   const { localParticipant } = useLocalParticipant();
   const [camOn, setCamOn] = useState(false);
@@ -624,9 +620,9 @@ function MediaControls({
     async function enableMedia() {
       try {
         await localParticipant.setCameraEnabled(true);
-        if (!cancelled) { setCamOn(true); onCamChange?.(true); }
+        if (!cancelled) setCamOn(true);
         await localParticipant.setMicrophoneEnabled(true);
-        if (!cancelled) { setMicOn(true); onMicChange?.(true); }
+        if (!cancelled) setMicOn(true);
       } catch { /* permission refusée */ }
     }
     enableMedia();
@@ -637,18 +633,12 @@ function MediaControls({
     const next = !camOn;
     await localParticipant.setCameraEnabled(next);
     setCamOn(next);
-    onCamChange?.(next);
   }
   async function toggleMic() {
     const next = !micOn;
     await localParticipant.setMicrophoneEnabled(next);
     setMicOn(next);
-    onMicChange?.(next);
   }
-  useEffect(() => {
-    if (isHost) onRegisterToggles?.(toggleCam, toggleMic);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHost, localParticipant]);
 
   async function flipCam() {
     try {
@@ -856,14 +846,9 @@ export default function LiveSimplePage() {
   // Données live localement mutable (monétisation)
   const [liveOverride, setLiveOverride] = useState<Partial<LiveStream>>({});
 
-  // Cam/mic host — remontés ici pour être partagés avec le sheet
-  const [hostCamOn, setHostCamOn] = useState(false);
-  const [hostMicOn, setHostMicOn] = useState(false);
 
   const chatRef             = useRef<LiveChatHandle>(null);
   const participantNamesRef = useRef<Map<string, string>>(new Map());
-  const toggleCamRef        = useRef<() => void>(() => {});
-  const toggleMicRef        = useRef<() => void>(() => {});
 
   useEffect(() => { participantNamesRef.current = participantNames; }, [participantNames]);
 
@@ -1182,9 +1167,6 @@ export default function LiveSimplePage() {
                           setIsOnStage(false);
                         }}
                         onToggleSettings={() => setShowSettings(v => !v)}
-                        onCamChange={setHostCamOn}
-                        onMicChange={setHostMicOn}
-                        onRegisterToggles={(tc, tm) => { toggleCamRef.current = tc; toggleMicRef.current = tm; }}
                       />
                     </div>
 
@@ -1218,6 +1200,20 @@ export default function LiveSimplePage() {
                 <div className="shrink-0 px-4 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.8)' }}>
                   <p className="text-xs line-clamp-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{live.description}</p>
                 </div>
+              )}
+
+              {/* Paramètres host — à l'intérieur de LiveKitRoom pour accès à useLocalParticipant */}
+              {isHost && showSettings && (
+                <LiveSettingsSheet
+                  liveId={id!}
+                  live={live}
+                  handRequests={handRequests}
+                  onInvite={handleInvite}
+                  onDismissHand={handleDismiss}
+                  onStopLive={() => { setShowSettings(false); handleStop(); }}
+                  onMonetizationUpdated={patch => setLiveOverride(prev => ({ ...prev, ...patch }))}
+                  onClose={() => setShowSettings(false)}
+                />
               )}
             </LiveKitRoom>
 
@@ -1341,23 +1337,6 @@ export default function LiveSimplePage() {
         />
       )}
 
-      {/* Paramètres host */}
-      {isHost && showSettings && (
-        <LiveSettingsSheet
-          liveId={id!}
-          live={live}
-          camOn={hostCamOn}
-          micOn={hostMicOn}
-          onToggleCam={() => toggleCamRef.current()}
-          onToggleMic={() => toggleMicRef.current()}
-          handRequests={handRequests}
-          onInvite={handleInvite}
-          onDismissHand={handleDismiss}
-          onStopLive={() => { setShowSettings(false); handleStop(); }}
-          onMonetizationUpdated={patch => setLiveOverride(prev => ({ ...prev, ...patch }))}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
     </>
   );
 }
