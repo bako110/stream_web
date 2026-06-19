@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { useConfirm } from '../components/ui/Dialog';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
 import {
@@ -152,6 +153,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState('');
   const [error,    setError]    = useState<string | null>(null);
+  const { confirm: confirmConvo, ConfirmDialog: ConvoConfirmDialog } = useConfirm();
 
   const load = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -197,7 +199,8 @@ const ConversationList = forwardRef<ConvoListHandle, {
 
   async function deleteConvo(userId: string, e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm('Supprimer cette conversation ?')) return;
+    const ok = await confirmConvo({ title: 'Supprimer cette conversation ?', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     try {
       await apiClient.delete(Endpoints.messages.deleteConversation(userId));
       setConvos(prev => prev.filter(c => c.user.id !== userId));
@@ -287,6 +290,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
           </div>
         ))}
       </div>
+      {ConvoConfirmDialog}
     </div>
   );
 });
@@ -614,6 +618,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
 }) {
   const navigate               = useNavigate();
   const { user: me }           = useAuthStore();
+  const { confirm: confirmMsg, ConfirmDialog: MsgConfirmDialog } = useConfirm();
   const [messages, setMessages]= useState<ExtMessage[]>([]);
   const [input,    setInput]   = useState('');
   const [loading,  setLoading] = useState(true);
@@ -902,7 +907,8 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer pour tous ?')) return;
+    const ok = await confirmMsg({ title: 'Supprimer ce message ?', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     try {
       await apiClient.delete(Endpoints.messages.message(id));
       setMessages(prev => prev.map(m => m.id === id ? { ...m, deleted: true } : m));
@@ -1230,6 +1236,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       {forwardMsg && (
         <ForwardModal msg={forwardMsg} onClose={() => setForwardMsg(null)} onForwarded={() => {}} />
       )}
+      {MsgConfirmDialog}
     </div>
   );
 }

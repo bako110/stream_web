@@ -1,6 +1,7 @@
 import { PageLoader } from '../components/ui/Spinner';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfirm } from '../components/ui/Dialog';
 import { encodeId } from '../utils/slugId';
 import {
   Activity, UserPlus, Calendar, Music2, Users, Film,
@@ -100,6 +101,7 @@ function ActivityCard({
   onDelete: (id: string) => void;
 }) {
   const [deleting, setDeleting] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
   const cfg        = CFG[item.activity_type] ?? CFG.follow;
   const { Icon }   = cfg;
   const actorName  = item.actor?.display_name || item.actor?.username || 'Utilisateur';
@@ -110,7 +112,8 @@ function ActivityCard({
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Supprimer cette activité ?')) return;
+    const ok = await confirm({ title: 'Supprimer cette activité ?', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     setDeleting(true);
     try {
       await apiClient.delete(Endpoints.activity.delete(item.id));
@@ -196,6 +199,7 @@ function ActivityCard({
         </button>
       </div>
     </div>
+    {ConfirmDialog}
   );
 }
 

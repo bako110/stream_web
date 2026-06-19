@@ -1,5 +1,6 @@
 import { PageLoader } from '../components/ui/Spinner';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useConfirm } from '../components/ui/Dialog';
 import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
@@ -535,6 +536,7 @@ function EntryCard({
   onDecline?: () => void;
 }) {
   const navigate    = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirm();
   const isPersonal  = entry.type === 'personal';
   const isInvited   = entry.type === 'invited';
   const cfg         = TYPE_CONFIG[entry.type] ?? TYPE_CONFIG.event;
@@ -555,7 +557,8 @@ function EntryCard({
 
   async function del(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm('Retirer du planning ?')) return;
+    const ok = await confirm({ title: 'Retirer du planning ?', danger: true, confirmLabel: 'Retirer' });
+    if (!ok) return;
     try {
       await apiClient.delete(Endpoints.planning.entry(entry.id));
       onDelete(entry.id);
@@ -704,6 +707,7 @@ function EntryCard({
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

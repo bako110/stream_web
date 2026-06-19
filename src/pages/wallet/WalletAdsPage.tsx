@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfirm } from '../../components/ui/Dialog';
 import {
   Plus, Zap, PauseCircle, PlayCircle, Trash2, BarChart2,
   ArrowLeft, RefreshCw, Info, TrendingUp, Eye, MousePointer,
@@ -188,6 +189,7 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
 
 export default function WalletAdsPage() {
   const navigate = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [ads,     setAds]     = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting,  setActing]  = useState<string | null>(null);
@@ -212,7 +214,8 @@ export default function WalletAdsPage() {
     setActing(null);
   }
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer cette campagne ?')) return;
+    const ok = await confirm({ title: 'Supprimer cette campagne ?', message: 'Cette action est irréversible.', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     setActing(id);
     try { await apiClient.delete(Endpoints.ads.delete(id)); await fetchAds(); } catch {}
     setActing(null);
@@ -370,6 +373,7 @@ export default function WalletAdsPage() {
           </div>
         </section>
       ))}
+      {ConfirmDialog}
     </div>
   );
 }

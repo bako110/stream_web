@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
 import {
@@ -65,6 +66,7 @@ export default function CommunityMemberProfilePage() {
   const [showStats,     setShowStats]     = useState(false);
   const [roleLoading,   setRoleLoading]   = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const isMe      = userId === me?.id;
   const canManage = (myRole === 'admin' || myRole === 'moderator') && !isMe;
@@ -106,7 +108,8 @@ export default function CommunityMemberProfilePage() {
   }
 
   async function kickMember() {
-    if (!confirm('Exclure ce membre ?')) return;
+    const ok = await confirm({ title: 'Exclure ce membre ?', danger: true, confirmLabel: 'Exclure' });
+    if (!ok) return;
     setActionLoading(true);
     try {
       await apiClient.delete(Endpoints.communities.member(id!, userId!));
@@ -116,7 +119,8 @@ export default function CommunityMemberProfilePage() {
   }
 
   async function blockMember() {
-    if (!confirm('Bloquer ce membre ?')) return;
+    const ok = await confirm({ title: 'Bloquer ce membre ?', message: 'Il ne pourra plus accéder à la communauté.', danger: true, confirmLabel: 'Bloquer' });
+    if (!ok) return;
     setActionLoading(true);
     try {
       await apiClient.post(Endpoints.communities.block(id!, userId!));
@@ -308,6 +312,7 @@ export default function CommunityMemberProfilePage() {
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

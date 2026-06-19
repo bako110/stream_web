@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfirm } from '../components/ui/Dialog';
 import { encodeId } from '../utils/slugId';
 import { Clock, MapPin, Ticket, Music, Users, Plus, Trash2 } from 'lucide-react';
 import type { Concert, PaginatedResponse } from '../types';
@@ -36,10 +37,12 @@ function ConcertCard({
   const navigate = useNavigate();
   const isLive   = concert.status === 'live';
   const [deleting, setDeleting] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Supprimer ce concert ?')) return;
+    const ok = await confirm({ title: 'Supprimer ce concert ?', message: 'Cette action est irréversible.', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     setDeleting(true);
     try {
       await apiClient.delete(Endpoints.concerts.byId(concert.id));
@@ -154,6 +157,7 @@ function ConcertCard({
           )}
         </div>
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

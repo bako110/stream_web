@@ -1,5 +1,6 @@
 import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Check, Clock, Shield, Users, X, AlertCircle,
@@ -66,6 +67,7 @@ export default function CommunityFundDetailPage() {
   const [exempting,     setExempting]     = useState<string | null>(null);
   const [paying,        setPaying]        = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const canManage = myRole === 'admin' || myRole === 'moderator';
   const isActive  = cot?.status === 'active';
@@ -136,7 +138,8 @@ export default function CommunityFundDetailPage() {
   }
 
   async function closeCot() {
-    if (!confirm('Clôturer cette cotisation ?')) return;
+    const ok = await confirm({ title: 'Clôturer cette cotisation ?', message: 'Les membres ne pourront plus cotiser.', danger: true, confirmLabel: 'Clôturer' });
+    if (!ok) return;
     setActionLoading('close');
     try {
       await apiClient.post(`/api/v1/communities/${communityId}/cotisations/${cotId}/close`);
@@ -146,7 +149,8 @@ export default function CommunityFundDetailPage() {
   }
 
   async function cancelCot() {
-    if (!confirm('Annuler et rembourser les membres qui ont déjà payé ?')) return;
+    const ok = await confirm({ title: 'Annuler la cotisation ?', message: 'Les membres ayant déjà payé seront remboursés.', danger: true, confirmLabel: 'Annuler et rembourser' });
+    if (!ok) return;
     setActionLoading('cancel');
     try {
       const res = await apiClient.post<any>(`/api/v1/communities/${communityId}/cotisations/${cotId}/cancel`);
@@ -396,6 +400,7 @@ export default function CommunityFundDetailPage() {
           )}
         </div>
       )}
+      {ConfirmDialog}
     </div>
   );
 }

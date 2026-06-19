@@ -1,5 +1,6 @@
 import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useRef } from 'react';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
 import {
@@ -119,6 +120,7 @@ function ChannelChat({ communityId, channel, myRole, onBack, onChannelUpdated }:
   const [messages,     setMessages]     = useState<ChannelMessage[]>([]);
   const [input,        setInput]        = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const { confirm: confirmDialog, ConfirmDialog } = useConfirm();
   const wsRef      = useRef<WebSocket | null>(null);
   const bottomRef  = useRef<HTMLDivElement>(null);
   const canManage  = myRole === 'admin' || myRole === 'moderator';
@@ -163,7 +165,8 @@ function ChannelChat({ communityId, channel, myRole, onBack, onChannelUpdated }:
   }
 
   async function deleteMessage(msgId: string) {
-    if (!confirm('Supprimer ce message ?')) return;
+    const ok = await confirmDialog({ title: 'Supprimer ce message ?', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     try {
       await apiClient.delete(`/api/v1/communities/${communityId}/channels/${channel.id}/messages/${msgId}`);
       setMessages(prev => prev.filter(m => m.id !== msgId));
@@ -273,6 +276,7 @@ function ChannelChat({ communityId, channel, myRole, onBack, onChannelUpdated }:
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </div>
   );
 }
@@ -410,6 +414,7 @@ function ChannelSettingsModal({ channel, communityId, onClose, onSaved, onDelete
   const [type,    setType]    = useState<'chat' | 'announcement'>(channel.type === 'announcement' ? 'announcement' : 'chat');
   const [priv,    setPriv]    = useState(channel.is_private ?? false);
   const [saving,  setSaving]  = useState(false);
+  const { confirm: confirmModal, ConfirmDialog: ConfirmModalDialog } = useConfirm();
 
   async function save() {
     if (!name.trim()) return;
@@ -426,7 +431,8 @@ function ChannelSettingsModal({ channel, communityId, onClose, onSaved, onDelete
   }
 
   async function del() {
-    if (!confirm(`Supprimer #${channel.name} ? Cette action est irréversible.`)) return;
+    const ok = await confirmModal({ title: `Supprimer #${channel.name} ?`, message: 'Cette action est irréversible.', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     try {
       await apiClient.delete(`/api/v1/communities/${communityId}/channels/${channel.id}`);
       toast.success('Canal supprimé');
@@ -511,6 +517,7 @@ function ChannelSettingsModal({ channel, communityId, onClose, onSaved, onDelete
         </div>
         </div>
       </div>
+      {ConfirmModalDialog}
     </>
   );
 }

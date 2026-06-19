@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserCheck } from 'lucide-react';
+import { useConfirm } from '../components/ui/Dialog';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Avatar } from '../components/ui/Avatar';
@@ -27,6 +28,7 @@ export default function BlockedUsersPage() {
   const [users,      setUsers]      = useState<BlockedUser[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [unblocking, setUnblocking] = useState<string | null>(null);
+  const { confirm, ConfirmDialog }  = useConfirm();
 
   const load = useCallback(async () => {
     try {
@@ -39,7 +41,8 @@ export default function BlockedUsersPage() {
   useEffect(() => { load(); }, [load]);
 
   async function handleUnblock(user: BlockedUser) {
-    if (!confirm(`Débloquer @${user.username} ?`)) return;
+    const ok = await confirm({ title: `Débloquer @${user.username} ?`, confirmLabel: 'Débloquer' });
+    if (!ok) return;
     setUnblocking(user.id);
     try {
       await apiClient.delete(Endpoints.users.block(user.id));
@@ -113,6 +116,7 @@ export default function BlockedUsersPage() {
           ))}
         </div>
       )}
+      {ConfirmDialog}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, RefreshCw, Share2, Check, Link } from 'lucide-react';
 import { apiClient } from '../../api';
@@ -20,6 +21,7 @@ export default function CommunityInvitePage() {
   const [regen,      setRegen]      = useState(false);
   const [copied,     setCopied]     = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const { confirm, ConfirmDialog }  = useConfirm();
 
   // Lien d'invitation deep-link
   const inviteLink = code ? `${window.location.origin}/join/${code}` : '';
@@ -51,7 +53,8 @@ export default function CommunityInvitePage() {
   }, [load]);
 
   async function regenerate() {
-    if (!confirm('Régénérer le code ? L\'ancien lien ne fonctionnera plus.')) return;
+    const ok = await confirm({ title: 'Régénérer le lien ?', message: "L'ancien lien d'invitation ne fonctionnera plus.", danger: true, confirmLabel: 'Régénérer' });
+    if (!ok) return;
     setRegen(true);
     try {
       // Endpoint exact mobile : POST /invite-code (pas /invite/regenerate)
@@ -205,6 +208,7 @@ export default function CommunityInvitePage() {
           <div className="h-4" />
         </div>
       )}
+      {ConfirmDialog}
     </div>
   );
 }

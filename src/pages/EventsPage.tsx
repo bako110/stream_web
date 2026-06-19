@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfirm } from '../components/ui/Dialog';
 import { encodeId } from '../utils/slugId';
 import {
   Calendar, MapPin, Users, Globe, Ticket, Clock,
@@ -38,6 +39,7 @@ function EventCard({
   const [liked, setLiked]   = useState(false);
   const [shareOk, setShareOk] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const color = TYPE_COLORS[event.event_type] ?? '#7B3FF2';
   const label = TYPE_LABELS[event.event_type] ?? event.event_type;
@@ -63,7 +65,8 @@ function EventCard({
 
   const handleDelete = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Supprimer cet événement ?')) return;
+    const ok = await confirm({ title: 'Supprimer cet événement ?', message: 'Cette action est irréversible.', danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
     setDeleting(true);
     try {
       await apiClient.delete(Endpoints.events.byId(event.id));
@@ -73,7 +76,7 @@ function EventCard({
       toast.error('Erreur lors de la suppression');
       setDeleting(false);
     }
-  }, [event.id, onDelete]);
+  }, [event.id, onDelete, confirm]);
 
   return (
     <div className="group overflow-hidden transition-all duration-300 cursor-pointer relative"
@@ -183,6 +186,7 @@ function EventCard({
           </button>
         </div>
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

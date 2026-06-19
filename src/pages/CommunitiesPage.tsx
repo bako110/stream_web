@@ -1,6 +1,7 @@
 import { PageLoader } from '../components/ui/Spinner';
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfirm } from '../components/ui/Dialog';
 import { encodeId } from '../utils/slugId';
 import {
   Users, Plus, Globe, Lock, Search, X,
@@ -286,6 +287,7 @@ export default function CommunitiesPage() {
   const [page,       setPage]       = useState(1);
   const [hasMore,    setHasMore]    = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const { confirm, ConfirmDialog }  = useConfirm();
 
   const load = useCallback(async (reset = true) => {
     const nextPage = reset ? 1 : page + 1;
@@ -319,7 +321,8 @@ export default function CommunitiesPage() {
   }
 
   async function handleLeave(id: string) {
-    if (!confirm('Quitter cette communauté ?')) return;
+    const ok = await confirm({ title: 'Quitter cette communauté ?', danger: true, confirmLabel: 'Quitter' });
+    if (!ok) return;
     try { await apiClient.post(Endpoints.communities.leave(id)); load(true); } catch {}
   }
 
@@ -416,6 +419,7 @@ export default function CommunitiesPage() {
       </div>
 
       {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={() => load(true)} />}
+      {ConfirmDialog}
     </div>
   );
 }

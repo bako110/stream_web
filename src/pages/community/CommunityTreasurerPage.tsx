@@ -1,5 +1,6 @@
 import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, UserCheck, UserPlus, UserX, Briefcase, X, Check, Clock,
@@ -267,6 +268,7 @@ export default function CommunityTreasurerPage() {
   const [voteLoading,   setVoteLoading]   = useState<string | null>(null);
   const [launching,     setLaunching]     = useState(false);
   const [closing,       setClosing]       = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // Dérivés mémorisés
   const meId        = me?.id ?? '';
@@ -360,7 +362,8 @@ export default function CommunityTreasurerPage() {
   // ── Actions ──────────────────────────────────────────────────────────────────
 
   async function launchElection() {
-    if (!confirm('Lancer un vote pour élire le trésorier ?')) return;
+    const ok = await confirm({ title: 'Lancer un vote ?', message: 'Les membres pourront voter pour élire le trésorier.', confirmLabel: 'Lancer' });
+    if (!ok) return;
     setLaunching(true);
     try {
       await apiClient.post(`/api/v1/communities/${id}/treasurer-elections`);
@@ -373,7 +376,13 @@ export default function CommunityTreasurerPage() {
     if (!election) return;
     if (election.total_votes === 0) { toast.error('Aucun vote enregistré'); return; }
     const leader = election.results[0];
-    if (!confirm(`Élire ${leader?.display_name ?? leader?.username} comme trésorier ?\n${leader?.votes} vote${leader?.votes !== 1 ? 's' : ''} (${leader?.pct}%)`)) return;
+    const ok = await confirm({
+      title: `Élire ${leader?.display_name ?? leader?.username} comme trésorier ?`,
+      message: `${leader?.votes} vote${leader?.votes !== 1 ? 's' : ''} (${leader?.pct}%)`,
+      confirmLabel: 'Clôturer & Élire',
+      danger: false,
+    });
+    if (!ok) return;
     setClosing(true);
     try {
       await apiClient.post(`/api/v1/communities/${id}/treasurer-elections/${election.id}/close`);
@@ -385,7 +394,10 @@ export default function CommunityTreasurerPage() {
   async function vote(candidateId: string) {
     if (!election) return;
     const isChange = !!election.my_vote;
-    if (isChange && !confirm('Changer votre vote ?')) return;
+    if (isChange) {
+      const ok = await confirm({ title: 'Changer votre vote ?', confirmLabel: 'Changer' });
+      if (!ok) return;
+    }
     setVoteLoading(candidateId);
     try {
       await apiClient.post(`/api/v1/communities/${id}/treasurer-elections/${election.id}/vote`, { candidate_id: candidateId });
@@ -395,7 +407,8 @@ export default function CommunityTreasurerPage() {
   }
 
   async function removeTreasurer() {
-    if (!confirm('Retirer le trésorier actuel ?')) return;
+    const ok = await confirm({ title: 'Retirer le trésorier actuel ?', danger: true, confirmLabel: 'Retirer' });
+    if (!ok) return;
     try {
       await apiClient.delete(`/api/v1/communities/${id}/treasurer`);
       toast.success('Trésorier retiré'); setTreasurer(null);
@@ -814,6 +827,7 @@ export default function CommunityTreasurerPage() {
       {rejectTarget && (
         <RejectModal onClose={() => setRejectTarget(null)} onConfirm={note => rejectRequest(rejectTarget, note)} />
       )}
+      {ConfirmDialog}
     </div>
   );
 }
