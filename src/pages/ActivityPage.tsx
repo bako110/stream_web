@@ -126,6 +126,7 @@ function ActivityCard({
   };
 
   return (
+    <>
     <div
       className="group flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all"
       style={{
@@ -200,6 +201,7 @@ function ActivityCard({
       </div>
     </div>
     {ConfirmDialog}
+    </>
   );
 }
 

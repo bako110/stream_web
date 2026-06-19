@@ -1122,6 +1122,102 @@ function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean;
   );
 }
 
+// ── Mini card avec preview vidéo au survol ────────────────────────────────────
+function HoverVideoCard({ r, onOpen, onMenu, fmt }: {
+  r: Reel;
+  onOpen: () => void;
+  onMenu: (e: React.MouseEvent) => void;
+  fmt: (n: number) => string;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef   = useRef<Hls | null>(null);
+  const [hovering, setHovering] = useState(false);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !r.hls_url) return;
+    if (!hovering) {
+      v.pause();
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+      v.removeAttribute('src');
+      v.load();
+      return;
+    }
+    const src = toProxiedUrl(r.hls_url);
+    if (Hls.isSupported()) {
+      const hls = new Hls({ autoStartLoad: true, maxBufferLength: 10 });
+      hlsRef.current = hls;
+      hls.loadSource(src);
+      hls.attachMedia(v);
+      hls.once(Hls.Events.MANIFEST_PARSED, () => { v.muted = true; v.play().catch(() => {}); });
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src; v.muted = true; v.play().catch(() => {});
+    }
+    return () => {
+      hlsRef.current?.destroy(); hlsRef.current = null;
+      v.pause(); v.removeAttribute('src'); v.load();
+    };
+  }, [hovering, r.hls_url]); // eslint-disable-line
+
+  return (
+    <div className="flex flex-col"
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}>
+
+      <div className="relative w-full overflow-hidden rounded-md" style={{ aspectRatio: '9/16' }}>
+
+        {/* Thumbnail (toujours visible, remplacée par la vidéo au hover) */}
+        {r.thumbnail_url
+          ? <img src={r.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover"
+              style={{ opacity: hovering ? 0 : 1, transition: 'opacity 0.2s' }} />
+          : <div className="absolute inset-0 flex items-center justify-center" style={{ background: '#1A1A1A' }}>
+              <Film size={18} style={{ color: 'rgba(255,255,255,0.15)' }} />
+            </div>
+        }
+
+        {/* Vidéo — chargée seulement au hover */}
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover"
+          playsInline muted loop
+          style={{ opacity: hovering ? 1 : 0, transition: 'opacity 0.2s' }}
+        />
+
+        {/* Zone cliquable */}
+        <button className="absolute inset-0 w-full h-full z-10" onClick={onOpen} />
+
+        {/* Bouton menu */}
+        <button onClick={onMenu}
+          className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded z-20"
+          style={{ background: 'rgba(0,0,0,0.55)' }}>
+          <MoreVertical size={10} className="text-white" />
+        </button>
+
+        {r.comments_disabled && (
+          <div className="absolute top-1 left-1 w-5 h-5 flex items-center justify-center rounded pointer-events-none z-20"
+            style={{ background: 'rgba(0,0,0,0.55)' }}>
+            <MessageSquareOff size={9} className="text-white/70" />
+          </div>
+        )}
+      </div>
+
+      {/* Stats sous la card */}
+      <div className="flex items-center justify-between px-0.5 pt-1 pb-0.5">
+        <span className="flex items-center gap-0.5 text-[10px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+          <Play size={9} style={{ color: 'var(--text-tertiary)' }} />{fmt(r.view_count ?? 0)}
+        </span>
+        <span className="flex items-center gap-0.5 text-[10px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+          <Heart size={9} style={{ color: 'var(--text-tertiary)' }} />{fmt(r.like_count ?? 0)}
+        </span>
+        <span className="flex items-center gap-0.5 text-[10px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+          <MessageCircle size={9} style={{ color: 'var(--text-tertiary)' }} />{fmt(r.comment_count ?? 0)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function toArray<T>(raw: unknown): T[] {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw as T[];
@@ -1181,6 +1277,8 @@ export default function ReelsPage() {
   const [reposting,     setReposting]   = useState(false);
   const [cabling,       setCabling]     = useState(false);
   const [togglingComments, setTogglingComments] = useState(false);
+  // Preview inline (mes reels)
+  const [previewReel,   setPreviewReel] = useState<Reel | null>(null);
 
   const containerRef                    = useRef<HTMLDivElement>(null);
   const pageRef                         = useRef(1);
@@ -1474,109 +1572,210 @@ export default function ReelsPage() {
   }
 
   // ── Vue Mes Reels ─────────────────────────────────────────────────────────────
+  const fmtMine = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(1)}k` : String(n);
+
   if (tab === 'mine') {
+    const totalViews = myReels.reduce((s, r) => s + (r.view_count ?? 0), 0);
+    const totalLikes = myReels.reduce((s, r) => s + (r.like_count ?? 0), 0);
+
     return (
-      <div className="fixed inset-0 flex flex-col bg-black" style={{ zIndex: 0 }}>
+      <div className="fixed inset-0 flex flex-col" style={{ zIndex: 0, background: 'var(--bg)' }}>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 shrink-0"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-          <button onClick={() => setTab('feed')} className="w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(0,0,0,0.2)' }}>
-            <ArrowLeft size={18} className="text-white" />
-          </button>
-          <h1 className="text-white font-black text-base">Mes Reels</h1>
-          <button onClick={() => navigate('/create/reel')} className="w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(0,0,0,0.2)' }}>
-            <span className="text-white font-black text-xl leading-none">+</span>
-          </button>
+        <div className="shrink-0" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-3 px-4 py-3">
+            <button onClick={() => setTab('feed')} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-black text-base leading-tight" style={{ color: 'var(--text-primary)' }}>Mes Reels</h1>
+              {myReels.length > 0 && (
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {myReels.length} reel{myReels.length > 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+            <button onClick={() => navigate('/create/reel')}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold text-white shrink-0"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 14px rgba(123,63,242,0.35)' }}>
+              <span className="font-black text-base leading-none">+</span> Créer
+            </button>
+          </div>
+
+          {/* Stats bar */}
+          {myReels.length > 0 && (
+            <div className="flex items-center px-4 pb-3 gap-6">
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(123,63,242,0.1)' }}>
+                  <Eye size={12} style={{ color: 'var(--primary)' }} />
+                </div>
+                <div>
+                  <p className="text-sm font-black leading-tight" style={{ color: 'var(--text-primary)' }}>{fmtMine(totalViews)}</p>
+                  <p className="text-[10px] leading-none" style={{ color: 'var(--text-tertiary)' }}>vues</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(123,63,242,0.1)' }}>
+                  <Heart size={12} style={{ color: 'var(--primary)' }} />
+                </div>
+                <div>
+                  <p className="text-sm font-black leading-tight" style={{ color: 'var(--text-primary)' }}>{fmtMine(totalLikes)}</p>
+                  <p className="text-[10px] leading-none" style={{ color: 'var(--text-tertiary)' }}>likes</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(123,63,242,0.1)' }}>
+                  <Film size={12} style={{ color: 'var(--primary)' }} />
+                </div>
+                <div>
+                  <p className="text-sm font-black leading-tight" style={{ color: 'var(--text-primary)' }}>{myReels.length}</p>
+                  <p className="text-[10px] leading-none" style={{ color: 'var(--text-tertiary)' }}>reels</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Contenu */}
         {myReels.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-6">
-            <Film size={48} style={{ color: 'rgba(255,255,255,0.3)' }} />
-            <p className="text-white font-bold text-lg">Aucun reel</p>
+          <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-8">
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
+              style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.15)' }}>
+              <Film size={36} style={{ color: 'rgba(123,63,242,0.5)' }} />
+            </div>
+            <div className="space-y-1">
+              <p className="font-black text-lg" style={{ color: 'var(--text-primary)' }}>Aucun reel pour l'instant</p>
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                Partage tes premiers moments en video avec ta communaute
+              </p>
+            </div>
             <button onClick={() => navigate('/create/reel')}
-              className="px-6 py-3 rounded-xl text-white font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-              Créer mon premier reel
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl text-white font-bold text-sm"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.4)' }}>
+              <span className="font-black text-base leading-none">+</span> Creer mon premier reel
             </button>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-0.5 p-0.5">
+          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+            <div className="grid gap-1 p-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 160px))' }}>
               {myReels.map(r => (
-                <div key={r.id} className="relative" style={{ aspectRatio: '9/16' }}>
-                  {r.thumbnail_url
-                    ? <img src={r.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center bg-neutral-800">
-                        <Film size={28} className="text-white/20" />
-                      </div>
-                  }
-                  {/* Overlay stats */}
-                  <div className="absolute inset-0 flex flex-col justify-end p-2"
-                    style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 50%)' }}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-white text-[10px]">
-                        <span className="flex items-center gap-0.5"><Play size={9} fill="white" />{r.view_count ?? 0}</span>
-                        <span className="flex items-center gap-0.5"><Heart size={9} fill="white" />{r.like_count ?? 0}</span>
-                      </div>
-                      <button onClick={() => setMenuReel(r)}
-                        className="w-6 h-6 flex items-center justify-center rounded-full"
-                        style={{ background: 'rgba(0,0,0,0.5)' }}>
-                        <MoreVertical size={12} className="text-white" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <HoverVideoCard
+                  key={r.id}
+                  r={r}
+                  fmt={fmtMine}
+                  onOpen={() => setPreviewReel(r)}
+                  onMenu={e => { e.stopPropagation(); setMenuReel(r); }}
+                />
               ))}
             </div>
           </div>
         )}
 
-        {/* Modal menu 3 points */}
+        {/* Bottom sheet menu 3 points */}
         {menuReel && (
           <div className="fixed inset-0 z-50 flex items-end justify-center"
-            style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setMenuReel(null)}>
-            <div className="w-full max-w-lg rounded-t-2xl overflow-hidden mb-0"
-              style={{ background: 'var(--surface)' }} onClick={e => e.stopPropagation()}>
-              <button onClick={() => handleOpenEdit(menuReel)}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <Edit3 size={18} style={{ color: 'var(--text-primary)' }} />
-                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Modifier la description</span>
-              </button>
-              <div style={{ height: 1, background: 'var(--border)' }} />
-              <button onClick={async () => {
-                  setMenuReel(null);
-                  try {
-                    await apiClient.patch(Endpoints.reels.toggleComments(menuReel.id));
-                    setMyReels(prev => prev.map(r => r.id === menuReel.id ? { ...r, comments_disabled: !r.comments_disabled } : r));
-                  } catch { toast.error('Erreur lors du changement'); }
-                }}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                {menuReel.comments_disabled
-                  ? <MessageSquare size={18} style={{ color: 'var(--text-primary)' }} />
-                  : <MessageSquareOff size={18} style={{ color: 'var(--text-primary)' }} />
-                }
-                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {menuReel.comments_disabled ? 'Activer les commentaires' : 'Désactiver les commentaires'}
-                </span>
-              </button>
-              <div style={{ height: 1, background: 'var(--border)' }} />
-              <button onClick={() => handleDeleteReel(menuReel)}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left transition-all"
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <Trash2 size={18} style={{ color: '#ef4444' }} />
-                <span className="font-semibold" style={{ color: '#ef4444' }}>Supprimer le reel</span>
-              </button>
-              <button onClick={() => setMenuReel(null)}
-                className="w-full py-4 font-bold text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                Annuler
-              </button>
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setMenuReel(null)}>
+            <div className="w-full max-w-lg rounded-t-3xl overflow-hidden"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+              onClick={e => e.stopPropagation()}>
+
+              {/* Handle */}
+              <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-3" style={{ background: 'var(--border)' }} />
+
+              {/* Preview miniature */}
+              <div className="flex items-center gap-3 px-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="w-14 rounded-xl overflow-hidden shrink-0" style={{ aspectRatio: '9/16' }}>
+                  {menuReel.thumbnail_url
+                    ? <img src={menuReel.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center" style={{ background: '#1A1A1A' }}>
+                        <Film size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                      </div>
+                  }
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                    {menuReel.caption?.trim() || 'Sans description'}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[11px] flex items-center gap-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                      <Eye size={10} />{fmtMine(menuReel.view_count ?? 0)} vues
+                    </span>
+                    <span className="text-[11px] flex items-center gap-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                      <Heart size={10} />{fmtMine(menuReel.like_count ?? 0)} likes
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="py-2">
+                <button onClick={() => { setMenuReel(null); setPreviewReel(menuReel); }}
+                  className="w-full flex items-center gap-4 px-5 py-3.5 text-left transition-all"
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+                    <Play size={18} />
+                  </div>
+                  <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Lire ce reel</span>
+                </button>
+
+                <button onClick={() => handleOpenEdit(menuReel)}
+                  className="w-full flex items-center gap-4 px-5 py-3.5 text-left transition-all"
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                    <Edit3 size={18} />
+                  </div>
+                  <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Modifier la description</span>
+                </button>
+
+                <button onClick={async () => {
+                    setMenuReel(null);
+                    try {
+                      await apiClient.patch(Endpoints.reels.toggleComments(menuReel.id));
+                      setMyReels(prev => prev.map(r => r.id === menuReel.id ? { ...r, comments_disabled: !r.comments_disabled } : r));
+                    } catch { toast.error('Erreur lors du changement'); }
+                  }}
+                  className="w-full flex items-center gap-4 px-5 py-3.5 text-left transition-all"
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                    {menuReel.comments_disabled
+                      ? <MessageSquare size={18} />
+                      : <MessageSquareOff size={18} />
+                    }
+                  </div>
+                  <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                    {menuReel.comments_disabled ? 'Activer les commentaires' : 'Desactiver les commentaires'}
+                  </span>
+                </button>
+
+                <div style={{ height: 1, background: 'var(--border)', margin: '4px 20px' }} />
+
+                <button onClick={() => handleDeleteReel(menuReel)}
+                  className="w-full flex items-center gap-4 px-5 py-3.5 text-left transition-all"
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                    <Trash2 size={18} />
+                  </div>
+                  <span className="font-semibold text-sm" style={{ color: '#ef4444' }}>Supprimer le reel</span>
+                </button>
+
+                <button onClick={() => setMenuReel(null)}
+                  className="w-full py-4 font-bold text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  Annuler
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1584,9 +1783,12 @@ export default function ReelsPage() {
         {/* Modal édition caption */}
         {editReel && (
           <div className="fixed inset-0 z-50 flex items-end justify-center"
-            style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setEditReel(null)}>
-            <div className="w-full max-w-lg rounded-t-2xl p-5 space-y-4"
-              style={{ background: 'var(--surface)' }} onClick={e => e.stopPropagation()}>
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setEditReel(null)}>
+            <div className="w-full max-w-lg rounded-t-3xl p-5 space-y-4"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+              onClick={e => e.stopPropagation()}>
+              <div className="w-10 h-1 rounded-full mx-auto mb-1" style={{ background: 'var(--border)' }} />
               <h2 className="font-black text-base" style={{ color: 'var(--text-primary)' }}>Modifier la description</h2>
               <textarea value={editCaption} onChange={e => setEditCaption(e.target.value)} maxLength={300} rows={4}
                 placeholder="Description…"
@@ -1605,6 +1807,49 @@ export default function ReelsPage() {
             </div>
           </div>
         )}
+
+        {/* Overlay player inline — s'ouvre sans quitter la page */}
+        {previewReel && (() => {
+          const videoSrc = toProxiedUrl(previewReel.hls_url ?? '');
+          return (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
+              onClick={() => setPreviewReel(null)}>
+              <div className="relative flex items-center justify-center"
+                style={{ maxHeight: '90dvh', maxWidth: '420px', width: '100%', aspectRatio: '9/16' }}
+                onClick={e => e.stopPropagation()}>
+
+                {/* Bouton fermer */}
+                <button onClick={() => setPreviewReel(null)}
+                  className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                  <X size={16} color="#fff" />
+                </button>
+
+                {/* Player réutilisé */}
+                <div className="w-full h-full rounded-2xl overflow-hidden">
+                  <ReelPlayer
+                    reel={previewReel}
+                    active={true}
+                    globalMuted={globalMuted}
+                    onUnmute={() => setGlobalMuted(v => !v)}
+                    onCommentOpen={() => {}}
+                    onMoreOpen={() => {}}
+                  />
+                </div>
+
+                {/* Caption sous le player */}
+                {previewReel.caption && (
+                  <div className="absolute -bottom-10 inset-x-0 text-center">
+                    <p className="text-white/70 text-xs truncate px-4">{previewReel.caption}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {ConfirmDialog}
       </div>
     );
   }
