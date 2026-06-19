@@ -14,6 +14,7 @@ import {
   useTracks,
   RoomAudioRenderer,
   useLocalParticipant,
+  useActiveSpeakers,
 } from '@livekit/components-react';
 import { Track, VideoPresets } from 'livekit-client';
 import type { LiveStream, StreamToken } from '../types';
@@ -425,8 +426,10 @@ function LiveKitViewer({
   participantNames: Map<string, string>;
   onGiftClick: (identity: string, name: string) => void;
 }) {
-  const tracks       = useTracks([Track.Source.Camera], { onlySubscribed: false });
-  const participants = useParticipants();
+  const tracks          = useTracks([Track.Source.Camera], { onlySubscribed: false });
+  const participants    = useParticipants();
+  const activeSpeakers  = useActiveSpeakers();
+  const speakingIds     = new Set(activeSpeakers.map(p => p.identity));
   const [spotlightId,   setSpotlightId]   = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
 
@@ -469,6 +472,9 @@ function LiveKitViewer({
           {stageIdentities.has(spotlightTrack.participant.identity) && (
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
           )}
+          {speakingIds.has(spotlightTrack.participant.identity) && (
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          )}
           {spotlightTrack.participant.isLocal ? 'Toi' : (participantNames.get(spotlightTrack.participant.identity) ?? spotlightTrack.participant.name ?? spotlightTrack.participant.identity)}
         </div>
       )}
@@ -497,7 +503,10 @@ function LiveKitViewer({
               <div
                 key={identity}
                 className="w-24 h-36 rounded-2xl overflow-hidden shadow-xl cursor-pointer relative transition-all"
-                style={{ border: `2px solid ${onStage ? '#22c55e' : 'rgba(255,255,255,0.2)'}` }}
+                style={{
+                  border: `2px solid ${speakingIds.has(identity) ? '#22c55e' : onStage ? '#22c55e' : 'rgba(255,255,255,0.2)'}`,
+                  boxShadow: speakingIds.has(identity) ? '0 0 12px rgba(34,197,94,0.6)' : 'none',
+                }}
                 onClick={() => {
                   if (showMenu) { setContextMenuId(null); return; }
                   if (isHost && !t.participant.isLocal) { setContextMenuId(identity); return; }
@@ -729,6 +738,23 @@ function MediaControls({
   );
 }
 
+// ── Watcher toast arrivée viewer ──────────────────────────────────────────────
+
+function JoinToastWatcher({ isHost, onJoin }: { isHost: boolean; onJoin: (name: string) => void }) {
+  const participants = useParticipants();
+  const prevCount = useRef(0);
+  useEffect(() => {
+    if (!isHost) return;
+    const curr = participants.filter(p => !p.isLocal).length;
+    if (curr > prevCount.current) {
+      const newest = participants.filter(p => !p.isLocal).at(-1);
+      if (newest) onJoin(newest.name || newest.identity || 'Quelqu\'un');
+    }
+    prevCount.current = curr;
+  }, [participants, isHost, onJoin]);
+  return null;
+}
+
 // ── Page principale ────────────────────────────────────────────────────────────
 
 export default function LiveSimplePage() {
@@ -745,6 +771,8 @@ export default function LiveSimplePage() {
   const [lkUrl,    setLkUrl]    = useState<string | null>(stateLkUrl);
   const [showChat, setShowChat] = useState(true);
   const [stopping, setStopping] = useState(false);
+  const [showLaunchBanner, setShowLaunchBanner] = useState(false);
+  const [joinToast, setJoinToast] = useState<string | null>(null);
 
   // Emojis flottants
   const [emojiFloats, setEmojiFloats] = useState<EmojiFloat[]>([]);
@@ -787,9 +815,16 @@ export default function LiveSimplePage() {
   useEffect(() => {
     if (!id || !isActive || !live || lkToken) return;
     apiClient.get<StreamToken>(Endpoints.lives.token(id))
-      .then(r => { setLkToken(r.data.token); setLkUrl(r.data.livekit_url); })
+      .then(r => {
+        setLkToken(r.data.token);
+        setLkUrl(r.data.livekit_url);
+        if (isHost) {
+          setShowLaunchBanner(true);
+          setTimeout(() => setShowLaunchBanner(false), 4000);
+        }
+      })
       .catch(() => {});
-  }, [id, isActive, live, lkToken]);
+  }, [id, isActive, live, lkToken, isHost]);
 
   useEffect(() => {
     if (!lastLiveEnded || lastLiveEnded !== id) return;
@@ -871,6 +906,18 @@ export default function LiveSimplePage() {
         if (kickedId && user && kickedId === user.id) navigate(-1);
         break;
       }
+      case 'like_added': {
+        const floatId = Date.now();
+        const items: EmojiFloat[] = Array.from({ length: 3 }, (_, i) => ({
+          id: floatId + i, emoji: '❤️',
+          x: (Math.random() - 0.5) * 30, size: Math.random() * 8 + 22,
+        }));
+        setEmojiFloats(prev => [...prev.slice(-30), ...items]);
+        items.forEach(f => {
+          setTimeout(() => setEmojiFloats(prev => prev.filter(x => x.id !== f.id)), 1800);
+        });
+        break;
+      }
     }
   }, [isHost, user, navigate]);
 
@@ -885,7 +932,10 @@ export default function LiveSimplePage() {
     finally { setStopping(false); }
   }, [id, liveApi]);
 
-  const handleLeave  = useCallback(() => navigate(-1), [navigate]);
+  const handleLeave = useCallback(() => {
+    if (isActive && !window.confirm('Quitter ce live ?')) return;
+    navigate(-1);
+  }, [navigate, isActive]);
 
   const handleHandRaise = useCallback(async () => {
     if (!id || !user) return;
@@ -919,6 +969,16 @@ export default function LiveSimplePage() {
   return (
     <>
       <style>{LIVE_ANIMATIONS_CSS}</style>
+      <style>{`
+        @keyframes fadeInScale {
+          from { opacity: 0; transform: scale(0.85); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeInLeft {
+          from { opacity: 0; transform: translateX(-12px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
 
       <div className="flex h-[calc(100vh-57px)] overflow-hidden bg-black">
         <div className="flex-1 flex flex-col min-w-0">
@@ -931,6 +991,10 @@ export default function LiveSimplePage() {
               className="flex-1 flex flex-col min-w-0 min-h-0"
             >
               <RoomAudioRenderer />
+              <JoinToastWatcher isHost={isHost} onJoin={name => {
+                setJoinToast(name);
+                setTimeout(() => setJoinToast(null), 3000);
+              }} />
 
               {/* ── Header ───────────────────────────────────────────────── */}
               <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0 flex-wrap gap-y-2">
@@ -973,6 +1037,36 @@ export default function LiveSimplePage() {
                   participantNames={participantNames}
                   onGiftClick={(identity, name) => setGiftTarget({ id: identity, name })}
                 />
+
+                {/* Badge "Tu es sur scène" */}
+                {!isHost && isOnStage && (
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-full text-white text-xs font-bold"
+                    style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 20px rgba(123,63,242,0.6)', animation: 'pulse 2s infinite' }}>
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    Tu es sur scène
+                  </div>
+                )}
+
+                {/* Launch banner host "Tu es en direct !" */}
+                {showLaunchBanner && (
+                  <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+                    <div className="flex flex-col items-center gap-3 px-8 py-6 rounded-3xl text-white text-center"
+                      style={{ background: 'rgba(123,63,242,0.9)', backdropFilter: 'blur(20px)', boxShadow: '0 0 60px rgba(123,63,242,0.5)', animation: 'fadeInScale 0.4s ease-out' }}>
+                      <span className="text-4xl">🎉</span>
+                      <p className="text-xl font-black">Tu es en direct !</p>
+                      <p className="text-sm opacity-80">{live.title}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Toast arrivée viewer */}
+                {joinToast && (
+                  <div className="absolute bottom-32 left-3 z-30 flex items-center gap-2 px-3 py-2 rounded-xl text-white text-xs font-semibold"
+                    style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', animation: 'fadeInLeft 0.3s ease' }}>
+                    <span className="w-2 h-2 rounded-full bg-green-400" />
+                    {joinToast} a rejoint
+                  </div>
+                )}
 
                 {/* Panels modération */}
                 {showRequests && (
@@ -1117,9 +1211,9 @@ export default function LiveSimplePage() {
           )}
         </div>
 
-        {/* ── Chat ────────────────────────────────────────────────────── */}
+        {/* ── Chat desktop ────────────────────────────────────────────── */}
         {showChat && (
-          <div className="w-80 border-l border-white/10 bg-black flex flex-col hidden lg:flex shrink-0">
+          <div className="hidden lg:flex w-80 border-l border-white/10 bg-black flex-col shrink-0">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
               <h3 className="font-semibold text-white text-sm flex items-center gap-2">
                 <MessageCircle size={15} className="text-brand-primary" /> Chat live
@@ -1135,6 +1229,31 @@ export default function LiveSimplePage() {
                 isHost={isHost}
                 onWsEvent={handleWsEvent}
               />
+            </div>
+          </div>
+        )}
+
+        {/* ── Chat mobile bottom sheet ────────────────────────────────── */}
+        {!showChat && (
+          <button onClick={() => setShowChat(true)}
+            className="lg:hidden fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full flex items-center justify-center shadow-xl"
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+            <MessageCircle size={20} className="text-white" />
+          </button>
+        )}
+        {showChat && (
+          <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col"
+            style={{ height: '60vh', background: '#0a0a14', borderRadius: '1.25rem 1.25rem 0 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
+              <h3 className="font-semibold text-white text-sm flex items-center gap-2">
+                <MessageCircle size={15} className="text-[var(--primary)]" /> Chat live
+              </h3>
+              <button onClick={() => setShowChat(false)} className="text-white/40 hover:text-white/70 p-1">
+                <X size={15} />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <LiveChat ref={chatRef} liveId={id!} accessToken={accessToken} isHost={isHost} onWsEvent={handleWsEvent} />
             </div>
           </div>
         )}
