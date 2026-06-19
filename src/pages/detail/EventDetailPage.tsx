@@ -4,7 +4,7 @@ import { encodeId, decodeId } from '../../utils/slugId';
 import {
   Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
   Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
-  ChevronLeft, ChevronRight, ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2,
+  ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2,
 } from 'lucide-react';
 import type { Event } from '../../types';
 import { apiClient } from '../../api';
@@ -14,6 +14,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
+import { Lightbox } from '../../components/ui/Lightbox';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -29,84 +30,6 @@ const TYPE_COLORS: Record<string, string> = {
   birthday: '#7B3FF2', other: '#6B7280',
 };
 
-function LightboxModal({ urls, index, onClose }: { urls: string[]; index: number; onClose: () => void }) {
-  const [current, setCurrent] = useState(index);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape')     onClose();
-      if (e.key === 'ArrowRight') setCurrent(c => (c + 1) % urls.length);
-      if (e.key === 'ArrowLeft')  setCurrent(c => (c - 1 + urls.length) % urls.length);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [urls.length, onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}>
-
-      {/* Close */}
-      <button className="absolute top-4 right-4 p-2 rounded-full z-10 transition-all"
-        style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
-        onClick={onClose}>
-        <X size={20} />
-      </button>
-
-      {/* Counter */}
-      {urls.length > 1 && (
-        <span className="absolute top-4 left-1/2 -translate-x-1/2 text-sm font-semibold px-3 py-1 rounded-full"
-          style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}>
-          {current + 1} / {urls.length}
-        </span>
-      )}
-
-      {/* Prev */}
-      {urls.length > 1 && (
-        <button className="absolute left-3 p-2 rounded-full transition-all z-10"
-          style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
-          onClick={e => { e.stopPropagation(); setCurrent(c => (c - 1 + urls.length) % urls.length); }}>
-          <ChevronLeft size={24} />
-        </button>
-      )}
-
-      {/* Image */}
-      <img
-        src={urls[current]}
-        alt=""
-        className="max-w-[90vw] max-h-[85vh] rounded-2xl object-contain shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      />
-
-      {/* Next */}
-      {urls.length > 1 && (
-        <button className="absolute right-3 p-2 rounded-full transition-all z-10"
-          style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
-          onClick={e => { e.stopPropagation(); setCurrent(c => (c + 1) % urls.length); }}>
-          <ChevronRight size={24} />
-        </button>
-      )}
-
-      {/* Thumbnails strip */}
-      {urls.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"
-          onClick={e => e.stopPropagation()}>
-          {urls.map((u, i) => (
-            <button key={i} onClick={() => setCurrent(i)}
-              className="w-12 h-12 rounded-xl overflow-hidden transition-all shrink-0"
-              style={{
-                border: `2px solid ${i === current ? '#fff' : 'transparent'}`,
-                opacity: i === current ? 1 : 0.5,
-              }}>
-              <img src={u} alt="" className="w-full h-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 const QUICK_EMOJIS = ['❤️', '🔥', '👏', '😂', '😍', '🎉'];
 
@@ -597,7 +520,8 @@ export default function EventDetailPage() {
         <div className="relative rounded-2xl overflow-hidden mb-6"
           style={{ aspectRatio: '21/8', minHeight: 160, background: 'var(--bg-secondary)' }}>
           {ev.banner_url || ev.thumbnail_url
-            ? <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={ev.title} />
+            ? <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} className="w-full h-full object-cover cursor-zoom-in" alt={ev.title}
+                onClick={() => setLightbox(ev.gallery_urls?.length ? ev.gallery_urls.length : 0)} />
             : <div className="w-full h-full flex items-center justify-center">
                 <Calendar size={48} style={{ color, opacity: 0.3 }} />
               </div>}
@@ -627,10 +551,10 @@ export default function EventDetailPage() {
         </div>
 
         {/* ── Grid 2 colonnes ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
 
           {/* ═══ Colonne gauche ═══ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="flex flex-col gap-4">
 
             {/* Barre d'actions */}
             <div style={{ ...CARD, padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
@@ -798,7 +722,7 @@ export default function EventDetailPage() {
                 <p className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>Galerie</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
                   {ev.gallery_urls.map((url, i) => (
-                    <button key={i} onClick={() => setLightbox(i)}
+                    <button key={i} onClick={() => setLightbox((ev.banner_url || ev.thumbnail_url) ? i + 1 : i)}
                       className="relative group rounded-xl overflow-hidden"
                       style={{ aspectRatio: '1', background: 'var(--bg-secondary)' }}>
                       <img src={url} className="w-full h-full object-cover" alt=""
@@ -817,7 +741,7 @@ export default function EventDetailPage() {
           </div>
 
           {/* ═══ Colonne droite ═══ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="flex flex-col gap-4">
 
             {/* Card organisateur */}
             {ev.organizer && (
@@ -903,9 +827,16 @@ export default function EventDetailPage() {
       </div>
 
       {showComments && <CommentsModal targetId={id!} onClose={() => setShowComments(false)} />}
-      {lightbox !== null && ev.gallery_urls && (
-        <LightboxModal urls={ev.gallery_urls} index={lightbox} onClose={() => setLightbox(null)} />
-      )}
+      {lightbox !== null && (() => {
+        const bannerUrl = ev.banner_url ?? ev.thumbnail_url;
+        const allImgs = [
+          ...(bannerUrl ? [bannerUrl] : []),
+          ...(ev.gallery_urls ?? []),
+        ];
+        return allImgs.length > 0
+          ? <Lightbox urls={allImgs} index={Math.min(lightbox, allImgs.length - 1)} onClose={() => setLightbox(null)} />
+          : null;
+      })()}
 
       <TicketPaymentModal
         open={paySheet} onClose={() => setPaySheet(false)} onSuccess={() => setPaySheet(false)}

@@ -8,6 +8,7 @@ import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
+import { Lightbox } from '../../components/ui/Lightbox';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -48,7 +49,7 @@ function MiniPostCard({ post }: { post: Post }) {
       onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
       className="flex gap-3 p-3 rounded-xl w-full text-left transition-colors hover:bg-[var(--bg-secondary)]">
       {/* Thumbnail */}
-      <div className="shrink-0 rounded-lg overflow-hidden bg-[var(--bg-secondary)]"
+      <div className="relative shrink-0 rounded-lg overflow-hidden bg-[var(--bg-secondary)]"
         style={{ width: 56, height: 56 }}>
         {thumb
           ? <img src={thumb} alt="" className="w-full h-full object-cover" />
@@ -57,8 +58,8 @@ function MiniPostCard({ post }: { post: Post }) {
                 ? <Play size={18} style={{ color: 'var(--primary)' }} />
                 : <MessageCircle size={16} style={{ color: 'var(--text-tertiary)' }} />}
             </div>}
-        {thumb && hasVideo && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+        {hasVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <Play size={14} color="#fff" fill="#fff" />
           </div>
         )}
@@ -95,6 +96,7 @@ export default function PostDetailPage() {
   const [sending,         setSending]         = useState(false);
   const [menuOpen,        setMenuOpen]        = useState(false);
   const [otherPosts,      setOtherPosts]      = useState<Post[]>([]);
+  const [lightbox,        setLightbox]        = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -192,10 +194,10 @@ export default function PostDetailPage() {
         </button>
 
         {/* Grid 2 colonnes : gauche 3/5, droite 2/5 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
 
           {/* ══ Colonne gauche ══════════════════════════════════════════════════ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="flex flex-col gap-4">
 
             {/* Card post principale */}
             <div className="rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -277,10 +279,11 @@ export default function PostDetailPage() {
 
               {/* Image unique */}
               {!post.video_url && !post.hls_url && post.image_url && !post.image_urls?.length && (
-                <div className="mx-5 mb-4 rounded-xl overflow-hidden">
+                <button className="mx-5 mb-4 rounded-xl overflow-hidden cursor-zoom-in block w-[calc(100%-2.5rem)]"
+                  onClick={() => setLightbox(0)}>
                   <img src={post.image_url} alt="" className="w-full object-cover"
                     style={{ maxHeight: 480 }} />
-                </div>
+                </button>
               )}
 
               {/* Images multiples */}
@@ -289,9 +292,10 @@ export default function PostDetailPage() {
                   style={{ display: 'grid', gap: 6,
                     gridTemplateColumns: post.image_urls.length === 2 ? '1fr 1fr' : 'repeat(3,1fr)' }}>
                   {post.image_urls.map((u, i) => (
-                    <div key={i} className="rounded-xl overflow-hidden" style={{ aspectRatio: '1' }}>
-                      <img src={u} alt="" className="w-full h-full object-cover" />
-                    </div>
+                    <button key={i} className="rounded-xl overflow-hidden cursor-zoom-in"
+                      style={{ aspectRatio: '1' }} onClick={() => setLightbox(i)}>
+                      <img src={u} alt="" className="w-full h-full object-cover transition-transform hover:scale-105" />
+                    </button>
                   ))}
                 </div>
               )}
@@ -410,7 +414,7 @@ export default function PostDetailPage() {
           </div>
 
           {/* ══ Colonne droite ══════════════════════════════════════════════════ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="flex flex-col gap-4">
 
             {/* Card auteur */}
             {author && (
@@ -457,6 +461,14 @@ export default function PostDetailPage() {
           </div>
         </div>
       </div>
+
+      {lightbox !== null && (
+        <Lightbox
+          urls={post.image_urls?.length ? post.image_urls : [post.image_url!]}
+          index={lightbox}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }

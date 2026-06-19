@@ -10,6 +10,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
+import { Lightbox } from '../../components/ui/Lightbox';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -137,6 +138,7 @@ export default function ConcertDetailPage() {
   const [reminder,      setReminder]     = useState(false);
   const [remindLoading, setRemindLoading]= useState(false);
   const [otherConcerts, setOtherConcerts]= useState<Concert[]>([]);
+  const [lightbox,      setLightbox]     = useState(false);
 
   useEffect(() => {
     if (!id || !concert || !user || concert.artist_id === user.id) return;
@@ -220,7 +222,8 @@ export default function ConcertDetailPage() {
         <div className="relative rounded-2xl overflow-hidden mb-6"
           style={{ aspectRatio: '21/8', minHeight: 160, background: 'var(--bg-secondary)' }}>
           {c.banner_url || c.thumbnail_url
-            ? <img src={c.banner_url ?? c.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={c.title} />
+            ? <img src={c.banner_url ?? c.thumbnail_url ?? ''} className="w-full h-full object-cover cursor-zoom-in" alt={c.title}
+                onClick={() => setLightbox(true)} />
             : <div className="w-full h-full flex items-center justify-center">
                 <Radio size={48} style={{ color: 'var(--text-tertiary)', opacity: 0.3 }} />
               </div>}
@@ -262,10 +265,10 @@ export default function ConcertDetailPage() {
         </div>
 
         {/* ── Grid 2 colonnes ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
 
           {/* ═══ Colonne gauche ═══ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="flex flex-col gap-4">
 
             {/* Card artiste + badges */}
             <div style={{ ...CARD, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
@@ -369,7 +372,7 @@ export default function ConcertDetailPage() {
           </div>
 
           {/* ═══ Colonne droite ═══ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="flex flex-col gap-4">
 
             {/* Card artiste */}
             {c.artist && (
@@ -521,6 +524,14 @@ export default function ConcertDetailPage() {
       </div>
 
       {showBoost && <BoostModal concert={c} onClose={() => setShowBoost(false)} onDone={refetch} />}
+
+      {lightbox && (c.banner_url || c.thumbnail_url) && (
+        <Lightbox
+          urls={[c.banner_url ?? c.thumbnail_url!]}
+          index={0}
+          onClose={() => setLightbox(false)}
+        />
+      )}
 
       <TicketPaymentModal
         open={paySheet}
