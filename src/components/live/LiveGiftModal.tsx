@@ -53,7 +53,7 @@ export function GiftTicker({ notifs }: { notifs: GiftNotif[] }) {
             backdropFilter: 'blur(8px)',
             animation: 'slideInLeft 0.3s ease-out',
           }}>
-          <span className="text-base">{n.emoji}</span>
+          <Gift size={12} style={{ color: '#FDE68A', flexShrink: 0 }} />
           <span style={{ color: '#FDE68A' }}>{n.senderName}</span>
           <span className="opacity-80">a envoyé</span>
           <span>{n.giftName}</span>
@@ -83,7 +83,10 @@ export function GiftToast({ notif, onDone }: { notif: GiftNotif; onDone: () => v
         animation: 'slideInRight 0.3s ease-out',
         minWidth: 220,
       }}>
-      <span className="text-3xl">{notif.emoji}</span>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+        style={{ background: 'rgba(255,215,0,0.2)' }}>
+        <Gift size={22} style={{ color: '#fbbf24' }} />
+      </div>
       <div>
         <p className="text-xs font-bold" style={{ color: '#FDE68A' }}>{notif.senderName}</p>
         <p className="text-sm font-bold">{notif.giftName}</p>
@@ -276,7 +279,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
               disabled={!selected || !sufficient || sending}
               className="flex-1 py-3 rounded-xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
               style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.4)' }}>
-              {sending ? <Spinner size="sm" /> : <><Gift size={15} /> Envoyer {selected?.emoji ?? ''}</>}
+              {sending ? <Spinner size="sm" /> : <><Gift size={15} /> Envoyer {selected ? selected.name : ''}</>}
             </button>
           </div>
         </div>

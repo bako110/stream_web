@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Smile } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 
@@ -197,9 +197,9 @@ export function LiveReactionPicker({
       )}
 
       <button ref={btnRef} onClick={handleToggle}
-        className="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all"
-        style={{ background: open ? 'rgba(123,63,242,0.3)' : 'rgba(255,255,255,0.12)', border: `1px solid ${open ? 'rgba(123,63,242,0.6)' : 'rgba(255,255,255,0.2)'}` }}>
-        😊
+        className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+        style={{ background: open ? 'rgba(123,63,242,0.3)' : 'rgba(255,255,255,0.12)', border: `1px solid ${open ? 'rgba(123,63,242,0.6)' : 'rgba(255,255,255,0.2)'}`, color: open ? '#7B3FF2' : '#fff' }}>
+        <Smile size={18} />
       </button>
     </div>
   );

@@ -257,6 +257,10 @@ export const Endpoints = {
     globalBan:   (id: string, identity: string) => `${V1}/lives/${id}/global-ban/${identity}`,
     blockUser:   (userId: string)               => `${V1}/lives/block/${userId}`,
     listBlocks:  `${V1}/lives/blocks`,
+    monetization:      (id: string) => `${V1}/lives/${id}/monetization`,
+    stageMonetization: (id: string) => `${V1}/lives/${id}/stage-monetization`,
+    accessCoins:       (id: string) => `${V1}/lives/${id}/access/coins`,
+    accessGift:        (id: string) => `${V1}/lives/${id}/access/gift`,
   },
   activity: {
     feed:   `${V1}/activity/feed`,
