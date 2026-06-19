@@ -252,12 +252,15 @@ export function LiveSettingsSheet({
     <>
       <div className="fixed inset-0 z-50" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col"
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
+      <div className="w-full sm:max-w-sm flex flex-col pointer-events-auto"
         style={{
           maxHeight: '72vh',
           background: 'var(--surface)',
           borderTopLeftRadius: 24, borderTopRightRadius: 24,
           borderTop: '1px solid var(--border)',
+          borderLeft: '1px solid var(--border)',
+          borderRight: '1px solid var(--border)',
           animation: 'slideUpSheet 0.25s cubic-bezier(0.32,0.72,0,1)',
         }}>
 
@@ -388,6 +391,7 @@ export function LiveSettingsSheet({
           </button>
 
         </div>
+      </div>
       </div>
     </>
   );
