@@ -378,38 +378,41 @@ function ParticipantContextMenu({
   }
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 z-10 p-2"
-      style={{ background: 'rgba(0,0,0,0.82)', borderRadius: '1rem' }}>
-      <p className="text-[10px] truncate w-full text-center mb-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>{name}</p>
+    <div
+      className="absolute left-full top-0 ml-2 z-50 flex flex-col gap-0.5 py-1.5 px-1.5 rounded-xl shadow-2xl min-w-[140px]"
+      style={{ background: 'rgba(15,15,20,0.96)', border: '1px solid rgba(255,255,255,0.08)' }}
+      onClick={e => e.stopPropagation()}
+    >
+      <p className="text-[10px] px-2 py-0.5 mb-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{name}</p>
       {isOnStage ? (
         <button onClick={() => act(Endpoints.lives.demote(liveId, identity))}
-          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg w-full justify-center"
-          style={{ color: '#fb923c', background: 'rgba(251,146,60,0.2)' }}>
-          <ArrowDown size={10} /> Retirer de scène
+          className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-lg w-full text-left hover:bg-white/10 transition-colors"
+          style={{ color: '#fb923c' }}>
+          <ArrowDown size={11} /> Retirer de scène
         </button>
       ) : (
         <button onClick={() => act(Endpoints.lives.invite(liveId, identity))}
-          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg w-full justify-center"
-          style={{ color: '#c4b5fd', background: 'rgba(167,139,250,0.2)' }}>
-          <UserCheck size={10} /> Monter sur scène
+          className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-lg w-full text-left hover:bg-white/10 transition-colors"
+          style={{ color: '#a78bfa' }}>
+          <UserCheck size={11} /> Monter sur scène
         </button>
       )}
+      <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '2px 4px' }} />
       <button onClick={() => act(Endpoints.lives.ban(liveId, identity))}
-        className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg w-full justify-center"
-        style={{ color: '#fca5a5', background: 'rgba(248,113,113,0.2)' }}>
-        <Ban size={10} /> Exclure ce live
+        className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-lg w-full text-left hover:bg-white/10 transition-colors"
+        style={{ color: '#fca5a5' }}>
+        <Ban size={11} /> Exclure ce live
       </button>
       <button onClick={() => act(Endpoints.lives.globalBan(liveId, identity))}
-        className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg w-full justify-center"
-        style={{ color: '#f87171', background: 'rgba(239,68,68,0.2)' }}>
-        <Ban size={10} /> Bannir (tous lives)
+        className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-lg w-full text-left hover:bg-white/10 transition-colors"
+        style={{ color: '#f87171' }}>
+        <Ban size={11} /> Bannir (tous lives)
       </button>
       <button onClick={() => act(Endpoints.lives.blockUser(identity))}
-        className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg w-full justify-center"
-        style={{ color: '#c4b5fd', background: 'rgba(139,92,246,0.2)' }}>
-        <Lock size={10} /> Bloquer de mes lives
+        className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-lg w-full text-left hover:bg-white/10 transition-colors"
+        style={{ color: '#a78bfa' }}>
+        <Lock size={11} /> Bloquer de mes lives
       </button>
-      <button onClick={onDone} className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>Annuler</button>
     </div>
   );
 }
@@ -439,6 +442,13 @@ function LiveKitViewer({
   const speakingIds  = useActiveSpeakersSet();
   const [spotlightId,   setSpotlightId]   = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!contextMenuId) return;
+    const close = () => setContextMenuId(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [contextMenuId]);
 
   const activeTracks = tracks.filter(t => !t.publication?.isMuted);
 
@@ -508,38 +518,42 @@ function LiveKitViewer({
             return (
               <div
                 key={identity}
-                className="w-24 h-36 rounded-2xl overflow-hidden shadow-xl cursor-pointer relative transition-all"
-                style={{
-                  border: `2px solid ${speaking ? '#22c55e' : onStage ? '#22c55e' : 'rgba(255,255,255,0.2)'}`,
-                  boxShadow: speaking ? '0 0 12px rgba(34,197,94,0.6)' : 'none',
-                }}
-                onClick={() => {
-                  if (showMenu) { setContextMenuId(null); return; }
-                  if (isHost && !t.participant.isLocal) { setContextMenuId(identity); return; }
-                  setSpotlightId(identity);
-                }}
+                className="relative w-24 h-36 shrink-0"
               >
-                <VideoTrack trackRef={t} className="w-full h-full object-cover" />
-                <div className="absolute bottom-0 left-0 right-0 text-white text-[10px] truncate text-center py-1 px-1 flex items-center justify-center gap-1"
-                  style={{ background: 'rgba(0,0,0,0.6)' }}>
-                  {onStage && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />}
-                  {name}
+                <div
+                  className={`w-full h-full rounded-2xl shadow-xl cursor-pointer relative transition-all ${showMenu ? '' : 'overflow-hidden'}`}
+                  style={{
+                    border: `2px solid ${speaking ? '#22c55e' : onStage ? '#22c55e' : 'rgba(255,255,255,0.2)'}`,
+                    boxShadow: speaking ? '0 0 12px rgba(34,197,94,0.6)' : 'none',
+                  }}
+                  onClick={() => {
+                    if (showMenu) { setContextMenuId(null); return; }
+                    if (isHost && !t.participant.isLocal) { setContextMenuId(identity); return; }
+                    setSpotlightId(identity);
+                  }}
+                >
+                  <VideoTrack trackRef={t} className="w-full h-full object-cover" />
+                  <div className="absolute bottom-0 left-0 right-0 text-white text-[10px] truncate text-center py-1 px-1 flex items-center justify-center gap-1"
+                    style={{ background: 'rgba(0,0,0,0.6)' }}>
+                    {onStage && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />}
+                    {name}
+                  </div>
+                  {!t.participant.isLocal && !isHost && (
+                    <button
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                      style={{ background: 'rgba(0,0,0,0.6)' }}
+                      onClick={e => { e.stopPropagation(); onGiftClick(identity, name); }}>
+                      <Gift size={11} style={{ color: '#fbbf24' }} />
+                    </button>
+                  )}
+                  {showMenu && (
+                    <ParticipantContextMenu
+                      identity={identity} name={name} liveId={liveId}
+                      isOnStage={onStage}
+                      onDone={() => setContextMenuId(null)}
+                    />
+                  )}
                 </div>
-                {!t.participant.isLocal && !isHost && (
-                  <button
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-                    style={{ background: 'rgba(0,0,0,0.6)' }}
-                    onClick={e => { e.stopPropagation(); onGiftClick(identity, name); }}>
-                    <Gift size={11} style={{ color: '#fbbf24' }} />
-                  </button>
-                )}
-                {showMenu && (
-                  <ParticipantContextMenu
-                    identity={identity} name={name} liveId={liveId}
-                    isOnStage={onStage}
-                    onDone={() => setContextMenuId(null)}
-                  />
-                )}
               </div>
             );
           })}
