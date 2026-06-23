@@ -606,87 +606,131 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
     } catch { toast.error('Erreur lors de l\'annulation'); }
   }
 
+  const entryPrice = (community as any).entry_price_coins ?? 0;
+  const requiresApproval = (community as any).requires_approval ?? community.is_private;
+
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="relative" style={{ height: 160 }}>
+      {/* Hero banner */}
+      <div className="relative" style={{ height: 200 }}>
         {community.banner_url
           ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
-          : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }} />
+          : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}dd, ${g2}dd)` }} />
         }
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)' }} />
-        <div className="absolute" style={{ bottom: -32, left: '50%', transform: 'translateX(-50%)' }}>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg) 0%, transparent 55%)' }} />
+      </div>
+
+      <div className="px-5 pb-8" style={{ marginTop: -56 }}>
+        {/* Avatar + nom */}
+        <div className="flex items-end gap-4 mb-4">
           {community.avatar_url
-            ? <img src={community.avatar_url} className="w-16 h-16 rounded-2xl object-cover"
-                style={{ border: '4px solid var(--bg)' }} alt="" />
-            : <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-white text-2xl"
-                style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '4px solid var(--bg)' }}>
+            ? <img src={community.avatar_url} className="w-20 h-20 rounded-2xl object-cover shrink-0"
+                style={{ border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} alt="" />
+            : <div className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-white text-3xl shrink-0"
+                style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
                 {community.name[0]?.toUpperCase()}
               </div>
           }
+          <div className="mb-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>{community.name}</h1>
+              {community.is_verified && <BadgeCheck size={20} color="#1D9BF0" className="shrink-0" />}
+            </div>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: '#7B3FF215', color: '#7B3FF2' }}>
+                {community.is_private ? <Lock size={9} /> : <Globe size={9} />}
+                {community.is_private ? 'Privée' : 'Publique'}
+              </span>
+              <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                <Users size={9} /> {fmtCount(count)} membres
+              </span>
+              {requiresApproval && (
+                <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{ background: '#F59E0B15', color: '#F59E0B' }}>
+                  <Clock size={9} /> Approbation requise
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col items-center px-6 pt-12 pb-8 text-center">
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>{community.name}</h1>
-          {community.is_verified && <BadgeCheck size={18} color="#1D9BF0" />}
-        </div>
-        <div className="flex items-center gap-2 mb-4">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
-            style={{ background: community.is_private ? '#7B3FF220' : '#7B3FF220', color: community.is_private ? '#7B3FF2' : '#7B3FF2' }}>
-            {community.is_private ? <Lock size={10} /> : <Globe size={10} />}
-            {community.is_private ? 'Privée' : 'Publique'}
-          </span>
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
-            style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
-            <Users size={10} /> {fmtCount(count)} membres
-          </span>
-        </div>
+
         {community.description && (
-          <p className="text-sm leading-relaxed mb-6 max-w-sm" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-secondary)' }}>
             {community.description}
           </p>
         )}
-        <div className="w-full max-w-sm p-5 rounded-2xl mb-6 flex flex-col items-center gap-3"
-          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'var(--bg-tertiary)' }}>
-            <Lock size={20} style={{ color: 'var(--text-tertiary)' }} />
-          </div>
-          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Contenu réservé aux membres</p>
-          <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
-            Rejoignez la communauté pour accéder aux messages et aux membres.
-          </p>
-          {(community as any).entry_price_coins > 0 && (
-            <p className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
-              {(community as any).entry_price_coins} coins requis
+
+        {/* Card accès membres */}
+        <div className="rounded-2xl overflow-hidden mb-4"
+          style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}>
+          <div className="px-4 py-3 flex items-center gap-2"
+            style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+            <Lock size={13} style={{ color: 'var(--text-tertiary)' }} />
+            <p className="text-xs font-bold tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+              CONTENU RÉSERVÉ AUX MEMBRES
             </p>
+          </div>
+          <div className="px-4 py-4 flex items-start gap-3">
+            <MessageCircle size={18} style={{ color: 'var(--text-tertiary)', flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>Messages & membres privés</p>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                {requiresApproval
+                  ? 'Envoyez une demande — un admin l\'examinera avant de vous donner accès.'
+                  : 'Rejoignez pour accéder aux conversations et voir les membres.'}
+              </p>
+            </div>
+          </div>
+          {entryPrice > 0 && (
+            <div className="px-4 py-3 flex items-center gap-2"
+              style={{ borderTop: '1px solid var(--border)', background: 'rgba(123,63,242,0.04)' }}>
+              <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: '#7B3FF220' }}>
+                <span style={{ fontSize: 10, color: '#7B3FF2', fontWeight: 700 }}>C</span>
+              </div>
+              <p className="text-xs font-bold" style={{ color: '#7B3FF2' }}>
+                {entryPrice} coins requis pour adhérer
+              </p>
+            </div>
           )}
         </div>
+
+        {/* Bouton adhésion */}
         {joinStatus === 'pending' ? (
-          <div className="w-full max-w-sm space-y-3">
+          <div className="space-y-2.5">
             <div className="flex items-center gap-3 p-4 rounded-2xl"
-              style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.3)' }}>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(123,63,242,0.2)' }}>
-                <Clock size={18} style={{ color: '#7B3FF2' }} />
+              style={{ background: 'rgba(123,63,242,0.08)', border: '1.5px solid rgba(123,63,242,0.25)' }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(123,63,242,0.15)' }}>
+                <Clock size={16} style={{ color: '#7B3FF2' }} />
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-sm" style={{ color: '#7B3FF2' }}>Demande en attente</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm" style={{ color: '#7B3FF2' }}>Demande envoyée</p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                  En attente d'approbation par un admin
+                  En attente d'approbation par un administrateur
                 </p>
               </div>
             </div>
             <button onClick={handleCancelRequest}
-              className="w-full py-3 rounded-2xl font-semibold text-sm transition-all"
-              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+              className="w-full py-3 rounded-2xl font-semibold text-sm transition-colors"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#EF4444'; (e.currentTarget as HTMLElement).style.color = '#EF4444'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}>
               Annuler la demande
             </button>
           </div>
         ) : (
           <button onClick={handleJoin} disabled={joining}
-            className="w-full max-w-sm flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white text-sm disabled:opacity-60 transition-all"
-            style={{ background: `linear-gradient(90deg, ${g1}, ${g2})` }}>
-            {joining ? <Spinner size="sm" /> : <><UserPlus size={16} /> Rejoindre la communauté</>}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60 transition-opacity hover:opacity-90"
+            style={{ background: `linear-gradient(90deg, ${g1}, ${g2})`, boxShadow: `0 4px 16px ${g1}55` }}>
+            {joining
+              ? <Spinner size="sm" />
+              : requiresApproval
+                ? <><UserPlus size={15} /> Demander à rejoindre</>
+                : <><UserPlus size={15} /> Rejoindre la communauté</>
+            }
           </button>
         )}
       </div>

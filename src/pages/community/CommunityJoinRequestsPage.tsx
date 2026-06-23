@@ -2,7 +2,7 @@ import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
-import { ArrowLeft, UserCheck, UserX, Clock, Check, X } from 'lucide-react';
+import { ArrowLeft, UserCheck, Clock, Check, X, Users } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
@@ -49,7 +49,7 @@ export default function CommunityJoinRequestsPage() {
     try {
       await apiClient.post(`/api/v1/communities/${id}/join-requests/${requestId}/approve`);
       setRequests(prev => prev.filter(r => r.id !== requestId));
-      toast.success('Demande approuvee');
+      toast.success('Demande approuvée');
     } catch {
       toast.error('Erreur lors de l\'approbation');
     } finally { setProcessing(null); }
@@ -60,30 +60,40 @@ export default function CommunityJoinRequestsPage() {
     try {
       await apiClient.post(`/api/v1/communities/${id}/join-requests/${requestId}/reject`);
       setRequests(prev => prev.filter(r => r.id !== requestId));
-      toast.success('Demande refusee');
+      toast.success('Demande refusée');
     } catch {
       toast.error('Erreur lors du refus');
     } finally { setProcessing(null); }
   }
 
+  async function approveAll() {
+    for (const r of requests) {
+      try { await apiClient.post(`/api/v1/communities/${id}/join-requests/${r.id}/approve`); }
+      catch {}
+    }
+    setRequests([]);
+    toast.success('Toutes les demandes approuvées');
+  }
+
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-3 py-2.5 shrink-0"
+      <div className="flex items-center gap-3 px-4 py-3 shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-xl transition-all"
+        <button onClick={() => navigate(-1)}
+          className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors"
           style={{ color: 'var(--text-primary)' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <ArrowLeft size={20} />
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-secondary)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+          <ArrowLeft size={18} />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Demandes d'adhesion</p>
+          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Demandes d'adhésion</p>
           {name && <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{name}</p>}
         </div>
         {!loading && requests.length > 0 && (
-          <span className="px-2.5 py-1 rounded-full text-xs font-bold text-white"
-            style={{ background: 'var(--primary)' }}>
+          <span className="w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-bold text-white"
+            style={{ background: '#7B3FF2' }}>
             {requests.length}
           </span>
         )}
@@ -92,61 +102,84 @@ export default function CommunityJoinRequestsPage() {
       {loading ? (
         <PageLoader />
       ) : requests.length === 0 ? (
-        <div className="flex flex-col items-center justify-center flex-1 gap-3 opacity-50 px-6 text-center">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center"
+        <div className="flex flex-col items-center justify-center flex-1 gap-3 px-6 text-center" style={{ opacity: 0.5 }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
             style={{ background: 'var(--bg-secondary)' }}>
-            <UserCheck size={28} style={{ color: 'var(--text-tertiary)' }} />
+            <UserCheck size={24} style={{ color: 'var(--text-tertiary)' }} />
           </div>
-          <p className="font-semibold text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            Aucune demande en attente
-          </p>
+          <p className="font-bold text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucune demande en attente</p>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            Les nouvelles demandes d'adhesion apparaitront ici.
+            Les nouvelles demandes apparaîtront ici.
           </p>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
-          <p className="px-4 pt-4 pb-2 text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
-            {requests.length} DEMANDE{requests.length !== 1 ? 'S' : ''} EN ATTENTE
-          </p>
-          <div className="px-4 space-y-3 pb-6">
+          {/* Barre d'actions groupées */}
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <p className="text-[11px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
+              {requests.length} EN ATTENTE
+            </p>
+            {requests.length > 1 && (
+              <button onClick={approveAll}
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
+                style={{ background: '#7B3FF215', color: '#7B3FF2' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#7B3FF225'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#7B3FF215'; }}>
+                <Users size={11} /> Tout approuver
+              </button>
+            )}
+          </div>
+
+          <div className="px-4 space-y-2.5 pb-6">
             {requests.map(req => {
               const isProcessing = processing === req.id;
+              const displayName  = req.display_name ?? req.username ?? 'Utilisateur';
               return (
-                <div key={req.id} className="p-4 rounded-2xl"
+                <div key={req.id}
+                  className="rounded-2xl overflow-hidden transition-all"
                   style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <Avatar src={req.avatar_url} name={req.display_name ?? req.username ?? '?'} size="sm" />
+                  {/* Infos utilisateur */}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <Avatar src={req.avatar_url} name={displayName} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        {req.display_name ?? req.username ?? 'Utilisateur'}
+                      <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                        {displayName}
                       </p>
-                      <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-                        <Clock size={10} />
-                        <span className="text-xs">
-                          {formatDistanceToNow(new Date(req.created_at), { locale: fr, addSuffix: true })}
-                        </span>
-                      </div>
+                      {req.username && req.display_name && (
+                        <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>@{req.username}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+                      <Clock size={10} />
+                      <span className="text-[10px]">
+                        {formatDistanceToNow(new Date(req.created_at), { locale: fr, addSuffix: true })}
+                      </span>
                     </div>
                   </div>
 
                   {req.message && (
-                    <p className="text-sm mb-3 px-1 leading-relaxed italic"
-                      style={{ color: 'var(--text-secondary)', borderLeft: '2px solid var(--border)', paddingLeft: 8 }}>
+                    <div className="mx-4 mb-3 px-3 py-2 rounded-xl text-sm italic leading-relaxed"
+                      style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderLeft: '3px solid #7B3FF240' }}>
                       "{req.message}"
-                    </p>
+                    </div>
                   )}
 
-                  <div className="flex gap-2">
-                    <button onClick={() => approve(req.id)} disabled={isProcessing}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
-                      style={{ background: '#7B3FF215', color: '#7B3FF2', border: '1px solid #7B3FF230' }}>
-                      {isProcessing ? <Spinner size="sm" /> : <><Check size={15} /> Approuver</>}
-                    </button>
+                  {/* Actions */}
+                  <div className="flex border-t" style={{ borderColor: 'var(--border)' }}>
                     <button onClick={() => reject(req.id)} disabled={isProcessing}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
-                      style={{ background: '#EF444415', color: '#EF4444', border: '1px solid #EF444430' }}>
-                      {isProcessing ? <Spinner size="sm" /> : <><X size={15} /> Refuser</>}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-40"
+                      style={{ color: 'var(--text-tertiary)' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EF444410'; (e.currentTarget as HTMLElement).style.color = '#EF4444'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-tertiary)'; }}>
+                      {isProcessing ? <Spinner size="sm" /> : <><X size={14} /> Refuser</>}
+                    </button>
+                    <div style={{ width: 1, background: 'var(--border)' }} />
+                    <button onClick={() => approve(req.id)} disabled={isProcessing}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold transition-colors disabled:opacity-40"
+                      style={{ color: '#7B3FF2' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#7B3FF210'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                      {isProcessing ? <Spinner size="sm" /> : <><Check size={14} /> Approuver</>}
                     </button>
                   </div>
                 </div>

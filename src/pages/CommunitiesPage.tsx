@@ -44,88 +44,82 @@ function CommunityCard({
   onLeave:   () => void;
 }) {
   const navigate  = useNavigate();
-  const count     = community.members_count ?? community.member_count ?? 0;
+  const count     = community.members_count ?? (community as any).member_count ?? 0;
   const [g1, g2]  = gradientFor(community.name);
 
   return (
     <div
-      className="rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-[1.015] hover:shadow-lg"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+      className="rounded-2xl overflow-hidden cursor-pointer group transition-all duration-200 hover:-translate-y-0.5"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}
       onClick={() => navigate(`/communities/${encodeId(community.id)}`)}
     >
       {/* Bannière */}
-      <div className="relative" style={{ height: 110 }}>
+      <div className="relative" style={{ height: 96 }}>
         {community.banner_url
           ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
-          : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }} />
+          : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}cc, ${g2}cc)` }} />
         }
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)' }} />
-
-        {community.is_private && (
-          <span className="absolute top-2 left-2 flex items-center gap-1 text-white text-[10px] font-bold px-2 py-1 rounded-full"
-            style={{ background: 'rgba(0,0,0,0.5)' }}>
-            <Lock size={9} /> Privée
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 60%)' }} />
+        <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
+          {community.is_private
+            ? <span className="flex items-center gap-1 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,0.45)' }}>
+                <Lock size={8} /> Privée
+              </span>
+            : <span />
+          }
+          <span className="flex items-center gap-1 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,0.45)' }}>
+            <Users size={8} /> {fmtCount(count)}
           </span>
-        )}
-        <span className="absolute top-2 right-2 flex items-center gap-1 text-white text-[10px] font-bold px-2 py-1 rounded-full"
-          style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <Users size={9} /> {fmtCount(count)}
-        </span>
+        </div>
       </div>
 
       {/* Corps */}
-      <div className="px-3.5 pb-3.5">
-        {/* Avatar flottant */}
-        <div className="relative" style={{ marginTop: -20, marginBottom: 8 }}>
+      <div className="px-3 pt-2.5 pb-3">
+        <div className="flex items-center gap-2.5 mb-2">
           {community.avatar_url
-            ? <img src={community.avatar_url}
-                className="w-10 h-10 rounded-xl object-cover"
-                style={{ border: '3px solid var(--surface)' }} alt="" />
-            : <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-base"
-                style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '3px solid var(--surface)' }}>
+            ? <img src={community.avatar_url} className="w-9 h-9 rounded-xl object-cover shrink-0"
+                style={{ border: '2px solid var(--border)' }} alt="" />
+            : <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-sm shrink-0"
+                style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }}>
                 {community.name[0]?.toUpperCase()}
               </div>
           }
-        </div>
-
-        <div className="mb-2.5">
-          <div className="flex items-center gap-1.5">
-            <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
-            {community.is_verified && <BadgeCheck size={13} color="#1D9BF0" />}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1">
+              <p className="font-bold text-sm truncate leading-tight" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
+              {community.is_verified && <BadgeCheck size={12} color="#1D9BF0" className="shrink-0" />}
+            </div>
+            {community.description && (
+              <p className="text-[11px] leading-snug line-clamp-1 mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                {community.description}
+              </p>
+            )}
           </div>
-          {community.creator && (
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-              par {community.creator.display_name ?? community.creator.username}
-            </p>
-          )}
-          {community.description && (
-            <p className="text-xs mt-1 line-clamp-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              {community.description}
-            </p>
-          )}
         </div>
 
         {isMine ? (
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <button
               onClick={e => { e.stopPropagation(); navigate(`/communities/${encodeId(community.id)}`); }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-white"
-              style={{ background: 'var(--primary)' }}>
-              <MessageCircle size={13} /> Ouvrir
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90"
+              style={{ background: `linear-gradient(90deg, ${g1}, ${g2})` }}>
+              <MessageCircle size={12} /> Ouvrir
             </button>
             <button
               onClick={e => { e.stopPropagation(); onLeave(); }}
-              className="w-9 h-9 flex items-center justify-center rounded-xl transition-all"
-              style={{ border: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-              <LogOut size={13} />
+              className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors"
+              style={{ border: '1px solid var(--border)', color: 'var(--text-tertiary)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-secondary)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+              <LogOut size={12} />
             </button>
           </div>
         ) : (
           <button
             onClick={e => { e.stopPropagation(); onJoin(); }}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold text-white"
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90"
             style={{ background: `linear-gradient(90deg, ${g1}, ${g2})` }}>
-            <UserPlus size={13} /> Rejoindre
+            <UserPlus size={12} /> Rejoindre
           </button>
         )}
       </div>
