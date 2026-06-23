@@ -924,6 +924,7 @@ export default function LiveSimplePage() {
         setGiftNotifs(prev => [...prev.slice(-9), n]);
         setGiftHistory(prev => [...prev, { ...n }]);
         if (isHost) setActiveToast(n);
+        setTimeout(() => setGiftNotifs(prev => prev.filter(x => x.id !== n.id)), 4000);
         break;
       }
       case 'reaction_added': {
@@ -1370,6 +1371,7 @@ export default function LiveSimplePage() {
             setGiftNotifs(prev => [...prev.slice(-9), notif]);
             setGiftHistory(prev => [...prev, { ...notif }]);
             setGiftTarget(null);
+            setTimeout(() => setGiftNotifs(prev => prev.filter(x => x.id !== notif.id)), 4000);
           }}
         />
       )}
