@@ -1154,10 +1154,12 @@ function CommentsModal({
   onCountChange: (n: number) => void;
 }) {
   const { user } = useAuthStore();
-  const [comments, setComments] = useState<any[]>([]);
-  const [loading,  setLoading]  = useState(false);
-  const [body,     setBody]     = useState('');
-  const [sending,  setSending]  = useState(false);
+  const [comments,   setComments]   = useState<any[]>([]);
+  const [loading,    setLoading]    = useState(false);
+  const [body,       setBody]       = useState('');
+  const [sending,    setSending]    = useState(false);
+  const [likedIds,   setLikedIds]   = useState<Set<string>>(new Set());
+  const [localLikes, setLocalLikes] = useState<Record<string, number>>({});
   const inputRef  = useRef<HTMLInputElement>(null);
   const listRef   = useRef<HTMLDivElement>(null);
 
@@ -1169,9 +1171,15 @@ function CommentsModal({
   useEffect(() => {
     if (!open) return;
     setComments([]);
+    setLikedIds(new Set());
+    setLocalLikes({});
     setLoading(true);
     apiClient.get<any>(`${Endpoints.social.comments}?${qParam}&limit=50`)
-      .then(res => setComments(Array.isArray(res.data) ? res.data : []))
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setComments(list);
+        setLikedIds(new Set(list.filter((c: any) => c.user_reaction === 'like').map((c: any) => c.id)));
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
     setTimeout(() => inputRef.current?.focus(), 300);
@@ -1183,6 +1191,16 @@ function CommentsModal({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [open]);
+
+  function toggleLike(c: any) {
+    const isLiked = likedIds.has(c.id);
+    setLikedIds(prev => { const n = new Set(prev); isLiked ? n.delete(c.id) : n.add(c.id); return n; });
+    setLocalLikes(prev => ({ ...prev, [c.id]: (prev[c.id] ?? c.like_count ?? 0) + (isLiked ? -1 : 1) }));
+    apiClient.post(Endpoints.social.toggleReaction, { comment_id: c.id, reaction_type: 'like' }).catch(() => {
+      setLikedIds(prev => { const n = new Set(prev); isLiked ? n.add(c.id) : n.delete(c.id); return n; });
+      setLocalLikes(prev => ({ ...prev, [c.id]: (prev[c.id] ?? c.like_count ?? 0) + (isLiked ? 1 : -1) }));
+    });
+  }
 
   const [editingId,   setEditingId]   = useState<string | null>(null);
   const [editBody,    setEditBody]    = useState('');
@@ -1354,9 +1372,19 @@ function CommentsModal({
                       )}
                     </div>
                   )}
-                  <p className="text-[11px] mt-1 ml-1" style={{ color: 'var(--text-tertiary)' }}>
-                    {timeAgo(c.created_at)}
-                  </p>
+                  <div className="flex items-center gap-3 mt-1 ml-1">
+                    <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                      {timeAgo(c.created_at)}
+                    </p>
+                    <button onClick={() => toggleLike(c)}
+                      className="flex items-center gap-1 transition-colors"
+                      style={{ color: likedIds.has(c.id) ? 'var(--primary)' : 'var(--text-tertiary)' }}>
+                      <Heart size={11} fill={likedIds.has(c.id) ? 'currentColor' : 'none'} />
+                      {(localLikes[c.id] ?? c.like_count ?? 0) > 0 && (
+                        <span className="text-[10px] font-medium">{localLikes[c.id] ?? c.like_count}</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))

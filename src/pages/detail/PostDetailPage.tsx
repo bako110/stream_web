@@ -80,13 +80,16 @@ function MiniPostCard({ post }: { post: Post }) {
 
 /* ── Comments bottom sheet (mobile) ─────────────────────────────────────────── */
 function CommentsSheet({
-  comments, me, input, setInput, sending, onSubmit, onClose, inputRef, onDelete, onEdit,
+  comments, me, input, setInput, sending, onSubmit, onClose, inputRef, onDelete, onEdit, onToggleLike, likedIds, localLikes,
 }: {
   comments: any[]; me: any; input: string; setInput: (v: string) => void;
   sending: boolean; onSubmit: () => void; onClose: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onDelete: (id: string) => void;
   onEdit: (id: string, body: string) => void;
+  onToggleLike: (c: any) => void;
+  likedIds: Set<string>;
+  localLikes: Record<string, number>;
 }) {
   const navigate = useNavigate();
   const [visible,     setVisible]     = useState(false);
@@ -205,9 +208,19 @@ function CommentsSheet({
                         )}
                       </div>
                     )}
-                    <p className="text-[10px] mt-1 px-1" style={{ color: 'var(--text-tertiary)' }}>
-                      {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
-                    </p>
+                    <div className="flex items-center gap-3 mt-1 px-1">
+                      <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                        {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
+                      </p>
+                      <button onClick={() => onToggleLike(c)}
+                        className="flex items-center gap-1 transition-colors"
+                        style={{ color: likedIds.has(c.id) ? 'var(--primary)' : 'var(--text-tertiary)' }}>
+                        <Heart size={11} fill={likedIds.has(c.id) ? 'currentColor' : 'none'} />
+                        {(localLikes[c.id] ?? c.like_count ?? 0) > 0 && (
+                          <span className="text-[10px] font-medium">{localLikes[c.id] ?? c.like_count}</span>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -260,6 +273,8 @@ export default function PostDetailPage() {
   const [editingCommentId,   setEditingCommentId]   = useState<string | null>(null);
   const [editCommentBody,    setEditCommentBody]    = useState('');
   const [editCommentSaving,  setEditCommentSaving]  = useState(false);
+  const [commentLikedIds,    setCommentLikedIds]    = useState<Set<string>>(new Set());
+  const [commentLocalLikes,  setCommentLocalLikes]  = useState<Record<string, number>>({});
   const inputRef    = useRef<HTMLInputElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
   const PREVIEW_COUNT = 3;
@@ -283,7 +298,9 @@ export default function PostDetailPage() {
     apiClient.get<any>(`${Endpoints.social.comments}?post_id=${id}&limit=50`)
       .then(res => {
         const raw = res.data;
-        setComments(Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? []);
+        const list = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
+        setComments(list);
+        setCommentLikedIds(new Set(list.filter((c: any) => c.user_reaction === 'like').map((c: any) => c.id)));
       })
       .catch(() => {})
       .finally(() => setCommentsLoading(false));
@@ -306,6 +323,16 @@ export default function PostDetailPage() {
     setLiked(next); setLikes(l => l + (next ? 1 : -1));
     try { await apiClient.post(`${Endpoints.posts.react(id)}?reaction_type=like`); }
     catch { setLiked(!next); setLikes(l => l + (next ? -1 : 1)); }
+  }
+
+  function toggleCommentLike(c: any) {
+    const isLiked = commentLikedIds.has(c.id);
+    setCommentLikedIds(prev => { const n = new Set(prev); isLiked ? n.delete(c.id) : n.add(c.id); return n; });
+    setCommentLocalLikes(prev => ({ ...prev, [c.id]: (prev[c.id] ?? c.like_count ?? 0) + (isLiked ? -1 : 1) }));
+    apiClient.post(Endpoints.social.toggleReaction, { comment_id: c.id, reaction_type: 'like' }).catch(() => {
+      setCommentLikedIds(prev => { const n = new Set(prev); isLiked ? n.add(c.id) : n.delete(c.id); return n; });
+      setCommentLocalLikes(prev => ({ ...prev, [c.id]: (prev[c.id] ?? c.like_count ?? 0) + (isLiked ? 1 : -1) }));
+    });
   }
 
   async function deleteComment(commentId: string) {
@@ -625,9 +652,19 @@ export default function PostDetailPage() {
                             )}
                           </div>
                         )}
-                        <p className="text-[10px] mt-1.5 px-1" style={{ color: 'var(--text-tertiary)' }}>
-                          {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
-                        </p>
+                        <div className="flex items-center gap-3 mt-1.5 px-1">
+                          <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                            {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
+                          </p>
+                          <button onClick={() => toggleCommentLike(c)}
+                            className="flex items-center gap-1 transition-colors"
+                            style={{ color: commentLikedIds.has(c.id) ? 'var(--primary)' : 'var(--text-tertiary)' }}>
+                            <Heart size={11} fill={commentLikedIds.has(c.id) ? 'currentColor' : 'none'} />
+                            {(commentLocalLikes[c.id] ?? c.like_count ?? 0) > 0 && (
+                              <span className="text-[10px] font-medium">{commentLocalLikes[c.id] ?? c.like_count}</span>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -690,9 +727,19 @@ export default function PostDetailPage() {
                                   )}
                                 </div>
                               )}
-                              <p className="text-[10px] mt-1.5 px-1" style={{ color: 'var(--text-tertiary)' }}>
-                                {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
-                              </p>
+                              <div className="flex items-center gap-3 mt-1.5 px-1">
+                                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                                  {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
+                                </p>
+                                <button onClick={() => toggleCommentLike(c)}
+                                  className="flex items-center gap-1 transition-colors"
+                                  style={{ color: commentLikedIds.has(c.id) ? 'var(--primary)' : 'var(--text-tertiary)' }}>
+                                  <Heart size={11} fill={commentLikedIds.has(c.id) ? 'currentColor' : 'none'} />
+                                  {(commentLocalLikes[c.id] ?? c.like_count ?? 0) > 0 && (
+                                    <span className="text-[10px] font-medium">{commentLocalLikes[c.id] ?? c.like_count}</span>
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -774,6 +821,9 @@ export default function PostDetailPage() {
           inputRef={sheetInputRef}
           onDelete={deleteComment}
           onEdit={updateComment}
+          onToggleLike={toggleCommentLike}
+          likedIds={commentLikedIds}
+          localLikes={commentLocalLikes}
         />
       )}
 
