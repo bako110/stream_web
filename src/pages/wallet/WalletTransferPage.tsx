@@ -58,8 +58,8 @@ export default function WalletTransferPage() {
     setTransferring(true);
     try {
       await apiClient.post(Endpoints.wallet.transfer, {
-        to_user_id: recipient.id,
-        amount: Number(amount),
+        receiver_id: recipient.id,
+        coins_amount: Number(amount),
         note: note.trim() || undefined,
       });
       toast.success(`${amount} coins envoyés à @${recipient.username} !`);

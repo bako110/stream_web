@@ -102,10 +102,12 @@ const LiveChat = forwardRef<LiveChatHandle, {
 
   useEffect(() => {
     if (!accessToken) return;
+    let cancelled = false;
     const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
     const ws = new WebSocket(`${base}/api/v1/social/comments/ws/live/${liveId}?token=${accessToken}`);
     wsRef.current = ws;
     ws.onmessage = (e) => {
+      if (cancelled) return;
       try {
         const d = JSON.parse(e.data);
         if (d.type === 'comment_added' && d.comment) {
@@ -134,7 +136,15 @@ const LiveChat = forwardRef<LiveChatHandle, {
     const ping = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) ws.send('{"type":"ping"}');
     }, 25_000);
-    return () => { clearInterval(ping); ws.close(); };
+    return () => {
+      cancelled = true;
+      clearInterval(ping);
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.onopen = () => ws.close();
+      } else {
+        ws.close();
+      }
+    };
   }, [liveId, accessToken]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
