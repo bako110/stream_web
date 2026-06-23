@@ -233,12 +233,16 @@ export interface PostCreate { body?: string; image_url?: string; feeling?: strin
 
 // ── Story ─────────────────────────────────────────────────────────────────
 export type StoryMediaType = 'image' | 'video' | 'text' | 'audio' | 'voice';
+export type StoryAudienceType = 'everyone' | 'selected' | 'except';
 export interface StoryAuthor { id: string; username: string; display_name: string | null; avatar_url: string | null; is_verified?: boolean; }
 export interface Story {
   id: string; user_id: string; media_url: string | null; media_type: StoryMediaType;
   thumbnail_url: string | null; caption: string | null; duration_sec: number;
-  view_count: number; is_active: boolean; expires_at: string; created_at: string;
+  view_count: number; like_count?: number; liked_by_me?: boolean;
+  is_active: boolean; expires_at: string; created_at: string;
   background_color: string | null; audio_url: string | null; font_style: string | null;
+  overlays_json: string | null;
+  audience_type?: StoryAudienceType;
   author: StoryAuthor | null; viewed_by_me: boolean;
 }
 export interface StoryGroup { user: StoryAuthor; stories: Story[]; has_unseen: boolean; }

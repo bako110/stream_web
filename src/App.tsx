@@ -84,6 +84,7 @@ const BlockedUsersPage   = lazy(() => import('./pages/BlockedUsersPage'));
 const OnboardingPage     = lazy(() => import('./pages/OnboardingPage'));
 const StoryViewersPage   = lazy(() => import('./pages/StoryViewersPage'));
 const StoryPage          = lazy(() => import('./pages/StoryPage'));
+const StoryEditorPage    = lazy(() => import('./pages/StoryEditorPage'));
 const PlanningPage       = lazy(() => import('./pages/PlanningPage'));
 const SupportPage        = lazy(() => import('./pages/SupportPage'));
 const CommunityChannelsPage      = lazy(() => import('./pages/community/CommunityChannelsPage'));
@@ -225,6 +226,7 @@ function AppShell() {
             <Route path="/my-concerts"                    element={<MyConcertsPage />} />
             <Route path="/blocked-users"                  element={<BlockedUsersPage />} />
             <Route path="/planning"          element={<PlanningPage />} />
+            <Route path="/stories/create"                         element={<StoryEditorPage />} />
             <Route path="/stories/:id/viewers"                    element={<StoryViewersPage />} />
             <Route path="/stories"                                element={<StoryPage />} />
             <Route path="/communities/:id/channels"               element={<CommunityChannelsPage />} />

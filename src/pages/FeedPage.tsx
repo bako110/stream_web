@@ -26,245 +26,7 @@ import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-// ── Story Creator ─────────────────────────────────────────────────────────────
-const TEXT_COLORS = ['#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#7B3FF2','#1a0533','#000000','#ffffff'];
 
-function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [mode,      setMode]      = useState<'pick'|'text'|'image'|'video'|'preview'>('pick');
-  const [bgColor,   setBgColor]   = useState(TEXT_COLORS[0]);
-  const [caption,   setCaption]   = useState('');
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<'image'|'video'>('image');
-  const [uploading, setUploading] = useState(false);
-  const [success,   setSuccess]   = useState(false);
-  const [sound,     setSound]     = useState<Sound | null>(null);
-  const [soundOpen, setSoundOpen] = useState(false);
-  const fileRef  = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const MODES = [
-    { key: 'text'  as const, icon: <Type size={22} />,       label: 'Texte',   sub: 'Message sur fond coloré',    grad: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
-    { key: 'image' as const, icon: <ImageIcon size={22} />,  label: 'Photo',   sub: 'Depuis votre galerie',       grad: 'linear-gradient(135deg,#1565C0,#2196F3)' },
-    { key: 'video' as const, icon: <Video size={22} />,      label: 'Vidéo',   sub: 'Clip jusqu\'à 30 secondes',  grad: 'linear-gradient(135deg,#AD1457,#E91E63)' },
-  ];
-
-  function pickFile(type: 'image'|'video') {
-    setMediaType(type);
-    if (fileRef.current) {
-      fileRef.current.accept = type === 'image' ? 'image/*' : 'video/*';
-      fileRef.current.click();
-    }
-  }
-
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setMediaFile(f);
-    setMediaPreview(URL.createObjectURL(f));
-    setMode('preview');
-    e.target.value = '';
-  }
-
-  async function publish() {
-    setUploading(true);
-    try {
-      let media_url: string | undefined;
-      let thumbnail_url: string | undefined;
-      let duration_sec = 5;
-      let background_color: string | undefined;
-      let final_media_type: string = 'text';
-
-      if (mode === 'text' || (mode === 'preview' && !mediaFile)) {
-        final_media_type = 'text';
-        background_color = bgColor;
-        duration_sec = 5;
-      } else if (mediaFile) {
-        final_media_type = mediaType;
-        const fd = new FormData();
-        fd.append('file', mediaFile);
-        if (mediaType === 'image') {
-          const res = await apiClient.upload<any>(Endpoints.upload.images('stories'), fd);
-          const uploaded = (res.data as any)?.uploaded?.[0] ?? res.data;
-          media_url = uploaded?.url ?? uploaded;
-          thumbnail_url = media_url;
-        } else {
-          const uploaded = await uploadVideoHls(mediaFile, 'stories');
-          media_url = uploaded.hls_url ?? uploaded.url;
-          thumbnail_url = uploaded.thumbnail_url;
-          duration_sec = uploaded.duration ? Math.min(Math.ceil(uploaded.duration), 30) : 10;
-        }
-      }
-
-      await apiClient.post(Endpoints.stories.create, {
-        media_url,
-        media_type: final_media_type,
-        thumbnail_url,
-        caption: caption.trim() || undefined,
-        duration_sec,
-        background_color,
-        audio_url: sound?.file_url,
-      });
-      if (sound) apiClient.post(Endpoints.sounds.use(sound.id)).catch(() => {});
-
-      setSuccess(true);
-      setTimeout(() => { onCreated(); onClose(); }, 2000);
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Erreur lors de la publication');
-    } finally { setUploading(false); }
-  }
-
-  return (
-    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
-      onClick={onClose}>
-      <div
-        className="relative w-full sm:w-[420px] flex flex-col overflow-hidden"
-        style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', maxHeight: '92dvh' }}
-        onClick={e => e.stopPropagation()}>
-
-        <input ref={fileRef} type="file" className="hidden" onChange={onFileChange} />
-        <SoundPickerSheet open={soundOpen} onClose={() => setSoundOpen(false)} onSelect={setSound} selected={sound} />
-
-        {success ? (
-          /* ── Succès ── */
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-              <Check size={28} className="text-white" />
-            </div>
-            <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>Story publiée !</p>
-            <p className="text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>Visible par tous vos abonnés pendant 24h</p>
-          </div>
-        ) : mode === 'pick' ? (
-          /* ── Choix du type ── */
-          <>
-            <div className="flex items-center justify-between px-5 pt-5 pb-3">
-              <p className="font-black text-lg" style={{ color: 'var(--text-primary)' }}>Nouvelle story</p>
-              <button onClick={onClose} className="p-2 rounded-xl" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
-                <X size={16} />
-              </button>
-            </div>
-            <div className="flex flex-col gap-2 px-4 pb-6">
-              {MODES.map(m => (
-                <button key={m.key}
-                  onClick={() => { if (m.key === 'text') setMode('text'); else pickFile(m.key === 'image' ? 'image' : 'video'); }}
-                  className="flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
-                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white"
-                    style={{ background: m.grad }}>{m.icon}</div>
-                  <div>
-                    <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{m.label}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{m.sub}</p>
-                  </div>
-                  <ChevronRight size={16} className="ml-auto shrink-0" style={{ color: 'var(--text-tertiary)' }} />
-                </button>
-              ))}
-              <p className="text-xs text-center pt-2" style={{ color: 'var(--text-tertiary)' }}>
-                Les stories disparaissent automatiquement après 24h
-              </p>
-            </div>
-          </>
-        ) : mode === 'text' ? (
-          /* ── Éditeur texte ── */
-          <>
-            <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-              <button onClick={() => setMode('pick')} className="p-2 rounded-xl" style={{ color: 'var(--text-secondary)' }}>
-                <ChevronLeft size={18} />
-              </button>
-              <p className="font-black text-sm flex-1" style={{ color: 'var(--text-primary)' }}>Story texte</p>
-            </div>
-            {/* Aperçu */}
-            <div className="mx-4 rounded-2xl overflow-hidden flex items-center justify-center"
-              style={{ height: 240, background: bgColor }}>
-              {caption ? (
-                <p className="text-white font-black text-xl text-center px-6 leading-snug">{caption}</p>
-              ) : (
-                <p className="text-white/40 text-sm">Votre texte apparaît ici</p>
-              )}
-            </div>
-            {/* Palette couleurs */}
-            <div className="flex gap-2 px-4 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-              {TEXT_COLORS.map(c => (
-                <button key={c} onClick={() => setBgColor(c)}
-                  className="rounded-full shrink-0 transition-transform"
-                  style={{ width: 28, height: 28, background: c, border: bgColor === c ? '3px solid var(--text-primary)' : '2px solid var(--border)', transform: bgColor === c ? 'scale(1.2)' : 'scale(1)' }} />
-              ))}
-            </div>
-            {/* Input caption */}
-            <div className="px-4 pb-2">
-              <textarea
-                value={caption}
-                onChange={e => setCaption(e.target.value)}
-                placeholder="Écrivez votre message..."
-                maxLength={300}
-                rows={3}
-                className="w-full rounded-xl text-sm resize-none outline-none px-4 py-3"
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
-                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
-              />
-            </div>
-            <div className="px-4 pb-2">
-              <SoundBar sound={sound} onOpen={() => setSoundOpen(true)} onRemove={() => setSound(null)} />
-            </div>
-            <div className="px-4 pb-5">
-              <button onClick={publish} disabled={!caption.trim() || uploading}
-                className="w-full py-3 rounded-xl font-black text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                {uploading ? <Spinner size="sm" /> : <><Send size={14} /> Publier</>}
-              </button>
-            </div>
-          </>
-        ) : (
-          /* ── Aperçu media ── */
-          <>
-            <div className="relative w-full rounded-t-[20px] overflow-hidden bg-black"
-              style={{ height: 380 }}>
-              {mediaType === 'image' && mediaPreview && (
-                <img src={mediaPreview} className="w-full h-full object-contain" alt="" />
-              )}
-              {mediaType === 'video' && mediaPreview && (
-                <video ref={videoRef} src={mediaPreview} className="w-full h-full object-contain" autoPlay muted loop playsInline />
-              )}
-              <div className="absolute top-3 left-3">
-                <button onClick={() => { setMode('pick'); setMediaFile(null); setMediaPreview(null); }}
-                  className="p-2 rounded-full" style={{ background: 'rgba(0,0,0,0.5)' }}>
-                  <X size={16} className="text-white" />
-                </button>
-              </div>
-            </div>
-            {/* Caption */}
-            <div className="px-4 py-3">
-              <input
-                value={caption}
-                onChange={e => setCaption(e.target.value)}
-                placeholder="Ajouter une légende..."
-                maxLength={200}
-                className="w-full rounded-xl text-sm outline-none px-4 py-2.5"
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
-                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
-              />
-            </div>
-            <div className="px-4 pb-2">
-              <SoundBar sound={sound} onOpen={() => setSoundOpen(true)} onRemove={() => setSound(null)} />
-            </div>
-            <div className="px-4 pb-5">
-              <button onClick={publish} disabled={uploading}
-                className="w-full py-3 rounded-xl font-black text-white flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                {uploading ? <Spinner size="sm" /> : <><Send size={14} /> Publier</>}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ── Story Viewer ──────────────────────────────────────────────────────────────
 function StoryViewer({
@@ -929,7 +691,6 @@ function StoriesBar() {
   const navigate               = useNavigate();
   const [groups,   setGroups]  = useState<StoryGroup[]>([]);
   const [loading,  setLoading] = useState(true);
-  const [creator,  setCreator] = useState(false);
 
   function load() {
     apiClient.get<StoryGroup[]>(Endpoints.stories.feed)
@@ -952,7 +713,7 @@ function StoriesBar() {
         <div className="rounded-2xl overflow-hidden animate-reveal-up"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex gap-3 px-3 py-3">
-            <button onClick={() => setCreator(true)}
+            <button onClick={() => navigate('/stories/create')}
               className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 58 }}>
               <div className="relative">
                 <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
@@ -967,7 +728,6 @@ function StoriesBar() {
             </button>
           </div>
         </div>
-        {creator && <StoryCreator onClose={() => setCreator(false)} onCreated={() => { setCreator(false); load(); }} />}
       </>
     );
   }
@@ -984,7 +744,7 @@ function StoriesBar() {
             myGroup={myGroup}
             onClick={() => myGroup
               ? navigate(`/stories?userId=${encodeId(user!.id)}&index=${allGroups.indexOf(myGroup)}`)
-              : setCreator(true)
+              : navigate('/stories/create')
             }
           />
 
@@ -1002,9 +762,6 @@ function StoriesBar() {
         </div>
       </div>
 
-      {creator && (
-        <StoryCreator onClose={() => setCreator(false)} onCreated={() => { setCreator(false); load(); }} />
-      )}
     </>
   );
 }
