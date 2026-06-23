@@ -1184,6 +1184,14 @@ function CommentsModal({
     return () => window.removeEventListener('keydown', handler);
   }, [open]);
 
+  async function deleteComment(id: string) {
+    try {
+      await apiClient.delete(`${Endpoints.social.comments}/${id}`);
+      setComments(prev => prev.filter(c => c.id !== id));
+      onCountChange(Math.max(0, comments.length - 1));
+    } catch {}
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!body.trim() || sending) return;
@@ -1268,7 +1276,7 @@ function CommentsModal({
             </div>
           ) : (
             comments.map((c: any) => (
-              <div key={c.id} className="flex gap-3 items-start">
+              <div key={c.id} className="flex gap-3 items-start group">
                 <Avatar
                   src={c.author?.avatar_url}
                   name={c.author?.display_name ?? c.author?.username ?? '?'}
@@ -1277,15 +1285,25 @@ function CommentsModal({
                   className="shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  {/* Bulle style mobile */}
-                  <div className="inline-block rounded-2xl rounded-tl-sm px-3.5 py-2.5 max-w-full"
-                    style={{ background: 'var(--bg-secondary)' }}>
-                    <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
-                      {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
-                    </p>
-                    <p className="text-sm leading-relaxed break-words" style={{ color: 'var(--text-primary)' }}>
-                      {c.body}
-                    </p>
+                  <div className="flex items-start gap-2">
+                    <div className="inline-block rounded-2xl rounded-tl-sm px-3.5 py-2.5 max-w-full"
+                      style={{ background: 'var(--bg-secondary)' }}>
+                      <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
+                        {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                      </p>
+                      <p className="text-sm leading-relaxed break-words" style={{ color: 'var(--text-primary)' }}>
+                        {c.body}
+                      </p>
+                    </div>
+                    {user?.id === c.author?.id && (
+                      <button onClick={() => deleteComment(c.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 p-1 rounded-lg"
+                        style={{ color: 'var(--text-tertiary)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
                   <p className="text-[11px] mt-1 ml-1" style={{ color: 'var(--text-tertiary)' }}>
                     {timeAgo(c.created_at)}

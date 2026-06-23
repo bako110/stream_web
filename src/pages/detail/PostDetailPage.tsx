@@ -80,11 +80,12 @@ function MiniPostCard({ post }: { post: Post }) {
 
 /* ── Comments bottom sheet (mobile) ─────────────────────────────────────────── */
 function CommentsSheet({
-  comments, me, input, setInput, sending, onSubmit, onClose, inputRef,
+  comments, me, input, setInput, sending, onSubmit, onClose, inputRef, onDelete,
 }: {
   comments: any[]; me: any; input: string; setInput: (v: string) => void;
   sending: boolean; onSubmit: () => void; onClose: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  onDelete: (id: string) => void;
 }) {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
@@ -141,20 +142,31 @@ function CommentsSheet({
           ) : (
             <div className="space-y-3">
               {comments.map((c, i) => (
-                <div key={c.id ?? i} className="flex gap-3">
+                <div key={c.id ?? i} className="flex gap-3 group">
                   <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
                     <Avatar src={c.author?.avatar_url}
                       name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <div className="rounded-2xl px-3.5 py-2.5"
-                      style={{ background: 'var(--bg-secondary)' }}>
-                      <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
-                        {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
-                      </p>
-                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                        {c.body}
-                      </p>
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 rounded-2xl px-3.5 py-2.5"
+                        style={{ background: 'var(--bg-secondary)' }}>
+                        <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
+                          {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                        </p>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                          {c.body}
+                        </p>
+                      </div>
+                      {me?.id === c.author?.id && (
+                        <button onClick={() => onDelete(c.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 p-1 rounded-lg shrink-0"
+                          style={{ color: 'var(--text-tertiary)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                     </div>
                     <p className="text-[10px] mt-1 px-1" style={{ color: 'var(--text-tertiary)' }}>
                       {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
@@ -254,6 +266,13 @@ export default function PostDetailPage() {
     setLiked(next); setLikes(l => l + (next ? 1 : -1));
     try { await apiClient.post(`${Endpoints.posts.react(id)}?reaction_type=like`); }
     catch { setLiked(!next); setLikes(l => l + (next ? -1 : 1)); }
+  }
+
+  async function deleteComment(commentId: string) {
+    try {
+      await apiClient.delete(`${Endpoints.social.comments}/${commentId}`);
+      setComments(prev => prev.filter(c => c.id !== commentId));
+    } catch {}
   }
 
   async function submitComment() {
@@ -509,20 +528,31 @@ export default function PostDetailPage() {
                 <div>
                   {/* Mobile: aperçu 3 commentaires seulement */}
                   {comments.slice(0, PREVIEW_COUNT).map((c, i) => (
-                    <div key={c.id ?? i} className="flex gap-3 px-5 py-4"
+                    <div key={c.id ?? i} className="flex gap-3 px-5 py-4 group"
                       style={{ borderBottom: '1px solid var(--border)' }}>
                       <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
                         <Avatar src={c.author?.avatar_url}
                           name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
                       </button>
                       <div className="flex-1 min-w-0">
-                        <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
-                          <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                            {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
-                          </p>
-                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                            {c.body}
-                          </p>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
+                            <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                              {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                            </p>
+                            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                              {c.body}
+                            </p>
+                          </div>
+                          {me?.id === c.author?.id && (
+                            <button onClick={() => deleteComment(c.id)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 p-1 rounded-lg shrink-0"
+                              style={{ color: 'var(--text-tertiary)' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                         <p className="text-[10px] mt-1.5 px-1" style={{ color: 'var(--text-tertiary)' }}>
                           {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
@@ -537,20 +567,31 @@ export default function PostDetailPage() {
                       {/* Desktop uniquement — les commentaires restants */}
                       <div className="hidden lg:block">
                         {comments.slice(PREVIEW_COUNT).map((c, i) => (
-                          <div key={c.id ?? i} className="flex gap-3 px-5 py-4"
+                          <div key={c.id ?? i} className="flex gap-3 px-5 py-4 group"
                             style={{ borderBottom: i < comments.length - PREVIEW_COUNT - 1 ? '1px solid var(--border)' : 'none' }}>
                             <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
                               <Avatar src={c.author?.avatar_url}
                                 name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
                             </button>
                             <div className="flex-1 min-w-0">
-                              <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
-                                <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                                  {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
-                                </p>
-                                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                                  {c.body}
-                                </p>
+                              <div className="flex items-start gap-2">
+                                <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
+                                  <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                                    {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
+                                  </p>
+                                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                    {c.body}
+                                  </p>
+                                </div>
+                                {me?.id === c.author?.id && (
+                                  <button onClick={() => deleteComment(c.id)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 p-1 rounded-lg shrink-0"
+                                    style={{ color: 'var(--text-tertiary)' }}
+                                    onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
                               </div>
                               <p className="text-[10px] mt-1.5 px-1" style={{ color: 'var(--text-tertiary)' }}>
                                 {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
@@ -634,6 +675,7 @@ export default function PostDetailPage() {
           onSubmit={submitComment}
           onClose={() => setShowCommentsSheet(false)}
           inputRef={sheetInputRef}
+          onDelete={deleteComment}
         />
       )}
 

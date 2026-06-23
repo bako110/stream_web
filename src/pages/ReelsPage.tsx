@@ -201,6 +201,13 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
     });
   }
 
+  async function deleteComment(id: string) {
+    try {
+      await apiClient.delete(`${Endpoints.social.comments}/${id}`);
+      setComments(prev => prev.filter(c => c.id !== id));
+    } catch {}
+  }
+
   function handleReply(c: Comment) {
     const name = c.author?.display_name ?? c.author?.username ?? 'Utilisateur';
     setReplyTo({ id: c.id, name });
@@ -272,12 +279,23 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                       {formatDistanceToNow(new Date(c.created_at), { locale: fr, addSuffix: true })}
                     </span>
                   </div>
-                  <button onClick={() => toggleLike(c)}
-                    className="shrink-0 flex items-center gap-1 transition-colors"
-                    style={{ color: isLiked ? '#7B3FF2' : 'var(--text-tertiary)' }}>
-                    <Heart size={12} fill={isLiked ? 'currentColor' : 'none'} />
-                    <span className="text-[10px] font-medium">{(localLikes[c.id] ?? c.like_count) || ''}</span>
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {user?.id === c.author?.id && (
+                      <button onClick={() => deleteComment(c.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg"
+                        style={{ color: 'var(--text-tertiary)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                    <button onClick={() => toggleLike(c)}
+                      className="flex items-center gap-1 transition-colors"
+                      style={{ color: isLiked ? '#7B3FF2' : 'var(--text-tertiary)' }}>
+                      <Heart size={12} fill={isLiked ? 'currentColor' : 'none'} />
+                      <span className="text-[10px] font-medium">{(localLikes[c.id] ?? c.like_count) || ''}</span>
+                    </button>
+                  </div>
                 </div>
                 <p className="text-sm mt-0.5 leading-relaxed" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
                 <button onClick={() => handleReply(c)}
