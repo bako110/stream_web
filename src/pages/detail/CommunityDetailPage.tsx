@@ -87,10 +87,13 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   const [tab,            setTab]            = useState<SettingsTab>(myRole === 'admin' ? 'info' : 'members');
   const [editName,       setEditName]       = useState(community.name);
   const [editDesc,       setEditDesc]       = useState(community.description ?? '');
-  const [editPrivate,    setEditPrivate]    = useState(community.is_private);
-  const [editApproval,   setEditApproval]   = useState((community as any).requires_approval ?? false);
-  const [editMembersOnly,setEditMembersOnly]= useState((community as any).members_only_chat ?? false);
-  const [editEntryPrice, setEditEntryPrice] = useState(String((community as any).entry_price_coins ?? 0));
+  const [editPrivate,           setEditPrivate]           = useState(community.is_private);
+  const [editApproval,          setEditApproval]          = useState((community as any).requires_approval ?? false);
+  const [editMembersOnly,       setEditMembersOnly]       = useState((community as any).members_only_chat ?? false);
+  const [editEntryPrice,        setEditEntryPrice]        = useState(String((community as any).entry_price_coins ?? 0));
+  const [editHideFromPublic,    setEditHideFromPublic]    = useState((community as any).members_list_hidden_public ?? false);
+  const [editHideFromMembers,   setEditHideFromMembers]   = useState((community as any).members_list_hidden_members ?? false);
+  const [editInviteOnlyAdmin,   setEditInviteOnlyAdmin]   = useState((community as any).invite_only_admin ?? false);
   const [saving,         setSaving]         = useState(false);
   const [members,        setMembers]        = useState<CommunityMember[]>([]);
   const [blockedMembers, setBlockedMembers] = useState<any[]>([]);
@@ -131,6 +134,9 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
         requires_approval: editApproval,
         members_only_chat: editMembersOnly,
         entry_price_coins: Number(editEntryPrice) || 0,
+        members_list_hidden_public: editHideFromPublic,
+        members_list_hidden_members: editHideFromMembers,
+        invite_only_admin: editInviteOnlyAdmin,
       });
       toast.success('Paramètres mis à jour'); onSaved(); onClose();
     } catch { toast.error('Erreur'); } finally { setSaving(false); }
@@ -324,83 +330,138 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
             </div>
           )}
           {tab === 'security' && (
-            <div className="p-5 space-y-4">
-              <p className="text-[10px] font-bold tracking-widest" style={{ color: 'var(--text-tertiary)' }}>VISIBILITÉ</p>
-              {[
-                { val: false, icon: <Globe size={18} />, color: '#7B3FF2', label: 'Publique', sub: 'Tout le monde peut rejoindre' },
-                { val: true,  icon: <Lock size={18} />,  color: '#7B3FF2', label: 'Privée',   sub: 'Sur invitation uniquement' },
-              ].map(opt => (
-                <button key={String(opt.val)} onClick={() => setEditPrivate(opt.val)}
-                  className="w-full flex items-center gap-3 p-3.5 rounded-2xl text-left"
-                  style={{ background: 'var(--bg-secondary)', border: `1.5px solid ${editPrivate === opt.val ? opt.color : 'var(--border)'}` }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: opt.color + '20', color: opt.color }}>{opt.icon}</div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{opt.label}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{opt.sub}</p>
-                  </div>
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style={{ border: `2px solid ${editPrivate === opt.val ? opt.color : 'var(--border)'}` }}>
-                    {editPrivate === opt.val && <div className="w-2.5 h-2.5 rounded-full" style={{ background: opt.color }} />}
-                  </div>
-                </button>
-              ))}
+            <div className="p-5 space-y-5 pb-8">
 
-              {/* Approbation requise */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl"
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                <div>
-                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Approbation requise</p>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Les demandes doivent être approuvées</p>
+              {/* Visibilité */}
+              <div>
+                <p className="text-[10px] font-bold tracking-widest mb-2.5" style={{ color: 'var(--text-tertiary)' }}>VISIBILITÉ</p>
+                <div className="flex gap-2">
+                  {[
+                    { val: false, icon: <Globe size={15} />, label: 'Publique', sub: 'Tout le monde peut rejoindre' },
+                    { val: true,  icon: <Lock size={15} />,  label: 'Privée',   sub: 'Sur invitation uniquement' },
+                  ].map(opt => (
+                    <button key={String(opt.val)} onClick={() => setEditPrivate(opt.val)}
+                      className="flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl text-center transition-all"
+                      style={{
+                        background: editPrivate === opt.val ? '#7B3FF210' : 'var(--bg-secondary)',
+                        border: `1.5px solid ${editPrivate === opt.val ? '#7B3FF2' : 'var(--border)'}`,
+                      }}>
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                        style={{ background: editPrivate === opt.val ? '#7B3FF225' : 'var(--border)', color: editPrivate === opt.val ? '#7B3FF2' : 'var(--text-tertiary)' }}>
+                        {opt.icon}
+                      </div>
+                      <p className="font-bold text-xs" style={{ color: editPrivate === opt.val ? '#7B3FF2' : 'var(--text-primary)' }}>{opt.label}</p>
+                      <p className="text-[10px] leading-tight" style={{ color: 'var(--text-tertiary)' }}>{opt.sub}</p>
+                    </button>
+                  ))}
                 </div>
-                <button onClick={() => setEditApproval((v: boolean) => !v)}
-                  className="w-12 h-6 rounded-full relative transition-all"
-                  style={{ background: editApproval ? 'var(--primary)' : 'var(--border)' }}>
-                  <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-                    style={{ left: editApproval ? 26 : 2 }} />
-                </button>
               </div>
 
-              {/* Chat membres seulement */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl"
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                <div>
-                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Chat membres uniquement</p>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Seuls les membres peuvent écrire</p>
+              {/* Adhésion */}
+              <div>
+                <p className="text-[10px] font-bold tracking-widest mb-2.5" style={{ color: 'var(--text-tertiary)' }}>ADHÉSION</p>
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                  {[
+                    { label: 'Approbation requise', sub: 'Les demandes doivent être validées', val: editApproval, set: setEditApproval },
+                    { label: 'Invitation admin uniquement', sub: 'Seul un admin peut inviter', val: editInviteOnlyAdmin, set: setEditInviteOnlyAdmin },
+                  ].map((row, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-3"
+                      style={{ borderBottom: i < 1 ? '1px solid var(--border)' : 'none', background: 'var(--surface)' }}>
+                      <div className="flex-1 pr-4">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{row.label}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{row.sub}</p>
+                      </div>
+                      <button onClick={() => row.set((v: boolean) => !v)}
+                        className="w-11 h-6 rounded-full relative transition-all shrink-0"
+                        style={{ background: row.val ? '#7B3FF2' : 'var(--border)' }}>
+                        <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm"
+                          style={{ left: row.val ? 24 : 2 }} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <button onClick={() => setEditMembersOnly((v: boolean) => !v)}
-                  className="w-12 h-6 rounded-full relative transition-all"
-                  style={{ background: editMembersOnly ? 'var(--primary)' : 'var(--border)' }}>
-                  <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-                    style={{ left: editMembersOnly ? 26 : 2 }} />
-                </button>
               </div>
 
               {/* Prix d'entrée */}
               <div>
-                <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'var(--text-tertiary)' }}>PRIX D'ENTRÉE (COINS)</p>
-                <input type="number" min="0" value={editEntryPrice} onChange={e => setEditEntryPrice(e.target.value)}
-                  className="input w-full" placeholder="0 = gratuit" />
+                <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'var(--text-tertiary)' }}>PRIX D'ENTRÉE</p>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: '#7B3FF215' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#7B3FF2' }}>C</span>
+                  </div>
+                  <input type="number" min="0" value={editEntryPrice} onChange={e => setEditEntryPrice(e.target.value)}
+                    className="flex-1 bg-transparent text-sm font-semibold outline-none"
+                    style={{ color: 'var(--text-primary)' }}
+                    placeholder="0" />
+                  <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>coins · 0 = gratuit</span>
+                </div>
               </div>
 
+              {/* Chat */}
+              <div>
+                <p className="text-[10px] font-bold tracking-widest mb-2.5" style={{ color: 'var(--text-tertiary)' }}>CHAT</p>
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                  <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--surface)' }}>
+                    <div className="flex-1 pr-4">
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Chat membres uniquement</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Seuls les membres peuvent écrire</p>
+                    </div>
+                    <button onClick={() => setEditMembersOnly((v: boolean) => !v)}
+                      className="w-11 h-6 rounded-full relative transition-all shrink-0"
+                      style={{ background: editMembersOnly ? '#7B3FF2' : 'var(--border)' }}>
+                      <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm"
+                        style={{ left: editMembersOnly ? 24 : 2 }} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Liste membres */}
+              <div>
+                <p className="text-[10px] font-bold tracking-widest mb-2.5" style={{ color: 'var(--text-tertiary)' }}>LISTE DES MEMBRES</p>
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                  {[
+                    { label: 'Masquer aux non-membres', sub: 'Les visiteurs ne voient pas la liste', val: editHideFromPublic, set: setEditHideFromPublic },
+                    { label: 'Masquer aux membres', sub: 'Seuls les admins voient tous les membres', val: editHideFromMembers, set: setEditHideFromMembers },
+                  ].map((row, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-3"
+                      style={{ borderBottom: i < 1 ? '1px solid var(--border)' : 'none', background: 'var(--surface)' }}>
+                      <div className="flex-1 pr-4">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{row.label}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{row.sub}</p>
+                      </div>
+                      <button onClick={() => row.set((v: boolean) => !v)}
+                        className="w-11 h-6 rounded-full relative transition-all shrink-0"
+                        style={{ background: row.val ? '#7B3FF2' : 'var(--border)' }}>
+                        <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm"
+                          style={{ left: row.val ? 24 : 2 }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Zone de danger */}
               {isAdmin && (
-                <>
-                  <p className="text-[10px] font-bold tracking-widest pt-2" style={{ color: '#EF4444' }}>ZONE DE DANGER</p>
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest mb-2.5" style={{ color: '#EF4444' }}>ZONE DE DANGER</p>
                   <button onClick={deleteCommunity}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl"
-                    style={{ background: '#EF444410', border: '1px solid #EF444430' }}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EF444420' }}>
-                      <Trash2 size={18} color="#EF4444" />
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors"
+                    style={{ background: '#EF444408', border: '1px solid #EF444425' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EF444415'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#EF444408'; }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EF444420' }}>
+                      <Trash2 size={15} color="#EF4444" />
                     </div>
                     <div className="flex-1 text-left">
                       <p className="font-semibold text-sm" style={{ color: '#EF4444' }}>Supprimer la communauté</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#EF444499' }}>Action irréversible</p>
+                      <p className="text-xs mt-0.5" style={{ color: '#EF444480' }}>Action irréversible — tous les messages seront perdus</p>
                     </div>
-                    <ChevronRight size={16} color="#EF444460" />
+                    <ChevronRight size={14} color="#EF444450" />
                   </button>
-                </>
+                </div>
               )}
-              <div className="h-4" />
             </div>
           )}
         </div>
