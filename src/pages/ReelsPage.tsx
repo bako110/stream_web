@@ -201,11 +201,26 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
     });
   }
 
+  const [editingId,  setEditingId]  = useState<string | null>(null);
+  const [editBody,   setEditBody]   = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+
   async function deleteComment(id: string) {
     try {
       await apiClient.delete(`${Endpoints.social.comments}/${id}`);
       setComments(prev => prev.filter(c => c.id !== id));
     } catch {}
+  }
+
+  async function saveEdit(id: string) {
+    if (!editBody.trim() || editSaving) return;
+    setEditSaving(true);
+    try {
+      await apiClient.put(`${Endpoints.social.comments}/${id}`, { body: editBody.trim() });
+      setComments(prev => prev.map(c => c.id === id ? { ...c, body: editBody.trim() } : c));
+      setEditingId(null);
+    } catch {}
+    finally { setEditSaving(false); }
   }
 
   function handleReply(c: Comment) {
@@ -281,13 +296,20 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {user?.id === c.author?.id && (
-                      <button onClick={() => deleteComment(c.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg"
-                        style={{ color: 'var(--text-tertiary)' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-                        <Trash2 size={12} />
-                      </button>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
+                        <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }}
+                          className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                          <Edit3 size={12} />
+                        </button>
+                        <button onClick={() => deleteComment(c.id)}
+                          className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     )}
                     <button onClick={() => toggleLike(c)}
                       className="flex items-center gap-1 transition-colors"
@@ -297,14 +319,35 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                     </button>
                   </div>
                 </div>
-                <p className="text-sm mt-0.5 leading-relaxed" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
-                <button onClick={() => handleReply(c)}
-                  className="text-[11px] font-semibold mt-1 transition-colors"
-                  style={{ color: 'var(--text-tertiary)' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-                  Répondre
-                </button>
+                {editingId === c.id ? (
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    <input autoFocus value={editBody} onChange={e => setEditBody(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(c.id); } if (e.key === 'Escape') setEditingId(null); }}
+                      className="text-sm px-3 py-2 rounded-xl w-full outline-none"
+                      style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--primary)', color: 'var(--text-primary)' }} />
+                    <div className="flex gap-2">
+                      <button onClick={() => saveEdit(c.id)} disabled={editSaving}
+                        className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                        style={{ background: 'var(--primary)', color: '#fff', opacity: editSaving ? 0.6 : 1 }}>
+                        {editSaving ? '…' : 'Enregistrer'}
+                      </button>
+                      <button onClick={() => setEditingId(null)}
+                        className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                        style={{ color: 'var(--text-tertiary)' }}>Annuler</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm mt-0.5 leading-relaxed" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
+                )}
+                {editingId !== c.id && (
+                  <button onClick={() => handleReply(c)}
+                    className="text-[11px] font-semibold mt-1 transition-colors"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                    Répondre
+                  </button>
+                )}
               </div>
             </div>
           );
