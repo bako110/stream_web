@@ -91,10 +91,14 @@ const LiveChat = forwardRef<LiveChatHandle, {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input,    setInput]    = useState('');
   const [sending,  setSending]  = useState(false);
-  const wsRef     = useRef<WebSocket | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const wsRef        = useRef<WebSocket | null>(null);
+  const bottomRef    = useRef<HTMLDivElement>(null);
+  const onWsEventRef = useRef(onWsEvent);
   const { user }  = useAuthStore();
   const { confirm: confirmChat, ConfirmDialog: ConfirmChatDialog } = useConfirm();
+
+  // Garder la ref a jour sans recréer le WS
+  useEffect(() => { onWsEventRef.current = onWsEvent; }, [onWsEvent]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -124,14 +128,14 @@ const LiveChat = forwardRef<LiveChatHandle, {
             isGift: true,
           }]);
         }
-        onWsEvent(d);
+        onWsEventRef.current(d);
       } catch { /* ignore */ }
     };
     const ping = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) ws.send('{"type":"ping"}');
     }, 25_000);
     return () => { clearInterval(ping); ws.close(); };
-  }, [liveId, accessToken, onWsEvent]);
+  }, [liveId, accessToken]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
