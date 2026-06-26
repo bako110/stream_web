@@ -1,19 +1,23 @@
 import { useState, useRef, type FormEvent, type KeyboardEvent, type ClipboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, KeyRound, Mail, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { ArrowLeft, KeyRound, Mail, Eye, EyeOff, CheckCircle, Phone, User } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useThemeStore } from '../../store/themeStore';
 import { Images } from '../../components/assets';
 
-type Step = 'email' | 'code' | 'password' | 'done';
+type Step = 'identifier' | 'code' | 'password' | 'done';
+type Method = 'email' | 'phone' | 'username';
+
+const accent = '#7B3FF2';
 
 export default function ForgotPasswordPage() {
   const { isDark } = useThemeStore();
   const navigate    = useNavigate();
 
-  const [step,        setStep]        = useState<Step>('email');
-  const [email,       setEmail]       = useState('');
+  const [step,        setStep]        = useState<Step>('identifier');
+  const [method,      setMethod]      = useState<Method>('email');
+  const [identifier,  setIdentifier]  = useState('');
   const [code,        setCode]        = useState(['', '', '', '', '', '']);
   const [password,    setPassword]    = useState('');
   const [confirm,     setConfirm]     = useState('');
@@ -25,12 +29,20 @@ export default function ForgotPasswordPage() {
 
   const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // ── Étape 1 : envoyer l'email ──────────────────────────────────────────────
-  async function handleSendEmail(e: FormEvent) {
+  const methodConfig = {
+    email:    { label: 'Adresse email',       placeholder: 'jean@exemple.com',  type: 'email',  icon: Mail,  key: 'email' },
+    phone:    { label: 'Numéro de téléphone', placeholder: '+22670000000',       type: 'tel',    icon: Phone, key: 'phone' },
+    username: { label: "Nom d'utilisateur",   placeholder: 'jean_dupont',        type: 'text',   icon: User,  key: 'username' },
+  };
+
+  // ── Étape 1 : envoyer le code ──────────────────────────────────────────────
+  async function handleSend(e: FormEvent) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      await apiClient.post(Endpoints.auth.forgotPassword, { email });
+      const payload: Record<string, string> = {};
+      payload[methodConfig[method].key] = identifier.trim();
+      await apiClient.post(Endpoints.auth.forgotPassword, payload);
       setStep('code');
     } catch (err: any) {
       setError(err.response?.data?.detail ?? err.message ?? 'Erreur');
@@ -95,7 +107,7 @@ export default function ForgotPasswordPage() {
       const detail = err.response?.data?.detail ?? err.message ?? 'Erreur';
       if (detail.toLowerCase().includes('expiré') || detail.toLowerCase().includes('invalide')) {
         setError('Code invalide ou expiré. Recommencez depuis le début.');
-        setStep('email');
+        setStep('identifier');
         setCode(['', '', '', '', '', '']);
       } else {
         setError(detail);
@@ -108,7 +120,9 @@ export default function ForgotPasswordPage() {
   async function handleResend() {
     setLoading(true); setError('');
     try {
-      await apiClient.post(Endpoints.auth.forgotPassword, { email });
+      const payload: Record<string, string> = {};
+      payload[methodConfig[method].key] = identifier.trim();
+      await apiClient.post(Endpoints.auth.forgotPassword, payload);
       setCode(['', '', '', '', '', '']);
       setTimeout(() => codeRefs.current[0]?.focus(), 100);
     } catch (err: any) {
@@ -118,7 +132,14 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  const accent = '#7B3FF2';
+  const cfg = methodConfig[method];
+  const IconMethod = cfg.icon;
+
+  const identifierDisplay = method === 'phone'
+    ? identifier
+    : method === 'email'
+      ? identifier
+      : `@${identifier}`;
 
   return (
     <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -151,14 +172,14 @@ export default function ForgotPasswordPage() {
               </span>
             </h1>
             <p className="text-white/60 text-sm leading-relaxed">
-              Entrez votre email et nous vous enverrons un code à 6 chiffres pour réinitialiser votre mot de passe.
+              Utilisez votre email, numéro de téléphone ou nom d'utilisateur pour réinitialiser votre mot de passe.
             </p>
           </div>
           <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
             {[
-              'Vérifiez vos spams si vous ne recevez pas l\'email',
+              'Email : vérifiez vos spams si vous ne recevez pas le code',
+              'Téléphone : le SMS arrive en quelques secondes',
               'Le code expire après 15 minutes',
-              'Vous pouvez renvoyer un nouveau code à tout moment',
             ].map((tip, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: '#A78BFA' }} />
@@ -169,14 +190,14 @@ export default function ForgotPasswordPage() {
 
           {/* Indicateur d'étapes */}
           <div className="flex items-center gap-2">
-            {(['email', 'code', 'password', 'done'] as Step[]).map((s, i) => (
+            {(['identifier', 'code', 'password', 'done'] as Step[]).map((s, i) => (
               <div key={s} className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all"
                   style={{
-                    background: step === s ? accent : ['email','code','password','done'].indexOf(step) > i ? 'rgba(123,63,242,0.5)' : 'rgba(255,255,255,0.1)',
+                    background: step === s ? accent : ['identifier','code','password','done'].indexOf(step) > i ? 'rgba(123,63,242,0.5)' : 'rgba(255,255,255,0.1)',
                     color: '#fff',
                   }}>
-                  {['email','code','password','done'].indexOf(step) > i ? '✓' : i + 1}
+                  {['identifier','code','password','done'].indexOf(step) > i ? '✓' : i + 1}
                 </div>
                 {i < 3 && <div className="w-6 h-px" style={{ background: 'rgba(255,255,255,0.15)' }} />}
               </div>
@@ -204,13 +225,18 @@ export default function ForgotPasswordPage() {
 
           {step !== 'done' && (
             <button
-              onClick={() => step === 'email' ? navigate('/auth/login') : step === 'code' ? setStep('email') : setStep('code')}
+              onClick={() => {
+                if (step === 'identifier') navigate('/auth/login');
+                else if (step === 'code') setStep('identifier');
+                else setStep('code');
+                setError('');
+              }}
               className="inline-flex items-center gap-2 text-sm font-medium mb-8 transition-colors"
               style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
               <ArrowLeft size={15} />
-              {step === 'email' ? 'Retour à la connexion' : 'Étape précédente'}
+              {step === 'identifier' ? 'Retour à la connexion' : 'Étape précédente'}
             </button>
           )}
 
@@ -221,38 +247,68 @@ export default function ForgotPasswordPage() {
             </div>
           )}
 
-          {/* ── Étape 1 : email ── */}
-          {step === 'email' && (
+          {/* ── Étape 1 : identifiant ── */}
+          {step === 'identifier' && (
             <>
               <div className="mb-7">
                 <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Mot de passe oublié ?</h2>
                 <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                  Entrez votre email pour recevoir un code de réinitialisation.
+                  Choisissez comment recevoir votre code de réinitialisation.
                 </p>
               </div>
-              <form onSubmit={handleSendEmail} className="space-y-5">
+
+              {/* Sélecteur de méthode */}
+              <div className="grid grid-cols-3 gap-2 mb-6 p-1 rounded-xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                {(['email', 'phone', 'username'] as Method[]).map(m => {
+                  const Icon = methodConfig[m].icon;
+                  const labels = { email: 'Email', phone: 'Téléphone', username: 'Username' };
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => { setMethod(m); setIdentifier(''); setError(''); }}
+                      className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-xs font-semibold transition-all"
+                      style={{
+                        background:  method === m ? accent : 'transparent',
+                        color:       method === m ? '#fff' : 'var(--text-secondary)',
+                        border:      'none',
+                        cursor:      'pointer',
+                      }}>
+                      <Icon size={15} />
+                      {labels[m]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <form onSubmit={handleSend} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                    Adresse email
+                    {cfg.label}
                   </label>
                   <div className="relative">
-                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                    <IconMethod size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
                       style={{ color: 'var(--text-tertiary)' }} />
-                    <input type="email" placeholder="jean@exemple.com" value={email}
-                      onChange={e => setEmail(e.target.value)} required
-                      onFocus={() => setFocused('email')} onBlur={() => setFocused('')}
+                    <input
+                      type={cfg.type}
+                      placeholder={cfg.placeholder}
+                      value={identifier}
+                      onChange={e => setIdentifier(e.target.value)}
+                      required
+                      onFocus={() => setFocused('identifier')}
+                      onBlur={() => setFocused('')}
                       className="input pl-10"
                       style={{
-                        boxShadow:   focused === 'email' ? '0 0 0 3px rgba(123,63,242,0.18)' : 'none',
-                        borderColor: focused === 'email' ? accent : 'var(--border)',
+                        boxShadow:   focused === 'identifier' ? '0 0 0 3px rgba(123,63,242,0.18)' : 'none',
+                        borderColor: focused === 'identifier' ? accent : 'var(--border)',
                       }} />
                   </div>
                 </div>
-                <button type="submit" disabled={loading} className="btn-primary w-full gap-2"
-                  style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
+                <button type="submit" disabled={loading || !identifier.trim()} className="btn-primary w-full gap-2"
+                  style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', opacity: (!identifier.trim() || loading) ? 0.5 : 1 }}>
                   {loading
                     ? <span className="inline-flex gap-1">{[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-white" style={{ animation: `blink 1s ease-in-out ${i*0.15}s infinite` }} />)}</span>
-                    : <Mail size={15} />}
+                    : <IconMethod size={15} />}
                   {loading ? 'Envoi en cours…' : 'Envoyer le code'}
                 </button>
               </form>
@@ -265,7 +321,9 @@ export default function ForgotPasswordPage() {
               <div className="mb-7">
                 <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Entrez le code</h2>
                 <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                  Un code à 6 chiffres a été envoyé à <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>.
+                  Un code à 6 chiffres a été envoyé{' '}
+                  {method === 'email' ? 'à' : method === 'phone' ? 'au' : 'au compte'}{' '}
+                  <strong style={{ color: 'var(--text-primary)' }}>{identifierDisplay}</strong>.
                 </p>
               </div>
               <form onSubmit={handleVerifyCode} className="space-y-6">
