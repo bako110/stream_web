@@ -345,7 +345,7 @@ export default function PostDetailPage() {
         await apiClient.delete(Endpoints.favorites.remove(favId));
         setFavId(null);
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: 'post', item_id: post.id });
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { target_type: 'post', target_id: post.id });
         setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
       }
     } catch {}

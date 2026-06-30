@@ -445,7 +445,7 @@ export default function EventDetailPage() {
         await apiClient.delete(Endpoints.favorites.remove(favId));
         setFavId(null);
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: 'event', item_id: event.id });
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { target_type: 'event', target_id: event.id });
         setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
       }
     } catch {}

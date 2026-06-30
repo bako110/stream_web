@@ -1302,7 +1302,7 @@ function ActionBar({
         await apiClient.delete(Endpoints.favorites.remove(favId));
         setFavId(null);
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: kind, item_id: id });
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { target_type: kind, target_id: id });
         setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
       }
     } catch {

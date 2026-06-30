@@ -739,7 +739,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
         await apiClient.delete(Endpoints.favorites.remove(favId));
         setFavId(null);
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: 'reel', item_id: reel.id });
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { target_type: 'reel', target_id: reel.id });
         setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
       }
     } catch { /* ignore */ }
