@@ -82,6 +82,7 @@ export function MobileDrawer({ onClose }: Props) {
   }
 
   return (
+    <>
     <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
 
       {/* ── Header profil ── */}
@@ -207,5 +208,6 @@ export function MobileDrawer({ onClose }: Props) {
       </div>
     </div>
     {ConfirmDialog}
+    </>
   );
 }

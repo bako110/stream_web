@@ -127,6 +127,7 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
   }
 
   return (
+    <>
     <aside
       className={clsx('relative flex flex-col h-full transition-all duration-300 shrink-0', collapsed ? 'w-[68px]' : 'w-[220px]')}
       style={{ background: 'var(--bg)', borderRight: '1px solid var(--border)' }}
@@ -270,5 +271,6 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
       </div>
     </aside>
     {ConfirmDialog}
+    </>
   );
 }
