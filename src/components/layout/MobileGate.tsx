@@ -15,7 +15,6 @@ const APP_STORE_URL  = 'https://apps.apple.com/app/gofolyx/id0000000000';
  * Ces pages sont inutilisables ou sans sens sur un navigateur mobile.
  */
 const MOBILE_BLOCKED_EXACT = new Set([
-  '/reels',       // lecteur vidéo plein écran type TikTok
   '/go-live',     // choix de stream, interactions souris
 ]);
 
