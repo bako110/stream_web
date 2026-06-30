@@ -12,7 +12,7 @@ import {
   MessageSquareOff, MessageSquare, BarChart2,
 } from 'lucide-react';
 import Hls from 'hls.js';
-import { FilterOverlay } from '../utils/reelFilters.tsx';
+import { FilterOverlay, ReelTextLayers, ReelStickerLayers, ReelDrawLayers, ReelVideoAdjust } from '../utils/reelFilters.tsx';
 import type { Reel, Comment } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -433,6 +433,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
   const startTimeRef  = useRef<number>(0);
   const viewSentRef   = useRef(false);
   const likeInFlight  = useRef(false);
+  const audioRef      = useRef<HTMLAudioElement | null>(null);
+  const musicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const hasMusic = !!(reel.music_url);
 
   const authorId   = reel.author?.id;
   const authorName = reel.author?.display_name ?? reel.author?.username ?? 'Artiste';
@@ -624,16 +628,47 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
       setPlaying(false); setProgress(0);
       clearStall();
     } else if (v.readyState >= 3) {
-      v.muted = globalMuted; v.currentTime = 0;
+      v.muted = hasMusic ? true : globalMuted;
+      v.currentTime = 0;
       v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => setPlaying(false));
     }
   }, [active]); // eslint-disable-line
 
-  // Mute sync
+  // Mute sync — si musique séparée, vidéo toujours muette
   useEffect(() => {
     const v = videoRef.current;
-    if (v) v.muted = globalMuted;
-  }, [globalMuted]);
+    if (v) v.muted = hasMusic ? true : globalMuted;
+  }, [globalMuted, hasMusic]);
+
+  // Lecture musique séparée — démarre/arrête avec active
+  useEffect(() => {
+    if (!hasMusic || !reel.music_url) return;
+
+    const stopMusic = () => {
+      if (musicTimerRef.current) { clearTimeout(musicTimerRef.current); musicTimerRef.current = null; }
+      const a = audioRef.current;
+      if (a) { a.pause(); a.src = ''; }
+    };
+
+    if (!active) { stopMusic(); return; }
+
+    const a = new Audio(reel.music_url);
+    audioRef.current = a;
+    const startSec = reel.music_start_sec ?? 0;
+    const endSec   = reel.music_end_sec   ?? 0;
+    const clipDur  = endSec > startSec ? endSec - startSec : 0;
+    a.currentTime  = startSec;
+
+    a.play().catch(() => {});
+
+    if (clipDur > 0) {
+      musicTimerRef.current = setTimeout(() => {
+        stopMusic();
+      }, clipDur * 1000);
+    }
+
+    return () => stopMusic();
+  }, [active, reel.music_url, reel.music_start_sec, reel.music_end_sec, hasMusic]); // eslint-disable-line
 
   function togglePlay() {
     const v = videoRef.current;
@@ -795,8 +830,16 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
         ) : (
           <img src={reel.thumbnail_url ?? ''} className="w-full h-full object-contain" alt={caption} />
         )}
-        {/* Filtre coloré identique mobile */}
+        {/* Filtre couleur (zIndex 2-3) */}
         <FilterOverlay filterName={reel.filter_name} />
+        {/* Text layers (zIndex 4) */}
+        <ReelTextLayers json={reel.text_layers} />
+        {/* Sticker layers (zIndex 5) */}
+        <ReelStickerLayers json={reel.sticker_layers} />
+        {/* Draw layers (zIndex 6) */}
+        <ReelDrawLayers json={reel.draw_layers} />
+        {/* Video adjust overlays (zIndex 7) */}
+        <ReelVideoAdjust json={reel.video_adjust} />
       </div>
 
       {/* 3 zones de tap (gauche=skip-10, centre=pause/like, droite=skip+10) */}
@@ -862,6 +905,15 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
 
         {/* Left: author + caption */}
         <div className="flex-1 min-w-0 space-y-2 pb-1">
+
+          {/* Bande musicale — identique mobile */}
+          {reel.music_name && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl mb-1"
+              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', maxWidth: '85%' }}>
+              <Music size={11} className="shrink-0" style={{ color: '#a78bfa', animation: playing ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
+              <p className="text-white text-[10px] font-medium truncate" style={{ maxWidth: 160 }}>{reel.music_name}</p>
+            </div>
+          )}
 
           {/* Badge référence (concert/event/film) — identique mobile */}
           {refInfo && (
@@ -1481,7 +1533,7 @@ export default function ReelsPage() {
     setEditSaving(true);
     try {
       const res = await apiClient.patch<Reel>(Endpoints.reels.byId(editReel.id), { caption: editCaption.trim() });
-      const updated = { ...editReel, caption: editCaption.trim(), ...(res.data ?? {}) };
+      const updated = { ...editReel, ...(res.data ?? {}), caption: editCaption.trim() };
       setMyReels(prev => prev.map(r => r.id === editReel.id ? updated : r));
       setReels(prev => prev.map(r => r.id === editReel.id ? updated : r));
       setEditReel(null);
