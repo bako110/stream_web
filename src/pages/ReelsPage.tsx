@@ -454,7 +454,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
   const [showHeart,       setShowHeart]      = useState(false);
   const [heartPos,        setHeartPos]       = useState({ x: 0, y: 0 });
   const [skipAnim,        setSkipAnim]       = useState<{ side: 'left'|'right'; label: string } | null>(null);
-  const [saved,           setSaved]          = useState(false);
+  const [favId,           setFavId]          = useState<string | null>(null);
+  const [savingFav,       setSavingFav]      = useState(false);
   const [followed,        setFollowed]       = useState(() => {
     // Initialiser depuis le cache module-level si déjà chargé
     return authorId ? (_followCache.get(String(authorId)) ?? false) : false;
@@ -725,6 +726,24 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
       setFollowed(newState);
       _followCache.set(String(authorId), newState); // mettre à jour le cache
     } catch { /* ignore */ } finally { setFollowLoading(false); }
+  }
+
+  const saved = !!favId;
+
+  async function handleSaveFav(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (savingFav) return;
+    setSavingFav(true);
+    try {
+      if (favId) {
+        await apiClient.delete(Endpoints.favorites.remove(favId));
+        setFavId(null);
+      } else {
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: 'reel', item_id: reel.id });
+        setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
+      }
+    } catch { /* ignore */ }
+    finally { setSavingFav(false); }
   }
 
   async function handleShare(e: React.MouseEvent) {
@@ -1006,7 +1025,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
           </div>
 
           {/* Sauvegarder */}
-          <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }} className="flex flex-col items-center gap-0.5">
+          <button onClick={handleSaveFav} disabled={savingFav} className="flex flex-col items-center gap-0.5" style={{ opacity: savingFav ? 0.6 : 1 }}>
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
               style={{
                 background: saved ? 'rgba(123,63,242,0.25)' : 'rgba(0,0,0,0.45)',

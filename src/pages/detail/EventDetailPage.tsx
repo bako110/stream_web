@@ -4,7 +4,7 @@ import { encodeId, decodeId } from '../../utils/slugId';
 import {
   Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
   Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
-  ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2,
+  ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2, Bookmark,
 } from 'lucide-react';
 import type { Event } from '../../types';
 import { apiClient } from '../../api';
@@ -378,6 +378,8 @@ export default function EventDetailPage() {
 
   const [liked,        setLiked]        = useState(false);
   const [likeCount,    setLikeCount]    = useState(0);
+  const [favId,        setFavId]        = useState<string | null>(null);
+  const [savingFav,    setSavingFav]    = useState(false);
   const [isOwner,      setIsOwner]      = useState(false);
   const [following,    setFollowing]    = useState(false);
   const [reminder,     setReminder]     = useState(false);
@@ -434,6 +436,21 @@ export default function EventDetailPage() {
       })
       .catch(() => {});
   }, [event?.organizer?.id, id]);
+
+  async function handleSaveFav() {
+    if (savingFav || !event) return;
+    setSavingFav(true);
+    try {
+      if (favId) {
+        await apiClient.delete(Endpoints.favorites.remove(favId));
+        setFavId(null);
+      } else {
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: 'event', item_id: event.id });
+        setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
+      }
+    } catch {}
+    finally { setSavingFav(false); }
+  }
 
   const toggleLike = useCallback(async () => {
     // Lit l'etat courant via le setter fonctionnel pour eviter la closure stale
@@ -589,6 +606,18 @@ export default function EventDetailPage() {
                 }}>
                 <Share2 size={15} />
                 <span>{shareOk ? 'Copié !' : 'Partager'}</span>
+              </button>
+              {/* Favoris */}
+              <button onClick={handleSaveFav} disabled={savingFav}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                style={{
+                  background: favId ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
+                  color: favId ? 'var(--primary)' : 'var(--text-secondary)',
+                  border: `1px solid ${favId ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
+                  opacity: savingFav ? 0.6 : 1,
+                }}>
+                <Bookmark size={15} fill={favId ? 'currentColor' : 'none'} />
+                <span>{favId ? 'Sauvegardé' : 'Sauvegarder'}</span>
               </button>
               {/* Rappel */}
               {!isOwner && (

@@ -1285,10 +1285,32 @@ function ActionBar({
   const [liked,      setLiked]      = useState(initialLiked);
   const [likeCount,  setLikeCount]  = useState(initialLikeCount);
   const commentCount = commentCountOverride ?? initialCommentCount ?? 0;
-  const [saved,      setSaved]      = useState(false);
+  const [favId,      setFavId]      = useState<string | null>(null);
+  const [savingFav,  setSavingFav]  = useState(false);
   const [shareToast, setShareToast] = useState(false);
   const [showSharePreview, setShowSharePreview] = useState(false);
   const inFlight = useRef(false);
+
+  const saved = !!favId;
+
+  async function handleSave(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (savingFav) return;
+    setSavingFav(true);
+    try {
+      if (favId) {
+        await apiClient.delete(Endpoints.favorites.remove(favId));
+        setFavId(null);
+      } else {
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: kind, item_id: id });
+        setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setSavingFav(false);
+    }
+  }
 
   // Resync si les données de la card changent (refresh feed, navigation)
   useEffect(() => { setLiked(initialLiked); },    [initialLiked]);
@@ -1366,9 +1388,9 @@ function ActionBar({
         </button>
 
         {/* Save */}
-        <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }}
+        <button onClick={handleSave} disabled={savingFav}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ml-auto"
-          style={{ color: saved ? 'var(--primary)' : 'var(--text-secondary)' }}
+          style={{ color: saved ? 'var(--primary)' : 'var(--text-secondary)', opacity: savingFav ? 0.6 : 1 }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
           <Bookmark size={15} fill={saved ? 'var(--primary)' : 'none'} />

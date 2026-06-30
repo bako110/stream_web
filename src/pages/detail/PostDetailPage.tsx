@@ -262,6 +262,8 @@ export default function PostDetailPage() {
   const [error,           setError]           = useState(false);
   const [liked,           setLiked]           = useState(false);
   const [likes,           setLikes]           = useState(0);
+  const [favId,           setFavId]           = useState<string | null>(null);
+  const [savingFav,       setSavingFav]       = useState(false);
   const [comments,        setComments]        = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [input,           setInput]           = useState('');
@@ -333,6 +335,21 @@ export default function PostDetailPage() {
       setCommentLikedIds(prev => { const n = new Set(prev); isLiked ? n.add(c.id) : n.delete(c.id); return n; });
       setCommentLocalLikes(prev => ({ ...prev, [c.id]: (prev[c.id] ?? c.like_count ?? 0) + (isLiked ? 1 : -1) }));
     });
+  }
+
+  async function handleSaveFav() {
+    if (savingFav || !post) return;
+    setSavingFav(true);
+    try {
+      if (favId) {
+        await apiClient.delete(Endpoints.favorites.remove(favId));
+        setFavId(null);
+      } else {
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: 'post', item_id: post.id });
+        setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
+      }
+    } catch {}
+    finally { setSavingFav(false); }
   }
 
   async function deleteComment(commentId: string) {
@@ -533,11 +550,12 @@ export default function PostDetailPage() {
                   <Share2 size={16} />
                 </button>
                 {/* Sauvegarder */}
-                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ml-auto"
-                  style={{ color: 'var(--text-secondary)' }}
+                <button onClick={handleSaveFav} disabled={savingFav}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ml-auto"
+                  style={{ color: favId ? 'var(--primary)' : 'var(--text-secondary)', opacity: savingFav ? 0.6 : 1 }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  <Bookmark size={16} />
+                  <Bookmark size={16} fill={favId ? 'var(--primary)' : 'none'} />
                 </button>
               </div>
             </div>

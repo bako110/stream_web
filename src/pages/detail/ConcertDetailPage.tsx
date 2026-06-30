@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft } from 'lucide-react';
+import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark } from 'lucide-react';
 import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -139,6 +139,8 @@ export default function ConcertDetailPage() {
   const [remindLoading, setRemindLoading]= useState(false);
   const [otherConcerts, setOtherConcerts]= useState<Concert[]>([]);
   const [lightbox,      setLightbox]     = useState(false);
+  const [favId,         setFavId]        = useState<string | null>(null);
+  const [savingFav,     setSavingFav]    = useState(false);
 
   useEffect(() => {
     if (!id || !concert || !user || concert.artist_id === user.id) return;
@@ -157,6 +159,21 @@ export default function ConcertDetailPage() {
       })
       .catch(() => {});
   }, [concert?.artist_id, id]);
+
+  async function handleSaveFav() {
+    if (savingFav || !concert) return;
+    setSavingFav(true);
+    try {
+      if (favId) {
+        await apiClient.delete(Endpoints.favorites.remove(favId));
+        setFavId(null);
+      } else {
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { type: 'concert', item_id: concert.id });
+        setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
+      }
+    } catch {}
+    finally { setSavingFav(false); }
+  }
 
   const toggleReminder = useCallback(async () => {
     if (!id || remindLoading) return;
@@ -465,6 +482,19 @@ export default function ConcertDetailPage() {
                   Le concert n'a pas encore commencé.
                 </p>
               )}
+
+              {/* Favoris */}
+              <button onClick={handleSaveFav} disabled={savingFav}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                style={{
+                  background: favId ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)',
+                  border: `1px solid ${favId ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
+                  color: favId ? 'var(--primary)' : 'var(--text-secondary)',
+                  opacity: savingFav ? 0.6 : 1,
+                }}>
+                <Bookmark size={14} fill={favId ? 'currentColor' : 'none'} />
+                {favId ? 'Sauvegardé' : 'Sauvegarder'}
+              </button>
 
               {/* Rappel */}
               {!isArtist && !isEnded && (

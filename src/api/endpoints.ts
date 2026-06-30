@@ -291,6 +291,7 @@ export const Endpoints = {
   },
   favorites: {
     list:   (type: string) => `${V1}/favorites?type=${type}`,
+    add:    `${V1}/favorites`,
     remove: (id: string) => `${V1}/favorites/${id}`,
   },
   planning: {
