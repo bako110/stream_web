@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
 import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Edit3, Play, X, ChevronDown } from 'lucide-react';
+import { GuestPreview } from '../../components/ui/GuestPreview';
 import type { Post } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -400,6 +401,23 @@ export default function PostDetailPage() {
 
   const author = post.author;
   const isOwn  = me?.id === post.user_id;
+  const hasVideo = !!(post.hls_url || post.video_url);
+  const thumb    = post.thumbnail_url ?? post.image_url ?? post.image_urls?.[0];
+
+  /* ── Vue guest (non connecté) ── */
+  if (!me) {
+    return (
+      <GuestPreview
+        type={hasVideo ? 'reel' : 'post'}
+        thumbnail={thumb}
+        body={post.body}
+        author={author}
+        date={post.created_at}
+        likeCount={post.like_count}
+        commentCount={post.comment_count}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>

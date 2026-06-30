@@ -9,6 +9,7 @@ import {
 import type { Event } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
+import { GuestPreview } from '../../components/ui/GuestPreview';
 import { useApi } from '../../hooks/useApi';
 import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
@@ -502,6 +503,27 @@ export default function EventDetailPage() {
 
   if (loading) return <PageLoader />;
   if (!event)  return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Événement introuvable.</div>;
+
+  if (!me) {
+    const minPrice = [event.ticket_price, event.ticket_price_vip, event.ticket_price_vvip]
+      .filter((p): p is number => p != null && p > 0)
+      .sort((a, b) => a - b)[0] ?? null;
+    return (
+      <GuestPreview
+        type="event"
+        thumbnail={(event as any).cover_url ?? (event as any).image_url ?? null}
+        title={event.title}
+        body={(event as any).description}
+        author={(event as any).organizer ?? (event as any).author}
+        date={event.starts_at}
+        location={(event as any).location ?? (event as any).venue}
+        attendees={(event as any).attendees_count ?? (event as any).going_count}
+        ticketPrice={minPrice}
+        likeCount={event.like_count}
+        commentCount={event.comment_count}
+      />
+    );
+  }
 
   const ev    = event;
   const color = TYPE_COLORS[ev.event_type] ?? '#7B3FF2';

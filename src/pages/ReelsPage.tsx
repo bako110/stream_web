@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { commitReelSession } from '../hooks/useReelWatchStats';
+import { GuestPreview } from '../components/ui/GuestPreview';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/ui/Dialog';
@@ -1715,6 +1716,23 @@ export default function ReelsPage() {
       setActiveCommentsDisabled(r.comments_disabled ?? false);
     }
   }, [activeIndex]); // eslint-disable-line
+
+  // ── Guest (non connecté) ────────────────────────────────────────────────────
+  if (!me) {
+    const preview = reels[0] ?? null;
+    return (
+      <GuestPreview
+        type="reel"
+        thumbnail={preview?.thumbnail_url}
+        body={preview?.caption}
+        author={preview ? { avatar_url: (preview as any).author?.avatar_url, display_name: (preview as any).author?.display_name, username: (preview as any).author?.username, is_verified: (preview as any).author?.is_verified } : null}
+        date={preview?.created_at}
+        viewCount={preview?.view_count}
+        likeCount={preview?.like_count}
+        commentCount={preview?.comment_count}
+      />
+    );
+  }
 
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading && reels.length === 0) {

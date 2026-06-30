@@ -5,6 +5,7 @@ import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellO
 import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
+import { GuestPreview } from '../../components/ui/GuestPreview';
 import { useApi } from '../../hooks/useApi';
 import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
@@ -193,6 +194,23 @@ export default function ConcertDetailPage() {
       <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Concert introuvable.</p>
     </div>
   );
+
+  if (!user) {
+    return (
+      <GuestPreview
+        type="concert"
+        thumbnail={(concert as any).cover_url ?? (concert as any).thumbnail_url ?? null}
+        title={concert.title}
+        body={(concert as any).description}
+        author={(concert as any).artist ?? (concert as any).author}
+        date={(concert as any).starts_at ?? (concert as any).date}
+        location={(concert as any).venue ?? (concert as any).location}
+        attendees={(concert as any).attendees_count}
+        ticketPrice={(concert as any).ticket_price}
+        isLive={concert.status === 'live'}
+      />
+    );
+  }
 
   const c        = concert;
   const isLive   = c.status === 'live';
