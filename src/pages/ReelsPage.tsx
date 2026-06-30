@@ -16,7 +16,7 @@ import type { Reel, Comment } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
-import { Avatar } from '../components/ui/Avatar';
+import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import { formatDistanceToNow } from 'date-fns';
@@ -899,10 +899,9 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
                 }
               </div>
               {reel.author?.is_verified && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                  <span className="text-white text-[8px] font-black">✓</span>
-                </div>
+                <span className="absolute -bottom-0.5 -right-0.5">
+                  <VerifiedBadge size={14} />
+                </span>
               )}
             </button>
             {/* Nom cliquable → profil */}

@@ -4,7 +4,7 @@ import { encodeId, decodeId } from '../utils/slugId';
 import {
   MapPin, Globe, Phone, Calendar, UserPlus, UserCheck,
   MessageCircle, Play, Eye, Heart, Grid3x3, FileText,
-  Info, BadgeCheck, ShieldOff, Shield,
+  Info, ShieldOff, Shield,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -13,7 +13,7 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { useAuthStore } from '../store/authStore';
-import { Avatar } from '../components/ui/Avatar';
+import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 
 type Tab = 'publications' | 'reels' | 'about';
@@ -201,7 +201,7 @@ function AboutTab({ profile }: { profile: UserPublicProfile }) {
       <div className="flex items-center gap-2 p-3 rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: ROLE_COLOR[profile.role ?? 'user'] + '20' }}>
-          <BadgeCheck size={18} color={ROLE_COLOR[profile.role ?? 'user']} />
+          <VerifiedBadge size={18} />
         </div>
         <div>
           <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -393,7 +393,7 @@ export default function UserProfilePage() {
         <div className="space-y-2 mb-5">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>{name}</h1>
-            {profile.is_verified && <BadgeCheck size={18} color="#7B3FF2" />}
+            {profile.is_verified && <VerifiedBadge size={18} />}
             {profile.role && profile.role !== 'user' && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                 style={{ background: ROLE_COLOR[profile.role] + '20', color: ROLE_COLOR[profile.role] }}>

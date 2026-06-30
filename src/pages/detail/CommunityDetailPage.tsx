@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
 import {
   Users, Send, ArrowLeft, Settings, Globe, Lock, Shield,
-  Star, User, UserX, BadgeCheck, Check, UserPlus, Trash2,
+  Star, User, UserX, Check, UserPlus, Trash2,
   Search, X, ChevronRight, Info, MoreVertical, Pencil, Smile, Reply,
   Hash, Trophy, UserCheck, Pin, Image as ImageIcon, BarChart2,
   Calendar, MessageCircle, Megaphone, Film as FilmIcon, Vote,
@@ -14,7 +14,7 @@ import type { Community } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
-import { Avatar } from '../../components/ui/Avatar';
+import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import { WS_BASE_URL } from '../../utils/constants';
@@ -695,7 +695,7 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
           <div className="mb-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>{community.name}</h1>
-              {community.is_verified && <BadgeCheck size={20} color="#1D9BF0" className="shrink-0" />}
+              {community.is_verified && <VerifiedBadge size={20} />}
             </div>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
@@ -1347,7 +1347,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
           <div className="min-w-0">
             <div className="flex items-center gap-1">
               <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
-              {community.is_verified && <BadgeCheck size={13} color="#1D9BF0" />}
+              {community.is_verified && <VerifiedBadge size={13} />}
             </div>
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{fmtCount(count)} membres</p>
           </div>
@@ -1468,7 +1468,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
             <div className="px-4 pt-3 pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
-                {community.is_verified && <BadgeCheck size={15} color="#1D9BF0" />}
+                {community.is_verified && <VerifiedBadge size={15} />}
               </div>
               <p className="text-xs mb-3" style={{ color: 'var(--text-tertiary)' }}>
                 {fmtCount(count)} membres · {community.is_private ? 'Privée' : 'Publique'}

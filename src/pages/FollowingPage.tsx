@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
-import { BadgeCheck, UserPlus, UserCheck, Users } from 'lucide-react';
+import { UserPlus, UserCheck, Users } from 'lucide-react';
+import { VerifiedBadge } from '../components/ui/Avatar';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
@@ -112,12 +113,9 @@ function UserCardItem({
             }
           </div>
           {user.is_verified && (
-            <BadgeCheck
-              size={14}
-              color="#7B3FF2"
-              fill="#fff"
-              className="absolute -bottom-0.5 -right-0.5"
-            />
+            <span className="absolute -bottom-0.5 -right-0.5">
+              <VerifiedBadge size={14} />
+            </span>
           )}
         </div>
 

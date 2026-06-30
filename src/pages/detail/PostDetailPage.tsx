@@ -5,7 +5,7 @@ import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal
 import type { Post } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import { Avatar } from '../../components/ui/Avatar';
+import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { Lightbox } from '../../components/ui/Lightbox';
@@ -415,9 +415,10 @@ export default function PostDetailPage() {
                 </button>
                 <div className="flex-1 min-w-0">
                   <button onClick={() => author?.id && navigate(`/user/${encodeId(author.id)}`)}
-                    className="font-bold text-sm block truncate text-left hover:underline"
+                    className="flex items-center gap-1.5 font-bold text-sm text-left hover:underline"
                     style={{ color: 'var(--text-primary)' }}>
-                    {author?.display_name ?? author?.username ?? 'Utilisateur'}
+                    <span className="truncate">{author?.display_name ?? author?.username ?? 'Utilisateur'}</span>
+                    {author?.is_verified && <VerifiedBadge size={14} />}
                   </button>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                     {format(new Date(post.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
@@ -773,9 +774,12 @@ export default function PostDetailPage() {
                     name={author.display_name ?? author.username ?? '?'}
                     size="xl" verified={author.is_verified} />
                   <div>
-                    <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-                      {author.display_name ?? author.username}
-                    </p>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {author.display_name ?? author.username}
+                      </p>
+                      {author.is_verified && <VerifiedBadge size={14} />}
+                    </div>
                     {author.username && author.display_name && (
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                         @{author.username}

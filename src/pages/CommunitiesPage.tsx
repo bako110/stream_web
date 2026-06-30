@@ -5,12 +5,13 @@ import { useConfirm } from '../components/ui/Dialog';
 import { encodeId } from '../utils/slugId';
 import {
   Users, Plus, Globe, Lock, Search, X,
-  LogOut, MessageCircle, BadgeCheck, UserPlus,
+  LogOut, MessageCircle, UserPlus,
 } from 'lucide-react';
 import type { Community } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Spinner } from '../components/ui/Spinner';
+import { VerifiedBadge } from '../components/ui/Avatar';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -87,7 +88,7 @@ function CommunityCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1">
               <p className="font-bold text-sm truncate leading-tight" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
-              {community.is_verified && <BadgeCheck size={12} color="#1D9BF0" className="shrink-0" />}
+              {community.is_verified && <VerifiedBadge size={14} />}
             </div>
             {community.description && (
               <p className="text-[11px] leading-snug line-clamp-1 mt-0.5" style={{ color: 'var(--text-tertiary)' }}>

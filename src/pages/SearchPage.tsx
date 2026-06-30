@@ -4,7 +4,7 @@ import { encodeId } from '../utils/slugId';
 import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink, Clock, X, Megaphone } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { Avatar } from '../components/ui/Avatar';
+import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
 
 // ── Historique local (localStorage, max 15) ───────────────────────────────────
@@ -333,9 +333,12 @@ export default function SearchPage() {
                     onMouseLeave={e => { (e.currentTarget.style.borderColor = 'var(--border)'); (e.currentTarget.style.background = 'var(--surface)'); }}>
                     <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="sm" verified={u.is_verified} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                        {u.display_name ?? u.username}
-                      </p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                          {u.display_name ?? u.username}
+                        </p>
+                        {u.is_verified && <VerifiedBadge size={14} />}
+                      </div>
                       <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>
                     </div>
                   </button>

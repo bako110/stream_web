@@ -2,6 +2,51 @@ import { useState } from 'react';
 import { clsx } from 'clsx';
 import { displayName, displayHandle } from '../../utils/user';
 
+/* ── Vrai badge vérifié (cercle bleu + checkmark blanc) ────────────────────── */
+const BADGE_SIZES: Record<string, number> = { xs: 10, sm: 13, md: 15, lg: 18, xl: 22 };
+
+function VerifiedBadgeOverlay({ size }: { size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' }) {
+  const px = BADGE_SIZES[size] ?? 13;
+  return (
+    <span
+      className="absolute -bottom-0.5 -right-0.5"
+      style={{
+        width: px, height: px,
+        borderRadius: '50%',
+        background: '#1D9BF0',
+        border: '1.5px solid var(--surface, #fff)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+      }}
+    >
+      <svg width={px * 0.62} height={px * 0.62} viewBox="0 0 10 10" fill="none">
+        <path d="M2 5.2L4 7.5L8 3" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
+/* Badge inline (pour côté nom dans les profils) */
+export function VerifiedBadge({ size = 16 }: { size?: number }) {
+  return (
+    <span
+      style={{
+        width: size, height: size,
+        borderRadius: '50%',
+        background: '#1D9BF0',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+        boxShadow: '0 1px 4px rgba(29,155,240,0.4)',
+      }}
+    >
+      <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 10 10" fill="none">
+        <path d="M2 5.2L4 7.5L8 3" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
 type UserLike = {
   display_name?: string | null;
   username?: string | null;
@@ -46,13 +91,7 @@ export function Avatar({ src, name, size = 'md', className, verified }: AvatarPr
           {initials}
         </div>
       )}
-      {verified && (
-        <span className="absolute bottom-0 right-0 bg-brand-primary rounded-full p-0.5">
-          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        </span>
-      )}
+      {verified && <VerifiedBadgeOverlay size={size} />}
     </div>
   );
 }

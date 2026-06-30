@@ -16,7 +16,7 @@ import { toProxiedUrl } from '../utils/constants';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
-import { Avatar } from '../components/ui/Avatar';
+import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { ExpandableText } from '../components/ui/ExpandableText';
 import { RichText } from '../components/ui/RichText';
@@ -873,8 +873,9 @@ function AuthorRow({
       <button onClick={onAuthorClick} className="flex items-center gap-2 min-w-0 flex-1">
         <Avatar src={author?.avatar_url} name={name} size="xs" verified={author?.is_verified} />
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{name}</span>
+            {author?.is_verified && <VerifiedBadge size={13} />}
             {badge && (
               <span className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-full"
                 style={{ background: badge.bg, color: badge.color }}>
@@ -2021,11 +2022,8 @@ function SuggestionCard({ u, followed, onFollow, onNavigate }: {
           : <div className="absolute inset-0"><MediaPlaceholder title={u.display_name ?? u.username} /></div>
         }
         {u.is_verified && (
-          <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center z-10"
-            style={{ background: 'var(--primary)' }}>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <span className="absolute top-2 right-2 z-10">
+            <VerifiedBadge size={18} />
           </span>
         )}
         <div className="absolute bottom-0 left-0 right-0 h-16 z-10"
@@ -2431,9 +2429,12 @@ function SuggestionsPanel() {
                 <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="sm" verified={u.is_verified} />
               </button>
               <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="min-w-0 flex-1 text-left">
-                <p className="text-sm font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
-                  {u.display_name ?? u.username}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
+                    {u.display_name ?? u.username}
+                  </p>
+                  {u.is_verified && <VerifiedBadge size={14} />}
+                </div>
                 {u.username && <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>}
               </button>
               <button

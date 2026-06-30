@@ -10,7 +10,7 @@ import type { Event } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
-import { Avatar } from '../../components/ui/Avatar';
+import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
@@ -210,9 +210,7 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
                           <span className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>
                             {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
                           </span>
-                          {c.author?.is_verified && (
-                            <span style={{ color: 'var(--primary)', fontSize: 10 }}>✓</span>
-                          )}
+                          {c.author?.is_verified && <VerifiedBadge size={12} />}
                           {c.created_at && (
                             <span className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                               {timeAgo(c.created_at)}

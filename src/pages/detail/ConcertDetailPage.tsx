@@ -6,7 +6,7 @@ import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
-import { Avatar } from '../../components/ui/Avatar';
+import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
@@ -282,9 +282,10 @@ export default function ConcertDetailPage() {
                   {c.title}
                 </p>
                 <button onClick={() => c.artist?.id && navigate(`/user/${encodeId(c.artist.id)}`)}
-                  className="text-sm mt-0.5 hover:underline text-left"
+                  className="flex items-center gap-1.5 text-sm mt-0.5 hover:underline text-left"
                   style={{ color: 'var(--text-secondary)' }}>
                   {c.artist?.display_name ?? c.artist?.username}
+                  {c.artist?.is_verified && <VerifiedBadge size={13} />}
                 </button>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {c.genre && (
@@ -383,9 +384,12 @@ export default function ConcertDetailPage() {
                     name={c.artist.display_name ?? c.artist.username ?? '?'}
                     size="xl" verified={c.artist.is_verified} />
                   <div>
-                    <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-                      {c.artist.display_name ?? c.artist.username}
-                    </p>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {c.artist.display_name ?? c.artist.username}
+                      </p>
+                      {c.artist.is_verified && <VerifiedBadge size={14} />}
+                    </div>
                   </div>
                 </button>
                 <button onClick={() => c.artist?.id && navigate(`/user/${encodeId(c.artist.id)}`)}
