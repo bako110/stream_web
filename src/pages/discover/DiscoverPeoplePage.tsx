@@ -83,7 +83,7 @@ export default function DiscoverPeoplePage() {
     if (reset) { offsetRef.current = 0; setLoading(true); }
     else setLoadingMore(true);
     try {
-      const res = await apiClient.get<any[]>(
+      const res = await apiClient.get<any>(
         `${Endpoints.users.suggestions}?limit=${PAGE_SIZE}&offset=${offsetRef.current}`,
       );
       const data: any[] = Array.isArray(res.data) ? res.data
