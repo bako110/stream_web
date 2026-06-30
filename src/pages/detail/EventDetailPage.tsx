@@ -371,7 +371,7 @@ export default function EventDetailPage() {
   const { id: slug }  = useParams<{ id: string }>();
   const id             = decodeId(slug!);
   const navigate       = useNavigate();
-  const { user: me }   = useAuthStore();
+  const { user: me, isInitializing } = useAuthStore();
 
   const { data: event, loading } = useApi<Event>(
     () => apiClient.get<Event>(Endpoints.events.byId(id!)), [id]
@@ -501,7 +501,7 @@ export default function EventDetailPage() {
   }, [event?.title, id]);
 
 
-  if (loading) return <PageLoader />;
+  if (loading || isInitializing) return <PageLoader />;
   if (!event)  return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Événement introuvable.</div>;
 
   if (!me) {

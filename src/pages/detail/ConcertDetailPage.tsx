@@ -125,7 +125,7 @@ export default function ConcertDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id            = decodeId(slug!);
   const navigate      = useNavigate();
-  const { user }      = useAuthStore();
+  const { user, isInitializing } = useAuthStore();
 
   const { data: concert, loading, refetch } = useApi<Concert>(
     () => apiClient.get<Concert>(Endpoints.concerts.byId(id!)), [id],
@@ -188,7 +188,7 @@ export default function ConcertDetailPage() {
     finally { setRemindLoading(false); }
   }, [id, remindLoading]);
 
-  if (loading) return <PageLoader />;
+  if (loading || isInitializing) return <PageLoader />;
   if (!concert) return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Concert introuvable.</p>

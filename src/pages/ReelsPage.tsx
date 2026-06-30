@@ -1411,7 +1411,7 @@ export default function ReelsPage() {
   const navigate                        = useNavigate();
   const targetId                        = searchParams.get('id') ? (() => { try { return decodeId(searchParams.get('id')!); } catch { return searchParams.get('id'); } })() : null;
 
-  const { user: me }                    = useAuthStore();
+  const { user: me, isInitializing }    = useAuthStore();
   const { confirm, ConfirmDialog }      = useConfirm();
 
   const [reels,         setReels]       = useState<Reel[]>([]);
@@ -1719,6 +1719,7 @@ export default function ReelsPage() {
   }, [activeIndex]); // eslint-disable-line
 
   // ── Guest (non connecté) — affiché immédiatement, sans fetch ───────────────
+  if (isInitializing) return <PageLoader dark />;
   if (!me) {
     return (
       <GuestPreview

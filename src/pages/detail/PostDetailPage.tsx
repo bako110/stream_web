@@ -256,7 +256,7 @@ export default function PostDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id           = decodeId(slug!);
   const navigate     = useNavigate();
-  const { user: me } = useAuthStore();
+  const { user: me, isInitializing } = useAuthStore();
 
   const [post,            setPost]            = useState<Post | null>(null);
   const [loading,         setLoading]         = useState(true);
@@ -381,7 +381,7 @@ export default function PostDetailPage() {
   }
 
   /* ── Loading / Error states ── */
-  if (loading) return (
+  if (loading || isInitializing) return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <Spinner />
     </div>
