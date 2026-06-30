@@ -548,7 +548,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
     if (watchRatio >= 0.1) {
       viewSentRef.current = true;
       setViewCount(c => c + 1);
-      apiClient.post(Endpoints.reels.view(reel.id)).catch(() => {});
+      // Calcule la durée de la session courante en secondes
+      const watchSeconds = sessionStartRef.current
+        ? Math.round((Date.now() - sessionStartRef.current) / 1000)
+        : Math.round(elapsed);
+      apiClient.post(Endpoints.reels.view(reel.id), {
+        watch_ratio: watchRatio,
+        watch_seconds: watchSeconds,
+      }).catch(() => {});
     }
   }
 
