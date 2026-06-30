@@ -65,6 +65,9 @@ const FavoritesPage                 = lazy(() => import('./pages/FavoritesPage')
 const WatchHistoryPage              = lazy(() => import('./pages/WatchHistoryPage'));
 const FollowingPage                 = lazy(() => import('./pages/FollowingPage'));
 const SuggestionsPage               = lazy(() => import('./pages/SuggestionsPage'));
+const DiscoverPeoplePage            = lazy(() => import('./pages/discover/DiscoverPeoplePage'));
+const DiscoverCommunitiesPage       = lazy(() => import('./pages/discover/DiscoverCommunitiesPage'));
+const DiscoverEventsPage            = lazy(() => import('./pages/discover/DiscoverEventsPage'));
 const CreatePostPage     = lazy(() => import('./pages/create/CreatePostPage'));
 const CreateReelPage     = lazy(() => import('./pages/create/CreateReelPage'));
 const CreateConcertPage  = lazy(() => import('./pages/create/CreateConcertPage'));
@@ -218,6 +221,9 @@ function AppShell() {
             <Route path="/following"                        element={<FollowingPage />} />
             <Route path="/following/:userId"                element={<FollowingPage />} />
             <Route path="/suggestions"                      element={<SuggestionsPage />} />
+            <Route path="/discover/people"                  element={<DiscoverPeoplePage />} />
+            <Route path="/discover/communities"             element={<DiscoverCommunitiesPage />} />
+            <Route path="/discover/events"                  element={<DiscoverEventsPage />} />
             <Route path="/create/post"                      element={<CreatePostPage />} />
             <Route path="/create/reel"                      element={<CreateReelPage />} />
             <Route path="/create/concert"                   element={<CreateConcertPage />} />

@@ -2468,7 +2468,7 @@ function SuggestionsPanel() {
           <Sparkles size={14} style={{ color: 'var(--primary)' }} />
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Suggestions</p>
         </div>
-        <button onClick={() => navigate('/suggestions')}
+        <button onClick={() => navigate('/discover/people')}
           className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
           Voir plus →
         </button>
@@ -2515,7 +2515,7 @@ function SuggestionsPanel() {
             );
           })}
           <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-            <button onClick={() => navigate('/suggestions')}
+            <button onClick={() => navigate('/discover/people')}
               className="text-xs font-bold w-full text-center py-1.5 rounded-xl transition-all"
               style={{ color: 'var(--primary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.07)')}
@@ -2554,7 +2554,7 @@ function CommunitiesSidePanel() {
           <Users size={14} style={{ color: 'var(--primary)' }} />
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Communautés</p>
         </div>
-        <button onClick={() => navigate('/communities')}
+        <button onClick={() => navigate('/discover/communities')}
           className="text-xs font-bold" style={{ color: 'var(--primary)' }}>Voir tout</button>
       </div>
       {loading ? (
@@ -2564,7 +2564,7 @@ function CommunitiesSidePanel() {
           <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
             Aucune communauté pour l'instant
           </p>
-          <button onClick={() => navigate('/communities')}
+          <button onClick={() => navigate('/discover/communities')}
             className="text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
             style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
             Explorer les communautés
@@ -2600,7 +2600,7 @@ function CommunitiesSidePanel() {
             );
           })}
           <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-            <button onClick={() => navigate('/communities')}
+            <button onClick={() => navigate('/discover/communities')}
               className="text-xs font-bold w-full text-center py-1.5 rounded-xl transition-all"
               style={{ color: 'var(--primary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.07)')}
