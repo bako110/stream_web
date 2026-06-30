@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { RoundLogo } from './RoundLogo';
 
 export type GuestPreviewType = 'post' | 'reel' | 'event' | 'concert';
 
@@ -128,16 +129,6 @@ export function GuestPreview({
           align-items: center;
           gap: 8px;
           text-decoration: none;
-        }
-        .gp-logo-mark {
-          width: 30px;
-          height: 30px;
-          border-radius: 8px;
-          background: #7B3FF2;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
         }
         .gp-logo-text {
           font-size: 16px;
@@ -351,7 +342,6 @@ export function GuestPreview({
         /* Tablet / desktop */
         @media (min-width: 640px) {
           .gp-topbar { padding: 20px 32px 0; }
-          .gp-logo-mark { width: 34px; height: 34px; border-radius: 10px; }
           .gp-logo-text { font-size: 18px; }
           .gp-badges { padding: 0 32px; }
           .gp-meta { padding: 0 32px; }
@@ -385,12 +375,8 @@ export function GuestPreview({
         {/* Topbar */}
         <div className="gp-topbar">
           <div className="gp-logo">
-            <div className="gp-logo-mark">
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                <path d="M5 4L14 9L5 14V4Z" fill="white"/>
-              </svg>
-            </div>
-            <span className="gp-logo-text">GoFoliX</span>
+            <RoundLogo size={36} />
+            <span className="gp-logo-text">GoFolyX</span>
           </div>
           <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-topbar-login">
             Se connecter
