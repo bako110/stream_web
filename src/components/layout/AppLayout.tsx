@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileDrawer } from './MobileDrawer';
@@ -6,7 +7,7 @@ import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { CreateFAB } from './CreateFAB';
 
-export function AppLayout() {
+export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false);
 
@@ -41,7 +42,7 @@ export function AppLayout() {
 
         {/* pb-[60px] on mobile to clear the bottom nav */}
         <main className="flex-1 min-h-0 overflow-y-auto pb-[60px] lg:pb-0">
-          <Outlet />
+          {children ?? <Outlet />}
         </main>
       </div>
 

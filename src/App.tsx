@@ -122,6 +122,16 @@ const CommunityDetailPage = lazy(() => import('./pages/detail/CommunityDetailPag
 
 function GlobalLoader() { return <PageLoader />; }
 
+// Layout conditionnel pour les pages partageables :
+// connecté → AppLayout (sidebar + topbar), guest → page standalone sans sidebar
+function SharedRoute({ page }: { page: React.ReactNode }) {
+  const { user: me } = useAuthStore();
+  if (me) {
+    return <AppLayout>{page}</AppLayout>;
+  }
+  return <>{page}</>;
+}
+
 // Exécuté une seule fois au chargement du module — avant tout render
 bootstrapAuth();
 
@@ -158,12 +168,10 @@ function AppShell() {
           <Route path="/explore/reels"           element={<ExploreReelsPage />} />
         </Route>
 
-        {/* Contenu partageable — accessible sans connexion (guest voit GuestPreview) */}
-        <Route element={<AppLayout />}>
-          <Route path="/posts/:id"    element={<PostDetailPage />} />
-          <Route path="/concerts/:id" element={<ConcertDetailPage />} />
-          <Route path="/events/:id"   element={<EventDetailPage />} />
-        </Route>
+        {/* Contenu partageable — layout conditionnel selon auth */}
+        <Route path="/posts/:id"    element={<SharedRoute page={<PostDetailPage />} />} />
+        <Route path="/concerts/:id" element={<SharedRoute page={<ConcertDetailPage />} />} />
+        <Route path="/events/:id"   element={<SharedRoute page={<EventDetailPage />} />} />
 
         {/* Reels — plein écran, sans Topbar ni BottomNav, accessible sans connexion */}
         <Route path="/reels" element={<ReelsPage />} />
