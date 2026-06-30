@@ -4,7 +4,7 @@ import { ArrowLeft, KeyRound, Mail, Eye, EyeOff, CheckCircle, Phone, User } from
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useThemeStore } from '../../store/themeStore';
-import { Images } from '../../components/assets';
+import { RoundLogo } from '../../components/ui/RoundLogo';
 
 type Step = 'identifier' | 'code' | 'password' | 'done';
 type Method = 'email' | 'phone' | 'username';
@@ -156,7 +156,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="relative z-10">
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-10 w-auto" />
+          <RoundLogo size={44} />
         </div>
 
         <div className="relative z-10 space-y-6">
@@ -220,7 +220,7 @@ export default function ForgotPasswordPage() {
         <div className="relative w-full max-w-md">
 
           <div className="flex justify-center mb-8 lg:hidden">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-9 w-auto" />
+            <RoundLogo size={52} />
           </div>
 
           {step !== 'done' && (

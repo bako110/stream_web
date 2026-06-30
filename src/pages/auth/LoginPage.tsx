@@ -3,9 +3,9 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio, QrCode, Smartphone, Mail, ChevronDown } from 'lucide-react';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
+import { RoundLogo } from '../../components/ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { Images } from '../../components/assets';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
@@ -130,7 +130,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 hero-grid opacity-20" />
         </div>
         <div className="relative z-10">
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-10 w-auto" />
+          <RoundLogo size={44} />
         </div>
         <div className="relative z-10 space-y-8">
           <div>
@@ -175,7 +175,7 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-9 w-auto" />
+            <RoundLogo size={52} />
           </div>
 
           <div className="mb-7">
