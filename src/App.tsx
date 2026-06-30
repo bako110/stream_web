@@ -158,6 +158,13 @@ function AppShell() {
           <Route path="/explore/reels"           element={<ExploreReelsPage />} />
         </Route>
 
+        {/* Contenu partageable — accessible sans connexion (guest voit GuestPreview) */}
+        <Route element={<AppLayout />}>
+          <Route path="/posts/:id"    element={<PostDetailPage />} />
+          <Route path="/concerts/:id" element={<ConcertDetailPage />} />
+          <Route path="/events/:id"   element={<EventDetailPage />} />
+        </Route>
+
         {/* Routes protégées */}
         <Route element={<ProtectedRoute />}>
 
@@ -171,10 +178,7 @@ function AppShell() {
             <Route path="/series"            element={<FilmsPage type="serie" />} />
             <Route path="/series/:id"        element={<SerieDetailPage />} />
             <Route path="/concerts"          element={<ConcertsPage />} />
-            <Route path="/concerts/:id"      element={<ConcertDetailPage />} />
             <Route path="/events"            element={<EventsPage />} />
-            <Route path="/events/:id"        element={<EventDetailPage />} />
-            <Route path="/posts/:id"         element={<PostDetailPage />} />
             <Route path="/live"              element={<LiveListPage />} />
             <Route path="/live/:id"          element={<LivePage />} />
             <Route path="/lives"             element={<LiveSimpleListPage />} />

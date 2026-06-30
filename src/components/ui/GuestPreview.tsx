@@ -194,12 +194,12 @@ export function GuestPreview({
 
             {/* Boutons */}
             <div className="flex gap-3 w-full">
-              <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+              <Link to={`/auth/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                 className="flex-1 py-3 rounded-xl text-sm font-black text-center transition-opacity hover:opacity-90"
                 style={{ background: cfg.color, color: '#fff' }}>
                 Se connecter
               </Link>
-              <Link to={`/register?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+              <Link to={`/auth/register?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                 className="flex-1 py-3 rounded-xl text-sm font-black text-center transition-opacity hover:opacity-90"
                 style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
                 S'inscrire
