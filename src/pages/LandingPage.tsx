@@ -325,6 +325,58 @@ function StatCard({ icon: Icon, value, label, color, delay }: {
   );
 }
 
+// ── Round logo hero ───────────────────────────────────────────────────────────
+function HeroLogo() {
+  const { isDark } = useThemeStore();
+  return (
+    <div className="animate-reveal-up" style={{ animationFillMode: 'both', marginBottom: 32 }}>
+      <div style={{ position: 'relative', display: 'inline-block' }}>
+        {/* Ambient glow */}
+        <div style={{
+          position: 'absolute', inset: -18,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(123,63,242,0.45) 0%, rgba(168,85,247,0.25) 50%, transparent 70%)',
+          filter: 'blur(16px)',
+          animation: 'float-slow 4s ease-in-out infinite',
+        }} />
+        {/* Gradient border ring */}
+        <div style={{
+          position: 'relative',
+          width: 108,
+          height: 108,
+          borderRadius: '50%',
+          padding: 3,
+          background: 'linear-gradient(135deg, #7B3FF2, #A855F7, #EC4899, #7B3FF2)',
+          boxShadow: '0 12px 48px rgba(123,63,242,0.55)',
+        }}>
+          {/* Inner circle with logo */}
+          <div style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            background: isDark ? '#111' : '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}>
+            <img
+              src={isDark ? Images.logoDark : Images.logoLight}
+              alt="GoFolyX"
+              style={{
+                width: '80%',
+                height: '80%',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Hero ──────────────────────────────────────────────────────────────────────
 function HeroSection() {
   const { isAuthenticated } = useAuthStore();
@@ -337,6 +389,9 @@ function HeroSection() {
         style={{ background: 'linear-gradient(to bottom, transparent, var(--bg))' }} />
 
       <div className="relative z-10 max-w-5xl mx-auto text-center">
+
+        {/* Round logo */}
+        <HeroLogo />
 
         {/* Badge */}
         <div
