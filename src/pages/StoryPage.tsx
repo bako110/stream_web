@@ -100,6 +100,7 @@ function StoryViewer({
   const [menuOpen,     setMenuOpen]     = useState(false);
   const [editMode,     setEditMode]     = useState(false);
   const [editText,     setEditText]     = useState('');
+  const [localGroups,  setLocalGroups]  = useState(groups);
   const [viewers,      setViewers]      = useState<any[]>([]);
   const [viewersOpen,    setViewersOpen]    = useState(false);
   const [viewersLoading, setViewersLoading] = useState(false);
@@ -112,7 +113,10 @@ function StoryViewer({
   const adVideoRef     = useRef<HTMLVideoElement>(null);
   const adHlsRef       = useRef<Hls | null>(null);
 
-  const group  = groups[groupIdx];
+  // Sync quand le parent recharge les groupes (après onReload)
+  useEffect(() => { setLocalGroups(groups); }, [groups]);
+
+  const group  = localGroups[groupIdx];
   const story  = group?.stories[storyIdx];
   const dur    = (story?.duration_sec ?? 5) * 1000;
   const isOwn  = !!currentUserId && (story as any)?.user_id === currentUserId;
@@ -177,7 +181,7 @@ function StoryViewer({
   const goNext = useCallback(() => {
     if (storyIdx < totalInGroup - 1) {
       setStoryIdx(s => s + 1);
-    } else if (groupIdx < groups.length - 1) {
+    } else if (groupIdx < localGroups.length - 1) {
       const nextGroup = groupIdx + 1;
       // Afficher l'ad entre groupes (5 secondes, identique mobile)
       if (storyAd) {
@@ -208,7 +212,7 @@ function StoryViewer({
     } else {
       onClose();
     }
-  }, [storyIdx, totalInGroup, groupIdx, groups.length, storyAd, onClose]);
+  }, [storyIdx, totalInGroup, groupIdx, localGroups.length, storyAd, onClose]);
 
   const goPrev = useCallback(() => {
     if (storyIdx > 0) { setStoryIdx(s => s - 1); }
@@ -238,9 +242,21 @@ function StoryViewer({
 
   async function saveEdit() {
     if (!story) return;
-    try { await apiClient.patch(`/api/v1/stories/${story.id}`, { caption: editText.trim() || null }); }
-    catch { /* silencieux */ }
-    setEditMode(false); setPaused(false); onReload();
+    const newCaption = editText.trim() || null;
+    try {
+      await apiClient.patch(`/api/v1/stories/${story.id}`, { caption: newCaption });
+      // Mise à jour locale immédiate (identique mobile : story.caption = editCaption)
+      setLocalGroups(prev => prev.map((g, gi) =>
+        gi !== groupIdx ? g : {
+          ...g,
+          stories: g.stories.map((s, si) =>
+            si !== storyIdx ? s : { ...s, caption: newCaption }
+          ),
+        }
+      ));
+    } catch { /* silencieux */ }
+    setEditMode(false); setPaused(false);
+    onReload();
   }
 
   // Affichage de la pub entre groupes
@@ -435,7 +451,7 @@ function StoryViewer({
             <ChevronLeft size={18} className="text-white" />
           </button>
         )}
-        {groupIdx < groups.length - 1 && (
+        {groupIdx < localGroups.length - 1 && (
           <button
             className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full flex items-center justify-center"
             style={{ background: 'rgba(255,255,255,0.18)' }}

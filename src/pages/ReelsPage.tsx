@@ -1477,8 +1477,10 @@ export default function ReelsPage() {
     if (!editReel) return;
     setEditSaving(true);
     try {
-      await apiClient.put(Endpoints.reels.byId(editReel.id), { caption: editCaption.trim() });
-      setMyReels(prev => prev.map(r => r.id === editReel.id ? { ...r, caption: editCaption.trim() } : r));
+      const res = await apiClient.patch<Reel>(Endpoints.reels.byId(editReel.id), { caption: editCaption.trim() });
+      const updated = { ...editReel, caption: editCaption.trim(), ...(res.data ?? {}) };
+      setMyReels(prev => prev.map(r => r.id === editReel.id ? updated : r));
+      setReels(prev => prev.map(r => r.id === editReel.id ? updated : r));
       setEditReel(null);
     } catch { /* silencieux */ }
     setEditSaving(false);
