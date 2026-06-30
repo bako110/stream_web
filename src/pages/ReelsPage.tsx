@@ -12,7 +12,7 @@ import {
   MessageSquareOff, MessageSquare, BarChart2,
 } from 'lucide-react';
 import Hls from 'hls.js';
-import { FilterOverlay } from '../utils/reelFilters';
+import { FilterOverlay } from '../utils/reelFilters.tsx';
 import type { Reel, Comment } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';

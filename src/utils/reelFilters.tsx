@@ -38,7 +38,7 @@ export function getFilter(key: string | null | undefined): FilterDef {
   return FILTER_MAP.get(key ?? 'original') ?? FILTERS[0];
 }
 
-/** Rendu d'un filtre : retourne le(s) overlay(s) à placer par-dessus le média */
+/** Rendu d'un filtre : overlay(s) coloré(s) par-dessus le média, identique mobile */
 export function FilterOverlay({ filterName }: { filterName?: string | null }) {
   const f = getFilter(filterName);
   if (f.opacity <= 0) return null;
