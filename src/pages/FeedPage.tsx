@@ -2825,10 +2825,10 @@ export default function FeedPage() {
           <div className="flex items-start justify-between animate-reveal-up">
             <div>
               <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
-                Bonjour,{' '}
+                {(() => { const h = new Date().getHours(); return h < 12 ? 'Bonjour,' : h < 18 ? 'Bon après-midi,' : 'Bonsoir,'; })()}{' '}
                 <span className="gradient-text">
                   {user?.display_name ?? user?.first_name ?? user?.username}
-                </span>{' '}👋
+                </span>
               </h1>
               <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                 {items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length > 0
