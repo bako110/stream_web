@@ -35,7 +35,7 @@ function SectionLabel({ icon, label, sub }: { icon: React.ReactNode; label: stri
 
 function EventRow({ ev, onClick }: { ev: Event; onClick: () => void }) {
   const [imgErr, setImgErr] = useState(false);
-  const isBoosted = (ev as any).is_boosted ?? false;
+  const isBoosted = ev.is_boosted ?? false;
   const date      = new Date(ev.starts_at);
   const dd        = date.getDate().toString().padStart(2, '0');
   const mo        = format(date, 'MMM', { locale: fr }).toUpperCase();
@@ -137,9 +137,9 @@ export default function DiscoverEventsPage() {
         || (ev.venue_city ?? '').toLowerCase().includes(query.toLowerCase()))
     : all;
 
-  const boosted  = filtered.filter(ev => (ev as any).is_boosted);
-  const upcoming = filtered.filter(ev => !(ev as any).is_boosted && new Date(ev.starts_at) >= now);
-  const past     = filtered.filter(ev => !(ev as any).is_boosted && new Date(ev.starts_at) < now);
+  const boosted  = filtered.filter(ev => ev.is_boosted);
+  const upcoming = filtered.filter(ev => !ev.is_boosted && new Date(ev.starts_at) >= now);
+  const past     = filtered.filter(ev => !ev.is_boosted && new Date(ev.starts_at) < now);
 
   function renderSection(list: Event[], icon: React.ReactNode, label: string, sub: string) {
     if (list.length === 0) return null;

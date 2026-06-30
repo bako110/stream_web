@@ -37,8 +37,8 @@ function CommunityRow({ c, joined, onJoin, onOpen }: {
   c: Community; joined: boolean; onJoin: () => void; onOpen: () => void;
 }) {
   const [g1, g2] = gradientFor(c.name);
-  const count = c.members_count ?? (c as any).member_count ?? 0;
-  const isBoosted = (c as any).is_boosted ?? false;
+  const count = c.members_count ?? c.member_count ?? 0;
+  const isBoosted = c.is_boosted ?? false;
   return (
     <div className="flex items-center gap-3 px-4 py-3 transition-all cursor-pointer"
       onClick={onOpen}
@@ -117,8 +117,8 @@ export default function DiscoverCommunitiesPage() {
     ? all.filter(c => c.name.toLowerCase().includes(query.toLowerCase()) || c.description?.toLowerCase().includes(query.toLowerCase()))
     : all;
 
-  const boosted = filtered.filter(c => (c as any).is_boosted);
-  const rest    = filtered.filter(c => !(c as any).is_boosted);
+  const boosted = filtered.filter(c => c.is_boosted);
+  const rest    = filtered.filter(c => !c.is_boosted);
 
   function renderSection(list: Community[], icon: React.ReactNode, label: string, sub: string) {
     if (list.length === 0) return null;

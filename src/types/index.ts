@@ -184,6 +184,7 @@ export interface Event {
   video_url: string | null; is_featured: boolean; published_at: string | null;
   created_at: string; updated_at: string; organizer?: User;
   user_reaction?: 'like' | 'dislike' | null;
+  is_boosted?: boolean;
 }
 
 // ── Sound ─────────────────────────────────────────────────────────────────
@@ -275,6 +276,7 @@ export interface Community {
   creator?: { id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null } | null;
   is_member?: boolean;
   created_at: string; updated_at: string;
+  is_boosted?: boolean;
 }
 
 // ── Notification ──────────────────────────────────────────────────────────
