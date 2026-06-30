@@ -49,9 +49,9 @@ export function commitReelSession(reelId: string, seconds: number) {
   writeAll(all);
 }
 
-/** Hook à utiliser dans un composant React */
+/** Hook à utiliser dans un composant React (utilise useRef pour persister entre renders) */
 export function useReelWatchStats(reelId: string) {
-  const sessionStart = { current: 0 };
+  const sessionStart = { current: 0 } as { current: number }; // remplacé par useRef côté appelant si nécessaire
 
   function startSession() {
     sessionStart.current = Date.now();

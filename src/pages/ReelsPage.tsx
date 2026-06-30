@@ -530,28 +530,33 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
 
   const caption    = reel.caption ?? '';
 
-  // Commit la session courante dans localStorage (record + cumul)
-  function commitSession() {
-    if (!sessionStartRef.current) return;
-    const seconds = Math.round((Date.now() - sessionStartRef.current) / 1000);
-    sessionStartRef.current = 0;
-    commitReelSession(reel.id, seconds);
+  // Retourne les secondes de la session courante SANS remettre à zéro
+  function currentSessionSeconds(): number {
+    if (!sessionStartRef.current) return 0;
+    return Math.round((Date.now() - sessionStartRef.current) / 1000);
   }
 
-  // Suivi de vue — 10% regardé, 1x par reel, max 30s (identique mobile)
+  // Commit la session courante dans localStorage (record + cumul) puis remet à zéro
+  function commitSession() {
+    const seconds = currentSessionSeconds();
+    sessionStartRef.current = 0;
+    if (seconds >= 1) commitReelSession(reel.id, seconds);
+  }
+
+  // Suivi de vue — 10% regardé, 1x par reel
   function sendView() {
     if (viewSentRef.current) return;
     const v = videoRef.current;
-    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    const elapsed = startTimeRef.current
+      ? (Date.now() - startTimeRef.current) / 1000
+      : 0;
     const duration = v?.duration ?? 30;
     const watchRatio = Math.min(elapsed / Math.min(duration, 30), 1.0);
     if (watchRatio >= 0.1) {
       viewSentRef.current = true;
       setViewCount(c => c + 1);
-      // Calcule la durée de la session courante en secondes
-      const watchSeconds = sessionStartRef.current
-        ? Math.round((Date.now() - sessionStartRef.current) / 1000)
-        : Math.round(elapsed);
+      // Lit les secondes AVANT que commitSession les remette à zéro
+      const watchSeconds = currentSessionSeconds();
       apiClient.post(Endpoints.reels.view(reel.id), {
         watch_ratio: watchRatio,
         watch_seconds: watchSeconds,
@@ -640,8 +645,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
     const v = videoRef.current;
     if (!v) return;
     if (!active) {
+      sendView();    // lit sessionStartRef AVANT commitSession
       commitSession();
-      sendView();
       v.pause(); v.currentTime = 0;
       setPlaying(false); setProgress(0);
       clearStall();
@@ -845,8 +850,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
               if (!sessionStartRef.current) sessionStartRef.current = Date.now();
             }}
             onEnded={() => {
+              sendView();    // lit sessionStartRef AVANT commitSession
               commitSession();
-              sendView();
               // Rejouer (loop manuel pour tracker les vues correctement)
               const v = videoRef.current;
               if (v) {
