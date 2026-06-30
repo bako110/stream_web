@@ -23,9 +23,6 @@ const MOBILE_BLOCKED_PREFIXES = [
   '/create/',         // CreateReel, CreatePost, CreateEvent, CreateConcert
   '/live',            // /live et /live/:id (LivePage WebRTC)
   '/lives',           // /lives et /lives/:id (LiveSimplePage WebRTC)
-  '/films/',          // /films/:id → FilmDetailPage lecteur vidéo payant
-  '/series/',         // /series/:id → SerieDetailPage lecteur vidéo
-  '/concerts/',       // /concerts/:id → ConcertDetailPage lecteur streaming
 ];
 
 function isBlockedOnMobile(pathname: string): boolean {
