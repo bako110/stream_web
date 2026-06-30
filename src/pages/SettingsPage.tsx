@@ -10,6 +10,7 @@ import { Endpoints } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { Avatar } from '../components/ui/Avatar';
+import { useConfirm } from '../components/ui/Dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -62,6 +63,7 @@ export default function SettingsPage() {
   const { user, logout } = useAuthStore();
   const { isDark } = useThemeStore();
   const navigate = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const [subscription, setSubscription] = useState<any>(null);
   const [unreadCount,  setUnreadCount]  = useState(0);
@@ -218,13 +220,25 @@ export default function SettingsPage() {
       </div>
 
       {/* Déconnexion */}
-      <button onClick={() => logout()}
+      <button
+        onClick={async () => {
+          const ok = await confirm({
+            title: 'Se déconnecter ?',
+            message: 'Tu seras redirigé vers la page d\'accueil.',
+            confirmLabel: 'Déconnexion',
+            danger: true,
+          });
+          if (!ok) return;
+          try { await logout(); } catch {}
+          navigate('/', { replace: true });
+        }}
         className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-black text-sm transition-all"
         style={{ color: '#EF4444', border: '1.5px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.04)' }}
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.04)')}>
         <LogOut size={17} /> Se déconnecter
       </button>
+      {ConfirmDialog}
     </div>
   );
 }

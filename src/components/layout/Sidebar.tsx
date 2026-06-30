@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
+import { useConfirm } from '../ui/Dialog';
 import {
   Home, Play, Film, Radio, Music2, Video,
   Users, MessageCircle, Bell, Activity, UserPlus,
@@ -63,8 +64,16 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
   const { user, logout } = useAuthStore();
   const { isDark, toggle } = useThemeStore();
   const navigate = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   async function handleLogout() {
+    const ok = await confirm({
+      title: 'Se déconnecter ?',
+      message: 'Tu seras redirigé vers la page d\'accueil.',
+      confirmLabel: 'Déconnexion',
+      danger: true,
+    });
+    if (!ok) return;
     try { await logout(); } catch {}
     navigate('/', { replace: true });
   }
@@ -260,5 +269,6 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         </button>
       </div>
     </aside>
+    {ConfirmDialog}
   );
 }
