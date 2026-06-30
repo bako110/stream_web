@@ -165,11 +165,12 @@ function AppShell() {
           <Route path="/events/:id"   element={<EventDetailPage />} />
         </Route>
 
+        {/* Reels — plein écran, sans Topbar ni BottomNav, accessible sans connexion */}
+        <Route path="/reels" element={<ReelsPage />} />
+
         {/* Routes protégées */}
         <Route element={<ProtectedRoute />}>
 
-          {/* Reels — plein écran, sans Topbar ni BottomNav */}
-          <Route path="/reels" element={<ReelsPage />} />
 
           <Route element={<AppLayout />}>
             <Route path="/feed"              element={<FeedPage />} />
