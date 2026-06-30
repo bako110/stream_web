@@ -296,7 +296,7 @@ export default function PostDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !me) return;
     setCommentsLoading(true);
     apiClient.get<any>(`${Endpoints.social.comments}?post_id=${id}&limit=50`)
       .then(res => {
@@ -307,10 +307,10 @@ export default function PostDetailPage() {
       })
       .catch(() => {})
       .finally(() => setCommentsLoading(false));
-  }, [id]);
+  }, [id, me]);
 
   useEffect(() => {
-    if (!post?.author?.id) return;
+    if (!post?.author?.id || !me) return;
     apiClient.get<any>(Endpoints.posts.byUser(post.author.id))
       .then(res => {
         const raw = res.data;
