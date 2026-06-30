@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe } from 'lucide-react';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { useAuthStore } from '../../store/authStore';
@@ -18,6 +18,8 @@ const PERKS = [
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') ?? '/feed';
   const { register: signup, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
   const [form, setForm]       = useState({ first_name: '', last_name: '', email: '', username: '', password: '' });
@@ -34,7 +36,7 @@ export default function RegisterPage() {
       const token = res.data;
       if (token?.access_token) {
         await useAuthStore.getState().loginWithQR(token.access_token, token.refresh_token);
-        navigate('/feed', { replace: true });
+        navigate(redirectTo, { replace: true });
       }
     } catch (e: any) {
       const msg = String(e?.message ?? '');
@@ -49,7 +51,7 @@ export default function RegisterPage() {
   }
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/feed', { replace: true });
+    if (isAuthenticated) navigate(redirectTo, { replace: true });
   }, [isAuthenticated, navigate]);
 
   function field(key: string) {
@@ -68,7 +70,7 @@ export default function RegisterPage() {
     if (form.username.trim() && !/^[\w\-\.]+$/.test(form.username.trim())) return setFormError('Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, _, - et . (sans espaces ni caractères spéciaux)');
     try {
       await signup(form);
-      navigate('/feed', { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch { /* error shown via store */ }
   }
 

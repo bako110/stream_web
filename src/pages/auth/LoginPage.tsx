@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio, QrCode, Smartphone, Mail, ChevronDown } from 'lucide-react';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { useAuthStore } from '../../store/authStore';
@@ -44,8 +44,11 @@ const FEATURES = [
 
 export default function LoginPage() {
   const navigate   = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
+
+  const redirectTo = searchParams.get('redirect') ?? '/feed';
 
   const [method,      setMethod]      = useState<LoginMethod>('email');
   const [identifier,  setIdentifier]  = useState('');
@@ -58,8 +61,8 @@ export default function LoginPage() {
   const [showQR,      setShowQR]      = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/feed', { replace: true });
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated) navigate(redirectTo, { replace: true });
+  }, [isAuthenticated, navigate, redirectTo]);
 
   // Fermer le dropdown pays en cliquant dehors
   useEffect(() => {
@@ -81,7 +84,7 @@ export default function LoginPage() {
     try {
       const id = method === 'email' ? identifier.trim() : `${country.dial}${identifier.trim()}`;
       await login({ identifier: id, password });
-      navigate('/feed', { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch { /* error shown via store */ }
   }
 
@@ -94,7 +97,7 @@ export default function LoginPage() {
       if (token?.access_token) {
         // Réutilise loginWithQR — même logique : setAuthToken + saveTokens + fetchMe
         await useAuthStore.getState().loginWithQR(token.access_token, token.refresh_token);
-        navigate('/feed', { replace: true });
+        navigate(redirectTo, { replace: true });
       }
     } catch (e: any) {
       const msg = String(e?.message ?? '');
