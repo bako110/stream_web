@@ -98,7 +98,7 @@ export function GuestPreview({
           width: 100%;
           height: 100%;
           object-fit: cover;
-          object-position: center top;
+          object-position: center center;
           display: block;
         }
         .gp-gradient {
