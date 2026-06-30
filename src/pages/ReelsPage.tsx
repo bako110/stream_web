@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { commitReelSession } from '../hooks/useReelWatchStats';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/ui/Dialog';
@@ -430,8 +431,9 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
   const tapTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stallTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCount    = useRef(0);
-  const startTimeRef  = useRef<number>(0);
-  const viewSentRef   = useRef(false);
+  const startTimeRef     = useRef<number>(0);
+  const viewSentRef      = useRef(false);
+  const sessionStartRef  = useRef<number>(0);
   const likeInFlight  = useRef(false);
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const musicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -528,6 +530,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
 
   const caption    = reel.caption ?? '';
 
+  // Commit la session courante dans localStorage (record + cumul)
+  function commitSession() {
+    if (!sessionStartRef.current) return;
+    const seconds = Math.round((Date.now() - sessionStartRef.current) / 1000);
+    sessionStartRef.current = 0;
+    commitReelSession(reel.id, seconds);
+  }
+
   // Suivi de vue — 10% regardé, 1x par reel, max 30s (identique mobile)
   function sendView() {
     if (viewSentRef.current) return;
@@ -623,6 +633,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
     const v = videoRef.current;
     if (!v) return;
     if (!active) {
+      commitSession();
       sendView();
       v.pause(); v.currentTime = 0;
       setPlaying(false); setProgress(0);
@@ -630,7 +641,11 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
     } else if (v.readyState >= 3) {
       v.muted = hasMusic ? true : globalMuted;
       v.currentTime = 0;
-      v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => setPlaying(false));
+      v.play().then(() => {
+        setPlaying(true);
+        startTimeRef.current = Date.now();
+        sessionStartRef.current = Date.now();
+      }).catch(() => setPlaying(false));
     }
   }, [active]); // eslint-disable-line
 
@@ -818,12 +833,22 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
               if (v?.duration) setProgress((v.currentTime / v.duration) * 100);
             }}
             onWaiting={() => { setBuffering(true); armStall(); }}
-            onPlaying={() => { setBuffering(false); clearStall(); setPlaying(true); }}
+            onPlaying={() => {
+              setBuffering(false); clearStall(); setPlaying(true);
+              if (!sessionStartRef.current) sessionStartRef.current = Date.now();
+            }}
             onEnded={() => {
+              commitSession();
               sendView();
               // Rejouer (loop manuel pour tracker les vues correctement)
               const v = videoRef.current;
-              if (v) { v.currentTime = 0; v.play().catch(() => {}); viewSentRef.current = false; startTimeRef.current = Date.now(); }
+              if (v) {
+                v.currentTime = 0;
+                v.play().catch(() => {});
+                viewSentRef.current = false;
+                startTimeRef.current = Date.now();
+                sessionStartRef.current = Date.now();
+              }
             }}
             onError={() => doRetry()}
           />
