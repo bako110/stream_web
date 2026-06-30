@@ -11,8 +11,10 @@ import {
   X, ChevronLeft, ChevronRight, Eye, MoreHorizontal,
   Edit3, Trash2, Zap, ExternalLink,
 } from 'lucide-react';
+import Hls from 'hls.js';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
+import { toProxiedUrl } from '../utils/constants';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
@@ -22,6 +24,7 @@ interface StoryAd {
   id: string; title: string; description?: string | null;
   cta_text?: string | null; cta_url?: string | null;
   creative_url?: string | null; thumbnail_url?: string | null;
+  format?: string | null;
 }
 
 export default function StoryPage() {
@@ -106,12 +109,44 @@ function StoryViewer({
   const timerRef       = useRef<ReturnType<typeof setInterval> | null>(null);
   const adTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const adProgressRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const adVideoRef     = useRef<HTMLVideoElement>(null);
+  const adHlsRef       = useRef<Hls | null>(null);
 
   const group  = groups[groupIdx];
   const story  = group?.stories[storyIdx];
   const dur    = (story?.duration_sec ?? 5) * 1000;
   const isOwn  = !!currentUserId && (story as any)?.user_id === currentUserId;
   const totalInGroup = group?.stories.length ?? 0;
+
+  // Setup HLS pour la video ad
+  const adIsVideo = !!(storyAd?.format === 'video' || (storyAd?.creative_url && (
+    storyAd.creative_url.includes('.m3u8') ||
+    storyAd.creative_url.includes('/hls/') ||
+    storyAd.creative_url.toLowerCase().includes('.mp4')
+  )));
+
+  useEffect(() => {
+    if (!showAd || !adIsVideo || !storyAd?.creative_url) return;
+    const v = adVideoRef.current;
+    if (!v) return;
+    const src = toProxiedUrl(storyAd.creative_url);
+    if (Hls.isSupported()) {
+      const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30 });
+      adHlsRef.current = hls;
+      hls.loadSource(src);
+      hls.attachMedia(v);
+      hls.once(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src;
+      v.play().catch(() => {});
+    } else {
+      v.src = src;
+    }
+    return () => {
+      adHlsRef.current?.destroy(); adHlsRef.current = null;
+      v.pause(); v.removeAttribute('src'); v.load();
+    };
+  }, [showAd, adIsVideo, storyAd?.creative_url]); // eslint-disable-line
 
   // Mark viewed
   useEffect(() => {
@@ -230,7 +265,14 @@ function StoryViewer({
           </div>
 
           {/* Fond créatif */}
-          {storyAd.thumbnail_url || storyAd.creative_url ? (
+          {adIsVideo && storyAd.creative_url ? (
+            <video
+              ref={adVideoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              playsInline muted loop
+              poster={storyAd.thumbnail_url ?? undefined}
+            />
+          ) : storyAd.thumbnail_url || storyAd.creative_url ? (
             <img src={storyAd.thumbnail_url ?? storyAd.creative_url!} alt={storyAd.title}
               className="absolute inset-0 w-full h-full object-cover" />
           ) : (

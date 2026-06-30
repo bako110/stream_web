@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import { Search, TrendingUp, Film, Music, Calendar, User, Play, Zap, ExternalLink, Clock, X, Megaphone } from 'lucide-react';
+import Hls from 'hls.js';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
+import { toProxiedUrl } from '../utils/constants';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
 
@@ -35,17 +37,49 @@ interface SearchAd {
   id: string; title: string; description?: string | null;
   cta_text?: string | null; cta_url?: string | null;
   creative_url?: string | null; thumbnail_url?: string | null;
-  advertiser_name?: string | null;
+  advertiser_name?: string | null; format?: string | null;
 }
 
 function SearchAdCard({ ad }: { ad: SearchAd }) {
   const impressionSent = useRef(false);
+  const videoRef       = useRef<HTMLVideoElement>(null);
+  const hlsRef         = useRef<Hls | null>(null);
+
+  const isVideo = ad.format === 'video' || !!(ad.creative_url && (
+    ad.creative_url.includes('.m3u8') ||
+    ad.creative_url.includes('/hls/') ||
+    ad.creative_url.toLowerCase().includes('.mp4')
+  ));
+
   useEffect(() => {
     if (ad?.id && !impressionSent.current) {
       impressionSent.current = true;
       apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
     }
   }, [ad?.id]);
+
+  useEffect(() => {
+    if (!isVideo || !ad.creative_url) return;
+    const v = videoRef.current;
+    if (!v) return;
+    const src = toProxiedUrl(ad.creative_url);
+    if (Hls.isSupported()) {
+      const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30 });
+      hlsRef.current = hls;
+      hls.loadSource(src);
+      hls.attachMedia(v);
+      hls.once(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src;
+      v.play().catch(() => {});
+    } else {
+      v.src = src;
+    }
+    return () => {
+      hlsRef.current?.destroy(); hlsRef.current = null;
+      v.pause(); v.removeAttribute('src'); v.load();
+    };
+  }, [ad.creative_url, isVideo]); // eslint-disable-line
 
   function handleClick() {
     if (!ad.cta_url) return;
@@ -87,7 +121,16 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
       {/* Visuel bord-à-bord */}
       {(ad.thumbnail_url || ad.creative_url) && (
         <div className="overflow-hidden" style={{ aspectRatio: '1.91/1' }}>
-          <img src={ad.thumbnail_url ?? ad.creative_url!} alt="" className="w-full h-full object-cover" />
+          {isVideo && ad.creative_url ? (
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              playsInline muted loop
+              poster={ad.thumbnail_url ?? undefined}
+            />
+          ) : (
+            <img src={ad.thumbnail_url ?? ad.creative_url!} alt="" className="w-full h-full object-cover" />
+          )}
         </div>
       )}
 
