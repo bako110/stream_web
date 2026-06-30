@@ -19,6 +19,17 @@ import { Avatar } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { useAuthStore } from '../store/authStore';
 import type { StoryGroup } from '../types';
+import { StoryOverlaysRenderer } from '../utils/reelFilters.tsx';
+
+type FontStyle = { fontFamily?: string; fontWeight?: string; fontStyle?: string };
+const FONT_MAP: Record<string, FontStyle> = {
+  classic:   { fontWeight: 'bold' },
+  serif:     { fontFamily: 'Georgia, serif',           fontWeight: 'normal' },
+  mono:      { fontFamily: 'monospace',                fontWeight: 'bold' },
+  cursive:   { fontFamily: 'cursive',                  fontWeight: 'normal' },
+  condensed: { fontFamily: 'Arial Narrow, sans-serif', fontWeight: '900' },
+  italic:    { fontFamily: 'Georgia, serif',           fontWeight: 'normal', fontStyle: 'italic' },
+};
 
 interface StoryAd {
   id: string; title: string; description?: string | null;
@@ -81,6 +92,85 @@ export default function StoryPage() {
   );
 }
 
+// ── MusicWidget — vinyle tournant + barres d'onde (identique mobile) ─────────
+
+function MusicWidget({ audioUrl, playing, isVoice }: { audioUrl: string; playing: boolean; isVoice?: boolean }) {
+  const trackName = (() => {
+    try {
+      const seg = audioUrl.split('/').pop()?.split('?')[0] ?? '';
+      const clean = decodeURIComponent(seg).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+      return clean.length > 30 ? clean.slice(0, 30) + '…' : clean || 'Musique';
+    } catch { return 'Musique'; }
+  })();
+
+  const accent = isVoice ? '#FF9800' : '#a78bfa';
+
+  return (
+    <div className="absolute pointer-events-none"
+      style={{ bottom: 80, left: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 10,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
+        border: `1px solid ${accent}40`, borderRadius: 16, padding: '8px 12px 8px 8px',
+        maxWidth: 220 }}>
+
+      {/* Vinyle tournant */}
+      <div style={{
+        width: 44, height: 44, borderRadius: '50%', flexShrink: 0, position: 'relative',
+        background: 'conic-gradient(#1a1a2e 0deg, #16213E 120deg, #0F3460 240deg, #1a1a2e 360deg)',
+        border: '2px solid rgba(255,255,255,0.2)',
+        animation: playing ? 'spin-slow 5s linear infinite' : 'none',
+        boxShadow: playing ? `0 0 12px ${accent}80` : 'none',
+      }}>
+        {/* Rainures */}
+        {[13, 10, 7].map(r => (
+          <div key={r} style={{
+            position: 'absolute', borderRadius: '50%',
+            border: '0.5px solid rgba(255,255,255,0.1)',
+            width: r * 2, height: r * 2,
+            left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+          }} />
+        ))}
+        {/* Centre */}
+        <div style={{
+          position: 'absolute', width: 12, height: 12, borderRadius: '50%',
+          backgroundColor: accent, left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#fff' }} />
+        </div>
+      </div>
+
+      {/* Info + barres */}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+          <span style={{ fontSize: 9, color: accent, fontWeight: 700 }}>
+            {isVoice ? 'VOCAL' : 'MUSIQUE'}
+          </span>
+          {playing && (
+            <span style={{ fontSize: 9, color: accent, background: accent + '25',
+              borderRadius: 4, padding: '1px 4px', fontWeight: 700 }}>EN COURS</span>
+          )}
+        </div>
+        <p style={{ color: '#fff', fontSize: 11, fontWeight: 600, overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
+          {trackName}
+        </p>
+        {/* Barres d'onde animées */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 14 }}>
+          {Array.from({ length: 12 }, (_, i) => (
+            <div key={i} style={{
+              width: 2.5, borderRadius: 2, backgroundColor: accent,
+              height: playing ? undefined : 3,
+              animation: playing ? `wave-bar ${0.6 + (i % 4) * 0.15}s ease-in-out infinite alternate` : 'none',
+              minHeight: 3, maxHeight: 12,
+              ...(playing ? { animationDelay: `${(i * 0.07).toFixed(2)}s` } : {}),
+            }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── StoryViewer ───────────────────────────────────────────────────────────────
 
 function StoryViewer({
@@ -106,6 +196,9 @@ function StoryViewer({
   const [viewersLoading, setViewersLoading] = useState(false);
   const [showAd,       setShowAd]       = useState(false);
   const [adProgress,   setAdProgress]   = useState(0);
+  const [containerSize, setContainerSize] = useState({ w: 500, h: window.innerHeight });
+  const containerRef   = useRef<HTMLDivElement>(null);
+  const storyAudioRef  = useRef<HTMLAudioElement | null>(null);
   const nextGroupRef   = useRef(0);
   const timerRef       = useRef<ReturnType<typeof setInterval> | null>(null);
   const adTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,6 +240,32 @@ function StoryViewer({
       v.play().catch(() => {});
     }
   }, [adIsVideo, storyAd?.creative_url]); // eslint-disable-line
+
+  // Mesure le container pour les positions normalisées des overlays
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setContainerSize({ w: width, h: height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Lecture audio séparée (audio_url sur story), identique mobile
+  useEffect(() => {
+    const url = story?.audio_url;
+    const stop = () => {
+      const a = storyAudioRef.current;
+      if (a) { a.pause(); a.src = ''; storyAudioRef.current = null; }
+    };
+    if (!url || paused) { stop(); return; }
+    const a = new Audio(url);
+    storyAudioRef.current = a;
+    a.play().catch(() => {});
+    return () => stop();
+  }, [story?.id, paused]); // eslint-disable-line
 
   // Mark viewed
   useEffect(() => {
@@ -355,6 +474,7 @@ function StoryViewer({
 
       {/* Container centré style story Instagram — max 500px */}
       <div
+        ref={containerRef}
         className="relative z-10 w-full max-w-[500px] bg-black"
         style={{ height: '100dvh', maxHeight: '100dvh' }}
         onClick={e => e.stopPropagation()}
@@ -401,13 +521,16 @@ function StoryViewer({
               className="w-full h-full object-cover"
               autoPlay loop={false} playsInline muted={false}
             />
-          ) : story.media_url ? (
+          ) : story.media_type === 'image' && story.media_url ? (
             <img key={story.id} src={story.media_url} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center px-8"
               style={{ background: story.background_color ?? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               {story.caption && (
-                <p className="text-white font-black text-3xl text-center leading-snug">{story.caption}</p>
+                <p className="text-white text-center leading-snug" style={{
+                  fontSize: story.caption.length > 100 ? 18 : story.caption.length > 50 ? 24 : 30,
+                  ...(FONT_MAP[story.font_style ?? 'classic'] ?? FONT_MAP.classic),
+                }}>{story.caption}</p>
               )}
             </div>
           )}
@@ -426,15 +549,33 @@ function StoryViewer({
           />
         )}
 
+        {/* Overlays éditeur (texte, dessin, stickers, masques) */}
+        {story.overlays_json && (
+          <StoryOverlaysRenderer
+            overlaysJson={story.overlays_json}
+            width={containerSize.w}
+            height={containerSize.h}
+          />
+        )}
+
         {/* Gradients */}
         <div className="absolute inset-x-0 top-0 h-36 pointer-events-none"
           style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)', zIndex: 3 }} />
         <div className="absolute inset-x-0 bottom-0 h-36 pointer-events-none"
           style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)', zIndex: 3 }} />
 
-        {/* Caption */}
-        {story.caption && story.media_url && (
-          <div className="absolute bottom-16 inset-x-0 px-5 z-10">
+        {/* MusicWidget — audio_url présent sur story (audio/voice/image+son) */}
+        {story.audio_url && (
+          <MusicWidget
+            audioUrl={story.audio_url}
+            playing={!paused}
+            isVoice={story.media_type === 'voice'}
+          />
+        )}
+
+        {/* Caption — avec font_style pour media_type text, identique mobile */}
+        {story.caption && story.media_type !== 'text' && (
+          <div className="absolute bottom-16 inset-x-0 px-5 z-20 pointer-events-none">
             <div className="inline-block rounded-2xl px-4 py-2.5" style={{ background: 'rgba(0,0,0,0.55)' }}>
               <p className="text-white text-sm leading-relaxed">{story.caption}</p>
             </div>

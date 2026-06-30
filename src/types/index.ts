@@ -217,6 +217,14 @@ export interface Reel {
   is_featured: boolean; created_at: string; updated_at: string;
   author?: User; user_reaction?: 'like' | 'dislike' | null;
   filter_name?: string | null;
+  text_layers?: string | null;
+  sticker_layers?: string | null;
+  draw_layers?: string | null;
+  video_adjust?: string | null;
+  music_url?: string | null;
+  music_name?: string | null;
+  music_start_sec?: number | null;
+  music_end_sec?: number | null;
 }
 
 // ── Post ──────────────────────────────────────────────────────────────────
