@@ -72,7 +72,7 @@ const isMedia = (type: GuestPreviewType) => type === 'reel' || type === 'concert
 
 export function GuestPreview({
   type, thumbnail, title, body, author, date,
-  location, attendees, ticketPrice, likeCount, commentCount, viewCount, isLive,
+  location, attendees, ticketPrice, isLive,
 }: GuestPreviewProps) {
   const cfg = TYPE_CONFIG[type];
   const redirectParam = encodeURIComponent(window.location.pathname + window.location.search);
@@ -477,37 +477,6 @@ export function GuestPreview({
 
             {/* Body */}
             {body && <p className="gp-body">{body}</p>}
-
-            {/* Stats */}
-            {(likeCount != null || commentCount != null || viewCount != null) && (
-              <div className="gp-stats">
-                {likeCount != null && (
-                  <span className="gp-stat">
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                      <path d="M8 13.5S1.5 9.5 1.5 5.5a3.5 3.5 0 0 1 6.5-1.8A3.5 3.5 0 0 1 14.5 5.5c0 4-6.5 8-6.5 8z" stroke="currentColor" strokeWidth="1.3"/>
-                    </svg>
-                    {likeCount.toLocaleString()}
-                  </span>
-                )}
-                {commentCount != null && (
-                  <span className="gp-stat">
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                      <path d="M2 2h12v9H9l-3 3v-3H2V2z" stroke="currentColor" strokeWidth="1.3"/>
-                    </svg>
-                    {commentCount.toLocaleString()}
-                  </span>
-                )}
-                {viewCount != null && (
-                  <span className="gp-stat">
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                      <path d="M1 8c1.5-3 3.8-5 7-5s5.5 2 7 5c-1.5 3-3.8 5-7 5S2.5 11 1 8z" stroke="currentColor" strokeWidth="1.3"/>
-                      <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.3"/>
-                    </svg>
-                    {viewCount.toLocaleString()}
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
@@ -547,7 +516,7 @@ export function GuestPreview({
                 Connecte-toi pour regarder
               </p>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginBottom: 20, lineHeight: 1.4 }}>
-                Rejoins GoFolyX gratuitement pour accéder à toutes les vidéos, concerts et events.
+                Rejoins GoFolyX gratuitement pour accéder aux vidéos, concerts et events.
               </p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <Link
@@ -582,7 +551,7 @@ export function GuestPreview({
         {/* CTA bar fixe */}
         <div className="gp-cta">
           <p className="gp-cta-headline">{cfg.cta}</p>
-          <p className="gp-cta-sub">Rejoins GoFoliX · concerts, events, reels et bien plus. Gratuit.</p>
+          <p className="gp-cta-sub">Rejoins GoFolyX · concerts, events, reels et bien plus. Gratuit.</p>
           <div className="gp-btns">
             <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-btn gp-btn-primary">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
