@@ -216,6 +216,7 @@ export interface Reel {
   source_reel?: { id: string; thumbnail_url: string | null; author?: { display_name?: string | null; username?: string | null } } | null;
   is_featured: boolean; created_at: string; updated_at: string;
   author?: User; user_reaction?: 'like' | 'dislike' | null;
+  filter_name?: string | null;
 }
 
 // ── Post ──────────────────────────────────────────────────────────────────
@@ -242,6 +243,7 @@ export interface Story {
   is_active: boolean; expires_at: string; created_at: string;
   background_color: string | null; audio_url: string | null; font_style: string | null;
   overlays_json: string | null;
+  filter_key?: string | null; filter_overlay_color?: string | null; filter_overlay_opacity?: number | null;
   audience_type?: StoryAudienceType;
   author: StoryAuthor | null; viewed_by_me: boolean;
 }

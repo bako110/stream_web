@@ -12,6 +12,7 @@ import {
   MessageSquareOff, MessageSquare, BarChart2,
 } from 'lucide-react';
 import Hls from 'hls.js';
+import { FilterOverlay } from '../utils/reelFilters';
 import type { Reel, Comment } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -794,6 +795,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
         ) : (
           <img src={reel.thumbnail_url ?? ''} className="w-full h-full object-contain" alt={caption} />
         )}
+        {/* Filtre coloré identique mobile */}
+        <FilterOverlay filterName={reel.filter_name} />
       </div>
 
       {/* 3 zones de tap (gauche=skip-10, centre=pause/like, droite=skip+10) */}

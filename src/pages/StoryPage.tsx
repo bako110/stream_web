@@ -413,11 +413,24 @@ function StoryViewer({
           )}
         </div>
 
+        {/* Filtre coloré identique mobile (filter_overlay_color + filter_overlay_opacity) */}
+        {(story.media_type === 'image' || story.media_type === 'video') &&
+          story.filter_overlay_color && (story.filter_overlay_opacity ?? 0) > 0 && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundColor: story.filter_overlay_color,
+              opacity: story.filter_overlay_opacity!,
+              zIndex: 2,
+            }}
+          />
+        )}
+
         {/* Gradients */}
         <div className="absolute inset-x-0 top-0 h-36 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }} />
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)', zIndex: 3 }} />
         <div className="absolute inset-x-0 bottom-0 h-36 pointer-events-none"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)', zIndex: 3 }} />
 
         {/* Caption */}
         {story.caption && story.media_url && (
