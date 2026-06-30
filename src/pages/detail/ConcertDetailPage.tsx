@@ -199,7 +199,7 @@ export default function ConcertDetailPage() {
     return (
       <GuestPreview
         type="concert"
-        thumbnail={(concert as any).cover_url ?? (concert as any).thumbnail_url ?? null}
+        thumbnail={concert.thumbnail_url ?? concert.banner_url ?? null}
         title={concert.title}
         body={(concert as any).description}
         author={(concert as any).artist ?? (concert as any).author}
