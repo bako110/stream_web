@@ -64,6 +64,7 @@ const TrendingPage                  = lazy(() => import('./pages/TrendingPage'))
 const FavoritesPage                 = lazy(() => import('./pages/FavoritesPage'));
 const WatchHistoryPage              = lazy(() => import('./pages/WatchHistoryPage'));
 const FollowingPage                 = lazy(() => import('./pages/FollowingPage'));
+const SuggestionsPage               = lazy(() => import('./pages/SuggestionsPage'));
 const CreatePostPage     = lazy(() => import('./pages/create/CreatePostPage'));
 const CreateReelPage     = lazy(() => import('./pages/create/CreateReelPage'));
 const CreateConcertPage  = lazy(() => import('./pages/create/CreateConcertPage'));
@@ -216,6 +217,7 @@ function AppShell() {
             <Route path="/watch-history"                    element={<WatchHistoryPage />} />
             <Route path="/following"                        element={<FollowingPage />} />
             <Route path="/following/:userId"                element={<FollowingPage />} />
+            <Route path="/suggestions"                      element={<SuggestionsPage />} />
             <Route path="/create/post"                      element={<CreatePostPage />} />
             <Route path="/create/reel"                      element={<CreateReelPage />} />
             <Route path="/create/concert"                   element={<CreateConcertPage />} />

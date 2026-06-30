@@ -2468,7 +2468,7 @@ function SuggestionsPanel() {
           <Sparkles size={14} style={{ color: 'var(--primary)' }} />
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Suggestions</p>
         </div>
-        <button onClick={() => navigate('/following')}
+        <button onClick={() => navigate('/suggestions')}
           className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
           Voir plus →
         </button>
@@ -2515,7 +2515,7 @@ function SuggestionsPanel() {
             );
           })}
           <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-            <button onClick={() => navigate('/following')}
+            <button onClick={() => navigate('/suggestions')}
               className="text-xs font-bold w-full text-center py-1.5 rounded-xl transition-all"
               style={{ color: 'var(--primary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.07)')}
@@ -2545,8 +2545,6 @@ function CommunitiesSidePanel() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (!loading && communities.length === 0) return null;
-
   return (
     <div className="rounded-2xl overflow-hidden"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -2561,6 +2559,17 @@ function CommunitiesSidePanel() {
       </div>
       {loading ? (
         <div className="flex justify-center py-8"><Spinner size="sm" /></div>
+      ) : communities.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 py-6 px-4">
+          <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
+            Aucune communauté pour l'instant
+          </p>
+          <button onClick={() => navigate('/communities')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
+            style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
+            Explorer les communautés
+          </button>
+        </div>
       ) : (
         <>
           {communities.map((c, i) => {
@@ -2924,7 +2933,8 @@ export default function FeedPage() {
         </div>
 
         {/* ── Right sidebar (lg+) ── */}
-        <div className="w-60 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4">
+        <div className="w-60 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4"
+          style={{ height: 'calc(100vh - 2rem)', overflowY: 'auto', scrollbarWidth: 'none' }}>
           <SuggestionsPanel />
           <CommunitiesSidePanel />
         </div>
