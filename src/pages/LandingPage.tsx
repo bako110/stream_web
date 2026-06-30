@@ -168,7 +168,7 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0">
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-10 w-auto" />
+          <RoundLogo size={40} />
         </Link>
 
         {/* Desktop nav */}
@@ -229,7 +229,7 @@ function Navbar() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 h-16 shrink-0" style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : '#e5e7eb'}` }}>
             <Link to="/" onClick={() => setMenuOpen(false)}>
-              <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-9 w-auto" />
+              <RoundLogo size={36} />
             </Link>
             <button onClick={() => setMenuOpen(false)} style={{ color: isDark ? '#ffffff' : '#0E0D1F' }}>
               <X size={24} />
@@ -325,52 +325,42 @@ function StatCard({ icon: Icon, value, label, color, delay }: {
   );
 }
 
-// ── Round logo hero ───────────────────────────────────────────────────────────
-function HeroLogo() {
+// ── Logo rond réutilisable ────────────────────────────────────────────────────
+function RoundLogo({ size = 40 }: { size?: number }) {
   const { isDark } = useThemeStore();
+  const border = Math.max(2, Math.round(size * 0.04));
   return (
-    <div className="animate-reveal-up" style={{ animationFillMode: 'both', marginBottom: 32 }}>
-      <div style={{ position: 'relative', display: 'inline-block' }}>
-        {/* Ambient glow */}
+    <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
+      {/* Glow */}
+      <div style={{
+        position: 'absolute', inset: -size * 0.18,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(123,63,242,0.35) 0%, transparent 70%)',
+        filter: `blur(${size * 0.14}px)`,
+        pointerEvents: 'none',
+      }} />
+      {/* Gradient ring */}
+      <div style={{
+        position: 'relative',
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        padding: border,
+        background: 'linear-gradient(135deg, #7B3FF2, #A855F7, #EC4899)',
+        boxShadow: `0 ${size * 0.1}px ${size * 0.45}px rgba(123,63,242,0.45)`,
+        flexShrink: 0,
+      }}>
         <div style={{
-          position: 'absolute', inset: -18,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(123,63,242,0.45) 0%, rgba(168,85,247,0.25) 50%, transparent 70%)',
-          filter: 'blur(16px)',
-          animation: 'float-slow 4s ease-in-out infinite',
-        }} />
-        {/* Gradient border ring */}
-        <div style={{
-          position: 'relative',
-          width: 108,
-          height: 108,
-          borderRadius: '50%',
-          padding: 3,
-          background: 'linear-gradient(135deg, #7B3FF2, #A855F7, #EC4899, #7B3FF2)',
-          boxShadow: '0 12px 48px rgba(123,63,242,0.55)',
+          width: '100%', height: '100%', borderRadius: '50%',
+          background: isDark ? '#111' : '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden',
         }}>
-          {/* Inner circle with logo */}
-          <div style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '50%',
-            background: isDark ? '#111' : '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}>
-            <img
-              src={isDark ? Images.logoDark : Images.logoLight}
-              alt="GoFolyX"
-              style={{
-                width: '80%',
-                height: '80%',
-                objectFit: 'contain',
-                display: 'block',
-              }}
-            />
-          </div>
+          <img
+            src={isDark ? Images.logoDark : Images.logoLight}
+            alt="GoFolyX"
+            style={{ width: '78%', height: '78%', objectFit: 'contain', display: 'block' }}
+          />
         </div>
       </div>
     </div>
@@ -389,9 +379,6 @@ function HeroSection() {
         style={{ background: 'linear-gradient(to bottom, transparent, var(--bg))' }} />
 
       <div className="relative z-10 max-w-5xl mx-auto text-center">
-
-        {/* Round logo */}
-        <HeroLogo />
 
         {/* Badge */}
         <div
@@ -912,7 +899,7 @@ function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-9 w-auto" />
+              <RoundLogo size={36} />
             </div>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
               La plateforme de streaming culturel qui réunit films, concerts, événements et communauté.
