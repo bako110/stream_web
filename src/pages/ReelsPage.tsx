@@ -1514,6 +1514,7 @@ export default function ReelsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!me) return;
     fetchReels();
     apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
       .then(r => { if (r.data?.id) setReelAd(r.data); })
@@ -1717,19 +1718,15 @@ export default function ReelsPage() {
     }
   }, [activeIndex]); // eslint-disable-line
 
-  // ── Guest (non connecté) ────────────────────────────────────────────────────
+  // ── Guest (non connecté) — affiché immédiatement, sans fetch ───────────────
   if (!me) {
-    const preview = reels[0] ?? null;
     return (
       <GuestPreview
         type="reel"
-        thumbnail={preview?.thumbnail_url}
-        body={preview?.caption}
-        author={preview ? { avatar_url: (preview as any).author?.avatar_url, display_name: (preview as any).author?.display_name, username: (preview as any).author?.username, is_verified: (preview as any).author?.is_verified } : null}
-        date={preview?.created_at}
-        viewCount={preview?.view_count}
-        likeCount={preview?.like_count}
-        commentCount={preview?.comment_count}
+        thumbnail={null}
+        body={null}
+        author={null}
+        date={null}
       />
     );
   }
