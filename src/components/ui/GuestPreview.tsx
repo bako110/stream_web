@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -38,8 +39,8 @@ const TYPE_CONFIG: Record<GuestPreviewType, { label: string; cta: string; icon: 
     ),
   },
   reel: {
-    label: 'Reel',
-    cta: 'Connecte-toi pour regarder ce reel',
+    label: 'Vidéo',
+    cta: 'Connecte-toi pour regarder cette vidéo',
     icon: (
       <svg width="9" height="9" viewBox="0 0 12 12" fill="white">
         <path d="M3 2l7 4-7 4V2z" fill="white"/>
@@ -75,6 +76,7 @@ export function GuestPreview({
 }: GuestPreviewProps) {
   const cfg = TYPE_CONFIG[type];
   const redirectParam = encodeURIComponent(window.location.pathname + window.location.search);
+  const [showPlayPrompt, setShowPlayPrompt] = useState(false);
   const authorName = author?.display_name ?? author?.username ?? null;
   const initials   = authorName ? authorName[0].toUpperCase() : '?';
 
@@ -404,11 +406,11 @@ export function GuestPreview({
           <div className="gp-meta">
             {/* Play button */}
             {isMedia(type) && (
-              <div className="gp-play">
+              <button className="gp-play" onClick={() => setShowPlayPrompt(true)} style={{ cursor: 'pointer', border: 'none' }}>
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="white">
                   <path d="M5 3l12 7-12 7V3z"/>
                 </svg>
-              </div>
+              </button>
             )}
 
             {/* Title */}
@@ -508,6 +510,74 @@ export function GuestPreview({
             )}
           </div>
         </div>
+
+        {/* Modal play prompt */}
+        {showPlayPrompt && (
+          <>
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
+              onClick={() => setShowPlayPrompt(false)}
+            />
+            <div style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 31,
+              background: 'var(--surface, #1a1a2e)',
+              borderRadius: '24px 24px 0 0',
+              padding: '12px 24px',
+              paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+              border: '1px solid rgba(255,255,255,0.10)',
+              animation: 'dialogIn 0.25s cubic-bezier(0.32,0.72,0,1)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+              </div>
+              {/* Icone play */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #7B3FF2, #A855F7)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 8px 24px rgba(123,63,242,0.45)',
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 20 20" fill="white">
+                    <path d="M5 3l12 7-12 7V3z"/>
+                  </svg>
+                </div>
+              </div>
+              <p style={{ fontSize: 17, fontWeight: 800, color: '#fff', textAlign: 'center', marginBottom: 6, letterSpacing: '-0.3px' }}>
+                Connecte-toi pour regarder
+              </p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginBottom: 20, lineHeight: 1.4 }}>
+                Rejoins GoFolyX gratuitement pour accéder à toutes les vidéos, concerts et events.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Link
+                  to={`/auth/login?redirect=${redirectParam}`}
+                  style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '13px', borderRadius: 14,
+                    fontSize: 14, fontWeight: 800, color: '#fff',
+                    background: '#7B3FF2', textDecoration: 'none',
+                  }}
+                >
+                  Se connecter
+                </Link>
+                <Link
+                  to={`/auth/register?redirect=${redirectParam}`}
+                  style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '13px', borderRadius: 14,
+                    fontSize: 14, fontWeight: 800, color: '#fff',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  S'inscrire
+                </Link>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* CTA bar fixe */}
         <div className="gp-cta">
