@@ -118,35 +118,31 @@ function StoryViewer({
   const isOwn  = !!currentUserId && (story as any)?.user_id === currentUserId;
   const totalInGroup = group?.stories.length ?? 0;
 
-  // Setup HLS pour la video ad
   const adIsVideo = !!(storyAd?.format === 'video' || (storyAd?.creative_url && (
     storyAd.creative_url.includes('.m3u8') ||
     storyAd.creative_url.includes('/hls/') ||
     storyAd.creative_url.toLowerCase().includes('.mp4')
   )));
 
-  useEffect(() => {
-    if (!showAd || !adIsVideo || !storyAd?.creative_url) return;
-    const v = adVideoRef.current;
-    if (!v) return;
+  const setupAdVideo = useCallback((v: HTMLVideoElement | null) => {
+    (adVideoRef as React.MutableRefObject<HTMLVideoElement | null>).current = v;
+    if (!v || !adIsVideo || !storyAd?.creative_url) return;
     const src = toProxiedUrl(storyAd.creative_url);
     if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30 });
       adHlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(v);
-      hls.once(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
+      hls.on(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
+      hls.on(Hls.Events.ERROR, (_e, data) => { if (data.fatal) hls.destroy(); });
     } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
       v.src = src;
       v.play().catch(() => {});
     } else {
       v.src = src;
+      v.play().catch(() => {});
     }
-    return () => {
-      adHlsRef.current?.destroy(); adHlsRef.current = null;
-      v.pause(); v.removeAttribute('src'); v.load();
-    };
-  }, [showAd, adIsVideo, storyAd?.creative_url]); // eslint-disable-line
+  }, [adIsVideo, storyAd?.creative_url]); // eslint-disable-line
 
   // Mark viewed
   useEffect(() => {
@@ -267,9 +263,9 @@ function StoryViewer({
           {/* Fond créatif */}
           {adIsVideo && storyAd.creative_url ? (
             <video
-              ref={adVideoRef}
+              ref={setupAdVideo}
               className="absolute inset-0 w-full h-full object-cover"
-              playsInline muted loop
+              playsInline muted autoPlay loop
               poster={storyAd.thumbnail_url ?? undefined}
             />
           ) : storyAd.thumbnail_url || storyAd.creative_url ? (

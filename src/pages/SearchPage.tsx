@@ -58,27 +58,24 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
     }
   }, [ad?.id]);
 
-  useEffect(() => {
-    if (!isVideo || !ad.creative_url) return;
-    const v = videoRef.current;
-    if (!v) return;
+  const setupVideo = useCallback((v: HTMLVideoElement | null) => {
+    (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = v;
+    if (!v || !isVideo || !ad.creative_url) return;
     const src = toProxiedUrl(ad.creative_url);
     if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30 });
       hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(v);
-      hls.once(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
+      hls.on(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
+      hls.on(Hls.Events.ERROR, (_e, data) => { if (data.fatal) hls.destroy(); });
     } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
       v.src = src;
       v.play().catch(() => {});
     } else {
       v.src = src;
+      v.play().catch(() => {});
     }
-    return () => {
-      hlsRef.current?.destroy(); hlsRef.current = null;
-      v.pause(); v.removeAttribute('src'); v.load();
-    };
   }, [ad.creative_url, isVideo]); // eslint-disable-line
 
   function handleClick() {
@@ -123,9 +120,9 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
         <div className="overflow-hidden" style={{ aspectRatio: '1.91/1' }}>
           {isVideo && ad.creative_url ? (
             <video
-              ref={videoRef}
+              ref={setupVideo}
               className="w-full h-full object-cover"
-              playsInline muted loop
+              playsInline muted autoPlay loop
               poster={ad.thumbnail_url ?? undefined}
             />
           ) : (
