@@ -303,8 +303,14 @@ export const Endpoints = {
     linkPreview: (url: string) => `${V1}/utils/link-preview?url=${encodeURIComponent(url)}`,
   },
   social_ext: {
-    friendsWhoLiked: (entityType: string, entityId: string) =>
-      `${V1}/social/reactions/friends?entity_type=${entityType}&entity_id=${entityId}`,
+    friendsWhoLiked: (entityType: string, entityId: string) => {
+      const key = entityType === 'post' ? 'post_id'
+                : entityType === 'event' ? 'event_id'
+                : entityType === 'concert' ? 'concert_id'
+                : entityType === 'reel' ? 'reel_id'
+                : 'post_id';
+      return `${V1}/social/reactions/friends?${key}=${entityId}`;
+    },
   },
 
   app: {
