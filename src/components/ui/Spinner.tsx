@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { RoundLogo } from './RoundLogo';
 
 interface Props { size?: 'sm' | 'md' | 'lg'; className?: string; }
 
@@ -23,19 +24,7 @@ export function PageLoader({ dark = false, label = 'GoFolyX' }: PageLoaderProps)
   return (
     <div className="flex items-center justify-center" style={{ background: bg, minHeight: '100dvh' }}>
       <div className="flex flex-col items-center gap-5">
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 rounded-2xl rotate-12"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', animation: 'spin-slow 3s linear infinite' }} />
-          <div className="absolute inset-1 rounded-xl flex items-center justify-center"
-            style={{ background: bg }}>
-            <span className="text-lg font-black"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#9B65F5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              GX
-            </span>
-          </div>
-          <div className="absolute inset-0 rounded-2xl rotate-12"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', opacity: 0.25, animation: 'ping-once 1.5s ease-out infinite' }} />
-        </div>
+        <RoundLogo size={56} />
         <div className="flex items-center gap-1.5">
           {[0, 1, 2].map(i => (
             <div key={i} className="w-2.5 h-2.5 rounded-full"
