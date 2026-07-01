@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { clsx } from 'clsx';
 import { encodeId } from '../utils/slugId';
 import {
   Music, MapPin, Clock, Users, Play, Calendar,
@@ -584,7 +585,7 @@ function AvatarWithFallback({ src, name, verified }: { src?: string | null; name
 }
 
 // ── Story cards (portrait WhatsApp style) ────────────────────────────────────
-function MyStoryCard({ user, myGroup, onClick }: { user: any; myGroup: StoryGroup | undefined; onClick: () => void }) {
+function MyStoryCard({ user, myGroup, onClick, onAdd }: { user: any; myGroup: StoryGroup | undefined; onClick: () => void; onAdd: () => void }) {
   const [imgErr, setImgErr] = useState(false);
   const firstStory  = myGroup?.stories[0];
   const bgUrl       = firstStory?.thumbnail_url ?? firstStory?.media_url ?? null;
@@ -617,7 +618,14 @@ function MyStoryCard({ user, myGroup, onClick }: { user: any; myGroup: StoryGrou
           ) : (
             <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
           )}
-          <div className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
+          <div
+            onClick={myGroup ? (e => { e.stopPropagation(); onAdd(); }) : undefined}
+            role={myGroup ? 'button' : undefined}
+            title={myGroup ? 'Ajouter une story' : undefined}
+            className={clsx(
+              'absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center',
+              myGroup && 'transition-transform hover:scale-110',
+            )}
             style={{ background: 'var(--primary)', width: 18, height: 18, border: '2px solid var(--surface)' }}>
             <Plus size={9} className="text-white" />
           </div>
@@ -747,6 +755,7 @@ function StoriesBar() {
               ? navigate(`/stories?userId=${encodeId(user!.id)}&index=${allGroups.indexOf(myGroup)}`)
               : navigate('/stories/create')
             }
+            onAdd={() => navigate('/stories/create')}
           />
 
           {/* Autres stories — navigue vers page dédiée */}
