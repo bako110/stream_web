@@ -1636,10 +1636,12 @@ export default function ReelsPage() {
   }, [runSearch]);
   const pickSearchResult = useCallback((r: Reel) => {
     closeSearch();
-    // Injecter en tête si pas déjà présent
+    // Place le reel choisi en tête — s'il existe déjà dans la liste, le déplace
+    // au lieu de laisser la liste inchangée (sinon le scroll vers 0 pointe vers
+    // le mauvais reel, celui qui était déjà en première position).
     setReels(prev => {
-      if (prev.find(x => x.id === r.id)) return prev;
-      return [r, ...prev];
+      const rest = prev.filter(x => x.id !== r.id);
+      return [r, ...rest];
     });
     setActiveIndex(0);
     // Attend que React commite le DOM avec le nouveau reel avant de scroller —
