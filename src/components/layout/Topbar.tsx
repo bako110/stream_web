@@ -127,7 +127,7 @@ export function Topbar({ onMenuClick }: Props) {
     )}
 
     <header
-      className="sticky top-0 z-30 flex items-center gap-3 px-4 h-14"
+      className="sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 h-14 overflow-hidden"
       style={{
         background:          'var(--glass-strong-bg)',
         backdropFilter:      'blur(20px) saturate(180%)',
@@ -138,7 +138,7 @@ export function Topbar({ onMenuClick }: Props) {
       {/* Mobile hamburger */}
       <button
         onClick={onMenuClick}
-        className="flex lg:hidden p-2 rounded-xl transition-all"
+        className="flex lg:hidden p-1.5 sm:p-2 rounded-xl transition-all shrink-0"
         style={{ color: 'var(--text-secondary)' }}
         onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
         onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
@@ -150,6 +150,9 @@ export function Topbar({ onMenuClick }: Props) {
       <button onClick={() => navigate('/feed')} className="shrink-0 flex items-center" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
         <RoundLogo size={34} />
       </button>
+
+      {/* Spacer flexible — absorbe l'espace vide et empêche le groupe de droite de déborder sur mobile */}
+      <div className="flex-1 min-w-0 lg:hidden" />
 
       {/* Desktop search bar */}
       <form onSubmit={handleSearch} className="flex-1 max-w-md hidden lg:flex items-center">
@@ -169,17 +172,17 @@ export function Topbar({ onMenuClick }: Props) {
       </form>
 
       {/* Right actions */}
-      <div className="flex items-center gap-1.5 ml-auto">
+      <div className="flex items-center gap-0.5 sm:gap-1.5 ml-auto shrink-0">
 
         {/* Mobile search icon → ouvre barre fullscreen */}
         <button
           onClick={openMobileSearch}
-          className="p-2 rounded-xl transition-all lg:hidden"
+          className="p-1.5 sm:p-2 rounded-xl transition-all lg:hidden shrink-0"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
         >
-          <Search size={20} />
+          <Search size={19} />
         </button>
 
         {/* Télécharger l'app — mobile uniquement, si APK disponible */}
@@ -188,7 +191,7 @@ export function Topbar({ onMenuClick }: Props) {
             href={apkUrl}
             download
             title="Télécharger l'application Android"
-            className="flex lg:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all no-underline"
+            className="flex lg:hidden items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all no-underline shrink-0"
             style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}
             onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.22)'); }}
             onMouseLeave={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.12)'); }}
@@ -201,21 +204,21 @@ export function Topbar({ onMenuClick }: Props) {
         {/* Go Live */}
         <button
           onClick={() => navigate('/go-live')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+          className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0"
           style={{ background: 'linear-gradient(135deg,#EF4444,#DC2626)', color: '#fff', boxShadow: '0 2px 10px rgba(239,68,68,0.35)' }}
           onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 18px rgba(239,68,68,0.55)')}
           onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 10px rgba(239,68,68,0.35)')}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           <span className="hidden sm:inline">Go Live</span>
-          <Radio size={14} className="sm:hidden" />
+          <Radio size={16} className="sm:hidden" />
         </button>
 
         {/* Dark / Light toggle */}
         <button
           onClick={toggle}
           title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
-          className="p-2 rounded-xl transition-all"
+          className="hidden sm:flex p-2 rounded-xl transition-all shrink-0"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
@@ -226,7 +229,7 @@ export function Topbar({ onMenuClick }: Props) {
         {/* Messages */}
         <button
           onClick={() => setMsgPopover(v => !v)}
-          className="relative p-2 rounded-xl transition-all"
+          className="relative p-1.5 sm:p-2 rounded-xl transition-all shrink-0"
           style={{
             color: msgPopover ? 'var(--primary)' : 'var(--text-secondary)',
             background: msgPopover ? 'rgba(123,63,242,0.1)' : 'transparent',
@@ -234,9 +237,9 @@ export function Topbar({ onMenuClick }: Props) {
           onMouseEnter={e => { if (!msgPopover) { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
           onMouseLeave={e => { if (!msgPopover) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}
         >
-          <MessageCircle size={20} />
+          <MessageCircle size={19} />
           {unreadMessages > 0 && (
-            <span className="absolute top-1 right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full text-white text-[10px] font-bold px-1"
+            <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full text-white text-[10px] font-bold px-1"
               style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', lineHeight: 1 }}>
               {unreadMessages > 99 ? '99+' : unreadMessages}
             </span>
@@ -247,13 +250,13 @@ export function Topbar({ onMenuClick }: Props) {
         {/* Notifications */}
         <button
           onClick={() => navigate('/notifications')}
-          className="relative p-2 rounded-xl transition-all"
+          className="relative p-1.5 sm:p-2 rounded-xl transition-all shrink-0"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
         >
-          <Bell size={20} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
+          <Bell size={19} />
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
         </button>
 
@@ -261,7 +264,7 @@ export function Topbar({ onMenuClick }: Props) {
         {user && (
           <button
             onClick={() => navigate('/profile')}
-            className="hidden lg:flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl transition-all"
+            className="hidden lg:flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl transition-all shrink-0"
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
@@ -276,7 +279,7 @@ export function Topbar({ onMenuClick }: Props) {
         {user && (
           <button
             onClick={() => navigate('/profile')}
-            className="lg:hidden"
+            className="lg:hidden shrink-0 pl-0.5"
           >
             <Avatar src={user.avatar_url} name={user.display_name ?? user.username} size="sm" verified={user.is_verified} />
           </button>
