@@ -233,12 +233,8 @@ export default function MyStoriesPage() {
       {/* Bouton flottant ajouter */}
       <button onClick={() => navigate('/stories/create')}
         className="fixed bottom-7 right-6 w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-105"
-        style={{ background: 'var(--surface)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', border: '1px solid var(--border)' }}>
-        <Camera size={22} style={{ color: 'var(--text-primary)' }} />
-        <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center"
-          style={{ background: 'var(--primary)', border: '2px solid var(--surface)' }}>
-          <Plus size={10} color="#fff" />
-        </div>
+        style={{ background: 'var(--primary)', boxShadow: '0 4px 20px rgba(123,63,242,0.45)' }}>
+        <Plus size={26} color="#fff" />
       </button>
 
       {menuStory && (
