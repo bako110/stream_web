@@ -752,7 +752,7 @@ function StoriesBar() {
             user={user}
             myGroup={myGroup}
             onClick={() => myGroup
-              ? navigate(`/stories?userId=${encodeId(user!.id)}&index=${allGroups.indexOf(myGroup)}`)
+              ? navigate('/my-stories')
               : navigate('/stories/create')
             }
             onAdd={() => navigate('/stories/create')}

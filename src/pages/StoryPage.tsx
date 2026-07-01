@@ -45,6 +45,7 @@ export default function StoryPage() {
 
   const targetUserId  = params.get('userId') ? decodeId(params.get('userId')!) : null;
   const initialIndex  = parseInt(params.get('index') ?? '0', 10);
+  const initialStoryIndex = parseInt(params.get('storyIndex') ?? '0', 10);
 
   const [groups,   setGroups]   = useState<StoryGroup[]>([]);
   const [storyAd,  setStoryAd]  = useState<StoryAd | null>(null);
@@ -80,6 +81,7 @@ export default function StoryPage() {
     <StoryViewer
       groups={groups}
       initialIndex={startIndex}
+      initialStoryIndex={initialStoryIndex}
       currentUserId={user?.id}
       storyAd={storyAd}
       onClose={() => navigate(-1)}
@@ -174,17 +176,18 @@ function MusicWidget({ audioUrl, playing, isVoice }: { audioUrl: string; playing
 // ── StoryViewer ───────────────────────────────────────────────────────────────
 
 function StoryViewer({
-  groups, initialIndex, currentUserId, storyAd, onClose, onReload,
+  groups, initialIndex, initialStoryIndex = 0, currentUserId, storyAd, onClose, onReload,
 }: {
   groups: StoryGroup[];
   initialIndex: number;
+  initialStoryIndex?: number;
   currentUserId?: string;
   storyAd?: StoryAd | null;
   onClose: () => void;
   onReload: () => void;
 }) {
   const [groupIdx,     setGroupIdx]     = useState(initialIndex);
-  const [storyIdx,     setStoryIdx]     = useState(0);
+  const [storyIdx,     setStoryIdx]     = useState(initialStoryIndex);
   const [progress,     setProgress]     = useState(0);
   const [paused,       setPaused]       = useState(false);
   const [menuOpen,     setMenuOpen]     = useState(false);
