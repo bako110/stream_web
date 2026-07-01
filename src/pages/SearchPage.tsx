@@ -186,6 +186,12 @@ export default function SearchPage() {
   const [trending, setTrending] = useState<{ id: string; title: string; thumbnail_url?: string | null }[]>([]);
   const [searchAd, setSearchAd] = useState<SearchAd | null>(null);
   const [history,  setHistory]  = useState<HistoryItem[]>([]);
+  // Champ mobile contrôlé — séparé de l'URL pour ne pas remonter l'input à chaque frappe
+  // (l'ancienne version utilisait key={q}+defaultValue, qui remonte le DOM à chaque navigate
+  // et casse la saisie continue : la frappe rapide perdait des lettres ou le focus).
+  const [mobileQ, setMobileQ] = useState(q);
+  const mobileTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => { setMobileQ(q); }, [q]);
 
   // Charger historique local + tendances au montage
   useEffect(() => {
@@ -199,15 +205,20 @@ export default function SearchPage() {
       }).catch(() => {});
   }, []);
 
+  // Terme le plus récemment demandé — évite qu'une réponse en retard (frappe rapide)
+  // écrase les résultats d'une recherche plus récente avec des résultats obsolètes.
+  const searchReqRef = useRef('');
   const doSearch = useCallback((term: string) => {
-    if (!term.trim()) { setResults(null); setLoading(false); return; }
+    const q = term.trim();
+    searchReqRef.current = q;
+    if (!q) { setResults(null); setLoading(false); return; }
     setLoading(true);
-    searchHistory.add(term);
+    searchHistory.add(q);
     setHistory(searchHistory.getAll());
-    apiClient.get<SearchResult>(`${Endpoints.search.query}?q=${encodeURIComponent(term.trim())}&limit=15`)
-      .then(r => { setResults(r.data); })
-      .catch(() => setResults(null))
-      .finally(() => setLoading(false));
+    apiClient.get<SearchResult>(`${Endpoints.search.query}?q=${encodeURIComponent(q)}&limit=15`)
+      .then(r => { if (searchReqRef.current === q) setResults(r.data); })
+      .catch(() => { if (searchReqRef.current === q) setResults(null); })
+      .finally(() => { if (searchReqRef.current === q) setLoading(false); });
   }, []);
 
   useEffect(() => { doSearch(q); }, [q]); // eslint-disable-line
@@ -237,14 +248,13 @@ export default function SearchPage() {
     <div className="max-w-full px-4 sm:px-6 py-6 space-y-6">
 
       {/* Barre de recherche mobile (le Topbar desktop suffit) */}
-      <form onSubmit={e => { e.preventDefault(); if (q.trim()) navigate(`/search?q=${encodeURIComponent(q.trim())}`); }}
+      <form onSubmit={e => { e.preventDefault(); if (mobileQ.trim()) navigate(`/search?q=${encodeURIComponent(mobileQ.trim())}`); }}
         className="lg:hidden">
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
             style={{ color: 'var(--text-tertiary)' }} />
           <input
-            defaultValue={q}
-            key={q}
+            value={mobileQ}
             placeholder="Rechercher films, artistes, concerts…"
             autoFocus
             className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl focus:outline-none"
@@ -253,8 +263,12 @@ export default function SearchPage() {
             onBlur={e  => { e.target.style.borderColor = 'var(--border)';  e.target.style.boxShadow = 'none'; }}
             onChange={e => {
               const v = e.target.value;
-              if (v.trim()) navigate(`/search?q=${encodeURIComponent(v.trim())}`, { replace: true });
-              else navigate('/search', { replace: true });
+              setMobileQ(v);
+              if (mobileTimer.current) clearTimeout(mobileTimer.current);
+              mobileTimer.current = setTimeout(() => {
+                if (v.trim()) navigate(`/search?q=${encodeURIComponent(v.trim())}`, { replace: true });
+                else navigate('/search', { replace: true });
+              }, 400);
             }}
           />
         </div>

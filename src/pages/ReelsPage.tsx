@@ -1633,13 +1633,18 @@ export default function ReelsPage() {
     setSearchQuery('');
     setSearchResults([]);
   }, []);
+  // Terme le plus récemment demandé — évite qu'une réponse en retard (frappe rapide,
+  // plusieurs requêtes en vol en même temps) écrase les résultats d'une recherche plus récente.
+  const searchReqRef = useRef('');
   const runSearch = useCallback((q: string) => {
-    if (!q.trim()) { setSearchResults([]); return; }
+    const term = q.trim();
+    searchReqRef.current = term;
+    if (!term) { setSearchResults([]); setSearching(false); return; }
     setSearching(true);
-    apiClient.get<any>(`${Endpoints.reels.feed}?search=${encodeURIComponent(q.trim())}&limit=20`)
-      .then(r => setSearchResults(toArray<Reel>(r.data)))
-      .catch(() => setSearchResults([]))
-      .finally(() => setSearching(false));
+    apiClient.get<any>(`${Endpoints.reels.feed}?search=${encodeURIComponent(term)}&limit=20`)
+      .then(r => { if (searchReqRef.current === term) setSearchResults(toArray<Reel>(r.data)); })
+      .catch(() => { if (searchReqRef.current === term) setSearchResults([]); })
+      .finally(() => { if (searchReqRef.current === term) setSearching(false); });
   }, []);
   const onSearchChange = useCallback((v: string) => {
     setSearchQuery(v);
