@@ -1642,7 +1642,13 @@ export default function ReelsPage() {
       return [r, ...prev];
     });
     setActiveIndex(0);
-    setTimeout(() => { if (containerRef.current) containerRef.current.scrollTop = 0; }, 80);
+    // Attend que React commite le DOM avec le nouveau reel avant de scroller —
+    // un setTimeout seul peut s'exécuter avant le repaint et scroller sur l'ancien DOM.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (containerRef.current) containerRef.current.scrollTop = 0;
+      });
+    });
   }, [closeSearch]);
 
   // ── Menu 3 points ──
