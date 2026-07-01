@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import { decodeId } from '../utils/slugId';
 import {
   X, ChevronLeft, ChevronRight, Eye, MoreHorizontal,
-  Edit3, Trash2, Zap, ExternalLink,
+  Edit3, Trash2, Zap, ExternalLink, Heart,
 } from 'lucide-react';
 import Hls from 'hls.js';
 import { apiClient } from '../api';
@@ -17,6 +17,7 @@ import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
+import { HeartRain, RecentLikersAvatars } from '../components/ui/HeartRain';
 import { useAuthStore } from '../store/authStore';
 import type { StoryGroup } from '../types';
 import { StoryOverlaysRenderer } from '../utils/reelFilters.tsx';
@@ -217,6 +218,30 @@ function StoryViewer({
   const dur    = (story?.duration_sec ?? 5) * 1000;
   const isOwn  = !!currentUserId && (story as any)?.user_id === currentUserId;
   const totalInGroup = group?.stories.length ?? 0;
+
+  const [liked,     setLiked]     = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const likeInFlight = useRef(false);
+
+  // Resync à chaque changement de story
+  useEffect(() => {
+    setLiked((story as any)?.liked_by_me ?? false);
+    setLikeCount((story as any)?.like_count ?? 0);
+  }, [story?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleToggleLike = useCallback(() => {
+    if (!story || isOwn || likeInFlight.current) return;
+    likeInFlight.current = true;
+    const newLiked = !liked;
+    setLiked(newLiked);
+    setLikeCount(c => newLiked ? c + 1 : Math.max(0, c - 1));
+    apiClient.post(Endpoints.stories.like(story.id))
+      .catch(() => {
+        setLiked(!newLiked);
+        setLikeCount(c => newLiked ? Math.max(0, c - 1) : c + 1);
+      })
+      .finally(() => { likeInFlight.current = false; });
+  }, [story, isOwn, liked]);
 
   const adIsVideo = !!(storyAd?.format === 'video' || (storyAd?.creative_url && (
     storyAd.creative_url.includes('.m3u8') ||
@@ -594,6 +619,20 @@ function StoryViewer({
             <span className="text-white text-xs font-bold">{(story as any).view_count ?? 0} vue{((story as any).view_count ?? 0) !== 1 ? 's' : ''}</span>
           </button>
         )}
+
+        {/* Like — visible pour les non-propriétaires */}
+        {!isOwn && (
+          <button onClick={handleToggleLike}
+            className="absolute bottom-5 right-5 z-20 flex items-center gap-1.5 px-3 py-2 rounded-full transition-all"
+            style={{ background: liked ? 'rgba(224,56,154,0.3)' : 'rgba(0,0,0,0.55)' }}>
+            <Heart size={16} fill={liked ? '#E0389A' : 'none'} className={liked ? '' : 'text-white'} style={liked ? { color: '#E0389A' } : undefined} />
+            {likeCount > 0 && <span className="text-white text-xs font-bold">{likeCount}</span>}
+          </button>
+        )}
+
+        {/* Pluie de cœurs + avatars des derniers likers — story très aimée (≥1000 likes) */}
+        <HeartRain active={!paused} likeCount={likeCount} contentId={story.id} />
+        <RecentLikersAvatars active={!paused} likeCount={likeCount} contentId={story.id} kind="story" />
 
         {/* Tap zones */}
         <button className="absolute left-0 top-0 w-1/3 h-full z-10 opacity-0" onClick={goPrev} />
