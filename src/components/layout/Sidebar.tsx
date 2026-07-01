@@ -6,12 +6,12 @@ import {
   Users, MessageCircle, Bell, Activity, UserPlus,
   Calendar, CalendarDays, Heart, Clock,
   Wallet, TrendingUp, HelpCircle, Settings, LogOut,
-  Sun, Moon, ChevronLeft, ChevronRight, Download,
+  Sun, Moon, ChevronLeft, Download,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { Avatar } from '../ui/Avatar';
-import { Images } from '../assets';
+import { RoundLogo } from '../ui/RoundLogo';
 
 const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.3.apk';
 const APK_VERSION = '1.3';
@@ -134,17 +134,23 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
     >
       {/* ── Logo + collapse toggle ── */}
       <div className={clsx('flex items-center h-14 shrink-0 transition-all', collapsed ? 'px-2 justify-center' : 'px-4 justify-between')}>
-        {!collapsed && (
-          <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
-        )}
-        {onCollapseToggle && (
-          <button onClick={onCollapseToggle}
-            className="p-1.5 rounded-lg transition-all shrink-0"
-            style={{ color: 'var(--text-tertiary)' }}
-            onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
-            onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = 'var(--text-tertiary)'); }}>
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
+        {collapsed ? (
+          onCollapseToggle
+            ? <button onClick={onCollapseToggle} title="Déplier le menu"><RoundLogo size={30} /></button>
+            : <RoundLogo size={30} />
+        ) : (
+          <>
+            <RoundLogo size={32} />
+            {onCollapseToggle && (
+              <button onClick={onCollapseToggle}
+                className="p-1.5 rounded-lg transition-all shrink-0"
+                style={{ color: 'var(--text-tertiary)' }}
+                onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
+                onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = 'var(--text-tertiary)'); }}>
+                <ChevronLeft size={16} />
+              </button>
+            )}
+          </>
         )}
       </div>
 
