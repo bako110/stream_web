@@ -84,12 +84,12 @@ function CommunityRow({
             </span>
           )}
         </div>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-          <span>{fmtCount(count)} membre{count > 1 ? 's' : ''}</span>
+        <div className="flex items-center mt-0.5 min-w-0" style={{ color: 'var(--text-tertiary)' }}>
+          <span className="text-xs shrink-0">{fmtCount(count)} membre{count > 1 ? 's' : ''}</span>
           {community.description && (
-            <span className="ml-1.5 truncate">· {community.description}</span>
+            <span className="text-xs ml-1.5 truncate min-w-0">· {community.description}</span>
           )}
-        </p>
+        </div>
       </div>
 
       {/* Action */}

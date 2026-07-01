@@ -62,10 +62,10 @@ function CommunityRow({ c, joined, onJoin, onOpen }: {
             </span>
           )}
         </div>
-        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          {fmtCount(count)} membre{count > 1 ? 's' : ''}
-          {c.description && <span className="ml-2 truncate">· {c.description}</span>}
-        </p>
+        <div className="flex items-center min-w-0" style={{ color: 'var(--text-tertiary)' }}>
+          <span className="text-xs shrink-0">{fmtCount(count)} membre{count > 1 ? 's' : ''}</span>
+          {c.description && <span className="text-xs ml-2 truncate min-w-0">· {c.description}</span>}
+        </div>
       </div>
       <button
         onClick={e => { e.stopPropagation(); onJoin(); }}
