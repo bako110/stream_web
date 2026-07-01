@@ -76,23 +76,25 @@ function ActionMenu({ onClose, onViewers, onDelete }: { onClose: () => void; onV
   return (
     <>
       <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl overflow-hidden sm:relative sm:rounded-2xl sm:max-w-sm sm:mx-auto sm:my-auto"
-        style={{ background: 'var(--surface)' }}>
-        <button onClick={onViewers}
-          className="w-full flex items-center gap-3.5 px-5 py-4 text-left transition-all"
-          style={{ color: 'var(--text-primary)' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <Eye size={18} /> <span className="text-sm font-medium">Voir les vues</span>
-        </button>
-        <div style={{ height: 1, background: 'var(--border)' }} />
-        <button onClick={onDelete}
-          className="w-full flex items-center gap-3.5 px-5 py-4 text-left transition-all"
-          style={{ color: '#EF4444' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <Trash2 size={18} /> <span className="text-sm font-medium">Supprimer</span>
-        </button>
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none">
+        <div className="w-full sm:max-w-sm sm:mx-4 rounded-t-2xl sm:rounded-2xl overflow-hidden pointer-events-auto"
+          style={{ background: 'var(--surface)' }}>
+          <button onClick={onViewers}
+            className="w-full flex items-center gap-3.5 px-5 py-4 text-left transition-all"
+            style={{ color: 'var(--text-primary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <Eye size={18} /> <span className="text-sm font-medium">Voir les vues</span>
+          </button>
+          <div style={{ height: 1, background: 'var(--border)' }} />
+          <button onClick={onDelete}
+            className="w-full flex items-center gap-3.5 px-5 py-4 text-left transition-all"
+            style={{ color: '#EF4444' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <Trash2 size={18} /> <span className="text-sm font-medium">Supprimer</span>
+          </button>
+        </div>
       </div>
     </>
   );
@@ -114,31 +116,33 @@ function ViewersModal({ storyId, onClose }: { storyId: string; onClose: () => vo
   return (
     <>
       <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl overflow-hidden max-h-[70vh] flex flex-col sm:relative sm:rounded-2xl sm:max-w-sm sm:mx-auto sm:my-auto"
-        style={{ background: 'var(--surface)' }}>
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
-          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Vues ({viewers.length})</p>
-          <button onClick={onClose} style={{ color: 'var(--text-tertiary)' }}><X size={18} /></button>
-        </div>
-        <div className="overflow-y-auto flex-1">
-          {loading ? (
-            <div className="py-10 flex justify-center"><PageLoader /></div>
-          ) : viewers.length === 0 ? (
-            <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Pas encore de vue</p>
-          ) : viewers.map((v: any) => (
-            <div key={v.id ?? v.user_id} className="flex items-center gap-3 px-5 py-3">
-              {v.avatar_url
-                ? <img src={v.avatar_url} className="w-9 h-9 rounded-full object-cover" alt="" />
-                : <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm"
-                    style={{ background: 'var(--primary)' }}>
-                    {(v.display_name ?? v.username ?? '?')[0]?.toUpperCase()}
-                  </div>
-              }
-              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                {v.display_name ?? v.username ?? 'Utilisateur'}
-              </span>
-            </div>
-          ))}
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none">
+        <div className="w-full sm:max-w-sm sm:mx-4 rounded-t-2xl sm:rounded-2xl overflow-hidden max-h-[70vh] flex flex-col pointer-events-auto"
+          style={{ background: 'var(--surface)' }}>
+          <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+            <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Vues ({viewers.length})</p>
+            <button onClick={onClose} style={{ color: 'var(--text-tertiary)' }}><X size={18} /></button>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            {loading ? (
+              <div className="py-10 flex justify-center"><PageLoader /></div>
+            ) : viewers.length === 0 ? (
+              <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Pas encore de vue</p>
+            ) : viewers.map((v: any) => (
+              <div key={v.id ?? v.user_id} className="flex items-center gap-3 px-5 py-3">
+                {v.avatar_url
+                  ? <img src={v.avatar_url} className="w-9 h-9 rounded-full object-cover" alt="" />
+                  : <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm"
+                      style={{ background: 'var(--primary)' }}>
+                      {(v.display_name ?? v.username ?? '?')[0]?.toUpperCase()}
+                    </div>
+                }
+                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {v.display_name ?? v.username ?? 'Utilisateur'}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </>
