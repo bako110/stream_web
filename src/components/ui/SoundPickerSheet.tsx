@@ -3,6 +3,7 @@ import { Search, Music, X, Play, Pause, Upload, ChevronRight, Flame, User, Clock
 import type { Sound } from '../../types';
 import { Endpoints } from '../../api/endpoints';
 import { apiClient } from '../../api';
+import { useAuthStore } from '../../store/authStore';
 
 interface Props {
   open: boolean;
@@ -359,6 +360,7 @@ export function SoundPickerSheet({ open, onClose, onSelect, selected }: Props) {
 
 // ── Inline upload component ───────────────────────────────────────────────
 function UploadSoundButton({ onUploaded }: { onUploaded: (s: Sound) => void }) {
+  const { user: me } = useAuthStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -369,9 +371,11 @@ function UploadSoundButton({ onUploaded }: { onUploaded: (s: Sound) => void }) {
     setUploading(true);
     try {
       const name = file.name.replace(/\.[^.]+$/, '');
+      const artistName = me?.display_name ?? me?.username ?? undefined;
       const form = new FormData();
       form.append('file', file);
       form.append('title', name);
+      if (artistName) form.append('artist_name', artistName);
       const res = await apiClient.upload<Sound>(Endpoints.sounds.upload, form);
       onUploaded(res.data);
     } catch {
