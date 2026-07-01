@@ -11,29 +11,18 @@ export function Spinner({ size = 'md', className }: Props) {
   );
 }
 
-// ── Loader pleine page avec logo GX — à utiliser dans tous les Suspense / états loading ──
+// ── Loader pleine page avec logo rond — à utiliser dans tous les Suspense / états loading ──
 interface PageLoaderProps {
   dark?: boolean;   // fond noir (ex: ReelsPage)
-  label?: string;   // texte sous les dots, défaut "GoFolyX"
 }
 
-export function PageLoader({ dark = false, label = 'GoFolyX' }: PageLoaderProps) {
-  const bg     = dark ? '#000' : 'var(--bg)';
-  const dotBg  = dark ? '#fff' : 'var(--primary)';
+export function PageLoader({ dark = false }: PageLoaderProps) {
+  const bg = dark ? '#000' : 'var(--bg)';
 
   return (
     <div className="flex items-center justify-center" style={{ background: bg, minHeight: '100dvh' }}>
-      <div className="flex flex-col items-center gap-5">
+      <div style={{ animation: 'spin-slow 1.4s linear infinite' }}>
         <RoundLogo size={56} />
-        <div className="flex items-center gap-1.5">
-          {[0, 1, 2].map(i => (
-            <div key={i} className="w-2.5 h-2.5 rounded-full"
-              style={{ background: dotBg, animation: `blink 1.2s ease-in-out ${i * 0.2}s infinite` }} />
-          ))}
-        </div>
-        <p className="text-sm font-medium" style={{ color: dark ? 'rgba(255,255,255,0.5)' : 'var(--text-tertiary)' }}>
-          {label}
-        </p>
       </div>
     </div>
   );
