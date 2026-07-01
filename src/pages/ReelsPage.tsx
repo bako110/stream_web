@@ -816,7 +816,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
     try {
       if (navigator.share) await navigator.share({ title: caption || 'Reel GoFolyX', url });
       else await navigator.clipboard.writeText(url);
-      apiClient.post(Endpoints.social.share, { reel_id: reel.id, platform: 'web' }).catch(() => {});
+      apiClient.post(Endpoints.social.share, { reel_id: reel.id, platform: 'external' }).catch(() => {});
       setShareCount(c => c + 1);
     } catch { /* ignore */ }
   }
