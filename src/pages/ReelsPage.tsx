@@ -2142,18 +2142,34 @@ export default function ReelsPage() {
               style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
               <ArrowLeft size={18} />
             </button>
-            <p className="text-white font-black text-base md:hidden" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>Reels</p>
-            <div className="flex items-center gap-2 pointer-events-auto ml-auto">
-              <button onClick={openSearch} className="w-9 h-9 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
-                <Search size={16} />
-              </button>
-              <button onClick={() => setTab('mine')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold"
-                style={{ background: 'rgba(123,63,242,0.3)', border: '1px solid rgba(123,63,242,0.6)', backdropFilter: 'blur(8px)' }}>
-                <User size={12} /> Mes reels
-              </button>
-            </div>
+            {!searchOpen && <p className="text-white font-black text-base md:hidden" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>Reels</p>}
+
+            {/* Barre de recherche — s'étend inline, pas d'overlay plein écran */}
+            {searchOpen ? (
+              <div className="flex-1 flex items-center gap-2 pointer-events-auto"
+                style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 999, padding: '6px 10px' }}>
+                <Search size={14} className="text-white/50 shrink-0" />
+                <input ref={searchInputRef} value={searchQuery} onChange={e => onSearchChange(e.target.value)}
+                  placeholder="Rechercher des reels, auteurs…"
+                  className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/40"
+                  onKeyDown={e => { if (e.key === 'Enter') runSearch(searchQuery); if (e.key === 'Escape') closeSearch(); }} />
+                <button onClick={closeSearch} className="shrink-0 text-white/70">
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 pointer-events-auto ml-auto">
+                <button onClick={openSearch} className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
+                  <Search size={16} />
+                </button>
+                <button onClick={() => setTab('mine')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold"
+                  style={{ background: 'rgba(123,63,242,0.3)', border: '1px solid rgba(123,63,242,0.6)', backdropFilter: 'blur(8px)' }}>
+                  <User size={12} /> Mes reels
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Scroll vertical snap */}
@@ -2187,6 +2203,60 @@ export default function ReelsPage() {
               </div>
             )}
           </div>
+
+          {/* Dropdown résultats — sous la barre de recherche, borné au player (pas d'overlay plein écran) */}
+          {searchOpen && (
+            <div className="absolute top-16 left-3 right-3 z-50 rounded-2xl overflow-hidden"
+              style={{ background: 'rgba(20,20,20,0.97)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', maxHeight: 'calc(100% - 80px)' }}>
+              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100% - 80px)' }}>
+                {searching ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-16">
+                    <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                    <p className="text-white/60 text-sm">Recherche…</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-0.5 p-0.5">
+                    {searchResults.map(r => (
+                      <button key={r.id} onClick={() => pickSearchResult(r)}
+                        className="relative" style={{ aspectRatio: '9/16' }}>
+                        {r.thumbnail_url
+                          ? <img src={r.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                          : <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
+                              <Film size={20} className="text-white/20" />
+                            </div>
+                        }
+                        <div className="absolute inset-0 flex flex-col justify-end p-1.5"
+                          style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%)' }}>
+                          {r.author?.avatar_url && (
+                            <img src={r.author.avatar_url} alt="" className="w-5 h-5 rounded-full mb-1 border border-white/30" />
+                          )}
+                          <p className="text-white text-[9px] font-bold truncate">
+                            {r.author?.display_name ?? r.author?.username ?? ''}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-white/70 text-[8px]">
+                            <span className="flex items-center gap-0.5"><Eye size={7} />{r.view_count ?? 0}</span>
+                            <span className="flex items-center gap-0.5"><Heart size={7} />{r.like_count ?? 0}</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : searchQuery ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center px-6">
+                    <Search size={28} className="text-white/20" />
+                    <p className="text-white text-sm font-bold">Aucun résultat</p>
+                    <p className="text-white/50 text-xs">Essaie un autre mot-clé</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center px-6">
+                    <TrendingUp size={28} className="text-white/20" />
+                    <p className="text-white text-sm font-bold">Découvre des reels</p>
+                    <p className="text-white/50 text-xs">Tape un mot-clé ou un nom d'auteur</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Toggle sidebar — desktop seulement */}
@@ -2516,80 +2586,6 @@ export default function ReelsPage() {
           </div>
         );
       })()}
-
-      {/* ── Overlay recherche (identique mobile) ── */}
-      {searchOpen && (
-        <div className="absolute inset-0 z-50 flex flex-col" style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(12px)' }}>
-          {/* Barre de recherche */}
-          <div className="flex items-center gap-2 px-4 pt-4 pb-3 shrink-0">
-            <button onClick={closeSearch} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
-              <ArrowLeft size={18} />
-            </button>
-            <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-2xl"
-              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
-              <Search size={14} className="text-white/40 shrink-0" />
-              <input ref={searchInputRef} value={searchQuery} onChange={e => onSearchChange(e.target.value)}
-                placeholder="Rechercher des reels, auteurs…"
-                className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/35"
-                onKeyDown={e => e.key === 'Enter' && runSearch(searchQuery)} />
-              {searchQuery && (
-                <button onClick={() => onSearchChange('')}><X size={14} className="text-white/50" /></button>
-              )}
-            </div>
-          </div>
-
-          {/* Résultats */}
-          <div className="flex-1 overflow-y-auto">
-            {searching ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3">
-                <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-                <p className="text-white/60 text-sm">Recherche…</p>
-              </div>
-            ) : searchResults.length > 0 ? (
-              <div className="grid grid-cols-2 gap-0.5 p-0.5">
-                {searchResults.map(r => (
-                  <button key={r.id} onClick={() => pickSearchResult(r)}
-                    className="relative" style={{ aspectRatio: '9/16' }}>
-                    {r.thumbnail_url
-                      ? <img src={r.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                      : <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
-                          <Film size={28} className="text-white/20" />
-                        </div>
-                    }
-                    <div className="absolute inset-0 flex flex-col justify-end p-2"
-                      style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%)' }}>
-                      {r.author?.avatar_url && (
-                        <img src={r.author.avatar_url} alt="" className="w-6 h-6 rounded-full mb-1 border border-white/30" />
-                      )}
-                      <p className="text-white text-[10px] font-bold truncate">
-                        {r.author?.display_name ?? r.author?.username ?? ''}
-                      </p>
-                      {r.caption && <p className="text-white/60 text-[9px] truncate">{r.caption}</p>}
-                      <div className="flex items-center gap-2 mt-1 text-white/70 text-[9px]">
-                        <span className="flex items-center gap-0.5"><Eye size={8} />{r.view_count ?? 0}</span>
-                        <span className="flex items-center gap-0.5"><Heart size={8} />{r.like_count ?? 0}</span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : searchQuery ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
-                <Search size={40} className="text-white/20" />
-                <p className="text-white font-bold">Aucun résultat</p>
-                <p className="text-white/50 text-sm">Essaie un autre mot-clé</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
-                <TrendingUp size={40} className="text-white/20" />
-                <p className="text-white font-bold">Découvre des reels</p>
-                <p className="text-white/50 text-sm">Tape un mot-clé ou un nom d'auteur</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {ConfirmDialog}
     </div>
