@@ -104,6 +104,7 @@ export default function CreateEventPage() {
   const [videoPreview,  setVideoPreview]  = useState<string | null>(null);
   // Existing URLs conserves en mode edition
   const [existingThumbnail, setExistingThumbnail] = useState<string | null>(null);
+  const [existingVideoUrl,  setExistingVideoUrl]  = useState<string | null>(null);
 
   const [publishing, setPublishing] = useState(false);
 
@@ -141,6 +142,9 @@ export default function CreateEventPage() {
         if (ev.thumbnail_url) {
           setExistingThumbnail(ev.thumbnail_url);
           setImagePreviews([ev.thumbnail_url]);
+        }
+        if (ev.video_url) {
+          setExistingVideoUrl(ev.video_url);
         }
       })
       .catch(() => toast.error('Impossible de charger l\'événement'))
@@ -218,7 +222,8 @@ export default function CreateEventPage() {
     setPublishing(true);
     try {
       let thumbnail_url: string | undefined = existingThumbnail ?? undefined;
-      let promo_video_url: string | undefined;
+      // null explicite = l'utilisateur a retiré la vidéo existante (à distinguer de "non modifiée")
+      let promo_video_url: string | null | undefined = existingVideoUrl;
       const gallery_urls: string[] = [];
 
       if (imageFiles.length > 0) {
@@ -250,7 +255,7 @@ export default function CreateEventPage() {
         max_attendees:  maxAttendees ? Number(maxAttendees) : undefined,
         thumbnail_url,
         gallery_urls:   gallery_urls.length > 0 ? gallery_urls : undefined,
-        video_url:      promo_video_url || undefined,
+        video_url:      promo_video_url,
       };
 
       if (accessType === 'ticket') {
@@ -579,10 +584,10 @@ export default function CreateEventPage() {
               <label className="text-xs font-black uppercase tracking-wider block mb-2" style={{ color: 'var(--text-tertiary)' }}>
                 Vidéo promotionnelle (optionnel)
               </label>
-              {videoPreview ? (
+              {videoPreview || existingVideoUrl ? (
                 <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                  <video src={videoPreview} className="w-full h-full object-cover" controls />
-                  <button onClick={() => { if (videoPreview) URL.revokeObjectURL(videoPreview); setVideoFile(null); setVideoPreview(null); }}
+                  <video src={videoPreview ?? existingVideoUrl!} className="w-full h-full object-cover" controls />
+                  <button onClick={() => { if (videoPreview) URL.revokeObjectURL(videoPreview); setVideoFile(null); setVideoPreview(null); setExistingVideoUrl(null); }}
                     className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(0,0,0,0.6)' }}>
                     <X size={14} color="#fff" />
@@ -612,8 +617,8 @@ export default function CreateEventPage() {
                 { label: 'Lieu',     value: isOnline ? 'En ligne' : `${venueCity}${country ? `, ${country}` : ''}` },
                 { label: 'Début',    value: startDate && startTime ? `${startDate} à ${startTime}` : '—' },
                 { label: 'Fin',      value: endDate && endTime ? `${endDate} à ${endTime}` : '—' },
-                { label: 'Photos',   value: `${imageFiles.length} photo(s)` },
-                { label: 'Vidéo',    value: videoFile ? videoFile.name : '—' },
+                { label: 'Photos',   value: `${imagePreviews.length} photo(s)` },
+                { label: 'Vidéo',    value: videoFile ? videoFile.name : existingVideoUrl ? 'Vidéo existante conservée' : '—' },
               ].map(({ label, value }, i, arr) => (
                 <div key={label} className="flex items-center gap-3 px-4 py-3"
                   style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
