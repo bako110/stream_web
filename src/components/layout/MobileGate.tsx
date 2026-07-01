@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
+import { RoundLogo } from '../ui/RoundLogo';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
 
       {/* Logo */}
       <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:12, paddingTop:72 }}>
-        <AppLogo size={72} />
+        <RoundLogo size={72} />
         <span style={{ color:'#fff', fontSize:30, fontWeight:900, letterSpacing:'-0.5px' }}>GoFolyX</span>
         <span style={{ color:'rgba(255,255,255,0.4)', fontSize:13, textAlign:'center', maxWidth:240, lineHeight:1.5 }}>
           Films · Concerts · Live · Reels · Communautés
@@ -191,7 +192,7 @@ function AppBanner({ ios }: { ios: boolean }) {
         display:'flex', alignItems:'center', justifyContent:'center',
       }}>✕</button>
 
-      <AppLogo size={38} />
+      <RoundLogo size={38} />
 
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ color:'#fff', fontWeight:700, fontSize:14, lineHeight:1.2 }}>GoFolyX</div>
@@ -216,32 +217,6 @@ function AppBanner({ ios }: { ios: boolean }) {
 }
 
 // ── Composants visuels ────────────────────────────────────────────────────────
-
-function AppLogo({ size }: { size: number }) {
-  const inner = size * 0.72;
-  const offset = (size - inner) / 2;
-  return (
-    <div style={{ position:'relative', width:size, height:size, flexShrink:0 }}>
-      <div style={{
-        position:'absolute', inset:0, borderRadius:size * 0.28,
-        background:'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
-        transform:'rotate(10deg)',
-      }} />
-      <div style={{
-        position:'absolute', top:offset, left:offset, width:inner, height:inner,
-        borderRadius:inner * 0.25,
-        background:'#0a0a0a',
-        display:'flex', alignItems:'center', justifyContent:'center',
-      }}>
-        <span style={{
-          fontSize:size * 0.32, fontWeight:900,
-          background:'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
-          WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
-        }}>GX</span>
-      </div>
-    </div>
-  );
-}
 
 function PhoneMockup() {
   return (

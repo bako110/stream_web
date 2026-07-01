@@ -1,4 +1,5 @@
-import { Download, Smartphone } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { RoundLogo } from './RoundLogo';
 
 const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.3.apk';
 const APK_VERSION = '1.3';
@@ -19,10 +20,7 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
       <div className={`rounded-2xl p-5 ${className}`}
         style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.2)' }}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(123,63,242,0.15)' }}>
-            <Smartphone size={20} style={{ color: 'var(--primary)' }} />
-          </div>
+          <RoundLogo size={40} />
           <div>
             <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Télécharger GoFolyX</p>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Disponible sur Android</p>
@@ -65,7 +63,7 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
     <div className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl ${className}`}
       style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.18)' }}>
       <div className="flex items-center gap-2 min-w-0">
-        <Smartphone size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+        <RoundLogo size={24} />
         <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
           Télécharger l'app GoFolyX
         </span>
