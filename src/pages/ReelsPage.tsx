@@ -405,7 +405,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
 
 // ── Panneau droit : onglets Commentaires / Tu pourrais aimer (style TikTok desktop) ──
 function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick }: {
-  reelId: string; commentCount: number; suggestions: Reel[]; onSuggestionClick: (idx: number) => void;
+  reelId: string; commentCount: number; suggestions: Reel[]; onSuggestionClick: (targetReelId: string) => void;
 }) {
   const [tab, setTab] = useState<'comments' | 'suggestions'>('comments');
 
@@ -441,8 +441,8 @@ function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick }
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-2.5">
-                {suggestions.map((r, i) => (
-                  <button key={r.id} onClick={() => onSuggestionClick(i)}
+                {suggestions.map(r => (
+                  <button key={r.id} onClick={() => onSuggestionClick(r.id)}
                     className="relative rounded-xl overflow-hidden text-left transition-transform hover:scale-[1.02]"
                     style={{ aspectRatio: '9/16', background: 'var(--bg-secondary)' }}>
                     {r.thumbnail_url
@@ -2162,6 +2162,7 @@ export default function ReelsPage() {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {feedWithAds.map((item, i) => (
               <div key={item._isAd ? item.id : item.reel.id} data-reel-item data-index={i}
+                data-reel-id={item._isAd ? undefined : item.reel.id}
                 className="w-full snap-start snap-always shrink-0 h-full">
                 {item._isAd ? (
                   <ReelAdSlide ad={item.ad} active={i === activeIndex} globalMuted={globalMuted} />
@@ -2236,8 +2237,8 @@ export default function ReelsPage() {
             reelId={activeReel.id}
             commentCount={activeReel.comment_count ?? 0}
             suggestions={suggestions}
-            onSuggestionClick={idx => {
-              const target = document.querySelectorAll('[data-reel-item]')[activeIndex + 1 + idx];
+            onSuggestionClick={targetReelId => {
+              const target = document.querySelector(`[data-reel-id="${targetReelId}"]`);
               target?.scrollIntoView({ behavior: 'smooth' });
             }}
           />
