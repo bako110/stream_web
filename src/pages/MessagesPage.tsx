@@ -618,9 +618,13 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
 }) {
   const navigate               = useNavigate();
   const { user: me }           = useAuthStore();
+  const { sendMessage: sendWsMessage } = useWs();
   const { confirm: confirmMsg, ConfirmDialog: MsgConfirmDialog } = useConfirm();
   const [messages, setMessages]= useState<ExtMessage[]>([]);
   const [input,    setInput]   = useState('');
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  const typingDebounce      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const partnerTypingTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading,  setLoading] = useState(true);
   const [sending,  setSending] = useState(false);
   const [error,    setError]   = useState<string | null>(null);
@@ -699,6 +703,17 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       const w = wsPayload as any;
       setMessages(prev => prev.map(m => m.id === w.message_id ? { ...m, pinned: true } : m));
     }
+    if (wsPayload.type === 'typing') {
+      const w = wsPayload as any;
+      if (w.sender_id !== userId) return;
+      if (partnerTypingTimer.current) clearTimeout(partnerTypingTimer.current);
+      if (w.is_typing) {
+        setPartnerTyping(true);
+        partnerTypingTimer.current = setTimeout(() => setPartnerTyping(false), 5000);
+      } else {
+        setPartnerTyping(false);
+      }
+    }
     if (wsPayload.type === 'message_unpinned') {
       const w = wsPayload as any;
       setMessages(prev => prev.map(m => m.id === w.message_id ? { ...m, pinned: false } : m));
@@ -707,9 +722,29 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  // ── Typing indicator ────────────────────────────────────────────────────────
+  function handleInputChange(val: string) {
+    setInput(val);
+    if (val.trim()) {
+      sendWsMessage({ type: 'typing_start', to: userId });
+      if (typingDebounce.current) clearTimeout(typingDebounce.current);
+      typingDebounce.current = setTimeout(() => sendWsMessage({ type: 'typing_stop', to: userId }), 3000);
+    } else {
+      if (typingDebounce.current) clearTimeout(typingDebounce.current);
+      sendWsMessage({ type: 'typing_stop', to: userId });
+    }
+  }
+
+  useEffect(() => () => {
+    if (typingDebounce.current) clearTimeout(typingDebounce.current);
+    if (partnerTypingTimer.current) clearTimeout(partnerTypingTimer.current);
+  }, []);
+
   async function sendMessage() {
     if ((!input.trim() && !replyTo) || sending) return;
     const body = input.trim();
+    if (typingDebounce.current) clearTimeout(typingDebounce.current);
+    sendWsMessage({ type: 'typing_stop', to: userId });
     setInput(''); setSending(true);
     const tempId = `temp-${Date.now()}`;
     const tempMsg: ExtMessage = {
@@ -1036,12 +1071,14 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
               <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                 {peer.display_name ?? peer.username}
               </p>
-              <p className="text-[11px]" style={{ color: peer.is_online ? '#22c55e' : 'var(--text-tertiary)' }}>
-                {peer.is_online === true
-                  ? 'En ligne'
-                  : peer.is_online === false
-                    ? formatLastSeen((peer as any).last_seen_at)
-                    : `@${peer.username}`}
+              <p className="text-[11px]" style={{ color: partnerTyping ? 'var(--primary)' : peer.is_online ? '#22c55e' : 'var(--text-tertiary)' }}>
+                {partnerTyping
+                  ? 'en train d\'écrire…'
+                  : peer.is_online === true
+                    ? 'En ligne'
+                    : peer.is_online === false
+                      ? formatLastSeen((peer as any).last_seen_at)
+                      : `@${peer.username}`}
               </p>
             </div>
           </button>
@@ -1222,7 +1259,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
             placeholder={recording ? '' : 'Écrire un message…'}
             value={input}
             disabled={recording}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => handleInputChange(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
           />
           <button onClick={sendMessage} disabled={(!input.trim() && !recording) || sending}
