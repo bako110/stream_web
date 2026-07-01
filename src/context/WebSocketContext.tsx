@@ -15,6 +15,8 @@ import React, {
 } from 'react';
 import { WS_BASE_URL } from '../utils/constants';
 import { useAuthStore } from '../store/authStore';
+import { apiClient } from '../api';
+import { Endpoints } from '../api/endpoints';
 
 // ── Types payloads ────────────────────────────────────────────────────────────
 
@@ -207,6 +209,20 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, []);
 
+  // Charge le nombre réel de non-lus (messages + notifications) — appelé à la connexion,
+  // car les compteurs en state ne sont sinon incrémentés que par les events WS en direct
+  // (donc restaient à 0 pour les non-lus déjà existants avant l'ouverture de l'app).
+  const refreshUnread = useCallback(() => {
+    apiClient.get<{ unread_count: number }>(Endpoints.messages.unreadCount)
+      .then(r => { if (isMounted.current) setUnreadMessages(r.data.unread_count); })
+      .catch(() => {});
+    apiClient.get<{ unread_count: number }>(Endpoints.notifications.unreadCount)
+      .then(r => { if (isMounted.current) setUnreadNotifications(r.data.unread_count); })
+      .catch(() => {});
+  }, []);
+  const refreshUnreadRef = useRef(refreshUnread);
+  useEffect(() => { refreshUnreadRef.current = refreshUnread; }, [refreshUnread]);
+
   const connect = useCallback((token: string) => {
     const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
     const url  = `${base}/api/v1/messages/ws?token=${encodeURIComponent(token)}`;
@@ -217,6 +233,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (!isMounted.current) return;
       retryCount.current = 0;
       setIsConnected(true);
+      refreshUnreadRef.current();
       pingTimer.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
       }, PING_INTERVAL);
