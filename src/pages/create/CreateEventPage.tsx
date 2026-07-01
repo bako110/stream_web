@@ -261,7 +261,7 @@ export default function CreateEventPage() {
       }
 
       if (isEdit && editId) {
-        await apiClient.patch(Endpoints.events.byId(editId), payload);
+        await apiClient.put(Endpoints.events.byId(editId), payload);
         toast.success('Événement mis à jour !');
         navigate('/my-events');
       } else {
