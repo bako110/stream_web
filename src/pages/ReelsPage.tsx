@@ -403,6 +403,73 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
   );
 }
 
+// ── Panneau droit : onglets Commentaires / Tu pourrais aimer (style TikTok desktop) ──
+function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick }: {
+  reelId: string; commentCount: number; suggestions: Reel[]; onSuggestionClick: (idx: number) => void;
+}) {
+  const [tab, setTab] = useState<'comments' | 'suggestions'>('comments');
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+        <button onClick={() => setTab('comments')}
+          className="flex-1 py-3 text-sm font-bold relative transition-colors"
+          style={{ color: tab === 'comments' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+          Commentaires
+          {tab === 'comments' && (
+            <div className="absolute bottom-0 left-1/3 right-1/3 h-0.5 rounded-full" style={{ background: 'var(--primary)' }} />
+          )}
+        </button>
+        <button onClick={() => setTab('suggestions')}
+          className="flex-1 py-3 text-sm font-bold relative transition-colors"
+          style={{ color: tab === 'suggestions' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+          Tu pourrais aimer
+          {tab === 'suggestions' && (
+            <div className="absolute bottom-0 left-1/3 right-1/3 h-0.5 rounded-full" style={{ background: 'var(--primary)' }} />
+          )}
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0">
+        {tab === 'comments' ? (
+          <CommentsSidebar reelId={reelId} count={commentCount} />
+        ) : (
+          <div className="h-full overflow-y-auto p-3">
+            {suggestions.length === 0 ? (
+              <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>
+                Pas d'autres suggestions pour l'instant
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                {suggestions.map((r, i) => (
+                  <button key={r.id} onClick={() => onSuggestionClick(i)}
+                    className="relative rounded-xl overflow-hidden text-left transition-transform hover:scale-[1.02]"
+                    style={{ aspectRatio: '9/16', background: 'var(--bg-secondary)' }}>
+                    {r.thumbnail_url
+                      ? <img src={r.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                      : <div className="absolute inset-0 flex items-center justify-center">
+                          <Play size={24} style={{ color: 'var(--text-tertiary)' }} />
+                        </div>
+                    }
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)' }} />
+                    <p className="absolute bottom-1.5 left-2 right-2 text-white text-xs font-semibold truncate">
+                      {r.author?.display_name ?? r.author?.username ?? 'Artiste'}
+                    </p>
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 text-white text-[10px] font-bold"
+                      style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+                      <Heart size={10} fill="#fff" /> {r.like_count ?? 0}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Double-tap heart burst ────────────────────────────────────────────────────
 function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
   if (!show) return null;
@@ -1069,18 +1136,18 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
         </div>
 
         {/* Right: actions — boutons plus petits sur mobile */}
-        <div className="shrink-0 flex flex-col items-center gap-3 sm:gap-4 pb-1">
+        <div className="shrink-0 flex flex-col items-center gap-4 sm:gap-5 pb-1">
 
           {/* Volume — identique mobile : en haut de la colonne */}
           <button onClick={e => { e.stopPropagation(); onUnmute(); }} className="flex flex-col items-center gap-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              {globalMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+              {globalMuted ? <VolumeX size={21} /> : <Volume2 size={21} />}
             </div>
           </button>
 
           {/* Vinyl tournant */}
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden"
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden"
             style={{
               border: '2px solid rgba(255,255,255,0.4)',
               animation: playing ? 'spin-slow 5s linear infinite' : 'none',
@@ -1094,7 +1161,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
 
           {/* Like */}
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
               style={{
                 background: liked ? 'rgba(123,63,242,0.25)' : 'rgba(0,0,0,0.45)',
                 backdropFilter: 'blur(12px)',
@@ -1102,69 +1169,69 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
                 color: liked ? '#7B3FF2' : '#fff',
                 boxShadow: liked ? '0 0 14px rgba(123,63,242,0.5)' : 'none',
               }}>
-              <Heart size={17} fill={liked ? 'currentColor' : 'none'} />
+              <Heart size={21} fill={liked ? 'currentColor' : 'none'} />
             </div>
             {likeCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(likeCount)}</span>}
           </button>
 
           {/* Commentaires */}
           <button onClick={e => { e.stopPropagation(); onCommentOpen(); }} className="flex flex-col items-center gap-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <MessageCircle size={17} />
+              <MessageCircle size={21} />
             </div>
             {commentCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(commentCount)}</span>}
           </button>
 
           {/* Partage */}
           <button onClick={handleShare} className="flex flex-col items-center gap-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <Share2 size={17} />
+              <Share2 size={21} />
             </div>
             {shareCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(shareCount)}</span>}
           </button>
 
           {/* Vues (identique mobile) */}
           <div className="flex flex-col items-center gap-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <Eye size={17} />
+              <Eye size={21} />
             </div>
             {viewCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(viewCount)}</span>}
           </div>
 
           {/* Sauvegarder */}
           <button onClick={handleSaveFav} disabled={savingFav} className="flex flex-col items-center gap-0.5" style={{ opacity: savingFav ? 0.6 : 1 }}>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
               style={{
                 background: saved ? 'rgba(123,63,242,0.25)' : 'rgba(0,0,0,0.45)',
                 backdropFilter: 'blur(12px)',
                 border: `1.5px solid ${saved ? '#7B3FF2' : 'rgba(255,255,255,0.2)'}`,
                 color: saved ? '#7B3FF2' : '#fff',
               }}>
-              <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} />
+              <Bookmark size={21} fill={saved ? 'currentColor' : 'none'} />
             </div>
           </button>
 
           {/* Plus d'options "..." */}
           <button onClick={e => { e.stopPropagation(); onMoreOpen(); }} className="flex flex-col items-center gap-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <MoreVertical size={17} />
+              <MoreVertical size={21} />
             </div>
           </button>
 
           {/* Cadeau */}
           {!isMine && (
             <button onClick={e => { e.stopPropagation(); setShowGiftPicker(true); }} className="flex flex-col items-center gap-0.5">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all"
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
                 style={{
                   background: 'rgba(255,215,0,0.18)', backdropFilter: 'blur(12px)',
                   border: '1.5px solid rgba(255,215,0,0.5)', color: '#FFD700',
                   boxShadow: '0 0 10px rgba(255,215,0,0.3)',
                 }}>
-                <Gift size={17} />
+                <Gift size={21} />
               </div>
               <span className="text-[10px] font-semibold" style={{ color: '#FFD700' }}>Cadeau</span>
             </button>
@@ -1266,8 +1333,8 @@ function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean;
   }
 
   return (
-    <div className="relative w-full overflow-hidden"
-      style={{ height: '100dvh', background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+    <div className="relative w-full h-full overflow-hidden"
+      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
 
       {/* Fond : VIDEO (HLS/MP4) identique mobile */}
       {isVideo && ad.creative_url ? (
@@ -2060,63 +2127,65 @@ export default function ReelsPage() {
   }
 
   // ── Main layout ─────────────────────────────────────────────────────────────
+  const suggestions = reels.slice(activeIndex + 1, activeIndex + 5);
+
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden flex" style={{ zIndex: 0 }}>
+    <div className="h-full bg-black overflow-hidden flex" style={{ zIndex: 0 }}>
 
-      {/* ── Zone player : 100% mobile, réduite sur desktop si sidebar ouverte ── */}
-      <div className="relative h-full flex-1 min-w-0">
+      {/* ── Zone player : pleine largeur mobile, colonne portrait centrée sur desktop ── */}
+      <div className="relative h-full flex-1 min-w-0 flex items-center justify-center">
+        <div className="relative h-full w-full md:max-w-[460px] md:my-4 md:rounded-2xl md:overflow-hidden">
 
-        {/* Header flottant (identique mobile) */}
-        <div className="absolute top-3 inset-x-0 z-40 flex items-center justify-between px-3 pointer-events-none">
-          <button onClick={() => navigate(-1)} className="pointer-events-auto w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
-            <ArrowLeft size={18} />
-          </button>
-          <p className="text-white font-black text-base" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>Reels</p>
-          <div className="flex items-center gap-2 pointer-events-auto">
-            <button onClick={openSearch} className="w-9 h-9 rounded-full flex items-center justify-center"
+          {/* Header flottant (identique mobile) */}
+          <div className="absolute top-3 inset-x-0 z-40 flex items-center justify-between px-3 pointer-events-none">
+            <button onClick={() => navigate(-1)} className="pointer-events-auto w-9 h-9 rounded-full flex items-center justify-center md:hidden"
               style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
-              <Search size={16} />
+              <ArrowLeft size={18} />
             </button>
-            <button onClick={() => setTab('mine')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold"
-              style={{ background: 'rgba(123,63,242,0.3)', border: '1px solid rgba(123,63,242,0.6)', backdropFilter: 'blur(8px)' }}>
-              <User size={12} /> Mes reels
-            </button>
+            <p className="text-white font-black text-base md:hidden" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>Reels</p>
+            <div className="flex items-center gap-2 pointer-events-auto ml-auto">
+              <button onClick={openSearch} className="w-9 h-9 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
+                <Search size={16} />
+              </button>
+              <button onClick={() => setTab('mine')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold"
+                style={{ background: 'rgba(123,63,242,0.3)', border: '1px solid rgba(123,63,242,0.6)', backdropFilter: 'blur(8px)' }}>
+                <User size={12} /> Mes reels
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Scroll vertical snap */}
-        <div ref={containerRef}
-          className="w-full h-full overflow-y-scroll snap-y snap-mandatory"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {feedWithAds.map((item, i) => (
-            <div key={item._isAd ? item.id : item.reel.id} data-reel-item data-index={i}
-              className="w-full snap-start snap-always shrink-0"
-              style={{ height: '100dvh' }}>
-              {item._isAd ? (
-                <ReelAdSlide ad={item.ad} active={i === activeIndex} globalMuted={globalMuted} />
-              ) : (
-                <ReelPlayer
-                  reel={item.reel}
-                  active={i === activeIndex}
-                  globalMuted={globalMuted}
-                  onUnmute={() => setGlobalMuted(v => !v)}
-                  onCommentOpen={() => setDrawerOpen(true)}
-                  onMoreOpen={() => setMoreSheetOpen(true)}
-                />
-              )}
-            </div>
-          ))}
-          {loadingMore && (
-            <div className="w-full snap-start snap-always shrink-0 flex items-center justify-center bg-black"
-              style={{ height: '100dvh' }}>
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-9 h-9 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-                <p className="text-white/50 text-xs font-medium">Chargement…</p>
+          {/* Scroll vertical snap */}
+          <div ref={containerRef}
+            className="w-full h-full overflow-y-scroll snap-y snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {feedWithAds.map((item, i) => (
+              <div key={item._isAd ? item.id : item.reel.id} data-reel-item data-index={i}
+                className="w-full snap-start snap-always shrink-0 h-full">
+                {item._isAd ? (
+                  <ReelAdSlide ad={item.ad} active={i === activeIndex} globalMuted={globalMuted} />
+                ) : (
+                  <ReelPlayer
+                    reel={item.reel}
+                    active={i === activeIndex}
+                    globalMuted={globalMuted}
+                    onUnmute={() => setGlobalMuted(v => !v)}
+                    onCommentOpen={() => setDrawerOpen(true)}
+                    onMoreOpen={() => setMoreSheetOpen(true)}
+                  />
+                )}
               </div>
-            </div>
-          )}
+            ))}
+            {loadingMore && (
+              <div className="w-full snap-start snap-always shrink-0 h-full flex items-center justify-center bg-black">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-9 h-9 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                  <p className="text-white/50 text-xs font-medium">Chargement…</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Toggle sidebar — desktop seulement */}
@@ -2128,7 +2197,7 @@ export default function ReelsPage() {
         </button>
       </div>
 
-      {/* ── Sidebar commentaires — desktop uniquement ── */}
+      {/* ── Panneau droit : commentaires + suggestions — desktop uniquement ── */}
       {sidebarOpen && activeReel && (
         <div className="hidden md:flex flex-col shrink-0 h-full"
           style={{ width: 380, borderLeft: '1px solid var(--border)', background: 'var(--bg)' }}>
@@ -2161,9 +2230,17 @@ export default function ReelsPage() {
               </span>
             </div>
           </div>
-          <div className="flex-1 min-h-0">
-            <CommentsSidebar reelId={activeReel.id} count={activeReel.comment_count ?? 0} />
-          </div>
+
+          {/* Onglets Commentaires / Tu pourrais aimer */}
+          <RightPanelTabs
+            reelId={activeReel.id}
+            commentCount={activeReel.comment_count ?? 0}
+            suggestions={suggestions}
+            onSuggestionClick={idx => {
+              const target = document.querySelectorAll('[data-reel-item]')[activeIndex + 1 + idx];
+              target?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
         </div>
       )}
 

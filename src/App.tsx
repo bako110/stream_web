@@ -174,8 +174,10 @@ function AppShell() {
         <Route path="/concerts/:id" element={<SharedRoute page={<ConcertDetailPage />} />} />
         <Route path="/events/:id"   element={<SharedRoute page={<EventDetailPage />} />} />
 
-        {/* Reels — plein écran, sans Topbar ni BottomNav, accessible sans connexion */}
-        <Route path="/reels" element={<ReelsPage />} />
+        {/* Reels — dans AppLayout (sidebar visible, style TikTok desktop), accessible sans connexion */}
+        <Route element={<AppLayout />}>
+          <Route path="/reels" element={<ReelsPage />} />
+        </Route>
 
         {/* Routes protégées */}
         <Route element={<ProtectedRoute />}>
