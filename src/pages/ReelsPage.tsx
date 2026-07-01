@@ -1646,11 +1646,11 @@ export default function ReelsPage() {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => runSearch(v), 400);
   }, [runSearch]);
-  const pickSearchResult = useCallback((r: Reel) => {
-    closeSearch();
-    // Place le reel choisi en tête — s'il existe déjà dans la liste, le déplace
-    // au lieu de laisser la liste inchangée (sinon le scroll vers 0 pointe vers
-    // le mauvais reel, celui qui était déjà en première position).
+  // Place un reel donné en tête de liste et scrolle jusqu'à lui — réutilisé par la
+  // recherche ET par la navigation directe (clic sur un reel depuis le Feed).
+  const jumpToReel = useCallback((r: Reel) => {
+    // S'il existe déjà dans la liste, le déplace en tête au lieu de la laisser
+    // inchangée (sinon le scroll vers 0 pointe vers le mauvais reel).
     setReels(prev => {
       const rest = prev.filter(x => x.id !== r.id);
       return [r, ...rest];
@@ -1663,7 +1663,41 @@ export default function ReelsPage() {
         if (containerRef.current) containerRef.current.scrollTop = 0;
       });
     });
-  }, [closeSearch]);
+  }, []);
+
+  const pickSearchResult = useCallback((r: Reel) => {
+    closeSearch();
+    jumpToReel(r);
+  }, [closeSearch, jumpToReel]);
+
+  // Détecte un changement de ?id= dans l'URL SANS démontage du composant — cas
+  // fréquent : on reste sur /reels (le scroll met l'URL à jour en continu via
+  // navigate replace) et on clique un nouveau reel depuis le Feed. React Router
+  // ne remonte pas ReelsPage pour un simple changement de query string, donc
+  // sans cet effet le clic depuis le Feed n'avait aucun effet visible.
+  const lastHandledIdParam = useRef(searchParams.get('id'));
+  useEffect(() => {
+    const idParam = searchParams.get('id');
+    if (!idParam || idParam === lastHandledIdParam.current) return;
+    lastHandledIdParam.current = idParam;
+
+    let wanted: string;
+    try { wanted = decodeId(idParam); } catch { wanted = idParam; }
+
+    // Le scroll lui-même réécrit l'URL en continu (persistance F5) — si le reel visé
+    // est déjà celui actif, l'URL vient de refléter le scroll naturel, pas un clic
+    // externe : ne pas re-scroller, ça casserait le défilement en cours.
+    if (reels[activeIndex]?.id === wanted) return;
+
+    const existing = reels.find(r => r.id === wanted);
+    if (existing) {
+      jumpToReel(existing);
+    } else {
+      apiClient.get<any>(Endpoints.reels.byId(wanted))
+        .then(r => { if (r.data?.id) jumpToReel(r.data as Reel); })
+        .catch(() => {});
+    }
+  }, [searchParams, reels, activeIndex, jumpToReel]);
 
   // ── Menu 3 points ──
   const handleOpenEdit = useCallback((r: Reel) => {
