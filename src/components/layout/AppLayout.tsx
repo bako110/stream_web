@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileDrawer } from './MobileDrawer';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { CreateFAB } from './CreateFAB';
 
+// Pages avec leur propre bouton flottant dédié — évite le doublon visuel avec le FAB global
+const CREATE_FAB_HIDDEN_PREFIXES = ['/my-stories'];
+
 export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false);
+  const { pathname } = useLocation();
+  const hideCreateFab = CREATE_FAB_HIDDEN_PREFIXES.some(p => pathname.startsWith(p));
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -50,7 +55,7 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
       <BottomNav />
 
       {/* ── FAB création ── */}
-      <CreateFAB />
+      {!hideCreateFab && <CreateFAB />}
     </div>
   );
 }
