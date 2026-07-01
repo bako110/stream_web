@@ -41,6 +41,7 @@ import {
   type GiftNotif,
 } from '../components/live/LiveGiftModal';
 import { LiveSettingsSheet } from '../components/live/LiveSettingsSheet';
+import { useLiveSuggestions, LiveSuggestionsBar, LiveBoostedRail } from '../components/live/LiveSuggestions';
 import { useConfirm } from '../components/ui/Dialog';
 
 // ── LiveKit quality config ─────────────────────────────────────────────────────
@@ -445,11 +446,13 @@ function useActiveSpeakersSet(): Set<string> {
 }
 
 function LiveKitViewer({
-  isHost, liveId, stageIdentities, participantNames, onGiftClick,
+  isHost, liveId, stageIdentities, participantNames, onGiftClick, streamerAvatarUrl, streamerName,
 }: {
   isHost: boolean; liveId: string; stageIdentities: Set<string>;
   participantNames: Map<string, string>;
   onGiftClick: (identity: string, name: string) => void;
+  streamerAvatarUrl?: string | null;
+  streamerName?: string | null;
 }) {
   const tracks       = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const participants = useParticipants();
@@ -479,9 +482,11 @@ function LiveKitViewer({
   if (activeTracks.length === 0) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <Radio size={28} className="opacity-60" />
+        <div className="relative w-28 h-28 rounded-full flex items-center justify-center"
+          style={{ boxShadow: '0 0 0 3px rgba(123,63,242,0.5), 0 0 30px rgba(123,63,242,0.35)' }}>
+          <Avatar src={streamerAvatarUrl} name={streamerName} size="xl" className="w-full h-full animate-pulse" />
         </div>
+        <p className="text-sm font-semibold">{streamerName}</p>
         <p className="text-sm opacity-60">
           {isHost ? 'Active ta caméra pour démarrer' : 'En attente de la diffusion...'}
         </p>
@@ -887,6 +892,7 @@ export default function LiveSimplePage() {
 
   const liveApi = useApi<LiveStream>(() => apiClient.get<LiveStream>(Endpoints.lives.byId(id!)), [id]);
   const { lastLiveEnded } = useWs();
+  const suggestedLives = useLiveSuggestions(id!);
 
   const live     = liveApi.data ? { ...liveApi.data, ...liveOverride } as LiveStream : null;
   const isHost   = !!(live && user && live.user_id === user.id);
@@ -1116,6 +1122,8 @@ export default function LiveSimplePage() {
                   stageIdentities={stageIdentities}
                   participantNames={participantNames}
                   onGiftClick={(identity, name) => setGiftTarget({ id: identity, name })}
+                  streamerAvatarUrl={live.user?.avatar_url}
+                  streamerName={live.user?.display_name ?? live.user?.username}
                 />
 
                 {/* Badge "Tu es sur scène" */}
@@ -1234,6 +1242,8 @@ export default function LiveSimplePage() {
                 </div>
               </div>
 
+              <LiveSuggestionsBar lives={suggestedLives} />
+
               {live.description && (
                 <div className="shrink-0 px-4 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.8)' }}>
                   <p className="text-xs line-clamp-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{live.description}</p>
@@ -1301,6 +1311,8 @@ export default function LiveSimplePage() {
             </>
           )}
         </div>
+
+        <LiveBoostedRail lives={suggestedLives} />
 
         {/* Chat desktop — panneau droit fixe */}
         <div className="hidden lg:flex w-80 border-l flex-col shrink-0"
