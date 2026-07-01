@@ -41,6 +41,12 @@ export function LiveSuggestionsBar({ lives }: { lives: LiveStream[] }) {
           >
             {live.thumbnail_url ? (
               <img src={live.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            ) : live.user?.avatar_url ? (
+              <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#1a0a0a,#2d0a14)' }}>
+                <img src={live.user.avatar_url} alt="" aria-hidden
+                  className="absolute inset-0 w-full h-full object-cover opacity-30" style={{ filter: 'blur(10px)' }} />
+                <Avatar src={live.user.avatar_url} name={live.user?.display_name ?? live.user?.username} size="xl" className="relative w-12 h-12" />
+              </div>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#1a0a0a,#2d0a14)' }}>
                 <Radio size={22} className="text-red-500/40" />

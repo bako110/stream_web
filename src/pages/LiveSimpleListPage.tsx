@@ -38,11 +38,21 @@ function LiveCard({ live }: { live: LiveStream }) {
         (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(123,63,242,0.2)';
       }}
     >
-      {/* Thumbnail / placeholder */}
+      {/* Thumbnail / avatar streamer / placeholder */}
       <div className="relative overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
         {live.thumbnail_url ? (
           <img src={live.thumbnail_url} alt={live.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" />
+        ) : live.user?.avatar_url ? (
+          <div className="relative w-full h-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#1a0a0a,#2d0a14)' }}>
+            {/* Photo de profil du streamer en fond flou, remplit la carte sans thumbnail dédiée */}
+            <img src={live.user.avatar_url} alt="" aria-hidden
+              className="absolute inset-0 w-full h-full object-cover opacity-30"
+              style={{ filter: 'blur(16px)' }} />
+            <Avatar src={live.user.avatar_url} name={live.user?.display_name ?? live.user?.username} size="xl"
+              className="relative w-20 h-20" />
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg,#1a0a0a,#2d0a14)' }}>
