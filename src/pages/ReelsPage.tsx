@@ -1493,7 +1493,12 @@ const _followCache = new Map<string, boolean>();
 export default function ReelsPage() {
   const [searchParams]                  = useSearchParams();
   const navigate                        = useNavigate();
-  const targetId                        = searchParams.get('id') ? (() => { try { return decodeId(searchParams.get('id')!); } catch { return searchParams.get('id'); } })() : null;
+  // Figé au premier montage — le scroll met à jour l'URL en continu (pour survivre à un F5),
+  // mais ça ne doit jamais re-déclencher fetchReels ni retrier la liste à chaque reel visionné.
+  const targetIdRef = useRef<string | null>(
+    searchParams.get('id') ? (() => { try { return decodeId(searchParams.get('id')!); } catch { return searchParams.get('id'); } })() : null,
+  );
+  const targetId = targetIdRef.current;
 
   const { user: me }                    = useAuthStore();
   const { confirm, ConfirmDialog }      = useConfirm();
@@ -1768,9 +1773,17 @@ export default function ReelsPage() {
           const idx = Number((e.target as HTMLElement).dataset.index);
           setActiveIndex(idx);
           savedIndexRef.current = idx;
-          // Sauvegarder position (module-level + sessionStorage pour F5)
+          // Sauvegarder position (module-level, survit à une navigation interne)
           const reelId = reels[idx]?.id ?? '';
           _reelPosition = { idx, reelId };
+          // Reflète le reel actif dans l'URL — seul moyen de le retrouver après un F5
+          // (le module-level state ci-dessus est perdu au rechargement de page).
+          if (reelId) {
+            const nextUrl = `/reels?id=${encodeId(reelId)}`;
+            if (window.location.pathname + window.location.search !== nextUrl) {
+              navigate(nextUrl, { replace: true });
+            }
+          }
           // Charger plus quand on approche des 3 derniers (identique mobile)
           if (idx >= reels.length - 3) loadMore();
         }
