@@ -106,6 +106,7 @@ export const Endpoints = {
     reactionCounts: `${V1}/social/reactions/counts`,
     myReaction:     `${V1}/social/reactions/me`,
     share:          `${V1}/social/shares`,
+    shareCounts:    `${V1}/social/shares/counts`,
   },
   posts: {
     feed:   `${V1}/posts/feed`,

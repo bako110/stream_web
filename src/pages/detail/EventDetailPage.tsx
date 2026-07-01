@@ -379,6 +379,7 @@ export default function EventDetailPage() {
 
   const [liked,        setLiked]        = useState(false);
   const [likeCount,    setLikeCount]    = useState(0);
+  const [shareCount,   setShareCount]   = useState(0);
   const [favId,        setFavId]        = useState<string | null>(null);
   const [savingFav,    setSavingFav]    = useState(false);
   const [isOwner,      setIsOwner]      = useState(false);
@@ -406,6 +407,11 @@ export default function EventDetailPage() {
 
     apiClient.get<any>(`${Endpoints.social.myReaction}?event_id=${id}`)
       .then(r => setLiked(r.data?.reaction_type === 'like'))
+      .catch(() => {});
+
+    setShareCount(0);
+    apiClient.get<any>(`${Endpoints.social.shareCounts}?event_id=${id}`)
+      .then(r => setShareCount(r.data?.shares ?? 0))
       .catch(() => {});
   }, [id]);
 
@@ -497,6 +503,9 @@ export default function EventDetailPage() {
       else await navigator.clipboard.writeText(url);
       setShareOk(true);
       setTimeout(() => setShareOk(false), 2000);
+      setShareCount(c => c + 1);
+      apiClient.post(Endpoints.social.share, { platform: 'external', event_id: id })
+        .catch(() => setShareCount(c => Math.max(0, c - 1)));
     } catch { /* ignore */ }
   }, [event?.title, id]);
 
@@ -597,7 +606,7 @@ export default function EventDetailPage() {
             <div style={{ ...CARD, padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
               {/* Like */}
               <button onClick={toggleLike}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
                   background: liked ? 'rgba(240,62,62,0.1)' : 'var(--bg-secondary)',
                   color: liked ? '#f03e3e' : 'var(--text-secondary)',
@@ -605,33 +614,35 @@ export default function EventDetailPage() {
                 }}>
                 <Heart size={15} fill={liked ? 'currentColor' : 'none'} />
                 {likeCount > 0 && <span>{likeCount}</span>}
-                <span>J'aime</span>
+                <span className="hidden sm:inline">J'aime</span>
               </button>
               {/* Commenter */}
               <button onClick={() => setShowComments(v => !v)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
                   background: showComments ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
                   color: showComments ? 'var(--primary)' : 'var(--text-secondary)',
                   border: `1px solid ${showComments ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
                 }}>
                 <MessageCircle size={15} />
-                <span>Commenter</span>
+                {event.comment_count > 0 && <span>{event.comment_count}</span>}
+                <span className="hidden sm:inline">Commenter</span>
               </button>
               {/* Partager */}
               <button onClick={share}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
                   background: shareOk ? 'rgba(34,197,94,0.1)' : 'var(--bg-secondary)',
                   color: shareOk ? '#22c55e' : 'var(--text-secondary)',
                   border: `1px solid ${shareOk ? 'rgba(34,197,94,0.3)' : 'var(--border)'}`,
                 }}>
                 <Share2 size={15} />
-                <span>{shareOk ? 'Copié !' : 'Partager'}</span>
+                {shareCount > 0 && <span>{shareCount}</span>}
+                <span className="hidden sm:inline">{shareOk ? 'Copié !' : 'Partager'}</span>
               </button>
               {/* Favoris */}
               <button onClick={handleSaveFav} disabled={savingFav}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
                   background: favId ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
                   color: favId ? 'var(--primary)' : 'var(--text-secondary)',
@@ -639,19 +650,19 @@ export default function EventDetailPage() {
                   opacity: savingFav ? 0.6 : 1,
                 }}>
                 <Bookmark size={15} fill={favId ? 'currentColor' : 'none'} />
-                <span>{favId ? 'Sauvegardé' : 'Sauvegarder'}</span>
+                <span className="hidden sm:inline">{favId ? 'Sauvegardé' : 'Sauvegarder'}</span>
               </button>
               {/* Rappel */}
               {!isOwner && (
                 <button onClick={toggleReminder} disabled={remindLoading}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                  className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                   style={{
                     background: reminder ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
                     color: reminder ? 'var(--primary)' : 'var(--text-secondary)',
                     border: `1px solid ${reminder ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
                   }}>
                   {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={15} /> : <Bell size={15} />}
-                  <span>{reminder ? 'Rappel actif' : 'Me rappeler'}</span>
+                  <span className="hidden sm:inline">{reminder ? 'Rappel actif' : 'Me rappeler'}</span>
                 </button>
               )}
               {/* Boutons owner à droite */}
