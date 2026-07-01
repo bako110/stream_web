@@ -813,9 +813,26 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
   async function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
     const url = `${window.location.origin}/reels?id=${encodeId(reel.id)}`;
+    const shareTitle = caption ? `${caption} — ${authorName} sur GoFolyX` : `${authorName} sur GoFolyX`;
     try {
-      if (navigator.share) await navigator.share({ title: caption || 'Reel GoFolyX', url });
-      else await navigator.clipboard.writeText(url);
+      // Joint le thumbnail comme fichier — WhatsApp/Messenger/etc affichent alors
+      // l'image du reel directement dans la fenêtre de partage native (pas juste le lien).
+      let shared = false;
+      if (navigator.share && reel.thumbnail_url && navigator.canShare) {
+        try {
+          const res  = await fetch(reel.thumbnail_url);
+          const blob = await res.blob();
+          const file = new File([blob], 'reel.jpg', { type: blob.type || 'image/jpeg' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: shareTitle, text: url, files: [file] });
+            shared = true;
+          }
+        } catch { /* fallback ci-dessous */ }
+      }
+      if (!shared) {
+        if (navigator.share) await navigator.share({ title: shareTitle, url });
+        else await navigator.clipboard.writeText(url);
+      }
       apiClient.post(Endpoints.social.share, { reel_id: reel.id, platform: 'external' }).catch(() => {});
       setShareCount(c => c + 1);
     } catch { /* ignore */ }
