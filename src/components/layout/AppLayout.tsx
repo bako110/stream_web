@@ -21,7 +21,7 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const isImmersive   = IMMERSIVE_PREFIXES.some(p => pathname.startsWith(p));
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="flex overflow-hidden" style={{ background: 'var(--bg)', height: '100dvh' }}>
 
       {/* ── Desktop sidebar ── */}
       <div className="hidden lg:flex shrink-0 transition-all duration-300">
