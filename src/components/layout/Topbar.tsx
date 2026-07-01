@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Search, Bell, Radio, Sun, Moon, X, ArrowLeft, MessageCircle, Download } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
+import { RoundLogo } from '../ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useWs } from '../../context/WebSocketContext';
-import { Images } from '../assets';
 import { MessagesPopover } from './MessagesPopover';
 import { publicClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -147,12 +147,9 @@ export function Topbar({ onMenuClick }: Props) {
       </button>
 
       {/* Logo — visible partout (mobile + desktop) */}
-      <img
-        src={isDark ? Images.logoDark : Images.logoLight}
-        alt="GoFolyX"
-        className="h-7 w-auto cursor-pointer shrink-0"
-        onClick={() => navigate('/feed')}
-      />
+      <button onClick={() => navigate('/feed')} className="shrink-0 flex items-center" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+        <RoundLogo size={34} />
+      </button>
 
       {/* Desktop search bar */}
       <form onSubmit={handleSearch} className="flex-1 max-w-md hidden lg:flex items-center">
