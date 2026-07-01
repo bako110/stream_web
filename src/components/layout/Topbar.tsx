@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, Bell, Radio, Sun, Moon, X, ArrowLeft, MessageCircle, Download } from 'lucide-react';
+import { Menu, Search, Bell, Radio, Sun, Moon, MessageCircle, Download } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { RoundLogo } from '../ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
@@ -19,11 +19,8 @@ export function Topbar({ onMenuClick }: Props) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const [query, setQuery]           = useState('');
-  const [mobileSearch, setMobileSearch] = useState(false);
-  const [mobileQuery,  setMobileQuery]  = useState('');
   const [msgPopover,   setMsgPopover]   = useState(false);
   const [apkUrl,       setApkUrl]       = useState<string | null>(null);
-  const mobileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     publicClient.get<{ apk_url: string | null }>(Endpoints.app.version)
@@ -41,14 +38,6 @@ export function Topbar({ onMenuClick }: Props) {
     }
   }, [location.pathname, location.search]);
 
-  // Ferme la recherche mobile si on quitte /search
-  useEffect(() => {
-    if (location.pathname !== '/search') {
-      setMobileSearch(false);
-      setMobileQuery('');
-    }
-  }, [location.pathname]);
-
   // Debounce desktop
   useEffect(() => {
     if (!query.trim()) {
@@ -63,30 +52,10 @@ export function Topbar({ onMenuClick }: Props) {
     return () => clearTimeout(t);
   }, [query]); // eslint-disable-line
 
-  // Debounce mobile
-  useEffect(() => {
-    if (!mobileSearch) return;
-    if (!mobileQuery.trim()) {
-      navigate('/search', { replace: true });
-      return;
-    }
-    const t = setTimeout(() => {
-      navigate(`/search?q=${encodeURIComponent(mobileQuery.trim())}`, { replace: true });
-    }, 400);
-    return () => clearTimeout(t);
-  }, [mobileQuery]); // eslint-disable-line
-
+  // Sur mobile, la loupe navigue directement vers /search — le champ + résultats
+  // y sont déjà géré par SearchPage (plus d'overlay dupliqué qui masquait les résultats).
   function openMobileSearch() {
-    setMobileSearch(true);
-    setMobileQuery('');
-    navigate('/search', { replace: false });
-    setTimeout(() => mobileInputRef.current?.focus(), 80);
-  }
-
-  function closeMobileSearch() {
-    setMobileSearch(false);
-    setMobileQuery('');
-    navigate(-1);
+    navigate('/search');
   }
 
   function handleSearch(e: React.FormEvent) {
@@ -95,37 +64,6 @@ export function Topbar({ onMenuClick }: Props) {
   }
 
   return (
-    <>
-    {/* Barre de recherche mobile fullscreen */}
-    {mobileSearch && (
-      <div className="lg:hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--surface)' }}>
-        <div className="flex items-center gap-2 px-3 h-14 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
-          <button onClick={closeMobileSearch} className="p-2 shrink-0" style={{ color: 'var(--text-primary)' }}>
-            <ArrowLeft size={22} />
-          </button>
-          <div className="flex-1 relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: 'var(--text-tertiary)' }} />
-            <input
-              ref={mobileInputRef}
-              value={mobileQuery}
-              onChange={e => setMobileQuery(e.target.value)}
-              placeholder="Films, artistes, concerts…"
-              className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl focus:outline-none"
-              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-            />
-            {mobileQuery && (
-              <button onClick={() => setMobileQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-                style={{ color: 'var(--text-tertiary)' }}>
-                <X size={15} />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
-
     <header
       className="sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 h-14 overflow-hidden"
       style={{
@@ -286,6 +224,5 @@ export function Topbar({ onMenuClick }: Props) {
         )}
       </div>
     </header>
-    </>
   );
 }
