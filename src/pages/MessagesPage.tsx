@@ -623,8 +623,10 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   const [messages, setMessages]= useState<ExtMessage[]>([]);
   const [input,    setInput]   = useState('');
   const [partnerTyping, setPartnerTyping] = useState(false);
-  const typingDebounce      = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const partnerTypingTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [partnerRecording, setPartnerRecording] = useState(false);
+  const typingDebounce         = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const partnerTypingTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const partnerRecordingTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading,  setLoading] = useState(true);
   const [sending,  setSending] = useState(false);
   const [error,    setError]   = useState<string | null>(null);
@@ -714,6 +716,17 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
         setPartnerTyping(false);
       }
     }
+    if (wsPayload.type === 'recording') {
+      const w = wsPayload as any;
+      if (w.sender_id !== userId) return;
+      if (partnerRecordingTimer.current) clearTimeout(partnerRecordingTimer.current);
+      if (w.is_recording) {
+        setPartnerRecording(true);
+        partnerRecordingTimer.current = setTimeout(() => setPartnerRecording(false), 30000);
+      } else {
+        setPartnerRecording(false);
+      }
+    }
     if (wsPayload.type === 'message_unpinned') {
       const w = wsPayload as any;
       setMessages(prev => prev.map(m => m.id === w.message_id ? { ...m, pinned: false } : m));
@@ -738,6 +751,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   useEffect(() => () => {
     if (typingDebounce.current) clearTimeout(typingDebounce.current);
     if (partnerTypingTimer.current) clearTimeout(partnerTypingTimer.current);
+    if (partnerRecordingTimer.current) clearTimeout(partnerRecordingTimer.current);
   }, []);
 
   async function sendMessage() {
@@ -889,6 +903,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       mr.ondataavailable = e => { if (e.data.size > 0) audioChunks.current.push(e.data); };
       mr.start(100);
       setRecording(true); setRecordTime(0);
+      sendWsMessage({ type: 'recording_start', to: userId });
       recordTimer.current = setInterval(() => setRecordTime(t => t + 1), 1000);
     } catch { toast.error('Microphone non disponible'); }
   }
@@ -897,6 +912,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     if (!mediaRecRef.current) return;
     if (recordTimer.current) { clearInterval(recordTimer.current); recordTimer.current = null; }
     setRecording(false); setRecordTime(0);
+    sendWsMessage({ type: 'recording_stop', to: userId });
 
     const mr = mediaRecRef.current;
     mediaRecRef.current = null;
@@ -1071,14 +1087,12 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
               <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                 {peer.display_name ?? peer.username}
               </p>
-              <p className="text-[11px]" style={{ color: partnerTyping ? 'var(--primary)' : peer.is_online ? '#22c55e' : 'var(--text-tertiary)' }}>
-                {partnerTyping
-                  ? 'en train d\'écrire…'
-                  : peer.is_online === true
-                    ? 'En ligne'
-                    : peer.is_online === false
-                      ? formatLastSeen((peer as any).last_seen_at)
-                      : `@${peer.username}`}
+              <p className="text-[11px]" style={{ color: peer.is_online ? '#22c55e' : 'var(--text-tertiary)' }}>
+                {peer.is_online === true
+                  ? 'En ligne'
+                  : peer.is_online === false
+                    ? formatLastSeen((peer as any).last_seen_at)
+                    : `@${peer.username}`}
               </p>
             </div>
           </button>
@@ -1216,6 +1230,22 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
               <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{replyTo.body}</p>
             </div>
             <button onClick={() => setReplyTo(null)} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}><X size={14} /></button>
+          </div>
+        )}
+        {/* Indicateur temps réel du partenaire */}
+        {(partnerTyping || partnerRecording) && !recording && (
+          <div className="flex items-center gap-2.5 px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-1">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: 'var(--text-tertiary)', animation: `blink 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+              ))}
+            </div>
+            <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+              {partnerRecording
+                ? `${peer?.display_name ?? peer?.username ?? 'Il/elle'} enregistre un vocal…`
+                : `${peer?.display_name ?? peer?.username ?? 'Il/elle'} est en train d'écrire…`}
+            </span>
           </div>
         )}
         {/* Barre enregistrement vocal */}
