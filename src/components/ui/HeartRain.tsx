@@ -4,8 +4,8 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 
 // ── Pluie de cœurs — se déclenche une fois à l'arrivée sur un contenu très aimé ──
-export const HEART_RAIN_THRESHOLD = 1000;
-const HEART_RAIN_COUNT  = 24;
+export const HEART_RAIN_THRESHOLD = 1;
+const HEART_RAIN_COUNT  = 54;
 const HEART_RAIN_COLORS = ['#7B3FF2', '#E0389A', '#F0365A', '#A855F7'];
 
 // Évite de rejouer l'effet si l'utilisateur revient sur le même contenu dans la session
@@ -107,6 +107,79 @@ export function RecentLikersAvatars({ active, likeCount, contentId, kind }: {
           }
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Défilement des noms qui aiment — bas-gauche, monte et s'efface (style TikTok) ──
+const _likeNamesCache = new Map<string, RecentLiker[]>();
+const NAME_FEED_INTERVAL = 1400; // ms entre deux apparitions
+const NAME_FEED_LIFETIME = 2600; // ms de vie d'une bulle (montée + fondu)
+
+export function LikeNamesFeed({ active, likeCount, contentId, kind }: {
+  active: boolean; likeCount: number; contentId: string; kind: 'reel' | 'story';
+}) {
+  const [names, setNames] = useState<RecentLiker[]>(() => _likeNamesCache.get(contentId) ?? []);
+  const [queue, setQueue] = useState<{ key: number; liker: RecentLiker }[]>([]);
+  const fetchedRef = useRef(false);
+  const cursorRef = useRef(0);
+  const seqRef = useRef(0);
+
+  useEffect(() => {
+    if (!active || likeCount < HEART_RAIN_THRESHOLD || fetchedRef.current) return;
+    fetchedRef.current = true;
+    const url = kind === 'reel'
+      ? `${Endpoints.social.reactionUsers}?reel_id=${contentId}&limit=10`
+      : `${Endpoints.stories.likers(contentId)}?limit=10`;
+    apiClient.get<RecentLiker[]>(url)
+      .then(r => {
+        const data = Array.isArray(r.data) ? r.data : [];
+        _likeNamesCache.set(contentId, data);
+        setNames(data);
+      })
+      .catch(() => {});
+  }, [active, likeCount, contentId, kind]);
+
+  // Fait apparaître un nom à intervalle régulier, en boucle sur la liste récupérée
+  useEffect(() => {
+    if (!active || names.length === 0) return;
+    const timer = setInterval(() => {
+      const liker = names[cursorRef.current % names.length];
+      cursorRef.current += 1;
+      const key = seqRef.current++;
+      setQueue(q => [...q, { key, liker }]);
+      setTimeout(() => setQueue(q => q.filter(item => item.key !== key)), NAME_FEED_LIFETIME);
+    }, NAME_FEED_INTERVAL);
+    return () => clearInterval(timer);
+  }, [active, names]);
+
+  if (queue.length === 0) return null;
+
+  return (
+    <div className="absolute bottom-32 left-3 z-20 pointer-events-none" style={{ height: 140, width: 200 }}>
+      {queue.map(({ key, liker }) => (
+        <div key={key} className="absolute left-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+          style={{
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+            animation: `like-name-rise ${NAME_FEED_LIFETIME}ms ease-out forwards`,
+            whiteSpace: 'nowrap',
+          }}>
+          <Heart size={11} fill="#E0389A" stroke="none" />
+          <span className="text-white text-xs font-semibold truncate" style={{ maxWidth: 160 }}>
+            {liker.display_name ?? liker.username ?? 'Quelqu\'un'}
+          </span>
+        </div>
+      ))}
+      <style>{`
+        @keyframes like-name-rise {
+          0%   { transform: translateY(0);     opacity: 0; }
+          12%  { opacity: 1; }
+          75%  { opacity: 1; }
+          100% { transform: translateY(-130px); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }

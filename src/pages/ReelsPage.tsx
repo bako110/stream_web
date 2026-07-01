@@ -21,7 +21,7 @@ import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
-import { HeartRain, RecentLikersAvatars } from '../components/ui/HeartRain';
+import { HeartRain, LikeNamesFeed } from '../components/ui/HeartRain';
 import { useAuthStore } from '../store/authStore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -486,7 +486,7 @@ function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
   );
 }
 
-// HeartRain / RecentLikersAvatars — extraits dans components/ui/HeartRain.tsx (partagés avec StoryPage)
+// HeartRain / LikeNamesFeed — extraits dans components/ui/HeartRain.tsx (partagés avec StoryPage)
 
 // ── Single reel player ────────────────────────────────────────────────────────
 const MAX_RETRIES   = 3;
@@ -988,7 +988,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
 
       {/* Pluie de cœurs + avatars des derniers likers — contenu très aimé (≥1000 likes) */}
       <HeartRain active={active} likeCount={likeCount} contentId={reel.id} />
-      <RecentLikersAvatars active={active} likeCount={likeCount} contentId={reel.id} kind="reel" />
+      <LikeNamesFeed active={active} likeCount={likeCount} contentId={reel.id} kind="reel" />
 
       {/* Paused overlay */}
       {!playing && (

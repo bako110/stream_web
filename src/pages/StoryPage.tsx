@@ -17,7 +17,7 @@ import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
-import { HeartRain, RecentLikersAvatars } from '../components/ui/HeartRain';
+import { HeartRain, LikeNamesFeed } from '../components/ui/HeartRain';
 import { useAuthStore } from '../store/authStore';
 import type { StoryGroup } from '../types';
 import { StoryOverlaysRenderer } from '../utils/reelFilters.tsx';
@@ -632,7 +632,7 @@ function StoryViewer({
 
         {/* Pluie de cœurs + avatars des derniers likers — story très aimée (≥1000 likes) */}
         <HeartRain active={!paused} likeCount={likeCount} contentId={story.id} />
-        <RecentLikersAvatars active={!paused} likeCount={likeCount} contentId={story.id} kind="story" />
+        <LikeNamesFeed active={!paused} likeCount={likeCount} contentId={story.id} kind="story" />
 
         {/* Tap zones */}
         <button className="absolute left-0 top-0 w-1/3 h-full z-10 opacity-0" onClick={goPrev} />
