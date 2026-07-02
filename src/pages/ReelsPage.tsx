@@ -2219,7 +2219,7 @@ export default function ReelsPage() {
   }
 
   // ── Main layout ─────────────────────────────────────────────────────────────
-  const suggestions = reels.slice(activeIndex + 1, activeIndex + 5);
+  const suggestions = reels.slice(activeIndex + 1);
 
   return (
     <div className="h-full bg-black overflow-hidden flex" style={{ zIndex: 0 }}>

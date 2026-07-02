@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
-import { Play, Star, Crown, Search, Check, Lock } from 'lucide-react';
+import { Play, Star, Crown, Search, Check, Lock, Flame, Sparkles, Gift } from 'lucide-react';
 import type { Content, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { usePaginatedApi } from '../hooks/useApi';
+import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
 
 type SortKey = 'recent' | 'rating' | 'year' | 'views';
@@ -136,6 +136,148 @@ function ContentCard({
   );
 }
 
+// ── Hero Premium — bandeau qui défile horizontalement en continu (marquee) ────
+function PremiumHero({ items, type }: { items: Content[]; type: 'film' | 'serie' }) {
+  const navigate = useNavigate();
+
+  if (items.length === 0) return null;
+
+  // Dupliqué pour un enchaînement sans coupure visible en boucle infinie
+  const loopItems = [...items, ...items];
+  // Durée proportionnelle au nombre d'items pour garder une vitesse constante
+  const duration = Math.max(items.length * 9, 24);
+
+  function renderCard(item: Content, key: string) {
+    return (
+      <button key={key}
+        onClick={() => navigate(`/${item.type === 'film' ? 'films' : 'series'}/${encodeId(item.id)}`, { state: { item } })}
+        className="group relative shrink-0 overflow-hidden text-left"
+        style={{
+          width: 'min(80vw, 480px)',
+          aspectRatio: '16/8',
+          borderRadius: 20,
+          background: 'var(--bg-tertiary)',
+        }}>
+        <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-110">
+          {(item.banner_url ?? item.thumbnail_url) ? (
+            <img src={item.banner_url ?? item.thumbnail_url ?? ''} alt={item.title}
+              className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#1a0a0a,#2d0a14)' }}>
+              <Play size={32} className="text-white/30" />
+            </div>
+          )}
+        </div>
+        <div className="absolute inset-0 transition-all duration-300 group-hover:ring-2"
+          style={{ borderRadius: 20, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' } as any} />
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{ boxShadow: 'inset 0 0 0 2px #F59E0B, 0 8px 32px rgba(245,158,11,0.35)', borderRadius: 20 }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.25) 55%, transparent 100%)' }} />
+
+        <div className="absolute top-3 left-3 flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full text-white"
+          style={{ background: 'linear-gradient(135deg,#F59E0B,#F97316)', boxShadow: '0 2px 10px rgba(245,158,11,0.5)' }}>
+          <Crown size={11} /> {item.price ? `${item.price.toFixed(0)} €` : 'Premium'}
+        </div>
+
+        {item.average_rating && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full text-white"
+            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+            <Star size={11} className="text-yellow-400" fill="currentColor" /> {item.average_rating.toFixed(1)}
+          </div>
+        )}
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
+          <p className="text-white font-black text-lg sm:text-2xl leading-tight truncate" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+            {item.title}
+          </p>
+          {item.short_synopsis && (
+            <p className="text-white/75 text-xs sm:text-sm mt-1 line-clamp-1 max-w-md">{item.short_synopsis}</p>
+          )}
+          <div className="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="flex items-center gap-1.5 text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)' }}>
+              <Play size={13} fill="white" /> Regarder
+            </div>
+            {item.year > 0 && <span className="text-white/60 text-xs">{item.year}</span>}
+          </div>
+        </div>
+      </button>
+    );
+  }
+
+  return (
+    <div className="relative -mx-6 px-6 sm:mx-0 sm:px-0">
+      <h2 className="text-lg sm:text-xl font-black flex items-center gap-2 mb-3" style={{ color: 'var(--text-primary)' }}>
+        <Crown size={18} style={{ color: '#F59E0B' }} />
+        {type === 'film' ? 'Films Premium' : 'Séries Premium'}
+      </h2>
+
+      {/* Fenêtre masquant le défilement, fondu sur les bords */}
+      <div className="relative overflow-hidden"
+        style={{ WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)' }}>
+        <div className="flex gap-4"
+          style={{ animation: `filmsMarquee ${duration}s linear infinite`, willChange: 'transform' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'; }}>
+          {loopItems.map((item, i) => renderCard(item, `${item.id}-${i}`))}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes filmsMarquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Rangée thématique — carrousel horizontal compact ──────────────────────────
+let _rowAnimCounter = 0;
+
+function ContentRow({
+  title, icon, items, purchasedIds, hasActiveSub, reverse = false,
+}: {
+  title: string; icon: React.ReactNode; items: Content[];
+  purchasedIds: Set<string>; hasActiveSub: boolean; reverse?: boolean;
+}) {
+  if (items.length === 0) return null;
+
+  // Nom d'animation unique par instance — plusieurs rangées tournent en parallèle,
+  // chacune doit avoir son propre keyframe pour ne pas se marcher dessus.
+  const animName = useRef(`filmsRowMarquee${_rowAnimCounter++}`).current;
+  const loopItems = [...items, ...items];
+  const duration = Math.max(items.length * 4, 16);
+
+  return (
+    <div>
+      <h2 className="text-base sm:text-lg font-black flex items-center gap-2 mb-3" style={{ color: 'var(--text-primary)' }}>
+        {icon} {title}
+      </h2>
+      <div className="relative overflow-hidden"
+        style={{ WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%)' }}>
+        <div className="flex gap-3 sm:gap-4"
+          style={{ animation: `${animName} ${duration}s linear infinite`, animationDirection: reverse ? 'reverse' : 'normal', willChange: 'transform' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'; }}>
+          {loopItems.map((item, i) => (
+            <div key={`${item.id}-${i}`} className="shrink-0 transition-transform duration-300 hover:scale-105" style={{ width: 140 }}>
+              <ContentCard item={item} hasPurchased={purchasedIds.has(item.id)} hasActiveSub={hasActiveSub} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`
+        @keyframes ${animName} {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 interface Props { type?: 'film' | 'serie'; }
 
 export default function FilmsPage({ type = 'film' }: Props) {
@@ -166,6 +308,35 @@ export default function FilmsPage({ type = 'film' }: Props) {
   const { items, loading, loadMore, page, pages } = usePaginatedApi<Content>(
     (p) => apiClient.get<PaginatedResponse<Content>>(buildUrl(p)),
     [type, sort, filter, genre, country],
+  );
+
+  // Rangées thématiques — chargées indépendamment de la grille filtrable ci-dessous
+  const rowUrl = (params: Record<string, string>) => {
+    const p = new URLSearchParams({ page: '1', limit: '12', status: 'published', ...params });
+    return `${endpoint}?${p.toString()}`;
+  };
+  const extractList = (raw: any): Content[] =>
+    Array.isArray(raw) ? raw : raw?.items ?? raw?.results ?? raw?.data ?? [];
+
+  const { data: premiumItems } = useApi<Content[]>(
+    () => apiClient.get<any>(rowUrl({ is_premium: 'true', sort: 'rating' })).then(r => ({ data: extractList(r.data) })),
+    [type],
+  );
+  const { data: topRatedItems } = useApi<Content[]>(
+    () => apiClient.get<any>(rowUrl({ sort: 'rating' })).then(r => ({ data: extractList(r.data) })),
+    [type],
+  );
+  const { data: trendingItems } = useApi<Content[]>(
+    () => apiClient.get<any>(rowUrl({ sort: 'views' })).then(r => ({ data: extractList(r.data) })),
+    [type],
+  );
+  const { data: recentItems } = useApi<Content[]>(
+    () => apiClient.get<any>(rowUrl({ sort: 'recent' })).then(r => ({ data: extractList(r.data) })),
+    [type],
+  );
+  const { data: freeItems } = useApi<Content[]>(
+    () => apiClient.get<any>(rowUrl({ is_premium: 'false', sort: 'rating' })).then(r => ({ data: extractList(r.data) })),
+    [type],
   );
 
   // Load subscription status and purchased content once
@@ -214,6 +385,46 @@ export default function FilmsPage({ type = 'film' }: Props) {
             onBlur={e  => { e.target.style.borderColor = 'var(--border)';  e.target.style.boxShadow = 'none'; }}
           />
         </div>
+      </div>
+
+      {/* Hero Premium — défilement horizontal automatique */}
+      <PremiumHero items={premiumItems ?? []} type={type} />
+
+      {/* Rangées thématiques */}
+      <div className="space-y-6">
+        <ContentRow
+          title="Les mieux notés"
+          icon={<Star size={16} style={{ color: '#F59E0B' }} fill="#F59E0B" />}
+          items={topRatedItems ?? []}
+          purchasedIds={purchasedIds} hasActiveSub={hasActiveSub}
+        />
+        <ContentRow
+          title="Tendances du moment"
+          icon={<Flame size={16} style={{ color: '#EF4444' }} />}
+          items={trendingItems ?? []}
+          purchasedIds={purchasedIds} hasActiveSub={hasActiveSub}
+          reverse
+        />
+        <ContentRow
+          title="Nouveautés"
+          icon={<Sparkles size={16} style={{ color: '#7B3FF2' }} />}
+          items={recentItems ?? []}
+          purchasedIds={purchasedIds} hasActiveSub={hasActiveSub}
+        />
+        <ContentRow
+          title="Gratuits à découvrir"
+          icon={<Gift size={16} style={{ color: '#10B981' }} />}
+          items={freeItems ?? []}
+          purchasedIds={purchasedIds} hasActiveSub={hasActiveSub}
+          reverse
+        />
+      </div>
+
+      {/* Catalogue complet */}
+      <div className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+        <h2 className="text-lg font-black pt-4" style={{ color: 'var(--text-primary)' }}>
+          Tout le catalogue
+        </h2>
       </div>
 
       {/* Filter + sort bar */}
