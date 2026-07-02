@@ -482,7 +482,7 @@ export default function WalletBoostPage() {
           )}
 
           <p className="text-[11px] text-center px-6 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-            Les coins sont débités immédiatement. Remboursement de 50 % si vous annulez dans la première moitié de la durée. Les impressions sont comptées en temps réel dans votre tableau de bord.
+            Les coins sont débités immédiatement. Remboursement de 90 % si vous annulez dans les 30 premières minutes. Les impressions sont comptées en temps réel dans votre tableau de bord.
           </p>
         </div>
       )}
@@ -598,7 +598,7 @@ export default function WalletBoostPage() {
                   { label: 'Coût',              value: `${selectedTier.coins.toLocaleString('fr-FR')} coins`, color: g1 },
                   { label: 'Solde actuel',      value: `${balance.toLocaleString('fr-FR')} coins` },
                   { label: 'Solde restant',     value: `${(balance - selectedTier.coins).toLocaleString('fr-FR')} coins` },
-                  { label: 'Remboursement',     value: `50 % si annulé avant mi-durée`, color: '#22C55E' },
+                  { label: 'Remboursement',     value: `90 % si annulé sous 30 min`, color: '#22C55E' },
                 ].map(row => (
                   <div key={row.label} className="flex items-center justify-between">
                     <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{row.label}</p>

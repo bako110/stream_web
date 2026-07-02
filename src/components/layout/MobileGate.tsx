@@ -21,8 +21,6 @@ const MOBILE_BLOCKED_EXACT = new Set([
 
 const MOBILE_BLOCKED_PREFIXES = [
   '/create/',         // CreateReel, CreatePost, CreateEvent, CreateConcert
-  '/live',            // /live et /live/:id (LivePage WebRTC)
-  '/lives',           // /lives et /lives/:id (LiveSimplePage WebRTC)
 ];
 
 function isBlockedOnMobile(pathname: string): boolean {

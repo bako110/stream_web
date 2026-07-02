@@ -10,15 +10,16 @@ import { CreateFAB } from './CreateFAB';
 
 // Pages avec leur propre bouton flottant dédié — évite le doublon visuel avec le FAB global
 const CREATE_FAB_HIDDEN_PREFIXES = ['/my-stories'];
-// Pages plein écran immersives — gèrent leur propre header/scroll, la Topbar/BottomNav globale ferait doublon
-const IMMERSIVE_PREFIXES = ['/reels'];
+// Pages plein écran immersives — gèrent leur propre header/scroll, la Topbar/BottomNav globale
+// ferait doublon ; le FAB global n'a pas non plus sa place par-dessus leur propre UI.
+const IMMERSIVE_PREFIXES = ['/reels', '/lives/', '/live/'];
 
 export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false);
   const { pathname } = useLocation();
-  const hideCreateFab = CREATE_FAB_HIDDEN_PREFIXES.some(p => pathname.startsWith(p));
   const isImmersive   = IMMERSIVE_PREFIXES.some(p => pathname.startsWith(p));
+  const hideCreateFab = isImmersive || CREATE_FAB_HIDDEN_PREFIXES.some(p => pathname.startsWith(p));
 
   return (
     <div className="flex overflow-hidden" style={{ background: 'var(--bg)', height: '100dvh' }}>

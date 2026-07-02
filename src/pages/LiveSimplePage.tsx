@@ -1,12 +1,13 @@
 import { PageLoader } from '../components/ui/Spinner';
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { decodeId } from '../utils/slugId';
 import {
-  Radio, Eye, MessageCircle, Send, X, StopCircle, ChevronLeft,
+  Radio, Eye, Send, X, StopCircle, ChevronLeft,
   Mic, MicOff, VideoIcon, VideoOff, Gift, Hand, FlipHorizontal,
   ShieldOff, Ban, Lock, Users, Trash2, Slash, RefreshCw,
-  Smile, ArrowDown, UserCheck, Settings,
+  Smile, ArrowDown, UserCheck, Settings, ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import {
   LiveKitRoom,
@@ -76,6 +77,9 @@ interface ChatMsg {
   text:    string;
   isSys?:  boolean;
   isGift?: boolean;
+  likeCount?:    number;
+  dislikeCount?: number;
+  myReaction?:   'like' | 'dislike' | null;
 }
 interface EmojiFloat  { id: number; emoji: string; x: number; size: number; }
 interface HandRequest { identity: string; name: string; avatar?: string | null; }
@@ -86,9 +90,10 @@ interface GiftTick    { id: string; emoji: string; senderName: string; giftName:
 interface LiveChatHandle { addSysMsg: (text: string) => void; }
 
 const LiveChat = forwardRef<LiveChatHandle, {
-  liveId: string; accessToken: string | null; isHost: boolean;
+  liveId: string; accessToken: string | null; isHost: boolean; hostId?: string | null;
+  mobileInputTarget?: HTMLElement | null;
   onWsEvent: (d: any) => void;
-}>(function LiveChatInner({ liveId, accessToken, isHost, onWsEvent }, ref) {
+}>(function LiveChatInner({ liveId, accessToken, isHost, hostId, mobileInputTarget, onWsEvent }, ref) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input,    setInput]    = useState('');
   const [sending,  setSending]  = useState(false);
@@ -113,13 +118,28 @@ const LiveChat = forwardRef<LiveChatHandle, {
         const d = JSON.parse(e.data);
         if (d.type === 'comment_added' && d.comment) {
           const c = d.comment;
-          setMessages(prev => [...prev.slice(-149), {
-            id:     c.id ?? String(Date.now()),
-            user:   c.author?.display_name ?? c.author?.username ?? 'Anonyme',
-            userId: c.author?.id ?? null,
-            avatar: c.author?.avatar_url ?? null,
-            text:   c.body,
-          }]);
+          setMessages(prev => {
+            // Si c'est l'écho de notre propre message, remplacer l'entrée locale
+            // optimiste (id "local-...") au lieu d'en ajouter une deuxième.
+            const isOwnEcho = c.author?.id && user && c.author.id === user.id;
+            const withoutLocalDupe = isOwnEcho
+              ? prev.filter(m => !(m.id.startsWith('local-') && m.text === c.body && m.userId === user!.id))
+              : prev;
+            return [...withoutLocalDupe.slice(-149), {
+              id:     c.id ?? String(Date.now()),
+              user:   c.author?.display_name ?? c.author?.username ?? 'Anonyme',
+              userId: c.author?.id ?? null,
+              avatar: c.author?.avatar_url ?? null,
+              text:   c.body,
+              likeCount:    c.like_count ?? 0,
+              dislikeCount: c.dislike_count ?? 0,
+            }];
+          });
+        }
+        if (d.type === 'reaction_updated' && d.comment_id) {
+          setMessages(prev => prev.map(m => m.id === d.comment_id
+            ? { ...m, likeCount: d.like_count ?? m.likeCount, dislikeCount: d.dislike_count ?? m.dislikeCount }
+            : m));
         }
         if (d.type === 'gift_received' && d.gift) {
           const gName   = d.gift.gift_type?.name  ?? d.gift.name  ?? 'Cadeau';
@@ -149,6 +169,28 @@ const LiveChat = forwardRef<LiveChatHandle, {
   }, [liveId, accessToken]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  async function toggleCommentReaction(msgId: string, type: 'like' | 'dislike') {
+    if (msgId.startsWith('local-')) return; // pas encore d'id serveur
+    const prevMsgs = messages;
+    setMessages(prev => prev.map(m => {
+      if (m.id !== msgId) return m;
+      const wasLike    = m.myReaction === 'like';
+      const wasDislike = m.myReaction === 'dislike';
+      const nowSame    = m.myReaction === type;
+      return {
+        ...m,
+        myReaction:   nowSame ? null : type,
+        likeCount:    (m.likeCount ?? 0)    + (type === 'like'    ? (nowSame ? -1 : wasLike    ? 0 : 1) : (wasLike    ? -1 : 0)),
+        dislikeCount: (m.dislikeCount ?? 0) + (type === 'dislike' ? (nowSame ? -1 : wasDislike ? 0 : 1) : (wasDislike ? -1 : 0)),
+      };
+    }));
+    try {
+      await apiClient.post(Endpoints.social.toggleReaction, { reaction_type: type, comment_id: msgId });
+    } catch {
+      setMessages(prevMsgs); // rollback
+    }
+  }
 
   async function send() {
     if (!input.trim() || sending) return;
@@ -182,64 +224,108 @@ const LiveChat = forwardRef<LiveChatHandle, {
     addSysMsg(`${name} a été exclu du live`);
   }
 
+  const inputBar = (
+    <div className="relative flex gap-2 pointer-events-auto">
+      <input
+        className="flex-1 min-w-0 text-white text-sm rounded-full px-3.5 py-2 focus:outline-none focus:ring-1"
+        style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', '--tw-ring-color': '#7B3FF2' } as any}
+        placeholder="Commenter..."
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') send(); }}
+      />
+      {input.trim() && (
+        <button onClick={send} disabled={sending}
+          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+          <Send size={14} className="text-white" />
+        </button>
+      )}
+    </div>
+  );
+
+  // Overlay flottant façon TikTok, superposé bas-gauche de la vidéo, sur tous
+  // les écrans (desktop et mobile) — décalé au-dessus de la barre basse pour
+  // ne jamais la masquer ni intercepter ses clics, et pour laisser le live
+  // visible en permanence pendant qu'on lit/écrit des commentaires.
+  // Sur mobile, la barre de saisie est téléportée (portail) sur la même ligne
+  // que les boutons Cadeau/Lever main/Quitter — seuls les messages défilent ici.
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-        {messages.length === 0 && (
-          <p className="text-center text-xs pt-8" style={{ color: 'rgba(255,255,255,0.35)' }}>Aucun message pour l'instant</p>
-        )}
+    <div className="absolute left-0 z-30 flex flex-col justify-end pointer-events-none bottom-[84px] sm:bottom-[168px]"
+      style={{ width: 'min(78%, 340px)', maxHeight: '32%' }}>
+      {/* Dégradé de fondu — assure la lisibilité même sur fond clair (avatar, halo) */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 65%, transparent 100%)' }} />
+
+      <div className="relative overflow-y-auto px-3 pt-8 pb-2 flex flex-col gap-1.5"
+        style={{ maxHeight: '100%', scrollbarWidth: 'none', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%)' }}>
         {messages.map(m => {
           if (m.isSys) return (
-            <div key={m.id} className="text-center text-[10px] py-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{m.text}</div>
+            <div key={m.id} className="text-[10px] py-0.5 px-2 rounded-full w-fit pointer-events-auto"
+              style={{ color: 'rgba(255,255,255,0.75)', background: 'rgba(0,0,0,0.55)', animation: 'chatMsgIn 0.4s ease-out both' }}>{m.text}</div>
           );
           if (m.isGift) return (
-            <div key={m.id} className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs"
-              style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)' }}>
-              <Gift size={13} style={{ color: '#fbbf24', flexShrink: 0 }} />
+            <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs w-fit pointer-events-auto"
+              style={{ background: 'rgba(80,60,0,0.85)', border: '1px solid rgba(255,215,0,0.5)', boxShadow: '0 1px 6px rgba(0,0,0,0.5)', animation: 'chatMsgIn 0.4s ease-out both' }}>
+              <Gift size={12} style={{ color: '#fbbf24', flexShrink: 0 }} />
               <span className="font-medium" style={{ color: '#fde68a' }}>{m.text}</span>
             </div>
           );
-          const isMe  = m.userId && user && m.userId === user.id;
+          const isMe   = m.userId && user && m.userId === user.id;
           const canMod = isHost && m.userId && !isMe;
+          const isMsgHost = m.userId && hostId && m.userId === hostId;
           return (
-            <div key={m.id} className="group flex gap-2 items-start">
-              <Avatar src={m.avatar} name={m.user} size="xs" className="shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <span className="text-xs font-semibold" style={{ color: '#7B3FF2' }}>{m.user} </span>
-                <span className="text-xs break-words" style={{ color: 'rgba(255,255,255,0.9)' }}>{m.text}</span>
-                {canMod && (
-                  <div className="flex gap-2 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => deleteMsg(m.id)}
-                      className="flex items-center gap-1 text-[10px]" style={{ color: '#f87171' }}>
-                      <Trash2 size={9} /> Supprimer
-                    </button>
-                    <button onClick={() => banFromMsg(m.userId!, m.user)}
-                      className="flex items-center gap-1 text-[10px]" style={{ color: '#f87171' }}>
-                      <Slash size={9} /> Exclure
-                    </button>
-                  </div>
-                )}
+            <div key={m.id}
+              className="group flex items-center gap-1.5 px-2.5 py-1 rounded-2xl w-fit max-w-full pointer-events-auto"
+              style={{
+                background: isMsgHost ? 'rgba(90,40,180,0.85)' : 'rgba(0,0,0,0.72)',
+                border: isMsgHost ? '1px solid rgba(123,63,242,0.6)' : '1px solid rgba(255,255,255,0.06)',
+                boxShadow: '0 1px 6px rgba(0,0,0,0.5)',
+                animation: 'chatMsgIn 0.4s ease-out both',
+              }}>
+              <Avatar src={m.avatar} name={m.user} size="xs" className="shrink-0" />
+              <div className="min-w-0">
+                <span className="text-xs font-bold" style={{ color: isMsgHost ? '#c4b5fd' : '#7B3FF2' }}>{m.user} </span>
+                <span className="text-xs break-words" style={{ color: 'rgba(255,255,255,0.95)' }}>{m.text}</span>
               </div>
+              {!m.id.startsWith('local-') && (
+                <div className="flex items-center gap-1 shrink-0 ml-0.5">
+                  <button onClick={() => toggleCommentReaction(m.id, 'like')}
+                    className="flex items-center gap-0.5 transition-transform active:scale-90"
+                    style={{ color: m.myReaction === 'like' ? '#7B3FF2' : 'rgba(255,255,255,0.45)' }}>
+                    <ThumbsUp size={11} fill={m.myReaction === 'like' ? '#7B3FF2' : 'none'} />
+                    {!!m.likeCount && <span className="text-[10px] font-semibold">{m.likeCount}</span>}
+                  </button>
+                  <button onClick={() => toggleCommentReaction(m.id, 'dislike')}
+                    className="flex items-center gap-0.5 transition-transform active:scale-90"
+                    style={{ color: m.myReaction === 'dislike' ? '#EF4444' : 'rgba(255,255,255,0.45)' }}>
+                    <ThumbsDown size={11} fill={m.myReaction === 'dislike' ? '#EF4444' : 'none'} />
+                    {!!m.dislikeCount && <span className="text-[10px] font-semibold">{m.dislikeCount}</span>}
+                  </button>
+                </div>
+              )}
+              {canMod && (
+                <div className="hidden group-hover:flex gap-1.5 shrink-0 ml-1">
+                  <button onClick={() => deleteMsg(m.id)} title="Supprimer" style={{ color: '#f87171' }}>
+                    <Trash2 size={11} />
+                  </button>
+                  <button onClick={() => banFromMsg(m.userId!, m.user)} title="Exclure" style={{ color: '#f87171' }}>
+                    <Slash size={11} />
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
         <div ref={bottomRef} />
       </div>
-      <div className="p-3 border-t flex gap-2 shrink-0" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-        <input
-          className="flex-1 min-w-0 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-1"
-          style={{ background: 'rgba(255,255,255,0.1)', placeholder: 'rgba(255,255,255,0.4)', '--tw-ring-color': '#7B3FF2' } as any}
-          placeholder="Commenter..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') send(); }}
-        />
-        <button onClick={send} disabled={!input.trim() || sending}
-          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
-          style={{ background: input.trim() ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' : 'rgba(255,255,255,0.1)' }}>
-          <Send size={13} className="text-white" />
-        </button>
-      </div>
+
+      {/* Desktop : barre de saisie inline en bas de l'overlay */}
+      <div className="hidden sm:block px-3 pb-3 pt-1">{inputBar}</div>
+
+      {/* Mobile : barre de saisie téléportée sur la ligne des boutons Cadeau/Lever main/Quitter */}
+      {mobileInputTarget && createPortal(inputBar, mobileInputTarget)}
+
       {ConfirmChatDialog}
     </div>
   );
@@ -479,10 +565,15 @@ function LiveKitViewer({
 
   const showHostPip = isHost && spotlightTrack && !spotlightTrack.participant.isLocal && localTrack != null;
 
+  // Grille façon TikTok multi-guest — dès 2 participants ou plus, tout le monde
+  // s'affiche en cases égales adaptées au nombre (2 cases empilées, 3 en L, 4 en 2×2).
+  // Avec 1 seul participant, on garde le mode spotlight plein écran classique.
+  const isGridMode = activeTracks.length >= 2;
+
   if (activeTracks.length === 0) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
-        <div className="relative w-28 h-28 rounded-full flex items-center justify-center"
+      <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3" style={{ paddingBottom: '28%' }}>
+        <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center"
           style={{ boxShadow: '0 0 0 3px rgba(123,63,242,0.5), 0 0 30px rgba(123,63,242,0.35)' }}>
           <Avatar src={streamerAvatarUrl} name={streamerName} size="xl" className="w-full h-full animate-pulse" />
         </div>
@@ -495,6 +586,77 @@ function LiveKitViewer({
     );
   }
 
+  // ── Mode grille (2+ participants) — mosaïque égale façon TikTok multi-guest ──
+  if (isGridMode) {
+    // Disposition des cases : 2 → colonne de 2 (empilées), 3 → 1 en haut + 2 en bas,
+    // 4 → 2×2, 5-6 → 2 colonnes × 3 lignes. Toujours des cases de taille égale.
+    const n = activeTracks.length;
+    const gridClass =
+      n === 2 ? 'grid-cols-1 grid-rows-2' :
+      n === 3 ? 'grid-cols-2 grid-rows-2' :
+      n === 4 ? 'grid-cols-2 grid-rows-2' :
+      'grid-cols-2';
+
+    return (
+      <div className="relative w-full h-full bg-black overflow-hidden">
+        <RoomAudioRenderer />
+        <div className={`grid ${gridClass} w-full h-full gap-0.5`}>
+          {activeTracks.map((t, i) => {
+            const identity = t.participant.identity;
+            const name     = t.participant.isLocal ? 'Toi' : (participantNames.get(identity) ?? t.participant.name ?? identity);
+            const onStage  = stageIdentities.has(identity);
+            const speaking = speakingIds.has(identity);
+            const showMenu = contextMenuId === identity;
+            // Cas à 3 : le premier participant occupe toute la largeur du haut (col-span-2)
+            const spanFull = n === 3 && i === 0;
+            return (
+              <div
+                key={identity}
+                className={`relative overflow-hidden ${spanFull ? 'col-span-2' : ''}`}
+                style={{ border: `1px solid ${speaking ? '#22c55e' : 'rgba(255,255,255,0.12)'}` }}
+                onClick={() => { if (showMenu) setContextMenuId(null); }}
+              >
+                <VideoTrack trackRef={t} className="w-full h-full object-cover" />
+                {speaking && (
+                  <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 3px #22c55e' }} />
+                )}
+                <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+                  {onStage && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />}
+                  {name}
+                </div>
+                {!t.participant.isLocal && !isHost && (
+                  <button
+                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(0,0,0,0.55)' }}
+                    onClick={e => { e.stopPropagation(); onGiftClick(identity, name); }}>
+                    <Gift size={13} style={{ color: '#fbbf24' }} />
+                  </button>
+                )}
+                {isHost && !t.participant.isLocal && (
+                  <button
+                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(0,0,0,0.55)' }}
+                    onClick={e => { e.stopPropagation(); setContextMenuId(showMenu ? null : identity); }}>
+                    <MoreVertical size={13} color="#fff" />
+                  </button>
+                )}
+                {showMenu && (
+                  <ParticipantContextMenu
+                    identity={identity} name={name} liveId={liveId}
+                    isOnStage={onStage}
+                    onDone={() => setContextMenuId(null)}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Mode spotlight (1 seul participant) ──────────────────────────────────────
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       <RoomAudioRenderer />
@@ -524,60 +686,6 @@ function LiveKitViewer({
           <div className="absolute bottom-0 left-0 right-0 text-white text-[10px] text-center py-1" style={{ background: 'rgba(0,0,0,0.6)' }}>Toi</div>
         </div>
       )}
-
-      {/* Vignettes secondaires */}
-      {thumbnailTracks.length > 0 && (
-        <div className="absolute bottom-20 left-3 flex flex-col gap-2 z-20">
-          {thumbnailTracks.map(t => {
-            const identity = t.participant.identity;
-            const name     = t.participant.isLocal ? 'Toi' : (participantNames.get(identity) ?? t.participant.name ?? identity);
-            const onStage  = stageIdentities.has(identity);
-            const speaking = speakingIds.has(identity);
-            const showMenu = contextMenuId === identity;
-            return (
-              <div
-                key={identity}
-                className="relative w-24 h-36 shrink-0"
-              >
-                <div
-                  className={`w-full h-full rounded-2xl shadow-xl cursor-pointer relative transition-all ${showMenu ? '' : 'overflow-hidden'}`}
-                  style={{
-                    border: `2px solid ${speaking ? '#22c55e' : onStage ? '#22c55e' : 'rgba(255,255,255,0.2)'}`,
-                    boxShadow: speaking ? '0 0 12px rgba(34,197,94,0.6)' : 'none',
-                  }}
-                  onClick={() => {
-                    if (showMenu) { setContextMenuId(null); return; }
-                    if (isHost && !t.participant.isLocal) { setContextMenuId(identity); return; }
-                    setSpotlightId(identity);
-                  }}
-                >
-                  <VideoTrack trackRef={t} className="w-full h-full object-cover" />
-                  <div className="absolute bottom-0 left-0 right-0 text-white text-[10px] truncate text-center py-1 px-1 flex items-center justify-center gap-1"
-                    style={{ background: 'rgba(0,0,0,0.6)' }}>
-                    {onStage && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />}
-                    {name}
-                  </div>
-                  {!t.participant.isLocal && !isHost && (
-                    <button
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-                      style={{ background: 'rgba(0,0,0,0.6)' }}
-                      onClick={e => { e.stopPropagation(); onGiftClick(identity, name); }}>
-                      <Gift size={11} style={{ color: '#fbbf24' }} />
-                    </button>
-                  )}
-                  {showMenu && (
-                    <ParticipantContextMenu
-                      identity={identity} name={name} liveId={liveId}
-                      isOnStage={onStage}
-                      onDone={() => setContextMenuId(null)}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -586,8 +694,10 @@ function LiveKitViewer({
 
 function ViewerAvatars({ onGiftClick }: { onGiftClick: (identity: string, name: string) => void }) {
   const participants = useParticipants();
-  const remotes      = participants.filter(p => !p.isLocal).slice(0, 6);
-  const extra        = Math.max(0, participants.filter(p => !p.isLocal).length - 6);
+  const remotesAll   = participants.filter(p => !p.isLocal);
+  const remotes       = remotesAll.slice(0, 6);
+  const extraMobile   = Math.max(0, remotesAll.length - 3);
+  const extraDesktop  = Math.max(0, remotesAll.length - 6);
   if (remotes.length === 0) return null;
   return (
     <div className="flex items-center">
@@ -599,17 +709,24 @@ function ViewerAvatars({ onGiftClick }: { onGiftClick: (identity: string, name: 
             onClick={() => onGiftClick(p.identity, name)}
             title={`Envoyer un cadeau à ${name}`}
             style={{ marginLeft: i === 0 ? 0 : -8, zIndex: 10 - i, background: 'linear-gradient(135deg,#7B3FF2,#EC4899)', borderColor: 'rgba(0,0,0,0.6)' }}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold border-2 hover:scale-110 transition-transform"
+            className={`${i >= 3 ? 'hidden sm:flex' : 'flex'} w-6 h-6 sm:w-7 sm:h-7 rounded-full items-center justify-center text-white text-[9px] sm:text-[10px] font-bold border-2 hover:scale-110 transition-transform`}
           >
             {name[0].toUpperCase()}
           </button>
         );
       })}
-      {extra > 0 && (
+      {extraMobile > 0 && (
         <div
-          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold border-2 border-black/60"
+          className="sm:hidden w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold border-2 border-black/60"
           style={{ marginLeft: -8, background: 'rgba(255,255,255,0.2)' }}>
-          +{extra}
+          +{extraMobile}
+        </div>
+      )}
+      {extraDesktop > 0 && (
+        <div
+          className="hidden sm:flex w-7 h-7 rounded-full items-center justify-center text-white text-[9px] font-bold border-2 border-black/60"
+          style={{ marginLeft: -8, background: 'rgba(255,255,255,0.2)' }}>
+          +{extraDesktop}
         </div>
       )}
     </div>
@@ -621,9 +738,9 @@ function ViewerAvatars({ onGiftClick }: { onGiftClick: (identity: string, name: 
 function ViewerCount() {
   const participants = useParticipants();
   return (
-    <span className="text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm"
+    <span className="text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm shrink-0"
       style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <Eye size={11} /> {participants.length.toLocaleString()}
+      <Eye size={10} className="shrink-0" /> {participants.length.toLocaleString()}
     </span>
   );
 }
@@ -635,6 +752,7 @@ function MediaControls({
   onToggleRequests, pendingCount, onToggleOnStage, onStageCount,
   onToggleGifts, giftsCount, onGiftToHost,
   isOnStage, onLeaveStage, onToggleSettings,
+  mobileChatInputRef,
 }: {
   isHost: boolean; liveId: string;
   onStop: () => void; stopping: boolean; onLeave: () => void;
@@ -645,6 +763,7 @@ function MediaControls({
   onGiftToHost?: () => void;
   isOnStage?: boolean; onLeaveStage?: () => void;
   onToggleSettings?: () => void;
+  mobileChatInputRef?: (el: HTMLDivElement | null) => void;
 }) {
   const { localParticipant } = useLocalParticipant();
   const [camOn, setCamOn] = useState(false);
@@ -734,8 +853,8 @@ function MediaControls({
     const border = danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.15)';
     const txt    = danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)';
     return (
-      <button onClick={onClick} className="flex flex-col items-center gap-1 relative" style={{ minWidth: 52 }}>
-        <div className="w-12 h-12 rounded-full flex items-center justify-center transition-all"
+      <button onClick={onClick} className="flex flex-col items-center gap-0.5 sm:gap-1 relative shrink-0" style={{ minWidth: 40 }}>
+        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
           style={{ background: bg, border: `1.5px solid ${border}`, color: danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : '#fff' }}>
           {icon}
         </div>
@@ -745,13 +864,19 @@ function MediaControls({
             {badge}
           </div>
         )}
-        <span className="text-[10px] font-semibold" style={{ color: txt }}>{label}</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: txt }}>{label}</span>
       </button>
     );
   }
 
   return (
-    <div className="flex items-end gap-4 flex-wrap justify-center py-2">
+    <div className="flex items-end gap-2 sm:gap-4 flex-wrap justify-center py-1 sm:py-2">
+
+      {/* Mobile : saisie du chat sur la même ligne que les boutons — prend l'espace
+          restant et s'adapte (les boutons passent à la ligne si besoin, comme ci-dessous) */}
+      {mobileChatInputRef && (
+        <div className="sm:hidden flex-1 min-w-[120px] self-center" ref={mobileChatInputRef} />
+      )}
 
       {/* HOST */}
       {isHost && (
@@ -853,7 +978,6 @@ export default function LiveSimplePage() {
 
   const [lkToken,  setLkToken]  = useState<string | null>(stateToken);
   const [lkUrl,    setLkUrl]    = useState<string | null>(stateLkUrl);
-  const [showChat, setShowChat] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [showLaunchBanner, setShowLaunchBanner] = useState(false);
   const [joinToast, setJoinToast] = useState<string | null>(null);
@@ -887,6 +1011,7 @@ export default function LiveSimplePage() {
 
   const chatRef             = useRef<LiveChatHandle>(null);
   const participantNamesRef = useRef<Map<string, string>>(new Map());
+  const [mobileChatInputEl, setMobileChatInputEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => { participantNamesRef.current = participantNames; }, [participantNames]);
 
@@ -1061,7 +1186,7 @@ export default function LiveSimplePage() {
         }
       `}</style>
 
-      <div className="flex h-[calc(100vh-57px)] overflow-hidden bg-black">
+      <div className="flex h-full overflow-hidden bg-black">
         <div className="flex-1 flex flex-col min-w-0">
           {isActive && lkToken && lkUrl ? (
             <LiveKitRoom
@@ -1078,27 +1203,30 @@ export default function LiveSimplePage() {
               }} />
 
               {/* Header */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0 flex-wrap gap-y-2"
+              <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-b shrink-0 flex-nowrap overflow-hidden"
                 style={{ background: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <button onClick={handleLeave} style={{ color: 'rgba(255,255,255,0.6)' }}
-                  className="hover:text-white transition-colors">
-                  <ChevronLeft size={20} />
+                  className="hover:text-white transition-colors shrink-0">
+                  <ChevronLeft size={18} className="sm:hidden" />
+                  <ChevronLeft size={20} className="hidden sm:block" />
                 </button>
-                <Avatar src={live.user?.avatar_url} name={live.user?.display_name ?? live.user?.username} size="sm" />
+                <Avatar src={live.user?.avatar_url} name={live.user?.display_name ?? live.user?.username} size="sm" className="shrink-0 w-7 h-7 sm:w-8 sm:h-8" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-white text-sm truncate">{live.title}</p>
-                  <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.5)' }}>{live.user?.display_name ?? live.user?.username}</p>
+                  <p className="font-semibold text-white text-xs sm:text-sm truncate">{live.title}</p>
+                  <p className="text-[10px] sm:text-xs truncate" style={{ color: 'rgba(255,255,255,0.5)' }}>{live.user?.display_name ?? live.user?.username}</p>
                 </div>
 
-                <ViewerAvatars onGiftClick={(id, name) => setGiftTarget({ id, name })} />
+                <div className="shrink-0">
+                  <ViewerAvatars onGiftClick={(id, name) => setGiftTarget({ id, name })} />
+                </div>
 
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-white"
                     style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
                   </span>
                   {live.is_private && (
-                    <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
+                    <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-white"
                       style={{ background: 'rgba(123,63,242,0.85)', border: '1px solid rgba(123,63,242,0.5)' }}>
                       <Lock size={10} /> Abonnés
                     </span>
@@ -1107,12 +1235,6 @@ export default function LiveSimplePage() {
                   <ViewerCount />
                 </div>
 
-                {/* Bouton chat visible seulement sur mobile (header) */}
-                <button onClick={() => setShowChat(v => !v)}
-                  className="lg:hidden transition-colors relative"
-                  style={{ color: showChat ? '#7B3FF2' : 'rgba(255,255,255,0.6)' }}>
-                  <MessageCircle size={18} />
-                </button>
               </div>
 
               {/* Player + overlays */}
@@ -1190,10 +1312,22 @@ export default function LiveSimplePage() {
                   </div>
                 )}
 
+                {/* Chat — overlay flottant sur la vidéo (style TikTok), visible sur tous les écrans.
+                    Sur mobile, la saisie est téléportée dans la barre basse (mobileChatInputEl),
+                    sur la même ligne que les boutons Cadeau/Lever main/Quitter — seuls les
+                    messages qui défilent vers le haut restent dans l'overlay flottant. */}
+                <LiveChat
+                  ref={chatRef}
+                  liveId={id!} accessToken={accessToken}
+                  isHost={isHost} hostId={live.user?.id}
+                  mobileInputTarget={mobileChatInputEl}
+                  onWsEvent={handleWsEvent}
+                />
+
                 {/* Barre basse */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 z-20"
+                <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-4 z-20"
                   style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }}>
-                  <div className="flex items-end gap-4">
+                  <div className="flex items-end gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
                       <MediaControls
                         isHost={isHost} liveId={id!}
@@ -1213,12 +1347,13 @@ export default function LiveSimplePage() {
                           setIsOnStage(false);
                         }}
                         onToggleSettings={() => setShowSettings(v => !v)}
+                        mobileChatInputRef={setMobileChatInputEl}
                       />
                     </div>
 
                     {/* Interactions droite */}
-                    <div className="flex flex-col gap-3 shrink-0">
-                      <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} />
+                    <div className="flex flex-col gap-2 sm:gap-3 shrink-0">
+                      <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
                       <LiveReactionPicker
                         liveId={id!}
                         onFloats={items => {
@@ -1230,11 +1365,12 @@ export default function LiveSimplePage() {
                         <button
                           onClick={() => setGiftTarget({ id: live.user!.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
                           className="flex flex-col items-center gap-1">
-                          <div className="w-11 h-11 rounded-full flex items-center justify-center"
+                          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center"
                             style={{ background: 'rgba(123,63,242,0.15)', border: '1.5px solid rgba(123,63,242,0.35)' }}>
-                            <Gift size={18} style={{ color: '#fbbf24' }} />
+                            <Gift size={16} className="sm:hidden" style={{ color: '#fbbf24' }} />
+                            <Gift size={18} className="hidden sm:block" style={{ color: '#fbbf24' }} />
                           </div>
-                          <span className="text-white text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>Cadeau</span>
+                          <span className="text-white text-[10px] sm:text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>Cadeau</span>
                         </button>
                       )}
                     </div>
@@ -1314,62 +1450,6 @@ export default function LiveSimplePage() {
 
         <LiveBoostedRail lives={suggestedLives} />
 
-        {/* Chat desktop — panneau droit fixe */}
-        <div className="hidden lg:flex w-80 border-l flex-col shrink-0"
-          style={{ borderColor: 'rgba(255,255,255,0.1)', background: '#000' }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b shrink-0"
-            style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-            <h3 className="font-semibold text-white text-sm flex items-center gap-2">
-              <MessageCircle size={15} style={{ color: '#7B3FF2' }} /> Chat live
-            </h3>
-          </div>
-          <div className="flex-1 min-h-0">
-            <LiveChat
-              ref={chatRef}
-              liveId={id!} accessToken={accessToken}
-              isHost={isHost}
-              onWsEvent={handleWsEvent}
-            />
-          </div>
-        </div>
-
-        {/* Chat mobile — bouton flottant + bottom sheet */}
-        {!showChat && (
-          <button onClick={() => setShowChat(true)}
-            className="lg:hidden fixed bottom-24 right-4 z-40 w-12 h-12 rounded-full flex items-center justify-center shadow-xl"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-            <MessageCircle size={20} className="text-white" />
-          </button>
-        )}
-        {showChat && (
-          <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end items-center"
-            style={{ background: 'rgba(0,0,0,0.5)' }}
-            onClick={e => { if (e.target === e.currentTarget) setShowChat(false); }}>
-            <div className="flex flex-col w-full sm:max-w-sm"
-              style={{
-                height: '65vh',
-                background: '#0a0a14',
-                borderRadius: '1.25rem 1.25rem 0 0',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                borderLeft: '1px solid rgba(255,255,255,0.08)',
-                borderRight: '1px solid rgba(255,255,255,0.08)',
-                animation: 'slideUpSheet 0.3s ease-out',
-              }}>
-              <div className="flex items-center justify-between px-4 py-3 border-b shrink-0"
-                style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-                <h3 className="font-semibold text-white text-sm flex items-center gap-2">
-                  <MessageCircle size={15} style={{ color: '#7B3FF2' }} /> Chat live
-                </h3>
-                <button onClick={() => setShowChat(false)} style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  <X size={15} />
-                </button>
-              </div>
-              <div className="flex-1 min-h-0">
-                <LiveChat ref={chatRef} liveId={id!} accessToken={accessToken} isHost={isHost} onWsEvent={handleWsEvent} />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Gift modal */}

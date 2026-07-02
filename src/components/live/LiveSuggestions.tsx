@@ -30,13 +30,13 @@ export function LiveSuggestionsBar({ lives }: { lives: LiveStream[] }) {
 
   return (
     <div className="shrink-0 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.85)' }}>
-      <p className="px-4 pt-2.5 text-xs font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>Autres lives en cours</p>
-      <div className="flex gap-2.5 px-4 py-2.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+      <p className="px-3 sm:px-4 pt-1.5 sm:pt-2.5 text-[11px] sm:text-xs font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>Autres lives en cours</p>
+      <div className="flex gap-2 sm:gap-2.5 px-3 sm:px-4 py-1.5 sm:py-2.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         {lives.map(live => (
           <button
             key={live.id}
             onClick={() => navigate(`/lives/${encodeId(live.id)}`)}
-            className="relative shrink-0 w-28 rounded-xl overflow-hidden text-left transition-transform hover:scale-[1.03]"
+            className="relative shrink-0 w-16 sm:w-28 rounded-lg sm:rounded-xl overflow-hidden text-left transition-transform hover:scale-[1.03]"
             style={{ aspectRatio: '9/16', border: '1px solid rgba(255,255,255,0.12)' }}
           >
             {live.thumbnail_url ? (

@@ -160,15 +160,19 @@ export const CUSTOM_UNITS: Record<string, string> = {
   event_reach: 'personnes', concert_reach: 'personnes', live_viewers: 'viewers',
 };
 
+// max aligné sur le palier Mega du catalogue de chaque catégorie (BOOST_CATEGORIES
+// ci-dessus) — doit rester identique à WalletService.get_custom_reach_cap() côté
+// backend, qui rejette toute valeur au-delà. Un max plus permissif ici ferait
+// passer un slider à une valeur que le serveur refuserait ensuite à l'achat.
 export const CUSTOM_REACH_CONFIG: Record<string, { min: number; max: number; step: number; presets: number[] }> = {
-  followers:     { min: 10,  max: 10000,  step: 10,  presets: [50, 200, 500, 2000, 5000] },
-  profile_views: { min: 100, max: 200000, step: 100, presets: [500, 2000, 10000, 50000] },
-  content_reach: { min: 500, max: 500000, step: 500, presets: [1000, 5000, 20000, 100000] },
-  reel_views:    { min: 100, max: 200000, step: 100, presets: [1000, 5000, 25000, 100000] },
-  post_reach:    { min: 500, max: 200000, step: 500, presets: [2000, 8000, 30000, 120000] },
-  event_reach:   { min: 100, max: 50000,  step: 100, presets: [500, 2000, 8000, 30000] },
-  concert_reach: { min: 50,  max: 30000,  step: 50,  presets: [300, 1500, 5000, 20000] },
-  live_viewers:  { min: 10,  max: 10000,  step: 10,  presets: [100, 500, 2000, 8000] },
+  followers:     { min: 10,  max: 2000,   step: 10,  presets: [50, 200, 500, 2000] },
+  profile_views: { min: 100, max: 50000,  step: 100, presets: [500, 2000, 10000, 50000] },
+  content_reach: { min: 500, max: 100000, step: 500, presets: [1000, 5000, 20000, 100000] },
+  reel_views:    { min: 100, max: 100000, step: 100, presets: [1000, 5000, 25000, 100000] },
+  post_reach:    { min: 500, max: 120000, step: 500, presets: [2000, 8000, 30000, 120000] },
+  event_reach:   { min: 100, max: 30000,  step: 100, presets: [500, 2000, 8000, 30000] },
+  concert_reach: { min: 50,  max: 20000,  step: 50,  presets: [300, 1500, 5000, 20000] },
+  live_viewers:  { min: 10,  max: 8000,   step: 10,  presets: [100, 500, 2000, 8000] },
 };
 
 export function computeCustomCoins(optionId: string, reach: number, days: number): number {

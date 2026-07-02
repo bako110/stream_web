@@ -17,15 +17,17 @@ const REACTIONS    = [
 
 interface HeartItem { id: number; color: string; emoji: string; x: number; }
 
-function FloatingHearts({ hearts }: { hearts: HeartItem[] }) {
+function FloatingHearts({ hearts, isHost }: { hearts: HeartItem[]; isHost?: boolean }) {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {hearts.map((h, i) => (
         <div key={h.id}
-          className="absolute bottom-12 text-2xl"
+          className="absolute bottom-12"
           style={{
             left: `calc(50% + ${h.x}px)`,
             color: h.color,
+            fontSize: isHost ? 30 : 22,
+            filter: isHost ? 'drop-shadow(0 0 6px rgba(251,191,36,0.7))' : undefined,
             animation: `floatHeart ${900 + Math.random() * 400}ms ease-out forwards`,
             animationDelay: `${i * 60}ms`,
           }}>
@@ -38,12 +40,17 @@ function FloatingHearts({ hearts }: { hearts: HeartItem[] }) {
 
 // ── LiveLikeButton ────────────────────────────────────────────────────────────
 
+const HOST_HEART_COLOR = '#FBBF24';
+const HOST_HEART_EMOJI = '💛';
+
 export function LiveLikeButton({
   liveId,
   initialCount = 0,
+  isHost = false,
 }: {
   liveId: string;
   initialCount?: number;
+  isHost?: boolean;
 }) {
   const [count,   setCount]   = useState(initialCount);
   const [liked,   setLiked]   = useState(false);
@@ -57,9 +64,13 @@ export function LiveLikeButton({
 
   function spawnHeart() {
     const id  = ++heartId.current;
-    const idx = colorIdx.current % HEART_COLORS.length;
-    colorIdx.current++;
-    setHearts(prev => [...prev.slice(-12), { id, color: HEART_COLORS[idx], emoji: HEART_EMOJIS[idx], x: (Math.random() - 0.5) * 60 }]);
+    if (isHost) {
+      setHearts(prev => [...prev.slice(-12), { id, color: HOST_HEART_COLOR, emoji: HOST_HEART_EMOJI, x: (Math.random() - 0.5) * 60 }]);
+    } else {
+      const idx = colorIdx.current % HEART_COLORS.length;
+      colorIdx.current++;
+      setHearts(prev => [...prev.slice(-12), { id, color: HEART_COLORS[idx], emoji: HEART_EMOJIS[idx], x: (Math.random() - 0.5) * 60 }]);
+    }
     setTimeout(() => setHearts(prev => prev.filter(h => h.id !== id)), 1300);
   }
 
@@ -85,17 +96,17 @@ export function LiveLikeButton({
 
   return (
     <div className="relative flex flex-col items-center gap-1">
-      <FloatingHearts hearts={hearts} />
+      <FloatingHearts hearts={hearts} isHost={isHost} />
       <button onClick={handleLike}
         className="flex flex-col items-center gap-1 transition-all"
-        style={{ transform: bumping ? 'scale(1.4)' : 'scale(1)', transition: 'transform 0.15s' }}>
-        <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+        style={{ transform: bumping ? (isHost ? 'scale(1.55)' : 'scale(1.4)') : 'scale(1)', transition: 'transform 0.15s' }}>
+        <div className={isHost ? 'w-12 h-12 rounded-full flex items-center justify-center transition-all' : 'w-10 h-10 rounded-full flex items-center justify-center transition-all'}
           style={{
-            background: liked ? 'rgba(123,63,242,0.25)' : 'rgba(239,68,68,0.15)',
-            border: `1px solid ${liked ? '#7B3FF2' : 'rgba(239,68,68,0.3)'}`,
-            boxShadow: liked ? '0 0 12px rgba(123,63,242,0.4)' : 'none',
+            background: isHost ? 'rgba(251,191,36,0.22)' : liked ? 'rgba(123,63,242,0.25)' : 'rgba(239,68,68,0.15)',
+            border: `1.5px solid ${isHost ? '#FBBF24' : liked ? '#7B3FF2' : 'rgba(239,68,68,0.3)'}`,
+            boxShadow: isHost ? '0 0 14px rgba(251,191,36,0.5)' : liked ? '0 0 12px rgba(123,63,242,0.4)' : 'none',
           }}>
-          <Heart size={18} style={{ color: liked ? '#7B3FF2' : '#EF4444' }} fill={liked ? '#7B3FF2' : 'none'} />
+          <Heart size={isHost ? 22 : 18} style={{ color: isHost ? '#FBBF24' : liked ? '#7B3FF2' : '#EF4444' }} fill={isHost ? '#FBBF24' : liked ? '#7B3FF2' : 'none'} />
         </div>
         <span className="text-white text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
           {count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count}
@@ -239,10 +250,16 @@ export const LIVE_ANIMATIONS_CSS = `
   0%   { transform: translateY(0) scale(0.8); opacity: 1; }
   100% { transform: translateY(-200px) scale(1.2); opacity: 0; }
 }
+/* Trajectoire avec léger zigzag latéral façon TikTok — au lieu d'une ligne
+   droite, le cœur/emoji "serpente" légèrement en montant pour un rendu
+   plus organique quand plusieurs réactions montent en même temps. */
 @keyframes floatEmojiUp {
-  0%   { transform: translateY(0) scale(0.8); opacity: 1; }
-  80%  { opacity: 0.8; }
-  100% { transform: translateY(-350px) scale(1.1); opacity: 0; }
+  0%   { transform: translate(0, 0)        scale(0.6); opacity: 0; }
+  8%   { opacity: 1; }
+  25%  { transform: translate(-14px, -90px)  scale(1.05); }
+  50%  { transform: translate(10px, -180px)  scale(1);   }
+  75%  { transform: translate(-8px, -270px)  scale(0.95); opacity: 0.85; }
+  100% { transform: translate(6px, -360px)   scale(0.85); opacity: 0; }
 }
 @keyframes floatGiftUp {
   0%   { transform: translateY(0) scale(1); opacity: 1; }
@@ -264,6 +281,11 @@ export const LIVE_ANIMATIONS_CSS = `
 @keyframes fadeInDown {
   from { transform: translate(-50%, -12px); opacity: 0; }
   to   { transform: translate(-50%, 0);    opacity: 1; }
+}
+@keyframes chatMsgIn {
+  0%   { opacity: 0; transform: translateY(22px) scale(0.9); }
+  60%  { opacity: 1; transform: translateY(-2px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0)    scale(1);   }
 }
 `;
 
