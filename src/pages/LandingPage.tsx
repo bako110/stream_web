@@ -643,36 +643,72 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
   );
 }
 
-// ── Bandeau défilant en continu (boucle infinie), pause au survol ─────────────
-let _landingRowAnimCounter = 0;
-
+// ── Bandeau défilant en continu (boucle infinie), scrollable manuellement ─────
+// Piloté via scrollLeft (pas transform) pour que le scroll natif (glisser,
+// molette, trackpad) reste toujours possible par-dessus l'auto-défilement.
 function AutoScrollRow<T extends { id: string }>({
   items, renderItem, reverse = false, speed = 5,
 }: {
   items: T[]; renderItem: (item: T, key: string) => React.ReactNode;
   reverse?: boolean; speed?: number;
 }) {
-  const animName = useRef(`landingRowMarquee${_landingRowAnimCounter++}`).current;
+  const trackRef  = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   if (items.length === 0) return null;
 
-  const loopItems = [...items, ...items];
-  const duration  = Math.max(items.length * speed, 18);
+  // Répété 3x pour une boucle fluide dans les deux sens de scroll manuel
+  const loopItems = [...items, ...items, ...items];
+  const pxPerSecond = 100 / speed * 4;
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    // Point de départ au milieu du bloc dupliqué pour pouvoir scroller manuellement
+    // vers la gauche ou la droite sans jamais atteindre un bord.
+    const setLength = track.scrollWidth / 3;
+    track.scrollLeft = reverse ? setLength * 2 - track.clientWidth : setLength;
+
+    let raf: number;
+    let last = performance.now();
+    function tick(now: number) {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!pausedRef.current && track) {
+        track.scrollLeft += (reverse ? -1 : 1) * pxPerSecond * dt;
+        // Repositionne discrètement au centre si on approche un bord (boucle infinie)
+        if (track.scrollLeft <= 4) track.scrollLeft += setLength;
+        else if (track.scrollLeft >= setLength * 2 - track.clientWidth - 4) track.scrollLeft -= setLength;
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length, reverse, speed]);
+
+  function pause() {
+    pausedRef.current = true;
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+  }
+  function resumeSoon() {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => { pausedRef.current = false; }, 2500);
+  }
 
   return (
-    <div className="relative overflow-hidden"
+    <div className="relative"
       style={{ WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)' }}>
-      <div className="flex gap-4 pb-4 px-6"
-        style={{ animation: `${animName} ${duration}s linear infinite`, animationDirection: reverse ? 'reverse' : 'normal', willChange: 'transform' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'; }}>
+      <div ref={trackRef}
+        className="flex gap-4 pb-4 px-6 overflow-x-auto"
+        style={{ scrollbarWidth: 'none' }}
+        onMouseEnter={pause} onMouseLeave={resumeSoon}
+        onTouchStart={pause} onTouchEnd={resumeSoon}
+        onWheel={pause}>
         {loopItems.map((item, i) => renderItem(item, `${item.id}-${i}`))}
       </div>
-      <style>{`
-        @keyframes ${animName} {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-      `}</style>
     </div>
   );
 }
