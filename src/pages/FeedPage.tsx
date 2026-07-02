@@ -25,6 +25,7 @@ import { RichText } from '../components/ui/RichText';
 import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
 import { useWs } from '../context/WebSocketContext';
 import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
+import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -2034,40 +2035,41 @@ function ReelRowCard({ reels }: { reels: Reel[] }) {
       </div>
       <div className="flex gap-3 px-4 pb-4 pt-3 overflow-x-auto" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
         {reels.map(reel => (
-          <button
-            key={reel.id}
-            onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}
-            className="relative shrink-0 rounded-2xl overflow-hidden transition-transform hover:scale-[1.03] active:scale-95"
-            style={{ width: 'clamp(120px, 26vw, 180px)', aspectRatio: '9/16', background: '#000' }}>
-            {reel.thumbnail_url ? (
-              <img src={reel.thumbnail_url} alt={reel.caption ?? ''} className="w-full h-full object-cover" />
-            ) : (
-              <MediaPlaceholder title={reel.caption} icon={<Play size={24} color="#fff" />} />
-            )}
-            {/* Gradient haut — badge reel */}
-            <div className="absolute inset-x-0 top-0 h-14 pointer-events-none"
-              style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)' }} />
-            {/* Gradient bas */}
-            <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
-              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }} />
-            {/* Badge Reel */}
-            <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full text-white"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-              <Film size={9} /> Reel
-            </span>
-            {/* Caption */}
-            {reel.caption && (
-              <span className="absolute bottom-6 inset-x-2 text-[10px] text-white/80 font-medium line-clamp-2 text-left leading-snug">
-                {reel.caption}
+          <HoverVideoPreview key={reel.id}
+            src={reel.hls_url} poster={reel.thumbnail_url}
+            className="relative shrink-0 overflow-hidden transition-transform hover:scale-[1.03] active:scale-95"
+            style={{ width: 'clamp(120px, 26vw, 180px)', aspectRatio: '9/16', borderRadius: 16, background: '#000' }}>
+            <button
+              onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}
+              className="absolute inset-0 w-full h-full text-left">
+              {!reel.thumbnail_url && !reel.hls_url && (
+                <MediaPlaceholder title={reel.caption} icon={<Play size={24} color="#fff" />} />
+              )}
+              {/* Gradient haut — badge reel */}
+              <div className="absolute inset-x-0 top-0 h-14 pointer-events-none"
+                style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)' }} />
+              {/* Gradient bas */}
+              <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }} />
+              {/* Badge Reel */}
+              <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full text-white"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+                <Film size={9} /> Reel
               </span>
-            )}
-            {/* Vues */}
-            {(reel.view_count ?? 0) > 0 && (
-              <span className="absolute bottom-2 left-2 flex items-center gap-0.5 text-[10px] text-white/70 font-semibold">
-                <Play size={8} fill="white" className="opacity-70" /> {fmtCount(reel.view_count)}
-              </span>
-            )}
-          </button>
+              {/* Caption */}
+              {reel.caption && (
+                <span className="absolute bottom-6 inset-x-2 text-[10px] text-white/80 font-medium line-clamp-2 text-left leading-snug">
+                  {reel.caption}
+                </span>
+              )}
+              {/* Vues */}
+              {(reel.view_count ?? 0) > 0 && (
+                <span className="absolute bottom-2 left-2 flex items-center gap-0.5 text-[10px] text-white/70 font-semibold">
+                  <Play size={8} fill="white" className="opacity-70" /> {fmtCount(reel.view_count)}
+                </span>
+              )}
+            </button>
+          </HoverVideoPreview>
         ))}
       </div>
     </div>

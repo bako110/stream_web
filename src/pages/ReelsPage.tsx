@@ -22,6 +22,7 @@ import { toProxiedUrl } from '../utils/constants';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { HeartRain, LikeNamesFeed } from '../components/ui/HeartRain';
+import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -444,24 +445,26 @@ function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick }
             ) : (
               <div className="grid grid-cols-2 gap-2.5">
                 {suggestions.map(r => (
-                  <button key={r.id} onClick={() => onSuggestionClick(r.id)}
-                    className="relative rounded-xl overflow-hidden text-left transition-transform hover:scale-[1.02]"
-                    style={{ aspectRatio: '9/16', background: 'var(--bg-secondary)' }}>
-                    {r.thumbnail_url
-                      ? <img src={r.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                      : <div className="absolute inset-0 flex items-center justify-center">
+                  <HoverVideoPreview key={r.id}
+                    src={r.hls_url} poster={r.thumbnail_url}
+                    className="relative overflow-hidden transition-transform hover:scale-[1.02]"
+                    style={{ aspectRatio: '9/16', borderRadius: 12, background: 'var(--bg-secondary)' }}>
+                    <button onClick={() => onSuggestionClick(r.id)} className="absolute inset-0 w-full h-full text-left">
+                      {!r.thumbnail_url && !r.hls_url && (
+                        <div className="absolute inset-0 flex items-center justify-center">
                           <Play size={24} style={{ color: 'var(--text-tertiary)' }} />
                         </div>
-                    }
-                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)' }} />
-                    <p className="absolute bottom-1.5 left-2 right-2 text-white text-xs font-semibold truncate">
-                      {r.author?.display_name ?? r.author?.username ?? 'Artiste'}
-                    </p>
-                    <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 text-white text-[10px] font-bold"
-                      style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
-                      <Heart size={10} fill="#fff" /> {r.like_count ?? 0}
-                    </div>
-                  </button>
+                      )}
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)' }} />
+                      <p className="absolute bottom-1.5 left-2 right-2 text-white text-xs font-semibold truncate">
+                        {r.author?.display_name ?? r.author?.username ?? 'Artiste'}
+                      </p>
+                      <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 text-white text-[10px] font-bold"
+                        style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+                        <Heart size={10} fill="#fff" /> {r.like_count ?? 0}
+                      </div>
+                    </button>
+                  </HoverVideoPreview>
                 ))}
               </div>
             )}
