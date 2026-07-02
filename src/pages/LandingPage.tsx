@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
@@ -643,28 +643,36 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
   );
 }
 
-// ── Horizontal scroll row ─────────────────────────────────────────────────────
-function HScrollRow({ children }: { children: React.ReactNode }) {
-  const ref       = useRef<HTMLDivElement>(null);
-  const scrollBy  = useCallback((dir: number) => {
-    ref.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
-  }, []);
+// ── Bandeau défilant en continu (boucle infinie), pause au survol ─────────────
+let _landingRowAnimCounter = 0;
+
+function AutoScrollRow<T extends { id: string }>({
+  items, renderItem, reverse = false, speed = 5,
+}: {
+  items: T[]; renderItem: (item: T, key: string) => React.ReactNode;
+  reverse?: boolean; speed?: number;
+}) {
+  const animName = useRef(`landingRowMarquee${_landingRowAnimCounter++}`).current;
+  if (items.length === 0) return null;
+
+  const loopItems = [...items, ...items];
+  const duration  = Math.max(items.length * speed, 18);
 
   return (
-    <div className="relative">
-      <button onClick={() => scrollBy(-1)}
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full glass flex items-center justify-center text-lg font-bold shadow-xl hover:scale-110 transition-transform"
-        style={{ color: 'var(--text-primary)' }}>
-        ‹
-      </button>
-      <div ref={ref} className="flex gap-4 overflow-x-auto pb-4 px-6" style={{ scrollbarWidth: 'none' }}>
-        {children}
+    <div className="relative overflow-hidden"
+      style={{ WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)' }}>
+      <div className="flex gap-4 pb-4 px-6"
+        style={{ animation: `${animName} ${duration}s linear infinite`, animationDirection: reverse ? 'reverse' : 'normal', willChange: 'transform' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'; }}>
+        {loopItems.map((item, i) => renderItem(item, `${item.id}-${i}`))}
       </div>
-      <button onClick={() => scrollBy(1)}
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full glass flex items-center justify-center text-lg font-bold shadow-xl hover:scale-110 transition-transform"
-        style={{ color: 'var(--text-primary)' }}>
-        ›
-      </button>
+      <style>{`
+        @keyframes ${animName} {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -998,7 +1006,8 @@ export default function LandingPage() {
             ? <PlaceholderRow count={8} aspect="2/3" width={160} />
             : films.length === 0
               ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <HScrollRow>{films.map(f => <PosterCard key={f.id} item={f} onClick={() => navigate(`/explore/films/${encodeId(f.id)}`)} />)}</HScrollRow>
+              : <AutoScrollRow items={films} speed={6}
+                  renderItem={(f, key) => <PosterCard key={key} item={f} onClick={() => navigate(`/explore/films/${encodeId(f.id)}`)} />} />
           }
         </section>
 
@@ -1009,7 +1018,8 @@ export default function LandingPage() {
             ? <PlaceholderRow count={8} aspect="2/3" width={160} />
             : series.length === 0
               ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <HScrollRow>{series.map(s => <PosterCard key={s.id} item={s} onClick={() => navigate(`/explore/series/${encodeId(s.id)}`)} />)}</HScrollRow>
+              : <AutoScrollRow items={series} speed={6} reverse
+                  renderItem={(s, key) => <PosterCard key={key} item={s} onClick={() => navigate(`/explore/series/${encodeId(s.id)}`)} />} />
           }
         </section>
 
@@ -1020,7 +1030,8 @@ export default function LandingPage() {
             ? <PlaceholderRow count={5} aspect="16/9" width={280} />
             : concerts.length === 0
               ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <HScrollRow>{concerts.map(c => <ConcertCard key={c.id} concert={c} onClick={() => navigate(`/explore/concerts/${encodeId(c.id)}`)} />)}</HScrollRow>
+              : <AutoScrollRow items={concerts} speed={7}
+                  renderItem={(c, key) => <ConcertCard key={key} concert={c} onClick={() => navigate(`/explore/concerts/${encodeId(c.id)}`)} />} />
           }
         </section>
 
@@ -1031,7 +1042,8 @@ export default function LandingPage() {
             ? <PlaceholderRow count={5} aspect="16/9" width={300} />
             : events.length === 0
               ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <HScrollRow>{events.map(e => <EventCard key={e.id} event={e} onClick={() => navigate(`/explore/events/${encodeId(e.id)}`)} />)}</HScrollRow>
+              : <AutoScrollRow items={events} speed={7} reverse
+                  renderItem={(e, key) => <EventCard key={key} event={e} onClick={() => navigate(`/explore/events/${encodeId(e.id)}`)} />} />
           }
         </section>
       </div>
