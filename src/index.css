@@ -178,6 +178,11 @@
   100% { opacity: 0; transform: translateY(-200px) scale(0.8); }
 }
 
+@keyframes live-ring-pulse {
+  0%, 100% { opacity: 1;    transform: scale(1);    }
+  50%       { opacity: 0.55; transform: scale(1.06); }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    UTILITY ANIMATION CLASSES
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -194,6 +199,7 @@
 .animate-shimmer     { animation: shimmer 2.5s linear infinite; background-size: 200% auto; }
 .animate-glow-pulse  { animation: glow-pulse   3s ease-in-out infinite; }
 .animate-marquee     { animation: marquee     30s linear       infinite; }
+.animate-live-ring   { animation: live-ring-pulse 1.6s ease-in-out infinite; }
 
 .delay-100 { animation-delay: 0.10s; }
 .delay-200 { animation-delay: 0.20s; }

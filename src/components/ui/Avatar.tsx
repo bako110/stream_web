@@ -62,6 +62,8 @@ interface AvatarProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   verified?: boolean;
+  /** Anneau rouge pulsant — l'utilisateur a un live actif en ce moment. */
+  isLive?: boolean | null;
 }
 
 const sizes = {
@@ -72,25 +74,54 @@ const sizes = {
   xl: 'w-20 h-20 text-2xl',
 };
 
-export function Avatar({ src, name, size = 'md', className, verified }: AvatarProps) {
+// Marge nécessaire pour laisser respirer l'anneau live sans qu'il ne rogne l'image
+const LIVE_RING_PADDING = {
+  xs: 'p-[2px]', sm: 'p-[2px]', md: 'p-[2.5px]', lg: 'p-[3px]', xl: 'p-1',
+};
+
+export function Avatar({ src, name, size = 'md', className, verified, isLive }: AvatarProps) {
   const [err, setErr] = useState(false);
   const label = name?.trim() || '?';
   const initials = label.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
+  const image = src && !err ? (
+    <img
+      src={src}
+      alt={label}
+      className="w-full h-full rounded-full object-cover bg-[var(--bg-tertiary)]"
+      onError={() => setErr(true)}
+    />
+  ) : (
+    <div className="w-full h-full rounded-full bg-brand-gradient flex items-center justify-center text-white font-semibold">
+      {initials}
+    </div>
+  );
+
+  if (isLive) {
+    return (
+      <div className={clsx('relative inline-flex shrink-0', sizes[size], className)}>
+        <div
+          className={clsx('absolute inset-0 rounded-full animate-live-ring', LIVE_RING_PADDING[size])}
+          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A,#7B3FF2)' }}
+        >
+          <div className="w-full h-full rounded-full overflow-hidden" style={{ background: 'var(--surface, #000)' }}>
+            {image}
+          </div>
+        </div>
+        <span
+          className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] font-black text-white px-1 rounded-full uppercase tracking-wide"
+          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', lineHeight: '1.4', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+        >
+          Live
+        </span>
+        {verified && <VerifiedBadgeOverlay size={size} />}
+      </div>
+    );
+  }
+
   return (
     <div className={clsx('relative inline-flex shrink-0', sizes[size], className)}>
-      {src && !err ? (
-        <img
-          src={src}
-          alt={label}
-          className="w-full h-full rounded-full object-cover bg-[var(--bg-tertiary)]"
-          onError={() => setErr(true)}
-        />
-      ) : (
-        <div className="w-full h-full rounded-full bg-brand-gradient flex items-center justify-center text-white font-semibold">
-          {initials}
-        </div>
-      )}
+      {image}
       {verified && <VerifiedBadgeOverlay size={size} />}
     </div>
   );

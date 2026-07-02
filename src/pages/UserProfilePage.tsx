@@ -13,6 +13,7 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { useAuthStore } from '../store/authStore';
+import { useWs } from '../context/WebSocketContext';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 
@@ -257,6 +258,7 @@ export default function UserProfilePage() {
   const id             = decodeId(slug!);
   const navigate       = useNavigate();
   const { user: me }   = useAuthStore();
+  const { liveUserIds } = useWs();
   const [tab,            setTab]            = useState<Tab>('publications');
   const [followed,       setFollowed]       = useState<boolean | null>(null);
   const [blocked,        setBlocked]        = useState<boolean | null>(null);
@@ -333,6 +335,7 @@ export default function UserProfilePage() {
               name={name}
               size="xl"
               verified={profile.is_verified}
+              isLive={profile.is_live || liveUserIds.has(profile.id)}
               className="ring-4 ring-offset-0"
             />
           </div>

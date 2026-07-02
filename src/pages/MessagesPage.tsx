@@ -154,6 +154,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
   const [search,   setSearch]   = useState('');
   const [error,    setError]    = useState<string | null>(null);
   const { confirm: confirmConvo, ConfirmDialog: ConvoConfirmDialog } = useConfirm();
+  const { liveUserIds } = useWs();
 
   const load = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -253,8 +254,9 @@ const ConversationList = forwardRef<ConvoListHandle, {
               onMouseEnter={e => { if (selected !== c.user.id) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
               onMouseLeave={e => { if (selected !== c.user.id) e.currentTarget.style.background = 'transparent'; }}>
               <div className="relative shrink-0">
-                <Avatar src={c.user.avatar_url} name={c.user.display_name ?? c.user.username ?? '?'} size="md" />
-                {c.user.is_online && (
+                <Avatar src={c.user.avatar_url} name={c.user.display_name ?? c.user.username ?? '?'} size="md"
+                  isLive={c.user.is_live || liveUserIds.has(c.user.id)} />
+                {c.user.is_online && !(c.user.is_live || liveUserIds.has(c.user.id)) && (
                   <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
                     style={{ background: '#22c55e', borderColor: 'var(--bg)' }} />
                 )}
@@ -618,7 +620,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
 }) {
   const navigate               = useNavigate();
   const { user: me }           = useAuthStore();
-  const { sendMessage: sendWsMessage } = useWs();
+  const { sendMessage: sendWsMessage, liveUserIds } = useWs();
   const { confirm: confirmMsg, ConfirmDialog: MsgConfirmDialog } = useConfirm();
   const [messages, setMessages]= useState<ExtMessage[]>([]);
   const [input,    setInput]   = useState('');
@@ -1077,8 +1079,9 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
           <button className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
             onClick={() => navigate(`/user/${encodeId(userId)}`)  }>
             <div className="relative shrink-0">
-              <Avatar src={peer.avatar_url} name={peer.display_name ?? peer.username ?? '?'} size="sm" verified={peer.is_verified} />
-              {peer.is_online && (
+              <Avatar src={peer.avatar_url} name={peer.display_name ?? peer.username ?? '?'} size="sm" verified={peer.is_verified}
+                isLive={peer.is_live || liveUserIds.has(peer.id)} />
+              {peer.is_online && !(peer.is_live || liveUserIds.has(peer.id)) && (
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
                   style={{ background: '#22c55e', borderColor: 'var(--surface)' }} />
               )}

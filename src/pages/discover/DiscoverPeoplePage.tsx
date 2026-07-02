@@ -33,7 +33,7 @@ function UserRow({ u, onFollow, onUnfollow, isFollowed, isFollowing, onClick }: 
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
       <button onClick={onClick} className="shrink-0">
-        <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} />
+        <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} isLive={u.is_live} />
       </button>
       <button onClick={onClick} className="flex-1 min-w-0 text-left">
         <div className="flex items-center gap-1.5 flex-wrap">

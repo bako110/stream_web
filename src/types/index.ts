@@ -36,6 +36,7 @@ export interface UserPublic {
   is_verified?: boolean;
   bio?: string | null;
   is_online?: boolean | null;
+  is_live?: boolean | null;
 }
 
 export interface UserPublicProfile extends UserPublic {

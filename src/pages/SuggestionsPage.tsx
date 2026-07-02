@@ -140,7 +140,7 @@ export default function SuggestionsPage() {
 
                 {/* Avatar */}
                 <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="shrink-0">
-                  <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} />
+                  <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} isLive={u.is_live} />
                 </button>
 
                 {/* Infos */}

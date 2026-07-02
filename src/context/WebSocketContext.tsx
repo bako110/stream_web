@@ -58,6 +58,7 @@ interface WsContextValue {
   // Events spécialisés (state React — déclenche re-render)
   lastLiveStarted:      LiveStartedPayload | null;
   lastLiveEnded:        string | null;
+  liveUserIds:          Set<string>;
   lastLiveViewersUpdated: LiveViewersPayload | null;
   lastConcertLive:      ConcertLivePayload | null;
   lastConcertEnded:     string | null;
@@ -83,6 +84,7 @@ const Ctx = createContext<WsContextValue>({
   removeListener: () => {},
   lastLiveStarted: null,
   lastLiveEnded: null,
+  liveUserIds: new Set(),
   lastLiveViewersUpdated: null,
   lastConcertLive: null,
   lastConcertEnded: null,
@@ -135,6 +137,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [unreadNotifications,  setUnreadNotifications]  = useState(0);
   const [lastLiveStarted,      setLastLiveStarted]      = useState<LiveStartedPayload | null>(null);
   const [lastLiveEnded,        setLastLiveEnded]        = useState<string | null>(null);
+  // IDs des utilisateurs actuellement en live — alimente l'anneau "Live" sur les avatars
+  // partout dans l'app, mis à jour en temps réel sans recharger la page.
+  const [liveUserIds,          setLiveUserIds]          = useState<Set<string>>(new Set());
   const [lastLiveViewersUpdated, setLastLiveViewersUpdated] = useState<LiveViewersPayload | null>(null);
   const [lastConcertLive,      setLastConcertLive]      = useState<ConcertLivePayload | null>(null);
   const [lastConcertEnded,     setLastConcertEnded]     = useState<string | null>(null);
@@ -159,12 +164,20 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       case 'message':
         setUnreadMessages(n => n + 1);
         break;
-      case 'live_started':
-        setLastLiveStarted(payload as unknown as LiveStartedPayload);
+      case 'live_started': {
+        const started = payload as unknown as LiveStartedPayload;
+        setLastLiveStarted(started);
+        const uid = started.live?.user_id;
+        if (uid) setLiveUserIds(prev => { const next = new Set(prev); next.add(uid); return next; });
         break;
-      case 'live_ended':
-        setLastLiveEnded((payload as any).live_id as string);
+      }
+      case 'live_ended': {
+        const liveId = (payload as any).live_id as string;
+        const endedUid = (payload as any).user_id as string | undefined;
+        setLastLiveEnded(liveId);
+        if (endedUid) setLiveUserIds(prev => { const next = new Set(prev); next.delete(endedUid); return next; });
         break;
+      }
       case 'live_viewers_updated':
         setLastLiveViewersUpdated(payload as unknown as LiveViewersPayload);
         break;
@@ -218,6 +231,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .catch(() => {});
     apiClient.get<{ unread_count: number }>(Endpoints.notifications.unreadCount)
       .then(r => { if (isMounted.current) setUnreadNotifications(r.data.unread_count); })
+      .catch(() => {});
+    // Lives déjà actifs au moment de la connexion — sinon liveUserIds resterait vide
+    // jusqu'au prochain live_started reçu en direct pendant la session.
+    apiClient.get<LiveStream[]>(Endpoints.lives.list)
+      .then(r => { if (isMounted.current) setLiveUserIds(new Set((r.data ?? []).map(l => l.user_id))); })
       .catch(() => {});
   }, []);
   const refreshUnreadRef = useRef(refreshUnread);
@@ -317,6 +335,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     removeListener,
     lastLiveStarted,
     lastLiveEnded,
+    liveUserIds,
     lastLiveViewersUpdated,
     lastConcertLive,
     lastConcertEnded,
@@ -335,7 +354,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     clearUnreadNotifications: () => setUnreadNotifications(0),
   }), [
     isConnected, sendMessage, addListener, removeListener,
-    lastLiveStarted, lastLiveEnded, lastLiveViewersUpdated,
+    lastLiveStarted, lastLiveEnded, liveUserIds, lastLiveViewersUpdated,
     lastConcertLive, lastConcertEnded,
     lastNewFollower, lastStoryAdded,
     lastReactionOnContent, lastCommentOnContent,
