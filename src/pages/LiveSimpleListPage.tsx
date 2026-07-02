@@ -159,26 +159,26 @@ export default function LiveSimpleListPage() {
   const active = lives;
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-8">
+    <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-5 sm:space-y-8">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-            <Radio className="text-red-500" /> Lives en direct
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+            <Radio className="text-red-500 shrink-0" size={22} /> <span className="truncate">Lives en direct</span>
           </h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
             {loading ? '...' : `${active.length} live${active.length !== 1 ? 's' : ''} actif${active.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => refetch()} className="btn-ghost text-sm border border-[var(--border)]">
+          <button onClick={() => refetch()} className="btn-ghost flex-1 sm:flex-none text-xs sm:text-sm border border-[var(--border)] whitespace-nowrap">
             Actualiser
           </button>
           <button onClick={() => navigate('/go-live')}
-            className="btn-primary flex items-center gap-2 text-sm"
+            className="btn-primary flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-            <Plus size={16} /> Démarrer un live
+            <Plus size={16} className="shrink-0" /> <span className="truncate">Démarrer un live</span>
           </button>
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function LiveSimpleListPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {active.map(live => <LiveCard key={live.id} live={live} />)}
         </div>
       )}

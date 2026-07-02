@@ -15,9 +15,7 @@ const APP_STORE_URL  = 'https://apps.apple.com/app/gofolyx/id0000000000';
  * interactions fines (WebRTC, gifting, contrôles vidéo).
  * Ces pages sont inutilisables ou sans sens sur un navigateur mobile.
  */
-const MOBILE_BLOCKED_EXACT = new Set([
-  '/go-live',     // choix de stream, interactions souris
-]);
+const MOBILE_BLOCKED_EXACT = new Set<string>([]);
 
 const MOBILE_BLOCKED_PREFIXES = [
   '/create/',         // CreateReel, CreatePost, CreateEvent, CreateConcert
