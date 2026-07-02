@@ -70,30 +70,37 @@ function PublicationsTab({ userId }: { userId: string }) {
     ...posts.map(p   => ({ ...p,  _kind: 'post'    as const })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  if (evL || coL || poL) return <PageLoader />;
+  if (evL || coL || poL) {
+    return (
+      <div className="grid grid-cols-3 gap-1 p-1">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className="rounded-lg animate-pulse" style={{ aspectRatio: '3/4', background: 'var(--bg-tertiary)' }} />
+        ))}
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 py-16" style={{ color: 'var(--text-tertiary)' }}>
-        <Grid3x3 size={32} strokeWidth={1.2} />
-        <p className="text-sm">Aucune publication</p>
+      <div className="flex flex-col items-center gap-3 py-20" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
+          <Grid3x3 size={26} strokeWidth={1.5} />
+        </div>
+        <p className="text-sm font-medium">Aucune publication</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2 p-4">
+    <div className="grid grid-cols-3 gap-1 p-1">
       {items.map(item => {
         const isEvent   = item._kind === 'event';
         const isConcert = item._kind === 'concert';
         const isPost    = item._kind === 'post';
 
-        const color = isEvent ? '#7B3FF2' : isConcert ? '#7B3FF2' : '#7B3FF2';
         const label = isEvent ? 'Événement' : isConcert ? 'Concert' : 'Post';
         const img   = item.thumbnail_url ?? item.banner_url ?? item.image_url;
-        const date  = isEvent ? item.starts_at : isConcert ? item.scheduled_at : item.created_at;
         const title = item.title ?? item.body;
-        const desc  = isPost ? null : item.description;
 
         const handleClick = () => {
           if (isEvent)   navigate(`/events/${encodeId(item.id)}`);
@@ -102,45 +109,36 @@ function PublicationsTab({ userId }: { userId: string }) {
         };
 
         return (
-          <div key={`${item._kind}-${item.id}`}
+          <button key={`${item._kind}-${item.id}`}
             onClick={handleClick}
-            className="flex gap-3 p-3 rounded-2xl cursor-pointer transition-all"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = color + '50')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-
-            {/* Thumbnail / icon */}
-            <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden flex items-center justify-center"
-              style={{ background: img ? undefined : color + '15' }}>
-              {img
-                ? <img src={img} alt="" className="w-full h-full object-cover" />
-                : isPost
-                  ? <FileText size={20} color={color} />
-                  : isEvent
-                    ? <Calendar size={20} color={color} />
-                    : <Heart size={20} color={color} />
-              }
-            </div>
-
-            <div className="flex-1 min-w-0 space-y-0.5">
-              <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: color + '18', color }}>
-                {label}
-              </span>
-              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                {isPost ? (item.body?.slice(0, 80) ?? '') : title}
-              </p>
-              {desc && (
-                <p className="text-xs line-clamp-1" style={{ color: 'var(--text-secondary)' }}>{desc}</p>
-              )}
-              {date && (
-                <p className="text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-                  <Calendar size={11} />
-                  {format(new Date(date), 'd MMM yyyy', { locale: fr })}
+            className="relative overflow-hidden group text-left"
+            style={{ aspectRatio: '3/4', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
+            {img ? (
+              <img src={img} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center p-3"
+                style={{ background: 'linear-gradient(160deg,#7B3FF2 0%,#5B2EC4 100%)' }}>
+                <p className="text-white text-xs font-medium leading-snug text-center line-clamp-5">
+                  {title || (isPost ? 'Publication' : label)}
                 </p>
-              )}
+              </div>
+            )}
+
+            {/* Badge type — coin haut-gauche */}
+            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
+              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+              {isPost ? <FileText size={9} /> : isEvent ? <Calendar size={9} /> : <Heart size={9} />}
+              {label}
             </div>
-          </div>
+
+            {/* Titre en bas — visible en permanence, pas seulement au survol */}
+            {img && title && (
+              <div className="absolute inset-x-0 bottom-0 px-2 py-1.5"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
+                <p className="text-white text-[11px] font-semibold line-clamp-2 leading-tight">{title}</p>
+              </div>
+            )}
+          </button>
         );
       })}
     </div>
