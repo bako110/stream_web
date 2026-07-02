@@ -410,6 +410,7 @@ export default function PostDetailPage() {
       <GuestPreview
         type={hasVideo ? 'reel' : 'post'}
         thumbnail={thumb}
+        thumbnails={hasVideo ? undefined : post.image_urls}
         body={post.body}
         author={author}
         date={post.created_at}

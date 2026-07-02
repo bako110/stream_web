@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -9,6 +9,8 @@ export type GuestPreviewType = 'post' | 'reel' | 'event' | 'concert';
 interface GuestPreviewProps {
   type: GuestPreviewType;
   thumbnail?: string | null;
+  /** Plusieurs images (post multi-photos, galerie d'event) — glisser pour naviguer. */
+  thumbnails?: (string | null | undefined)[] | null;
   title?: string | null;
   body?: string | null;
   author?: {
@@ -71,14 +73,36 @@ const TYPE_CONFIG: Record<GuestPreviewType, { label: string; cta: string; icon: 
 const isMedia = (type: GuestPreviewType) => type === 'reel' || type === 'concert';
 
 export function GuestPreview({
-  type, thumbnail, title, body, author, date,
+  type, thumbnail, thumbnails, title, body, author, date,
   location, attendees, ticketPrice, isLive,
 }: GuestPreviewProps) {
   const cfg = TYPE_CONFIG[type];
   const redirectParam = encodeURIComponent(window.location.pathname + window.location.search);
   const [showPlayPrompt, setShowPlayPrompt] = useState(false);
+  const [bodyExpanded, setBodyExpanded] = useState(false);
   const authorName = author?.display_name ?? author?.username ?? null;
   const initials   = authorName ? authorName[0].toUpperCase() : '?';
+
+  // Normalise en une liste d'images sans doublons ni valeurs vides
+  const images = Array.from(new Set(
+    (thumbnails?.length ? thumbnails : [thumbnail]).filter((u): u is string => !!u),
+  ));
+  const [slide, setSlide] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+
+  function goToSlide(i: number) {
+    setSlide(Math.max(0, Math.min(images.length - 1, i)));
+  }
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current == null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) < 40) return;
+    goToSlide(delta < 0 ? slide + 1 : slide - 1);
+  }
 
   return (
     <>
@@ -96,13 +120,44 @@ export function GuestPreview({
           position: absolute;
           inset: 0;
           z-index: 0;
+          overflow: hidden;
+          touch-action: pan-y;
         }
-        .gp-hero img {
+        .gp-hero-track {
+          display: flex;
+          width: 100%;
+          height: 100%;
+          transition: transform .3s cubic-bezier(0.22,1,0.36,1);
+        }
+        .gp-hero-slide {
           width: 100%;
           height: 100%;
           object-fit: contain;
           object-position: center center;
           display: block;
+          flex-shrink: 0;
+        }
+        .gp-hero-dots {
+          position: absolute;
+          top: 12px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 6;
+          display: flex;
+          gap: 5px;
+        }
+        .gp-hero-dot {
+          width: 6px; height: 6px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.35);
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          transition: background .18s, transform .18s;
+        }
+        .gp-hero-dot.active {
+          background: #fff;
+          transform: scale(1.2);
         }
         .gp-gradient {
           position: absolute;
@@ -198,14 +253,26 @@ export function GuestPreview({
 
         .gp-meta { padding: 0 20px; }
 
-        .gp-play {
-          width: 48px; height: 48px;
+        .gp-hero-play {
+          position: absolute;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 5;
+          width: 76px; height: 76px;
           border-radius: 50%;
-          background: rgba(255,255,255,0.12);
-          border: 1.5px solid rgba(255,255,255,0.25);
+          background: rgba(0,0,0,0.35);
+          border: 2px solid rgba(255,255,255,0.55);
+          backdrop-filter: blur(4px);
           display: flex; align-items: center; justify-content: center;
-          margin-bottom: 12px;
-          flex-shrink: 0;
+          cursor: pointer;
+          transition: transform .18s, background .18s;
+        }
+        .gp-hero-play:hover {
+          transform: translate(-50%, -50%) scale(1.06);
+          background: rgba(0,0,0,0.5);
+        }
+        @media (min-width: 640px) {
+          .gp-hero-play { width: 92px; height: 92px; }
         }
 
         .gp-title {
@@ -273,11 +340,19 @@ export function GuestPreview({
           line-height: 1.55;
           color: rgba(255,255,255,0.6);
           margin-bottom: 14px;
+          word-break: break-word;
+          cursor: pointer;
+        }
+        .gp-body-clamped {
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          word-break: break-word;
+        }
+        .gp-body-more {
+          font-size: 13px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.45);
         }
 
         .gp-stats {
@@ -365,13 +440,38 @@ export function GuestPreview({
 
       <div className="gp-shell">
 
-        {/* Hero */}
-        <div className="gp-hero">
-          {thumbnail
-            ? <img src={thumbnail} alt="" />
-            : <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1a0533 0%,#2d0f5e 50%,#0A0010 100%)' }} />
-          }
+        {/* Hero — carrousel swipeable si plusieurs images (post multi-photos, galerie event) */}
+        <div className="gp-hero" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          {images.length > 0 ? (
+            <div className="gp-hero-track"
+              style={{ transform: `translateX(-${slide * 100}%)` }}>
+              {images.map((src, i) => (
+                <img key={i} src={src} alt="" className="gp-hero-slide" />
+              ))}
+            </div>
+          ) : (
+            <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1a0533 0%,#2d0f5e 50%,#0A0010 100%)' }} />
+          )}
           <div className="gp-gradient" />
+
+          {/* Indicateurs de position — visibles seulement s'il y a plusieurs images */}
+          {images.length > 1 && (
+            <div className="gp-hero-dots">
+              {images.map((_, i) => (
+                <button key={i} className={`gp-hero-dot${i === slide ? ' active' : ''}`}
+                  onClick={() => goToSlide(i)} aria-label={`Image ${i + 1}`} />
+              ))}
+            </div>
+          )}
+
+          {/* Bouton play centré — signale visuellement qu'il s'agit d'une vidéo */}
+          {isMedia(type) && (
+            <button className="gp-hero-play" onClick={() => setShowPlayPrompt(true)} aria-label="Lire la vidéo">
+              <svg width="28" height="28" viewBox="0 0 20 20" fill="white">
+                <path d="M5 3l12 7-12 7V3z"/>
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Topbar */}
@@ -404,15 +504,6 @@ export function GuestPreview({
           </div>
 
           <div className="gp-meta">
-            {/* Play button */}
-            {isMedia(type) && (
-              <button className="gp-play" onClick={() => setShowPlayPrompt(true)} style={{ cursor: 'pointer', border: 'none' }}>
-                <svg width="18" height="18" viewBox="0 0 20 20" fill="white">
-                  <path d="M5 3l12 7-12 7V3z"/>
-                </svg>
-              </button>
-            )}
-
             {/* Title */}
             {title && <h1 className="gp-title">{title}</h1>}
 
@@ -475,8 +566,15 @@ export function GuestPreview({
               </div>
             )}
 
-            {/* Body */}
-            {body && <p className="gp-body">{body}</p>}
+            {/* Body — clic pour afficher/masquer le texte complet */}
+            {body && (
+              <p className={`gp-body${bodyExpanded ? '' : ' gp-body-clamped'}`}
+                onClick={() => setBodyExpanded(v => !v)}>
+                {body}
+                {' '}
+                <span className="gp-body-more">{bodyExpanded ? 'Voir moins' : 'Voir plus'}</span>
+              </p>
+            )}
           </div>
         </div>
 

@@ -521,6 +521,7 @@ export default function EventDetailPage() {
       <GuestPreview
         type="event"
         thumbnail={event.thumbnail_url ?? event.banner_url ?? null}
+        thumbnails={[event.banner_url ?? event.thumbnail_url, ...(event.gallery_urls ?? [])]}
         title={event.title}
         body={(event as any).description}
         author={(event as any).organizer ?? (event as any).author}
