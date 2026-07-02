@@ -454,28 +454,35 @@ export default function SearchPage() {
           {(results.concerts?.length ?? 0) > 0 && (
             <section>
               <SectionHeader icon={<Music size={14} />} title="Concerts" count={results.concerts!.length} />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1">
                 {results.concerts!.map((c: any) => (
                   <button key={c.id} onClick={() => navigate(`/concerts/${encodeId(c.id)}`)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
-                    style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-                    onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--primary)'); (e.currentTarget.style.background = 'var(--bg-secondary)'); }}
-                    onMouseLeave={e => { (e.currentTarget.style.borderColor = 'var(--border)'); (e.currentTarget.style.background = 'var(--surface)'); }}>
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 flex items-center justify-center"
-                      style={{ background: 'var(--bg-tertiary)' }}>
-                      {c.thumbnail_url
-                        ? <img src={c.thumbnail_url} className="w-full h-full object-cover" alt="" />
-                        : <Music size={18} style={{ color: 'var(--text-tertiary)' }} />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{c.title}</p>
-                      <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
-                        {c.artist?.display_name ?? c.venue_city ?? ''}
-                      </p>
+                    className="relative overflow-hidden group text-left"
+                    style={{ aspectRatio: '3/4', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
+                    {c.thumbnail_url ? (
+                      <img src={c.thumbnail_url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center p-3"
+                        style={{ background: 'linear-gradient(160deg,#7B3FF2 0%,#5B2EC4 100%)' }}>
+                        <p className="text-white text-xs font-medium leading-snug text-center line-clamp-5">{c.title}</p>
+                      </div>
+                    )}
+                    <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
+                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+                      <Music size={9} /> Concert
                     </div>
                     {c.status === 'live' && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white shrink-0"
-                        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>LIVE</span>
+                      <div className="absolute top-1.5 right-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>LIVE</div>
+                    )}
+                    {c.thumbnail_url && (
+                      <div className="absolute inset-x-0 bottom-0 px-2 py-1.5"
+                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
+                        <p className="text-white text-[11px] font-semibold line-clamp-2 leading-tight">{c.title}</p>
+                        {(c.artist?.display_name ?? c.venue_city) && (
+                          <p className="text-white/70 text-[10px] truncate">{c.artist?.display_name ?? c.venue_city}</p>
+                        )}
+                      </div>
                     )}
                   </button>
                 ))}
@@ -487,25 +494,32 @@ export default function SearchPage() {
           {(results.events?.length ?? 0) > 0 && (
             <section>
               <SectionHeader icon={<Calendar size={14} />} title="Événements" count={results.events!.length} />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1">
                 {results.events!.map((ev: any) => (
                   <button key={ev.id} onClick={() => navigate(`/events/${encodeId(ev.id)}`)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
-                    style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-                    onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--primary)'); (e.currentTarget.style.background = 'var(--bg-secondary)'); }}
-                    onMouseLeave={e => { (e.currentTarget.style.borderColor = 'var(--border)'); (e.currentTarget.style.background = 'var(--surface)'); }}>
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 flex items-center justify-center"
-                      style={{ background: 'var(--bg-tertiary)' }}>
-                      {ev.thumbnail_url
-                        ? <img src={ev.thumbnail_url} className="w-full h-full object-cover" alt="" />
-                        : <Calendar size={18} style={{ color: 'var(--text-tertiary)' }} />}
+                    className="relative overflow-hidden group text-left"
+                    style={{ aspectRatio: '3/4', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
+                    {ev.thumbnail_url ? (
+                      <img src={ev.thumbnail_url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center p-3"
+                        style={{ background: 'linear-gradient(160deg,#7B3FF2 0%,#5B2EC4 100%)' }}>
+                        <p className="text-white text-xs font-medium leading-snug text-center line-clamp-5">{ev.title}</p>
+                      </div>
+                    )}
+                    <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
+                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+                      <Calendar size={9} /> Événement
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{ev.title}</p>
-                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        {ev.venue_city ?? (ev.is_online ? 'En ligne' : '')}
-                      </p>
-                    </div>
+                    {ev.thumbnail_url && (
+                      <div className="absolute inset-x-0 bottom-0 px-2 py-1.5"
+                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
+                        <p className="text-white text-[11px] font-semibold line-clamp-2 leading-tight">{ev.title}</p>
+                        {(ev.venue_city ?? ev.is_online) && (
+                          <p className="text-white/70 text-[10px] truncate">{ev.venue_city ?? (ev.is_online ? 'En ligne' : '')}</p>
+                        )}
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
