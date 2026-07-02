@@ -18,7 +18,6 @@ const SECTIONS: Section[] = [
     key: 'identite', Icon: Info, title: "1. Identité du responsable de traitement",
     body: `Responsable de traitement :
 GoFolyX SAS
-Siège social : Paris, France
 Email DPO : privacy@gofolyx.com
 
 GoFolyX SAS est responsable du traitement de vos données personnelles collectées via l'application mobile GoFolyX et le site web gofolyx.app.
@@ -356,7 +355,7 @@ export default function PolitiqueConfidentialitePage() {
             <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
               Confidentialité GoFolyX
             </h2>
-            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>GoFolyX SAS · Paris, France · DPO : privacy@gofolyx.com</p>
+            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>GoFolyX SAS · DPO : privacy@gofolyx.com</p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Nous prenons la protection de vos données très au sérieux. Cette politique explique comment nous collectons, utilisons et protégeons vos informations personnelles.
             </p>
@@ -454,7 +453,7 @@ export default function PolitiqueConfidentialitePage() {
 
             {/* Footer */}
             <p className="text-center text-xs py-2" style={{ color: 'var(--text-tertiary)' }}>
-              Politique de confidentialité v2.0 · GoFolyX SAS · © 2026 Sahelys · Tous droits réservés
+              Politique de confidentialité v2.0 · GoFolyX SAS · © 2026 · Tous droits réservés
             </p>
           </div>
         </div>

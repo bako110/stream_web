@@ -16,7 +16,7 @@ interface Section {
 const SECTIONS: Section[] = [
   {
     key: 'objet', Icon: FileText, title: "1. Objet et champ d'application",
-    body: `Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme GoFolyX (application mobile et site web gofolyx.app), éditée par GoFolyX SAS, société par actions simplifiée au capital de 10 000 €, immatriculée au RCS de Paris.
+    body: `Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme GoFolyX (application mobile et site web gofolyx.app), éditée par GoFolyX SAS.
 
 En créant un compte ou en accédant à l'application, vous acceptez sans réserve les présentes CGU dans leur intégralité. Si vous n'acceptez pas ces conditions, vous devez cesser immédiatement d'utiliser la plateforme.
 
@@ -100,7 +100,7 @@ Tout manquement grave peut entraîner la suspension temporaire ou la suppression
   },
   {
     key: 'ip', Icon: Tv, title: "7. Propriété intellectuelle",
-    body: `L'application GoFolyX, son nom, ses logos, son design, son code source, ses algorithmes, ses bases de données et l'ensemble de ses composants sont la propriété exclusive de GoFolyX SAS et/ou de ses licenciés, protégés par le droit français et international de la propriété intellectuelle.
+    body: `L'application GoFolyX, son nom, ses logos, son design, son code source, ses algorithmes, ses bases de données et l'ensemble de ses composants sont la propriété exclusive de GoFolyX SAS et/ou de ses licenciés, protégés par le droit applicable et international de la propriété intellectuelle.
 
 Toute reproduction, modification, adaptation, traduction, distribution ou exploitation commerciale non autorisée est strictement interdite et passible de poursuites civiles et pénales.
 
@@ -157,12 +157,11 @@ La date de dernière mise à jour est toujours indiquée en haut de ce document.
   },
   {
     key: 'droit', Icon: Globe, title: "12. Droit applicable et juridiction",
-    body: `Les présentes CGU sont régies par le droit français.
+    body: `Les présentes CGU sont régies par le droit applicable au lieu d'établissement de GoFolyX SAS.
 
 En cas de litige :
 • Nous vous encourageons à nous contacter d'abord à legal@gofolyx.com pour tenter une résolution amiable
-• À défaut d'accord amiable dans un délai de 30 jours, le litige sera soumis aux tribunaux compétents de Paris
-• Pour les consommateurs résidant dans l'Union européenne, vous pouvez recourir à la plateforme de règlement en ligne des litiges : ec.europa.eu/consumers/odr
+• À défaut d'accord amiable dans un délai de 30 jours, le litige sera soumis aux tribunaux compétents
 
 Contact légal : legal@gofolyx.com`,
   },
@@ -260,7 +259,7 @@ export default function CGUPage() {
             <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
               CGU GoFolyX
             </h2>
-            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>Éditée par GoFolyX SAS · Paris, France</p>
+            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>Éditée par GoFolyX SAS</p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Ces conditions régissent votre accès et l'utilisation de la plateforme GoFolyX. En utilisant GoFolyX, vous acceptez l'intégralité des présentes conditions.
             </p>
@@ -332,7 +331,7 @@ export default function CGUPage() {
 
             {/* Footer */}
             <p className="text-center text-xs py-2" style={{ color: 'var(--text-tertiary)' }}>
-              CGU version 2.0 · GoFolyX SAS · © 2026 Sahelys · Tous droits réservés
+              CGU version 2.0 · GoFolyX SAS · © 2026 · Tous droits réservés
             </p>
           </div>
         </div>

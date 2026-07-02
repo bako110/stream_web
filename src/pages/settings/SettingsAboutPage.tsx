@@ -71,7 +71,6 @@ export default function SettingsAboutPage() {
         <div>
           <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>GoFolyX</p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Version 1.0.0 (web) · © 2026</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Développé par Sahelys</p>
         </div>
       </div>
 

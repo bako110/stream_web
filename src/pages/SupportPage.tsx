@@ -361,8 +361,7 @@ export default function SupportPage() {
         {/* Footer */}
         <div className="p-4 rounded-2xl text-center"
           style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoFolyX v1.0 · © 2026 Sahelys</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Intégrateur de solutions informatiques</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoFolyX v1.0 · © 2026</p>
         </div>
 
       </div>
