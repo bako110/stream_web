@@ -23,6 +23,7 @@ import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { HeartRain, LikeNamesFeed } from '../components/ui/HeartRain';
 import { useAuthStore } from '../store/authStore';
+import { useWs } from '../context/WebSocketContext';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -514,6 +515,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
   const authorId   = reel.author?.id;
   const authorName = reel.author?.display_name ?? reel.author?.username ?? 'Artiste';
   const isMine     = me?.id === authorId;
+  const { liveUserIds } = useWs();
+  const authorIsLive = !!(reel.author?.is_live || (authorId && liveUserIds.has(authorId)));
 
   const [playing,         setPlaying]        = useState(false);
   const [buffering,       setBuffering]       = useState(false);
@@ -1091,21 +1094,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
           <div className="flex items-center gap-2">
             {/* Avatar cliquable → profil (identique mobile) */}
             <button onClick={goToProfile} className="relative shrink-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden"
-                style={{ border: '2px solid rgba(255,255,255,0.5)' }}>
-                {reel.author?.avatar_url
-                  ? <img src={reel.author.avatar_url} alt={authorName} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-white font-bold text-xs"
-                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                      {authorName[0]?.toUpperCase()}
-                    </div>
-                }
-              </div>
-              {reel.author?.is_verified && (
-                <span className="absolute -bottom-0.5 -right-0.5">
-                  <VerifiedBadge size={14} />
-                </span>
-              )}
+              <Avatar src={reel.author?.avatar_url} name={authorName} size="sm"
+                verified={reel.author?.is_verified} isLive={authorIsLive} />
             </button>
             {/* Nom cliquable → profil */}
             <button onClick={goToProfile} className="min-w-0 flex-1 text-left">

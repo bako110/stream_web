@@ -6,6 +6,7 @@ import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { encodeId } from '../../utils/slugId';
+import { useWs } from '../../context/WebSocketContext';
 
 const PAGE_SIZE = 20;
 
@@ -22,9 +23,9 @@ function SectionLabel({ icon, label, sub }: { icon: React.ReactNode; label: stri
   );
 }
 
-function UserRow({ u, onFollow, onUnfollow, isFollowed, isFollowing, onClick }: {
+function UserRow({ u, onFollow, onUnfollow, isFollowed, isFollowing, onClick, isLive }: {
   u: any; onFollow: () => void; onUnfollow: () => void;
-  isFollowed: boolean; isFollowing: boolean; onClick: () => void;
+  isFollowed: boolean; isFollowing: boolean; onClick: () => void; isLive: boolean;
 }) {
   const isBoosted = u.is_boosted ?? false;
   const mutual    = u.mutual_count ?? 0;
@@ -33,7 +34,7 @@ function UserRow({ u, onFollow, onUnfollow, isFollowed, isFollowing, onClick }: 
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
       <button onClick={onClick} className="shrink-0">
-        <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} isLive={u.is_live} />
+        <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} isLive={isLive} />
       </button>
       <button onClick={onClick} className="flex-1 min-w-0 text-left">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -70,6 +71,7 @@ function UserRow({ u, onFollow, onUnfollow, isFollowed, isFollowing, onClick }: 
 
 export default function DiscoverPeoplePage() {
   const navigate = useNavigate();
+  const { liveUserIds } = useWs();
   const [users,        setUsers]        = useState<any[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [loadingMore,  setLoadingMore]  = useState(false);
@@ -130,6 +132,7 @@ export default function DiscoverPeoplePage() {
           <UserRow key={u.id} u={u}
             isFollowed={followedIds.has(u.id)}
             isFollowing={followingIds.has(u.id)}
+            isLive={u.is_live || liveUserIds.has(u.id)}
             onFollow={() => follow(u.id)}
             onUnfollow={() => unfollow(u.id)}
             onClick={() => navigate(`/user/${encodeId(u.id)}`)}

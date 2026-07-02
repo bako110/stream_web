@@ -4,6 +4,7 @@ import { UserPlus, Sparkles, Zap, MapPin, Users } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
+import { useWs } from '../context/WebSocketContext';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { encodeId } from '../utils/slugId';
@@ -22,6 +23,7 @@ const PAGE_SIZE = 20;
 export default function SuggestionsPage() {
   const navigate  = useNavigate();
   const { user }  = useAuthStore();
+  const { liveUserIds } = useWs();
 
   const [users,        setUsers]        = useState<any[]>([]);
   const [loading,      setLoading]      = useState(true);
@@ -140,7 +142,7 @@ export default function SuggestionsPage() {
 
                 {/* Avatar */}
                 <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="shrink-0">
-                  <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} isLive={u.is_live} />
+                  <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="md" verified={u.is_verified} isLive={u.is_live || liveUserIds.has(u.id)} />
                 </button>
 
                 {/* Infos */}

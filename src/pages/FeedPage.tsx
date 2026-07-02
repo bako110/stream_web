@@ -23,6 +23,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { ExpandableText } from '../components/ui/ExpandableText';
 import { RichText } from '../components/ui/RichText';
 import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
+import { useWs } from '../context/WebSocketContext';
 import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
@@ -867,7 +868,7 @@ const KIND_BADGE: Record<string, { label: string; bg: string; color: string }> =
 
 function AuthorRow({
   author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind }: {
-  author: { display_name?: string | null; username?: string | null; avatar_url?: string | null; is_verified?: boolean } | undefined;
+  author: { display_name?: string | null; username?: string | null; avatar_url?: string | null; is_verified?: boolean; is_live?: boolean | null } | undefined;
   authorId: string | undefined;
   publishedAt?: string | null;
   isFollowed: boolean;
@@ -875,13 +876,15 @@ function AuthorRow({
   onFollowClick: (e: React.MouseEvent) => void;
   kind?: string;
 }) {
+  const { liveUserIds } = useWs();
   if (!author && !authorId) return null;
   const name  = author?.display_name ?? author?.username ?? 'Auteur';
   const badge = kind ? KIND_BADGE[kind] : undefined;
+  const isLive = !!(author?.is_live || (authorId && liveUserIds.has(authorId)));
   return (
     <div className="flex items-center gap-2 px-3 pt-3 pb-1">
       <button onClick={onAuthorClick} className="flex items-center gap-2 min-w-0 flex-1">
-        <Avatar src={author?.avatar_url} name={name} size="xs" verified={author?.is_verified} />
+        <Avatar src={author?.avatar_url} name={name} size="xs" verified={author?.is_verified} isLive={isLive} />
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{name}</span>

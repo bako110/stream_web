@@ -8,6 +8,7 @@ import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
+import { useWs } from '../context/WebSocketContext';
 
 // ── Historique local (localStorage, max 15) ───────────────────────────────────
 const HISTORY_KEY = 'search:history';
@@ -180,6 +181,7 @@ function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: s
 export default function SearchPage() {
   const [params]                = useSearchParams();
   const navigate                = useNavigate();
+  const { liveUserIds }         = useWs();
   const q                       = params.get('q') ?? '';
   const [results,  setResults]  = useState<SearchResult | null>(null);
   const [loading,  setLoading]  = useState(false);
@@ -385,7 +387,7 @@ export default function SearchPage() {
                     style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                     onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--primary)'); (e.currentTarget.style.background = 'var(--bg-secondary)'); }}
                     onMouseLeave={e => { (e.currentTarget.style.borderColor = 'var(--border)'); (e.currentTarget.style.background = 'var(--surface)'); }}>
-                    <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="sm" verified={u.is_verified} />
+                    <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="sm" verified={u.is_verified} isLive={u.is_live || liveUserIds.has(u.id)} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>

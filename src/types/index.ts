@@ -21,6 +21,8 @@ export interface User {
   website: string | null;
   is_verified: boolean;
   is_active: boolean;
+  is_online?: boolean | null;
+  is_live?: boolean | null;
   verification_status?: VerificationStatus;
   last_login_at: string | null;
   created_at: string;
