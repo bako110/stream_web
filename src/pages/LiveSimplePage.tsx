@@ -7,7 +7,7 @@ import {
   Radio, Eye, Send, X, StopCircle, ChevronLeft,
   Mic, MicOff, VideoIcon, VideoOff, Gift, Hand, FlipHorizontal,
   ShieldOff, Ban, Lock, Users, Trash2, Slash, RefreshCw,
-  Smile, ArrowDown, UserCheck, Settings, ThumbsUp, ThumbsDown,
+  Smile, ArrowDown, UserCheck, Settings, ThumbsUp, ThumbsDown, MoreVertical,
 } from 'lucide-react';
 import {
   LiveKitRoom,
