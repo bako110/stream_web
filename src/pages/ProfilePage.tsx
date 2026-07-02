@@ -568,7 +568,7 @@ export default function ProfilePage() {
       setSocialCounts({
         followers:    res.data?.followers_count  ?? 0,
         following:    res.data?.following_count  ?? 0,
-        publications: res.data?.posts_count ?? res.data?.publications_count ?? 0,
+        publications: res.data?.publications_count ?? 0,
       });
     } catch { /* silencieux */ }
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps

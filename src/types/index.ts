@@ -44,6 +44,7 @@ export interface UserPublic {
 export interface UserPublicProfile extends UserPublic {
   followers_count:         number;
   following_count:         number;
+  publications_count:      number;
   is_followed:             boolean;
   banner_url?:             string | null;
   first_name?:             string | null;

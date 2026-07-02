@@ -433,7 +433,7 @@ export default function UserProfilePage() {
           <div className="flex items-center gap-4">
             <Stat value={(profile.followers_count ?? 0) + followersDelta}  label="Abonnés"      />
             <Stat value={profile.following_count ?? 0}  label="Abonnements"  />
-            <Stat value={(profile as any).posts_count ?? (profile as any).publications_count ?? 0} label="Publications" />
+            <Stat value={profile.publications_count ?? 0} label="Publications" />
           </div>
 
           {profile.bio && (
