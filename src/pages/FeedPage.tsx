@@ -21,7 +21,7 @@ import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { ExpandableText } from '../components/ui/ExpandableText';
-import { RichText } from '../components/ui/RichText';
+import { RichText, renderTextWithLinks } from '../components/ui/RichText';
 import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
 import { useWs } from '../context/WebSocketContext';
 import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
@@ -183,7 +183,9 @@ function StoryViewer({
             <div className="w-full h-full flex items-center justify-center"
               style={{ background: story.background_color ?? '#7B3FF2' }}>
               {story.caption && (
-                <p className="text-white font-black text-2xl text-center px-8 leading-snug">{story.caption}</p>
+                <p className="text-white font-black text-2xl text-center px-8 leading-snug">
+                  {renderTextWithLinks(story.caption, 'underline', { color: '#fff' })}
+                </p>
               )}
             </div>
           )}
@@ -199,7 +201,9 @@ function StoryViewer({
         {story.caption && story.media_url && (
           <div className="absolute bottom-16 inset-x-0 px-4 z-10">
             <div className="inline-block rounded-2xl px-4 py-2.5" style={{ background: 'rgba(0,0,0,0.5)' }}>
-              <p className="text-white text-sm leading-relaxed">{story.caption}</p>
+              <p className="text-white text-sm leading-relaxed">
+                {renderTextWithLinks(story.caption, 'underline font-semibold', { color: '#fff' })}
+              </p>
             </div>
           </div>
         )}

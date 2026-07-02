@@ -149,12 +149,14 @@ export interface LiveStream {
   monetization_coins?:    number | null;
   monetization_gift_id?:  string | null;
   monetization_gift_name?: string | null;
+  monetization_gift_emoji?: string | null;
   // Monétisation montée scène
   stage_monetized?:       boolean;
   stage_type?:            string | null;
   stage_coins?:           number | null;
   stage_gift_id?:         string | null;
   stage_gift_name?:       string | null;
+  stage_gift_emoji?:      string | null;
 }
 export interface LiveStartResponse {
   live:        LiveStream;

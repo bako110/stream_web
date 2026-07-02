@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { commitReelSession } from '../hooks/useReelWatchStats';
 import { GuestPreview } from '../components/ui/GuestPreview';
+import { renderTextWithLinks } from '../components/ui/RichText';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/ui/Dialog';
@@ -1124,7 +1125,9 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
           {caption && (
             <div>
               <p className={`text-white text-xs sm:text-sm leading-snug ${captionExpanded ? '' : 'line-clamp-2'}`}
-                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{caption}</p>
+                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
+                {renderTextWithLinks(caption, 'underline font-semibold', { color: '#fff' })}
+              </p>
               {caption.length > 80 && (
                 <button onClick={e => { e.stopPropagation(); setCaptionExpanded(v => !v); }}
                   className="text-white/50 text-[10px] mt-0.5 font-medium">

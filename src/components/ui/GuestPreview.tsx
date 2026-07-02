@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { RoundLogo } from './RoundLogo';
+import { renderTextWithLinks } from './RichText';
 
 export type GuestPreviewType = 'post' | 'reel' | 'event' | 'concert';
 
@@ -603,7 +604,7 @@ export function GuestPreview({
             {body && (
               <p className={`gp-body${bodyExpanded ? '' : ' gp-body-clamped'}`}
                 onClick={() => setBodyExpanded(v => !v)}>
-                {body}
+                {renderTextWithLinks(body, 'underline font-semibold', { color: '#fff' })}
                 {' '}
                 <span className="gp-body-more">{bodyExpanded ? 'Voir moins' : 'Voir plus'}</span>
               </p>

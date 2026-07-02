@@ -263,6 +263,7 @@ export const Endpoints = {
     listBlocks:  `${V1}/lives/blocks`,
     monetization:      (id: string) => `${V1}/lives/${id}/monetization`,
     stageMonetization: (id: string) => `${V1}/lives/${id}/stage-monetization`,
+    checkAccess:       (id: string) => `${V1}/lives/${id}/access`,
     accessCoins:       (id: string) => `${V1}/lives/${id}/access/coins`,
     accessGift:        (id: string) => `${V1}/lives/${id}/access/gift`,
   },

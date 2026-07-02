@@ -42,6 +42,8 @@ import {
   type GiftNotif,
 } from '../components/live/LiveGiftModal';
 import { LiveSettingsSheet } from '../components/live/LiveSettingsSheet';
+import { LiveAccessGate } from '../components/live/LiveAccessGate';
+import { StageAccessGate } from '../components/live/StageAccessGate';
 import { useLiveSuggestions, LiveSuggestionsBar, LiveBoostedRail } from '../components/live/LiveSuggestions';
 import { useConfirm } from '../components/ui/Dialog';
 
@@ -996,6 +998,10 @@ export default function LiveSimplePage() {
   const [participantNames, setParticipantNames] = useState<Map<string, string>>(new Map());
   const [handRaised,       setHandRaised]       = useState(false);
 
+  // Scène payante — modal de confirmation avant hand-raise
+  const [showStageGate, setShowStageGate] = useState(false);
+  const [stageGateLive, setStageGateLive] = useState<LiveStream | null>(null);
+
   // Guest sur scène
   const [isOnStage,  setIsOnStage]  = useState(false);
 
@@ -1023,8 +1029,23 @@ export default function LiveSimplePage() {
   const isHost   = !!(live && user && live.user_id === user.id);
   const isActive = live?.status === 'active';
 
+  // Accès payant — vérifié avant de charger le token LiveKit (viewers uniquement,
+  // le host a toujours accès à son propre live).
+  const [accessGranted,  setAccessGranted]  = useState(false);
+  const [accessChecked,  setAccessChecked]  = useState(false);
+  const needsAccessGate = !!(live && live.is_monetized && !isHost && !accessGranted);
+
+  useEffect(() => {
+    if (!id || !live || isHost || !live.is_monetized) { setAccessChecked(true); return; }
+    apiClient.get<{ has_access: boolean }>(Endpoints.lives.checkAccess(id))
+      .then(r => { if (r.data.has_access) setAccessGranted(true); })
+      .catch(() => {})
+      .finally(() => setAccessChecked(true));
+  }, [id, live?.is_monetized, isHost]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!id || !isActive || !live || lkToken) return;
+    if (needsAccessGate || !accessChecked) return;
     apiClient.get<StreamToken>(Endpoints.lives.token(id))
       .then(r => {
         setLkToken(r.data.token);
@@ -1035,7 +1056,7 @@ export default function LiveSimplePage() {
         }
       })
       .catch(() => {});
-  }, [id, isActive, live, lkToken, isHost]);
+  }, [id, isActive, live, lkToken, isHost, needsAccessGate, accessChecked]);
 
   useEffect(() => {
     if (!lastLiveEnded || lastLiveEnded !== id) return;
@@ -1139,12 +1160,29 @@ export default function LiveSimplePage() {
     navigate(-1);
   }, [navigate, isActive, confirm]);
 
-  const handleHandRaise = useCallback(async () => {
+  const doRaiseHand = useCallback(async () => {
     if (!id || !user) return;
     setHandRaised(true);
     try { await apiClient.post(Endpoints.lives.handRaise(id, user.id)); }
-    catch { /* silencieux */ }
+    catch { setHandRaised(false); }
   }, [id, user]);
+
+  const handleHandRaise = useCallback(async () => {
+    if (!id || !user || handRaised) return;
+    // Refetch le live pour connaître l'état le plus récent de stage_monetized
+    // (le host peut l'avoir activé après le chargement initial de la page).
+    let current = live;
+    try {
+      const r = await apiClient.get<LiveStream>(Endpoints.lives.byId(id));
+      current = r.data;
+    } catch { /* on retente avec l'état déjà connu */ }
+    if (current?.stage_monetized) {
+      setStageGateLive(current);
+      setShowStageGate(true);
+      return;
+    }
+    await doRaiseHand();
+  }, [id, user, handRaised, live, doRaiseHand]);
 
   const handleInvite = useCallback(async (identity: string) => {
     if (!id) return;
@@ -1167,6 +1205,17 @@ export default function LiveSimplePage() {
 
   if (liveApi.loading) return <PageLoader />;
   if (!live) return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Live introuvable.</div>;
+
+  if (isActive && needsAccessGate && accessChecked) {
+    return (
+      <LiveAccessGate
+        live={live}
+        liveId={id!}
+        onAccessGranted={() => setAccessGranted(true)}
+        onLeave={() => navigate(-1)}
+      />
+    );
+  }
 
   return (
     <>
@@ -1465,6 +1514,18 @@ export default function LiveSimplePage() {
             setGiftTarget(null);
             setTimeout(() => setGiftNotifs(prev => prev.filter(x => x.id !== notif.id)), 4000);
           }}
+        />
+      )}
+
+      {/* Scène payante — modal de confirmation avant hand-raise */}
+      {showStageGate && stageGateLive && user && (
+        <StageAccessGate
+          live={stageGateLive}
+          liveId={id!}
+          identity={user.id}
+          onRequested={() => { setShowStageGate(false); setHandRaised(true); }}
+          onClose={() => setShowStageGate(false)}
+          onOpenGift={(receiverId, receiverName) => setGiftTarget({ id: receiverId, name: receiverName })}
         />
       )}
 

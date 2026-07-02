@@ -1,17 +1,42 @@
 import { useState } from 'react';
 import { LinkPreviewCard } from './LinkPreviewCard';
 
-// Pas de flag `g` ici — on l'utilise uniquement via split/match avec new RegExp
-const URL_PATTERN = /https?:\/\/[^\s<>"']+/;
-const URL_SPLIT   = /(https?:\/\/[^\s<>"']+)/;
+// Détecte les URLs avec protocole (https://...) ET les domaines nus (site.com,
+// truc.net, exemple.org...) sans http(s):// devant. Pas de flag `g` sur la version
+// singulière — utilisée uniquement via split/match avec new RegExp.
+const COMMON_TLDS = 'com|net|org|io|co|app|dev|info|biz|fr|africa|sn|ci|ma|ly';
+const URL_PATTERN = new RegExp(
+  `(?:https?:\\/\\/[^\\s<>"']+)|(?:[a-zA-Z0-9-]+\\.(?:${COMMON_TLDS})(?:\\.[a-z]{2})?(?:\\/[^\\s<>"']*)?)`,
+);
+const URL_SPLIT = new RegExp(`(${URL_PATTERN.source})`, 'g');
+
+function isUrl(str: string): boolean {
+  return new RegExp(`^(?:${URL_PATTERN.source})$`).test(str);
+}
+
+function toHref(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
 
 function getDomain(url: string): string {
-  try { return new URL(url).hostname.replace(/^www\./, ''); }
+  try { return new URL(toHref(url)).hostname.replace(/^www\./, ''); }
   catch { return url; }
 }
 
-function isUrl(str: string): boolean {
-  return URL_PATTERN.test(str);
+/** Rend un texte brut en segments avec liens cliquables — réutilisable hors RichText
+ *  pour les zones à style personnalisé (ex: caption de reel sur fond vidéo). */
+export function renderTextWithLinks(str: string, linkClassName = 'underline font-medium', linkStyle?: React.CSSProperties) {
+  return str.split(URL_SPLIT).map((part, i) =>
+    isUrl(part) ? (
+      <a key={i} href={toHref(part)} target="_blank" rel="noopener noreferrer"
+        onClick={e => e.stopPropagation()}
+        className={linkClassName} style={linkStyle ?? { color: 'var(--primary)' }}>
+        {getDomain(part)}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
 }
 
 interface Props {
@@ -29,14 +54,14 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
   const displayed = isLong && !expanded ? text.slice(0, limit).trimEnd() + '…' : text;
 
   // 1re URL du texte complet (pour la preview OG)
-  const firstUrl = text.match(URL_SPLIT)?.[1] ?? null;
+  const firstUrl = text.match(URL_SPLIT)?.[0] ?? null;
 
   function renderSegments(str: string) {
     return str.split(URL_SPLIT).map((part, i) =>
       isUrl(part) ? (
         <a
           key={i}
-          href={part}
+          href={toHref(part)}
           target="_blank"
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
@@ -75,7 +100,7 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
         </button>
       )}
       {showLinkPreview && firstUrl && (
-        <LinkPreviewCard url={firstUrl} />
+        <LinkPreviewCard url={toHref(firstUrl)} />
       )}
     </div>
   );
