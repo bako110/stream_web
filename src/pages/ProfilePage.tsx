@@ -436,51 +436,50 @@ function ReelsTab({ userId }: { userId: string }) {
     [userId],
   );
 
-  if (loading && reels.length === 0) return <PageLoader />;
+  if (loading && reels.length === 0) {
+    return (
+      <div className="grid grid-cols-3 gap-1 p-1">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className="rounded-lg animate-pulse" style={{ aspectRatio: '9/16', background: 'var(--bg-tertiary)' }} />
+        ))}
+      </div>
+    );
+  }
 
   if (reels.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 py-16" style={{ color: 'var(--text-tertiary)' }}>
-        <Play size={32} strokeWidth={1.2} />
-        <p className="text-sm">Aucun reel publié</p>
-        <p className="text-xs mt-0.5">Publiez votre premier reel !</p>
+      <div className="flex flex-col items-center gap-3 py-20" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
+          <Play size={26} strokeWidth={1.5} />
+        </div>
+        <p className="text-sm font-medium">Aucun reel publié</p>
+        <p className="text-xs">Publiez votre premier reel !</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
+    <div className="grid grid-cols-3 gap-1 p-1">
       {reels.map(reel => (
-        <div key={reel.id}
-          onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}
-          className="relative cursor-pointer group overflow-hidden"
-          style={{ aspectRatio: '9/16', background: 'var(--bg-tertiary)' }}>
-
-          {/* Thumbnail */}
+        <button key={reel.id}
+          onClick={() => navigate(`/reels?user=${encodeId(userId)}&id=${encodeId(reel.id)}`)}
+          className="relative overflow-hidden group text-left"
+          style={{ aspectRatio: '9/16', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
           {reel.thumbnail_url
             ? <img src={reel.thumbnail_url} alt=""
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-            : <div className="w-full h-full flex items-center justify-center"
-                style={{ background: 'var(--bg-secondary)' }}>
-                <Play size={28} style={{ color: 'var(--text-tertiary)' }} />
+            : <div className="w-full h-full flex items-center justify-center">
+                <Play size={22} style={{ color: 'var(--text-tertiary)' }} />
               </div>
           }
-
-          {/* Overlay hover — vues + icône play */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1
-                          opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-            style={{ background: 'rgba(0,0,0,0.45)' }}>
-            <Play size={28} color="#fff" fill="#fff" />
-            <span className="text-white text-xs font-bold">
-              {reel.view_count >= 1000 ? `${(reel.view_count / 1000).toFixed(1)}k` : reel.view_count} vues
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-1 px-2 py-1.5"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)' }}>
+            <Play size={11} color="#fff" fill="#fff" />
+            <span className="text-white text-[11px] font-semibold">
+              {reel.view_count >= 1000 ? `${(reel.view_count / 1000).toFixed(1)}k` : reel.view_count}
             </span>
           </div>
-
-          {/* Badge play discret (coin haut droit) */}
-          <div className="absolute top-1.5 right-1.5 opacity-80 group-hover:opacity-0 transition-opacity">
-            <Play size={11} color="#fff" fill="#fff" />
-          </div>
-        </div>
+        </button>
       ))}
     </div>
   );

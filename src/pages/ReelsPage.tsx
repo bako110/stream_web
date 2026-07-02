@@ -1497,6 +1497,14 @@ export default function ReelsPage() {
   );
   const targetId = targetIdRef.current;
 
+  // Mode "reels d'un utilisateur" — ?user=xxx (depuis le profil). Figé au montage comme targetId :
+  // une navigation vers un autre profil démonte le composant (changement de route source), donc
+  // pas besoin de réagir à un changement en cours de vie.
+  const userModeRef = useRef<string | null>(
+    searchParams.get('user') ? (() => { try { return decodeId(searchParams.get('user')!); } catch { return searchParams.get('user'); } })() : null,
+  );
+  const userMode = userModeRef.current;
+
   const { user: me }                    = useAuthStore();
   const { confirm, ConfirmDialog }      = useConfirm();
 
@@ -1551,6 +1559,28 @@ export default function ReelsPage() {
     pageRef.current = 1;
     loadingMoreRef.current = false;
 
+    // Mode profil : GET /reels/user/{id} — liste complète d'un coup, pas de pagination
+    // côté backend, donc hasMore reste false (loadMore n'a pas de sens dans ce mode).
+    if (userMode) {
+      apiClient.get<any>(Endpoints.reels.byUser(userMode))
+        .then(res => {
+          let list = toArray<Reel>(res.data);
+          setHasMore(false);
+          hasMoreRef.current = false;
+          if (targetId) {
+            const idx = list.findIndex(r => r.id === targetId);
+            if (idx > 0) {
+              const [target] = list.splice(idx, 1);
+              list = [target, ...list];
+            }
+          }
+          setReels(list);
+          setLoading(false);
+        })
+        .catch(() => { setError('Impossible de charger les reels'); setLoading(false); });
+      return;
+    }
+
     apiClient.get<any>(`${Endpoints.reels.feed}?limit=15&page=1`)
       .then(res => {
         let list = toArray<Reel>(res.data);
@@ -1575,9 +1605,10 @@ export default function ReelsPage() {
         setLoading(false);
       })
       .catch(() => { setError('Impossible de charger les reels'); setLoading(false); });
-  }, [targetId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [targetId, userMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadMore = useCallback(() => {
+    if (userMode) return;
     if (loadingMoreRef.current || !hasMoreRef.current) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
@@ -1602,6 +1633,7 @@ export default function ReelsPage() {
   useEffect(() => {
     if (!me) return;
     fetchReels();
+    if (userMode) return; // mode profil : pas de pub, pas besoin de "mes reels"
     apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
       .then(r => { if (r.data?.id) setReelAd(r.data); })
       .catch(() => {});
@@ -1833,7 +1865,7 @@ export default function ReelsPage() {
   // Injection pub toutes les 5 reels (identique mobile)
   const feedWithAds = useMemo(() => {
     const AD_INTERVAL = 5;
-    if (!reelAd) return reels.map(r => ({ _isAd: false as const, reel: r }));
+    if (userMode || !reelAd) return reels.map(r => ({ _isAd: false as const, reel: r }));
     const result: ({ _isAd: false; reel: Reel } | { _isAd: true; ad: ReelAd; id: string })[] = [];
     reels.forEach((r, i) => {
       result.push({ _isAd: false, reel: r });
@@ -2199,10 +2231,14 @@ export default function ReelsPage() {
               style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
               <ArrowLeft size={18} />
             </button>
-            {!searchOpen && <p className="text-white font-black text-base md:hidden" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>Reels</p>}
+            {!searchOpen && (
+              <p className="text-white font-black text-base md:hidden" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+                {userMode ? (reels[0]?.author?.display_name ?? reels[0]?.author?.username ?? 'Reels') : 'Reels'}
+              </p>
+            )}
 
-            {/* Barre de recherche — s'étend inline, pas d'overlay plein écran */}
-            {searchOpen ? (
+            {/* Barre de recherche + "Mes reels" — masqués en mode reels d'un profil */}
+            {!userMode && (searchOpen ? (
               <div className="flex-1 flex items-center gap-2 pointer-events-auto"
                 style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 999, padding: '6px 10px' }}>
                 <Search size={14} className="text-white/50 shrink-0" />
@@ -2226,7 +2262,7 @@ export default function ReelsPage() {
                   <User size={12} /> Mes reels
                 </button>
               </div>
-            )}
+            ))}
           </div>
 
           {/* Scroll vertical snap */}

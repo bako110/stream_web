@@ -31,14 +31,19 @@ const ROLE_COLOR: Record<string, string> = {
 };
 
 // ── Stat block ────────────────────────────────────────────────────────────────
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label, onClick }: { value: number; label: string; onClick?: () => void }) {
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div className="flex flex-col items-center gap-0.5 flex-1">
-      <span className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>
+    <Tag onClick={onClick} className="flex items-baseline gap-1.5 group">
+      <span className="text-base font-black transition-colors" style={{ color: 'var(--text-primary)' }}>
         {value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
       </span>
-      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{label}</span>
-    </div>
+      <span className="text-sm transition-colors" style={{ color: 'var(--text-tertiary)' }}
+        onMouseEnter={e => { if (onClick) e.currentTarget.style.color = 'var(--text-secondary)'; }}
+        onMouseLeave={e => { if (onClick) e.currentTarget.style.color = 'var(--text-tertiary)'; }}>
+        {label}
+      </span>
+    </Tag>
   );
 }
 
@@ -143,45 +148,57 @@ function PublicationsTab({ userId }: { userId: string }) {
 }
 
 // ── Reels grid ────────────────────────────────────────────────────────────────
+function fmtCount(n: number): string {
+  return n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
+
 function ReelsTab({ userId }: { userId: string }) {
+  const navigate = useNavigate();
   const { items: reels, loading } = usePaginatedApi<Reel>(
     (p) => apiClient.get<PaginatedResponse<Reel>>(`${Endpoints.users.userReels(userId)}?page=${p}&limit=18`), [userId],
   );
 
   if (loading && reels.length === 0) {
-    return <PageLoader />;
+    return (
+      <div className="grid grid-cols-3 gap-1 p-1">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className="rounded-lg animate-pulse" style={{ aspectRatio: '9/16', background: 'var(--bg-tertiary)' }} />
+        ))}
+      </div>
+    );
   }
 
   if (reels.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 py-16" style={{ color: 'var(--text-tertiary)' }}>
-        <Play size={32} strokeWidth={1.2} />
-        <p className="text-sm">Aucun reel publié</p>
+      <div className="flex flex-col items-center gap-3 py-20" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
+          <Play size={26} strokeWidth={1.5} />
+        </div>
+        <p className="text-sm font-medium">Aucun reel publié</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-3 gap-0.5 p-1">
+    <div className="grid grid-cols-3 gap-1 p-1">
       {reels.map(reel => (
-        <div key={reel.id} className="relative overflow-hidden cursor-pointer group"
-          style={{ aspectRatio: '9/16', maxHeight: 200 }}>
+        <button key={reel.id}
+          onClick={() => navigate(`/reels?user=${encodeId(userId)}&id=${encodeId(reel.id)}`)}
+          className="relative overflow-hidden group text-left"
+          style={{ aspectRatio: '9/16', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
           {reel.thumbnail_url
-            ? <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-            : <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--bg-tertiary)' }}>
-                <Play size={20} style={{ color: 'var(--text-tertiary)' }} />
+            ? <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            : <div className="w-full h-full flex items-center justify-center">
+                <Play size={22} style={{ color: 'var(--text-tertiary)' }} />
               </div>
           }
-          <div className="absolute inset-0 flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)' }}>
-            <span className="flex items-center gap-1 text-white text-xs font-semibold">
-              <Eye size={12} />{reel.view_count >= 1000 ? `${(reel.view_count / 1000).toFixed(1)}k` : reel.view_count}
-            </span>
+          {/* Overlay stats — visible en permanence (pas seulement au survol) */}
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-1 px-2 py-1.5"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)' }}>
+            <Play size={11} color="#fff" fill="#fff" />
+            <span className="text-white text-[11px] font-semibold">{fmtCount(reel.view_count)}</span>
           </div>
-          <div className="absolute top-1.5 right-1.5">
-            <Play size={12} color="#fff" fill="#fff" className="opacity-60" />
-          </div>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -318,43 +335,47 @@ export default function UserProfilePage() {
     <div className="max-w-2xl mx-auto pb-10">
 
       {/* ── Banner ── */}
-      <div className="relative h-44 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-        {profile.banner_url && (
+      <div className="relative h-48 overflow-hidden">
+        {profile.banner_url ? (
           <img src={profile.banner_url} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full" style={{ background: 'linear-gradient(160deg,#7B3FF2 0%,#5B2EC4 55%,#3B1E80 100%)' }}>
+            <div className="w-full h-full opacity-30" style={{
+              backgroundImage: 'radial-gradient(circle at 20% 30%, rgba(255,255,255,0.25) 0%, transparent 45%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.15) 0%, transparent 40%)',
+            }} />
+          </div>
         )}
-        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.15)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 45%)' }} />
       </div>
 
       {/* ── Avatar + actions ── */}
       <div className="px-5">
-        <div className="flex items-end justify-between -mt-12 mb-4 relative z-10">
-          <div className="ring-4 rounded-full" style={{ boxShadow: '0 0 0 4px var(--bg)' }}>
+        <div className="flex items-end justify-between -mt-14 mb-4 relative z-10">
+          <div className="rounded-full" style={{ boxShadow: '0 0 0 4px var(--bg)', background: 'var(--bg)' }}>
             <Avatar
               src={profile.avatar_url}
               name={name}
               size="xl"
               verified={profile.is_verified}
               isLive={profile.is_live || liveUserIds.has(profile.id)}
-              className="ring-4 ring-offset-0"
             />
           </div>
 
           {!isMe && (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mb-1">
               {/* Follow */}
               <button onClick={toggleFollow}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all"
                 style={isFollowed
                   ? { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }
-                  : { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', border: 'none' }}>
+                  : { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', border: 'none', boxShadow: '0 4px 14px rgba(123,63,242,0.35)' }}>
                 {isFollowed ? <><UserCheck size={15} /> Suivi</> : <><UserPlus size={15} /> Suivre</>}
               </button>
 
               {/* Message — masqué si l'utilisateur n'accepte pas les messages */}
               {profile.privacy_allow_messages !== false ? (
                 <button onClick={() => navigate(`/messages/${encodeId(id)}`)}
-                  className="flex items-center justify-center w-9 h-9 rounded-xl transition-all"
+                  className="flex items-center justify-center w-10 h-10 rounded-full transition-all"
                   style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
@@ -362,7 +383,7 @@ export default function UserProfilePage() {
                 </button>
               ) : (
                 <div
-                  className="flex items-center justify-center w-9 h-9 rounded-xl"
+                  className="flex items-center justify-center w-10 h-10 rounded-full"
                   title="Cet utilisateur n'accepte pas les messages privés"
                   style={{ background: 'var(--bg-secondary)', color: 'var(--text-disabled)', border: '1px solid var(--border)', opacity: 0.4, cursor: 'not-allowed' }}>
                   <MessageCircle size={17} />
@@ -371,7 +392,7 @@ export default function UserProfilePage() {
 
               {/* Block */}
               <button onClick={toggleBlock}
-                className="flex items-center justify-center w-9 h-9 rounded-xl transition-all"
+                className="flex items-center justify-center w-10 h-10 rounded-full transition-all"
                 style={{
                   background: isBlocked ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
                   color:      isBlocked ? '#7B3FF2' : 'var(--text-tertiary)',
@@ -385,7 +406,7 @@ export default function UserProfilePage() {
 
           {isMe && (
             <button onClick={() => navigate('/settings')}
-              className="mt-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              className="mb-1 px-4 py-2 rounded-full text-sm font-bold transition-all"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
               Modifier le profil
             </button>
@@ -393,7 +414,7 @@ export default function UserProfilePage() {
         </div>
 
         {/* ── Infos ── */}
-        <div className="space-y-2 mb-5">
+        <div className="space-y-2.5 mb-5">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>{name}</h1>
             {profile.is_verified && <VerifiedBadge size={18} />}
@@ -407,6 +428,14 @@ export default function UserProfilePage() {
           {profile.username && (
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>@{profile.username}</p>
           )}
+
+          {/* Stats — inline sous le nom, style Instagram */}
+          <div className="flex items-center gap-4">
+            <Stat value={(profile.followers_count ?? 0) + followersDelta}  label="Abonnés"      />
+            <Stat value={profile.following_count ?? 0}  label="Abonnements"  />
+            <Stat value={(profile as any).posts_count ?? (profile as any).publications_count ?? 0} label="Publications" />
+          </div>
+
           {profile.bio && (
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{profile.bio}</p>
           )}
@@ -429,28 +458,19 @@ export default function UserProfilePage() {
             )}
           </div>
         </div>
-
-        {/* ── Stats ── */}
-        <div className="flex rounded-2xl p-4 mb-5 divide-x"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <Stat value={(profile.followers_count ?? 0) + followersDelta}  label="Abonnés"      />
-          <Stat value={profile.following_count ?? 0}  label="Abonnements"  />
-          <Stat value={(profile as any).posts_count ?? (profile as any).publications_count ?? 0} label="Publications" />
-        </div>
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex px-5 gap-1 mb-1" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="flex px-5 gap-1.5 mb-1 sticky top-0 z-10 py-2"
+        style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold transition-all relative"
-            style={{ color: tab === t.id ? 'var(--primary)' : 'var(--text-tertiary)' }}>
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-full transition-all"
+            style={tab === t.id
+              ? { background: 'var(--primary)', color: '#fff' }
+              : { background: 'transparent', color: 'var(--text-tertiary)' }}>
             {t.icon}
             {t.label}
-            {tab === t.id && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
-                style={{ background: 'var(--primary)' }} />
-            )}
           </button>
         ))}
       </div>
