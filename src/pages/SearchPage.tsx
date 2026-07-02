@@ -457,35 +457,37 @@ export default function SearchPage() {
               <SectionHeader icon={<Music size={14} />} title="Concerts" count={results.concerts!.length} />
               <div className="grid grid-cols-3 gap-1">
                 {results.concerts!.map((c: any) => (
-                  <button key={c.id} onClick={() => navigate(`/concerts/${encodeId(c.id)}`)}
-                    className="relative overflow-hidden group text-left"
+                  <HoverVideoPreview key={c.id}
+                    src={c.video_url} poster={c.thumbnail_url}
+                    className="relative overflow-hidden"
                     style={{ aspectRatio: '3/4', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
-                    {c.thumbnail_url ? (
-                      <img src={c.thumbnail_url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center p-3"
-                        style={{ background: 'linear-gradient(160deg,#7B3FF2 0%,#5B2EC4 100%)' }}>
-                        <p className="text-white text-xs font-medium leading-snug text-center line-clamp-5">{c.title}</p>
+                    <button onClick={() => navigate(`/concerts/${encodeId(c.id)}`)}
+                      className="absolute inset-0 w-full h-full text-left">
+                      {!c.thumbnail_url && !c.video_url && (
+                        <div className="w-full h-full flex items-center justify-center p-3"
+                          style={{ background: 'linear-gradient(160deg,#7B3FF2 0%,#5B2EC4 100%)' }}>
+                          <p className="text-white text-xs font-medium leading-snug text-center line-clamp-5">{c.title}</p>
+                        </div>
+                      )}
+                      <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
+                        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+                        <Music size={9} /> Concert
                       </div>
-                    )}
-                    <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
-                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-                      <Music size={9} /> Concert
-                    </div>
-                    {c.status === 'live' && (
-                      <div className="absolute top-1.5 right-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
-                        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>LIVE</div>
-                    )}
-                    {c.thumbnail_url && (
-                      <div className="absolute inset-x-0 bottom-0 px-2 py-1.5"
-                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
-                        <p className="text-white text-[11px] font-semibold line-clamp-2 leading-tight">{c.title}</p>
-                        {(c.artist?.display_name ?? c.venue_city) && (
-                          <p className="text-white/70 text-[10px] truncate">{c.artist?.display_name ?? c.venue_city}</p>
-                        )}
-                      </div>
-                    )}
-                  </button>
+                      {c.status === 'live' && (
+                        <div className="absolute top-1.5 right-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>LIVE</div>
+                      )}
+                      {(c.thumbnail_url || c.video_url) && (
+                        <div className="absolute inset-x-0 bottom-0 px-2 py-1.5"
+                          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
+                          <p className="text-white text-[11px] font-semibold line-clamp-2 leading-tight">{c.title}</p>
+                          {(c.artist?.display_name ?? c.venue_city) && (
+                            <p className="text-white/70 text-[10px] truncate">{c.artist?.display_name ?? c.venue_city}</p>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  </HoverVideoPreview>
                 ))}
               </div>
             </section>
@@ -497,31 +499,33 @@ export default function SearchPage() {
               <SectionHeader icon={<Calendar size={14} />} title="Événements" count={results.events!.length} />
               <div className="grid grid-cols-3 gap-1">
                 {results.events!.map((ev: any) => (
-                  <button key={ev.id} onClick={() => navigate(`/events/${encodeId(ev.id)}`)}
-                    className="relative overflow-hidden group text-left"
+                  <HoverVideoPreview key={ev.id}
+                    src={ev.video_url} poster={ev.thumbnail_url}
+                    className="relative overflow-hidden"
                     style={{ aspectRatio: '3/4', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
-                    {ev.thumbnail_url ? (
-                      <img src={ev.thumbnail_url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center p-3"
-                        style={{ background: 'linear-gradient(160deg,#7B3FF2 0%,#5B2EC4 100%)' }}>
-                        <p className="text-white text-xs font-medium leading-snug text-center line-clamp-5">{ev.title}</p>
+                    <button onClick={() => navigate(`/events/${encodeId(ev.id)}`)}
+                      className="absolute inset-0 w-full h-full text-left">
+                      {!ev.thumbnail_url && !ev.video_url && (
+                        <div className="w-full h-full flex items-center justify-center p-3"
+                          style={{ background: 'linear-gradient(160deg,#7B3FF2 0%,#5B2EC4 100%)' }}>
+                          <p className="text-white text-xs font-medium leading-snug text-center line-clamp-5">{ev.title}</p>
+                        </div>
+                      )}
+                      <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
+                        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+                        <Calendar size={9} /> Événement
                       </div>
-                    )}
-                    <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
-                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-                      <Calendar size={9} /> Événement
-                    </div>
-                    {ev.thumbnail_url && (
-                      <div className="absolute inset-x-0 bottom-0 px-2 py-1.5"
-                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
-                        <p className="text-white text-[11px] font-semibold line-clamp-2 leading-tight">{ev.title}</p>
-                        {(ev.venue_city ?? ev.is_online) && (
-                          <p className="text-white/70 text-[10px] truncate">{ev.venue_city ?? (ev.is_online ? 'En ligne' : '')}</p>
-                        )}
-                      </div>
-                    )}
-                  </button>
+                      {(ev.thumbnail_url || ev.video_url) && (
+                        <div className="absolute inset-x-0 bottom-0 px-2 py-1.5"
+                          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
+                          <p className="text-white text-[11px] font-semibold line-clamp-2 leading-tight">{ev.title}</p>
+                          {(ev.venue_city ?? ev.is_online) && (
+                            <p className="text-white/70 text-[10px] truncate">{ev.venue_city ?? (ev.is_online ? 'En ligne' : '')}</p>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  </HoverVideoPreview>
                 ))}
               </div>
             </section>
