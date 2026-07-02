@@ -13,7 +13,7 @@ function VerifiedBadgeOverlay({ size }: { size: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
       style={{
         width: px, height: px,
         borderRadius: '50%',
-        background: '#1D9BF0',
+        background: '#7B3FF2',
         border: '1.5px solid var(--surface, #fff)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
@@ -34,10 +34,10 @@ export function VerifiedBadge({ size = 16 }: { size?: number }) {
       style={{
         width: size, height: size,
         borderRadius: '50%',
-        background: '#1D9BF0',
+        background: '#7B3FF2',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
-        boxShadow: '0 1px 4px rgba(29,155,240,0.4)',
+        boxShadow: '0 1px 4px rgba(123,63,242,0.4)',
       }}
     >
       <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 10 10" fill="none">

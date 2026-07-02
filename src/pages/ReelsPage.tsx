@@ -1511,6 +1511,15 @@ export default function ReelsPage() {
   const { user: me }                    = useAuthStore();
   const { confirm, ConfirmDialog }      = useConfirm();
 
+  // Guest (non connecté) — charge uniquement le reel ciblé par l'URL pour l'aperçu
+  const [guestReel, setGuestReel] = useState<Reel | null>(null);
+  useEffect(() => {
+    if (me || !targetId) return;
+    apiClient.get<Reel>(Endpoints.reels.byId(targetId))
+      .then(r => setGuestReel(r.data))
+      .catch(() => {});
+  }, [me, targetId]);
+
   const [reels,         setReels]       = useState<Reel[]>([]);
   const [myReels,       setMyReels]     = useState<Reel[]>([]);
   const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
@@ -1894,15 +1903,18 @@ export default function ReelsPage() {
     }
   }, [activeIndex]); // eslint-disable-line
 
-  // ── Guest (non connecté) — affiché immédiatement, sans fetch ───────────────
+  // ── Guest (non connecté) — thumbnail du reel ciblé chargé en arrière-plan ──
   if (!me) {
     return (
       <GuestPreview
         type="reel"
-        thumbnail={null}
-        body={null}
-        author={null}
-        date={null}
+        thumbnail={guestReel?.thumbnail_url ?? null}
+        body={guestReel?.caption ?? null}
+        author={guestReel?.author ?? null}
+        date={guestReel?.created_at ?? null}
+        likeCount={guestReel?.like_count}
+        commentCount={guestReel?.comment_count}
+        viewCount={guestReel?.view_count}
       />
     );
   }

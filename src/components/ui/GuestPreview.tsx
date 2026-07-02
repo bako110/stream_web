@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -88,21 +88,50 @@ export function GuestPreview({
     (thumbnails?.length ? thumbnails : [thumbnail]).filter((u): u is string => !!u),
   ));
   const [slide, setSlide] = useState(0);
-  const touchStartX = useRef<number | null>(null);
+  const dragStartX  = useRef<number | null>(null);
+  const isDragging  = useRef(false);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [autoPaused, setAutoPaused] = useState(false);
 
   function goToSlide(i: number) {
-    setSlide(Math.max(0, Math.min(images.length - 1, i)));
+    const n = images.length;
+    if (n === 0) return;
+    setSlide(((i % n) + n) % n);
   }
-  function onTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
+
+  // Pause l'auto-défilement pendant une interaction manuelle, reprend après 5s d'inactivité
+  function pauseAuto() {
+    setAutoPaused(true);
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => setAutoPaused(false), 5000);
   }
-  function onTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current == null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    touchStartX.current = null;
+
+  function dragStart(x: number) {
+    if (images.length <= 1) return;
+    isDragging.current = true;
+    dragStartX.current = x;
+    pauseAuto();
+  }
+  function dragEnd(x: number) {
+    if (!isDragging.current || dragStartX.current == null) return;
+    isDragging.current = false;
+    const delta = x - dragStartX.current;
+    dragStartX.current = null;
     if (Math.abs(delta) < 40) return;
-    goToSlide(delta < 0 ? slide + 1 : slide - 1);
+    goToSlide(slide + (delta < 0 ? 1 : -1));
   }
+
+  function onTouchStart(e: React.TouchEvent) { dragStart(e.touches[0].clientX); }
+  function onTouchEnd(e: React.TouchEvent)   { dragEnd(e.changedTouches[0].clientX); }
+  function onMouseDown(e: React.MouseEvent)  { dragStart(e.clientX); }
+  function onMouseUp(e: React.MouseEvent)    { dragEnd(e.clientX); }
+
+  // Auto-défilement en boucle, toutes les 4s, sauf pendant/juste après une interaction manuelle
+  useEffect(() => {
+    if (images.length <= 1 || autoPaused) return;
+    const iv = setInterval(() => setSlide(s => (s + 1) % images.length), 4000);
+    return () => clearInterval(iv);
+  }, [images.length, autoPaused]);
 
   return (
     <>
@@ -441,12 +470,16 @@ export function GuestPreview({
       <div className="gp-shell">
 
         {/* Hero — carrousel swipeable si plusieurs images (post multi-photos, galerie event) */}
-        <div className="gp-hero" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div className="gp-hero"
+          onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+          onMouseDown={onMouseDown} onMouseUp={onMouseUp}
+          onMouseLeave={() => { isDragging.current = false; dragStartX.current = null; }}
+          style={{ cursor: images.length > 1 ? 'grab' : undefined }}>
           {images.length > 0 ? (
             <div className="gp-hero-track"
               style={{ transform: `translateX(-${slide * 100}%)` }}>
               {images.map((src, i) => (
-                <img key={i} src={src} alt="" className="gp-hero-slide" />
+                <img key={i} src={src} alt="" className="gp-hero-slide" draggable={false} />
               ))}
             </div>
           ) : (
