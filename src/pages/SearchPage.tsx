@@ -8,6 +8,7 @@ import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
+import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
 import { useWs } from '../context/WebSocketContext';
 
 // ── Historique local (localStorage, max 15) ───────────────────────────────────
@@ -532,20 +533,17 @@ export default function SearchPage() {
               <SectionHeader icon={<Play size={14} />} title="Reels" count={results.reels!.length} />
               <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3">
                 {results.reels!.map((r: any) => (
-                  <div key={r.id} onClick={() => navigate('/reels')} className="cursor-pointer group">
-                    <div className="aspect-[9/16] rounded-xl overflow-hidden relative"
-                      style={{ background: 'var(--bg-tertiary)' }}>
-                      {r.thumbnail_url
-                        ? <img src={r.thumbnail_url} alt={r.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                        : <div className="w-full h-full flex items-center justify-center">
-                            <Play size={20} style={{ color: 'var(--text-tertiary)' }} />
-                          </div>
-                      }
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ background: 'rgba(0,0,0,0.35)' }}>
-                        <Play size={22} color="#fff" fill="#fff" />
-                      </div>
-                    </div>
+                  <div key={r.id} onClick={() => navigate(`/reels?id=${encodeId(r.id)}`)} className="cursor-pointer">
+                    <HoverVideoPreview
+                      src={r.hls_url} poster={r.thumbnail_url}
+                      className="relative overflow-hidden rounded-xl"
+                      style={{ aspectRatio: '9/16', background: 'var(--bg-tertiary)' }}>
+                      {!r.thumbnail_url && !r.hls_url && (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Play size={20} style={{ color: 'var(--text-tertiary)' }} />
+                        </div>
+                      )}
+                    </HoverVideoPreview>
                     <p className="mt-1.5 text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                       {r.title || r.creator?.display_name || r.creator?.username || ''}
                     </p>

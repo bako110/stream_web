@@ -16,6 +16,7 @@ import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
+import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
 
 type Tab = 'publications' | 'reels' | 'about';
 
@@ -180,23 +181,26 @@ function ReelsTab({ userId }: { userId: string }) {
   return (
     <div className="grid grid-cols-3 gap-1 p-1">
       {reels.map(reel => (
-        <button key={reel.id}
-          onClick={() => navigate(`/reels?user=${encodeId(userId)}&id=${encodeId(reel.id)}`)}
-          className="relative overflow-hidden group text-left"
+        <HoverVideoPreview key={reel.id}
+          src={reel.hls_url} poster={reel.thumbnail_url}
+          className="relative overflow-hidden"
           style={{ aspectRatio: '9/16', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
-          {reel.thumbnail_url
-            ? <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-            : <div className="w-full h-full flex items-center justify-center">
+          <button
+            onClick={() => navigate(`/reels?user=${encodeId(userId)}&id=${encodeId(reel.id)}`)}
+            className="absolute inset-0 w-full h-full text-left">
+            {!reel.thumbnail_url && !reel.hls_url && (
+              <div className="w-full h-full flex items-center justify-center">
                 <Play size={22} style={{ color: 'var(--text-tertiary)' }} />
               </div>
-          }
-          {/* Overlay stats — visible en permanence (pas seulement au survol) */}
-          <div className="absolute inset-x-0 bottom-0 flex items-center gap-1 px-2 py-1.5"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)' }}>
-            <Play size={11} color="#fff" fill="#fff" />
-            <span className="text-white text-[11px] font-semibold">{fmtCount(reel.view_count)}</span>
-          </div>
-        </button>
+            )}
+            {/* Overlay stats — visible en permanence (pas seulement au survol) */}
+            <div className="absolute inset-x-0 bottom-0 flex items-center gap-1 px-2 py-1.5"
+              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)' }}>
+              <Play size={11} color="#fff" fill="#fff" />
+              <span className="text-white text-[11px] font-semibold">{fmtCount(reel.view_count)}</span>
+            </div>
+          </button>
+        </HoverVideoPreview>
       ))}
     </div>
   );
