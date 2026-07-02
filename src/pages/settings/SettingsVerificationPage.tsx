@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 type VerifStatus = 'none' | 'pending' | 'approved' | 'rejected';
 type AccountType = 'artist' | 'creator' | 'public_figure' | 'brand' | 'journalist' | 'other';
 
-const BLUE = '#7B3FF2';
+const BLUE = '#1D9BF0';
 const VERIFICATION_FEE = 500;
 
 const ACCOUNT_TYPES: { key: AccountType; icon: React.ReactNode; label: string; sub: string }[] = [

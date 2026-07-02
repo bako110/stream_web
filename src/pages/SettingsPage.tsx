@@ -22,7 +22,7 @@ type VerifStatus = 'none' | 'pending' | 'approved' | 'rejected';
 function VerifiedBadge({ size = 14 }: { size?: number }) {
   return (
     <div className="rounded-full flex items-center justify-center shrink-0"
-      style={{ width: size, height: size, background: '#7B3FF2' }}>
+      style={{ width: size, height: size, background: '#1D9BF0' }}>
       <Check size={size * 0.6} color="#fff" />
     </div>
   );
@@ -113,7 +113,7 @@ export default function SettingsPage() {
     },
     {
       key: 'verification',
-      icon: <Shield size={17} />, label: 'Vérification GoFolyX', color: '#7B3FF2',
+      icon: <Shield size={17} />, label: 'Vérification GoFolyX', color: '#1D9BF0',
       sub: verifSub[verifStatus],
       badge: user?.is_verified ? <VerifiedBadge size={15} /> : undefined,
       onClick: () => navigate('/settings/verification'),

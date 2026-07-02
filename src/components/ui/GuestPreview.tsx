@@ -337,7 +337,7 @@ export function GuestPreview({
         .gp-verified {
           width: 14px; height: 14px;
           border-radius: 50%;
-          background: #7B3FF2;
+          background: #1D9BF0;
           display: inline-flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
