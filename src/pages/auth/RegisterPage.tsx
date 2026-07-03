@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown } from 'lucide-react';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { RoundLogo } from '../../components/ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
@@ -16,17 +16,55 @@ const PERKS = [
   { icon: ShieldCheck, label: 'Communautés, wallet & monétisation',   color: '#EC4899' },
 ];
 
+type AuthMethod = 'email' | 'phone';
+
+// Pays les plus courants d'abord, puis le reste — même liste que LoginPage
+const COUNTRIES = [
+  { code: 'SN', dial: '+221', flag: '🇸🇳', name: 'Sénégal' },
+  { code: 'CI', dial: '+225', flag: '🇨🇮', name: "Côte d'Ivoire" },
+  { code: 'ML', dial: '+223', flag: '🇲🇱', name: 'Mali' },
+  { code: 'BF', dial: '+226', flag: '🇧🇫', name: 'Burkina Faso' },
+  { code: 'GN', dial: '+224', flag: '🇬🇳', name: 'Guinée' },
+  { code: 'CM', dial: '+237', flag: '🇨🇲', name: 'Cameroun' },
+  { code: 'FR', dial: '+33',  flag: '🇫🇷', name: 'France' },
+  { code: 'BE', dial: '+32',  flag: '🇧🇪', name: 'Belgique' },
+  { code: 'MA', dial: '+212', flag: '🇲🇦', name: 'Maroc' },
+  { code: 'DZ', dial: '+213', flag: '🇩🇿', name: 'Algérie' },
+  { code: 'TN', dial: '+216', flag: '🇹🇳', name: 'Tunisie' },
+  { code: 'US', dial: '+1',   flag: '🇺🇸', name: 'États-Unis' },
+  { code: 'GB', dial: '+44',  flag: '🇬🇧', name: 'Royaume-Uni' },
+  { code: 'NG', dial: '+234', flag: '🇳🇬', name: 'Nigeria' },
+  { code: 'GH', dial: '+233', flag: '🇬🇭', name: 'Ghana' },
+];
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect') ?? '/feed';
   const { register: signup, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
-  const [form, setForm]       = useState({ first_name: '', last_name: '', email: '', username: '', password: '' });
+  const [form, setForm]       = useState({ first_name: '', last_name: '', email: '', phone: '', username: '', password: '' });
+  const [authMethod, setAuthMethod]   = useState<AuthMethod>('email');
+  const [country,     setCountry]     = useState(COUNTRIES[0]);
+  const [showCountry, setShowCountry] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [gLoading, setGLoading] = useState(false);
   const [formError, setFormError] = useState('');
+
+  function switchAuthMethod() {
+    setAuthMethod(m => m === 'email' ? 'phone' : 'email');
+    setForm(f => ({ ...f, email: '', phone: '' }));
+    setFormError('');
+  }
+
+  // Fermer le dropdown pays en cliquant dehors
+  useEffect(() => {
+    if (!showCountry) return;
+    const close = () => setShowCountry(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [showCountry]);
 
   async function handleGoogle() {
     setGLoading(true);
@@ -64,12 +102,24 @@ export default function RegisterPage() {
     setFormError('');
     if (form.first_name.trim().length < 2) return setFormError('Le prénom doit faire au moins 2 caractères');
     if (form.last_name.trim().length < 2)  return setFormError('Le nom doit faire au moins 2 caractères');
-    if (!form.email.trim())                return setFormError('L\'email est requis');
+    if (authMethod === 'email' && !form.email.trim())  return setFormError('L\'email est requis');
+    if (authMethod === 'phone' && !form.phone.trim())  return setFormError('Le numéro de téléphone est requis');
     if (form.password.length < 8)          return setFormError('Le mot de passe doit faire au moins 8 caractères');
     if (form.username.trim() && form.username.trim().length < 3) return setFormError('Le nom d\'utilisateur doit faire au moins 3 caractères');
     if (form.username.trim() && !/^[\w\-\.]+$/.test(form.username.trim())) return setFormError('Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, _, - et . (sans espaces ni caractères spéciaux)');
     try {
-      await signup(form);
+      const phoneTrimmed = form.phone.trim();
+      const hasOwnDialCode = /^(\+|00)\d/.test(phoneTrimmed);
+      const phone = phoneTrimmed
+        ? (hasOwnDialCode ? phoneTrimmed : `${country.dial}${phoneTrimmed}`)
+        : '';
+      await signup({
+        first_name: form.first_name,
+        last_name:  form.last_name,
+        password:   form.password,
+        username:   form.username,
+        ...(authMethod === 'email' ? { email: form.email } : { phone }),
+      });
       navigate(redirectTo, { replace: true });
     } catch { /* error shown via store */ }
   }
@@ -173,7 +223,9 @@ export default function RegisterPage() {
 
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>ou avec email</span>
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              ou avec {authMethod === 'email' ? 'email' : 'téléphone'}
+            </span>
             <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
           </div>
 
@@ -201,10 +253,80 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Email</label>
-              <input className="input" type="email" placeholder="jean@exemple.com"
-                value={form.email} onChange={field('email')} required
-                onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} style={inp('email')} />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  {authMethod === 'email' ? 'Email' : 'Numéro de téléphone'}
+                </label>
+                <button type="button" onClick={switchAuthMethod}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all"
+                  style={{ background: 'rgba(123,63,242,0.12)', border: '1px solid rgba(123,63,242,0.35)', color: 'var(--primary)' }}>
+                  {authMethod === 'email'
+                    ? <><Smartphone size={11} /> Téléphone</>
+                    : <><Mail size={11} /> Email</>}
+                </button>
+              </div>
+
+              {authMethod === 'email' ? (
+                <input className="input" type="email" placeholder="jean@exemple.com"
+                  value={form.email} onChange={field('email')} required
+                  onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} style={inp('email')} />
+              ) : (
+                <div className="flex gap-2">
+                  {/* Sélecteur pays */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); setShowCountry(v => !v); }}
+                      className="flex items-center gap-1.5 h-full px-3 rounded-xl text-sm font-semibold transition-all"
+                      style={{
+                        background: 'var(--bg-secondary)',
+                        border: `1px solid ${focused === 'phone' ? 'var(--primary)' : 'var(--border)'}`,
+                        color: 'var(--text-primary)',
+                        minWidth: 90,
+                      }}>
+                      <span className="text-base">{country.flag}</span>
+                      <span>{country.dial}</span>
+                      <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
+                    </button>
+
+                    {showCountry && (
+                      <div className="absolute top-full left-0 mt-1 z-50 rounded-xl overflow-hidden shadow-xl"
+                        style={{ background: 'var(--surface)', border: '1px solid var(--border)', width: 220, maxHeight: 260, overflowY: 'auto' }}
+                        onClick={e => e.stopPropagation()}>
+                        {COUNTRIES.map(c => (
+                          <button key={c.code} type="button"
+                            onClick={() => { setCountry(c); setShowCountry(false); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-all"
+                            style={{
+                              background: c.code === country.code ? 'rgba(123,63,242,0.1)' : 'transparent',
+                              color: c.code === country.code ? 'var(--primary)' : 'var(--text-primary)',
+                            }}
+                            onMouseEnter={e => { if (c.code !== country.code) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
+                            onMouseLeave={e => { if (c.code !== country.code) e.currentTarget.style.background = 'transparent'; }}>
+                            <span className="text-base">{c.flag}</span>
+                            <span className="flex-1 truncate">{c.name}</span>
+                            <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>{c.dial}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Numéro */}
+                  <input
+                    type="tel"
+                    placeholder="77 000 00 00"
+                    value={form.phone}
+                    onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))}
+                    onFocus={() => setFocused('phone')}
+                    onBlur={() => setFocused(null)}
+                    required
+                    autoComplete="tel"
+                    className="input flex-1"
+                    style={inp('phone')}
+                  />
+                </div>
+              )}
             </div>
 
             <div>
