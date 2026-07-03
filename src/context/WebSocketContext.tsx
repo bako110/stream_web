@@ -189,30 +189,31 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         break;
       case 'new_follower':
         setLastNewFollower(payload as unknown as NewFollowerPayload);
-        setUnreadActivity(n => n + 1);
         break;
       case 'story_added':
         setLastStoryAdded(payload as unknown as StoryAddedPayload);
         break;
       case 'reaction_on_content':
         setLastReactionOnContent(payload as unknown as ReactionPayload);
-        setUnreadActivity(n => n + 1);
         break;
       case 'comment_on_content':
         setLastCommentOnContent(payload as unknown as CommentPayload);
-        setUnreadActivity(n => n + 1);
         break;
       case 'coin_transfer_received':
         setLastCoinTransfer(payload as unknown as CoinTransferPayload);
-        setUnreadNotifications(n => n + 1);
         break;
       case 'gift_received':
         setLastGiftReceived(payload as unknown as GiftReceivedPayload);
-        setUnreadNotifications(n => n + 1);
         break;
       case 'presence':
         setLastPresenceUpdate(payload as unknown as PresencePayload);
         break;
+      // NOTE: l'incrément de unreadActivity/unreadNotifications pour un même événement
+      // (like, commentaire, follow, cadeau...) est géré exclusivement ici, sur les types
+      // génériques 'activity'/'notification' envoyés en parallèle par le backend — pas sur
+      // les events bruts ci-dessus (comment_on_content, reaction_on_content, new_follower,
+      // gift_received...), qui ne servent qu'à la mise à jour UI en direct. Sinon un seul
+      // événement métier compte double (même pattern que stream_mobile).
       case 'activity':
         setUnreadActivity(n => n + 1);
         break;

@@ -205,12 +205,12 @@ export default function WalletAdsPage() {
 
   async function handlePause(id: string) {
     setActing(id);
-    try { await apiClient.post(Endpoints.ads.pause(id)); await fetchAds(); } catch {}
+    try { await apiClient.patch(Endpoints.ads.update(id), { status: 'paused' }); await fetchAds(); } catch {}
     setActing(null);
   }
   async function handleResume(id: string) {
     setActing(id);
-    try { await apiClient.post(Endpoints.ads.resume(id)); await fetchAds(); } catch {}
+    try { await apiClient.patch(Endpoints.ads.update(id), { status: 'active' }); await fetchAds(); } catch {}
     setActing(null);
   }
   async function handleDelete(id: string) {

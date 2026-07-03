@@ -238,8 +238,6 @@ export const Endpoints = {
     byId:       (id: string) => `${V1}/ads/${id}`,
     update:     (id: string) => `${V1}/ads/${id}`,
     delete:     (id: string) => `${V1}/ads/${id}`,
-    pause:      (id: string) => `${V1}/ads/${id}/pause`,
-    resume:     (id: string) => `${V1}/ads/${id}/resume`,
     feedNext:   (placement: string) => `${V1}/ads/feed/next?placement=${placement}`,
     impression: (id: string) => `${V1}/ads/${id}/impression`,
     click:      (id: string) => `${V1}/ads/${id}/click`,
