@@ -198,7 +198,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="mb-6">
-            <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Créer un compte ✨</h2>
+            <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Créer un compte</h2>
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Rejoignez GoFolyX gratuitement</p>
           </div>
 

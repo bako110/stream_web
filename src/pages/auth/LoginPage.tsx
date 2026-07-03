@@ -185,7 +185,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-7">
-            <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Bon retour 👋</h2>
+            <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Bon retour</h2>
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte GoFolyX</p>
           </div>
 
