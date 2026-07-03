@@ -247,9 +247,9 @@ const LiveChat = forwardRef<LiveChatHandle, {
   ];
 
   const inputBar = (
-    <div className="flex flex-col gap-2 pointer-events-auto">
+    <div className="flex flex-col gap-2 pointer-events-auto min-w-0">
       {/* Réactions rapides — un tap envoie directement le commentaire */}
-      <div className="flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex items-center gap-1.5 overflow-x-auto min-w-0" style={{ scrollbarWidth: 'none' }}>
         {QUICK_REACTIONS.map(r => (
           <button key={r.label} onClick={() => sendQuick(`${r.emoji} ${r.label}`)}
             className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-transform active:scale-95"
@@ -1911,8 +1911,8 @@ export default function LiveSimplePage() {
               />
 
               {/* Réactions rapides + saisie — toujours tout en bas de la colonne */}
-              <div className="shrink-0 px-3 py-2 border-t" style={{ background: 'rgba(15,15,20,0.98)', borderColor: 'rgba(255,255,255,0.08)' }}>
-                <div ref={setMobileChatInputEl} />
+              <div className="shrink-0 min-w-0 px-3 py-2 border-t" style={{ background: 'rgba(15,15,20,0.98)', borderColor: 'rgba(255,255,255,0.08)' }}>
+                <div ref={setMobileChatInputEl} className="min-w-0" />
               </div>
 
               {live.description && (
