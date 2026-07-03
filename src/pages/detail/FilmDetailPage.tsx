@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { decodeId } from '../../utils/slugId';
+import { decodeId, encodeId } from '../../utils/slugId';
 import {
   Play, Star, Crown, ChevronDown, ChevronUp, Lock, Coins,
-  Check, AlertTriangle, X, Wallet,
+  Check, AlertTriangle, X, Wallet, Share2,
 } from 'lucide-react';
 import type { Content, VideoMeta } from '../../types';
 import { apiClient } from '../../api';
@@ -270,6 +270,32 @@ export default function FilmDetailPage() {
     );
   }
 
+  async function handleShare(e: React.MouseEvent) {
+    e.stopPropagation();
+    const url = `${window.location.origin}/films/${encodeId(f.id)}`;
+    const shareTitle = `${f.title} — GoFolyX`;
+    try {
+      let shared = false;
+      const thumb = f.banner_url || f.thumbnail_url;
+      if (navigator.share && thumb && navigator.canShare) {
+        try {
+          const res  = await fetch(thumb);
+          const blob = await res.blob();
+          const file = new File([blob], 'film.jpg', { type: blob.type || 'image/jpeg' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: shareTitle, text: url, files: [file] });
+            shared = true;
+          }
+        } catch { /* fallback ci-dessous */ }
+      }
+      if (!shared) {
+        if (navigator.share) await navigator.share({ title: shareTitle, url });
+        else { await navigator.clipboard.writeText(url); toast.success('Lien copié !'); }
+      }
+      apiClient.post(Endpoints.social.share, { content_id: f.id, platform: 'external' }).catch(() => {});
+    } catch { /* ignore (annulation utilisateur) */ }
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
 
@@ -347,12 +373,22 @@ export default function FilmDetailPage() {
               <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{f.original_title}</p>
             )}
           </div>
-          {f.average_rating && (
-            <div className="flex items-center gap-1 shrink-0 text-yellow-400">
-              <Star size={18} fill="currentColor" />
-              <span className="font-black text-lg">{f.average_rating.toFixed(1)}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3 shrink-0">
+            {f.average_rating && (
+              <div className="flex items-center gap-1 text-yellow-400">
+                <Star size={18} fill="currentColor" />
+                <span className="font-black text-lg">{f.average_rating.toFixed(1)}</span>
+              </div>
+            )}
+            <button onClick={handleShare}
+              className="p-2 rounded-full transition-colors"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+              aria-label="Partager">
+              <Share2 size={17} />
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>

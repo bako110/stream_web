@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark } from 'lucide-react';
+import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark, Edit3 } from 'lucide-react';
 import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -533,6 +533,13 @@ export default function ConcertDetailPage() {
                 <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <p className="text-xs font-semibold uppercase tracking-wide"
                     style={{ color: 'var(--text-tertiary)' }}>Ton concert</p>
+                  {!isEnded && (
+                    <button onClick={() => navigate(`/create/concert?edit=${id}`)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                      style={{ background: 'var(--bg-secondary)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
+                      <Edit3 size={14} /> Modifier
+                    </button>
+                  )}
                   {!isLive && !isEnded && (
                     <button onClick={handleStart} disabled={starting}
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
