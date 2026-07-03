@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   X, VideoIcon, VideoOff, Mic, MicOff, UserCheck,
-  Lock, Unlock, Edit2, Coins, Gift, ChevronLeft, Check, Radio,
+  Lock, Unlock, Edit2, Coins, Gift, ChevronLeft, Check, Radio, ShieldOff,
 } from 'lucide-react';
 import { useConfirm } from '../ui/Dialog';
 import { useLocalParticipant } from '@livekit/components-react';
@@ -191,6 +191,77 @@ function MonetForm({
           style={{ background: `linear-gradient(135deg,${accentColor},${accentColor}AA)` }}>
           Activer
         </button>
+      )}
+    </div>
+  );
+}
+
+// ── Section utilisateurs bloqués ──────────────────────────────────────────────
+
+interface BlockedUser {
+  blocked_id:   string;
+  username?:    string | null;
+  display_name?: string | null;
+  avatar_url?:  string | null;
+  created_at:   string;
+}
+
+function BlockedUsersSection() {
+  const { confirm, ConfirmDialog } = useConfirm();
+  const [blocked,   setBlocked]   = useState<BlockedUser[] | null>(null);
+  const [unblocking, setUnblocking] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiClient.get<BlockedUser[]>(Endpoints.lives.listBlocks)
+      .then(r => setBlocked(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setBlocked([]));
+  }, []);
+
+  async function unblock(userId: string, name: string) {
+    const ok = await confirm({ title: `Débloquer ${name} ?`, message: 'Cette personne pourra à nouveau voir tes lives.', danger: false, confirmLabel: 'Débloquer' });
+    if (!ok) return;
+    setUnblocking(userId);
+    try {
+      await apiClient.delete(Endpoints.lives.blockUser(userId));
+      setBlocked(prev => prev?.filter(b => b.blocked_id !== userId) ?? prev);
+    } catch { /* ignore */ }
+    finally { setUnblocking(null); }
+  }
+
+  return (
+    <div>
+      {ConfirmDialog}
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+        style={{ color: 'var(--text-tertiary)' }}>
+        Bloqués{blocked && blocked.length > 0 && <span> ({blocked.length})</span>}
+      </p>
+      {blocked === null ? (
+        <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+      ) : blocked.length === 0 ? (
+        <div className="flex items-center justify-center py-3 rounded-xl"
+          style={{ background: 'var(--bg-secondary)' }}>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucun utilisateur bloqué</p>
+        </div>
+      ) : (
+        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+          {blocked.map(b => {
+            const name = b.display_name ?? b.username ?? 'Utilisateur';
+            return (
+              <div key={b.blocked_id}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border"
+                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+                <Avatar src={b.avatar_url} name={name} size="xs" className="shrink-0" />
+                <span className="text-xs font-semibold truncate flex-1"
+                  style={{ color: 'var(--text-primary)' }}>{name}</span>
+                <button onClick={() => unblock(b.blocked_id, name)} disabled={unblocking === b.blocked_id}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 disabled:opacity-50"
+                  style={{ background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                  {unblocking === b.blocked_id ? <Spinner size="sm" /> : <><ShieldOff size={11} /> Débloquer</>}
+                </button>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -430,6 +501,9 @@ export function LiveSettingsSheet({
               onRemove={removeStageMonet}
             />
           </div>
+
+          {/* ── Utilisateurs bloqués ── */}
+          <BlockedUsersSection />
 
           {/* ── Terminer ── */}
           <button onClick={confirmStop}
