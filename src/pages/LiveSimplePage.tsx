@@ -18,7 +18,7 @@ import {
   useLocalParticipant,
   useRoomContext,
 } from '@livekit/components-react';
-import { Track, VideoPresets, RoomEvent } from 'livekit-client';
+import { Track, VideoPresets, RoomEvent, ParticipantEvent } from 'livekit-client';
 import type { LiveStream, StreamToken } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -917,7 +917,7 @@ function MediaControls({
   isHost, liveId, onStop, stopping, onLeave, onHandRaise, handRaised,
   onToggleRequests, pendingCount, onToggleOnStage, onStageCount,
   onToggleGifts, giftsCount, onGiftToHost,
-  isOnStage, onLeaveStage, onToggleSettings,
+  isOnStage, onLeaveStage, onToggleSettings, onStageDetected,
 }: {
   isHost: boolean; liveId: string;
   onStop: () => void; stopping: boolean; onLeave: () => void;
@@ -928,11 +928,28 @@ function MediaControls({
   onGiftToHost?: () => void;
   isOnStage?: boolean; onLeaveStage?: () => void;
   onToggleSettings?: () => void;
+  /** Appelé dès que LiveKit confirme can_publish=true pour ce participant —
+   * source de vérité indépendante de l'event WS applicatif live_guest_invited
+   * (qui transite par un canal séparé et peut se perdre si la connexion WS
+   * de chat est coupée au mauvais moment). */
+  onStageDetected?: () => void;
 }) {
   const { localParticipant } = useLocalParticipant();
   const micOn = useLocalMicEnabled();
   const [camOn, setCamOn] = useState(false);
   const [showMore, setShowMore] = useState(false);
+
+  // Filet de sécurité : synchronise isOnStage sur la vraie permission LiveKit,
+  // au cas où l'event WS live_guest_invited n'arrive jamais côté viewer.
+  useEffect(() => {
+    if (isHost) return;
+    function sync() {
+      if (localParticipant.permissions?.canPublish) onStageDetected?.();
+    }
+    sync();
+    localParticipant.on(ParticipantEvent.ParticipantPermissionsChanged, sync);
+    return () => { localParticipant.off(ParticipantEvent.ParticipantPermissionsChanged, sync); };
+  }, [localParticipant, isHost, onStageDetected]);
 
   // Active cam+mic automatiquement pour le host
   useEffect(() => {
@@ -1806,6 +1823,7 @@ export default function LiveSimplePage() {
                     setIsOnStage(false);
                   }}
                   onToggleSettings={() => setShowSettings(v => !v)}
+                  onStageDetected={() => setIsOnStage(true)}
                 />
                 <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
                 <button
