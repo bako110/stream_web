@@ -79,7 +79,7 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
   return (
     <div>
       <p
-        className={`text-sm leading-relaxed ${className} ${isLong ? 'cursor-pointer select-none' : ''}`}
+        className={`text-sm leading-relaxed whitespace-pre-line ${className} ${isLong ? 'cursor-pointer select-none' : ''}`}
         style={style}
         onClick={e => { e.stopPropagation(); if (isLong) setExpanded(v => !v); }}
       >
