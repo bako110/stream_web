@@ -316,7 +316,7 @@ const LiveChat = forwardRef<LiveChatHandle, {
                     style={{ background: '#7B3FF2' }}>Hôte</span>
                 )}
               </div>
-              <span className="text-sm break-words" style={{ color: 'rgba(255,255,255,0.92)' }}>{m.text}</span>
+              <span className="text-sm break-words whitespace-pre-line" style={{ color: 'rgba(255,255,255,0.92)' }}>{m.text}</span>
             </div>
             {!m.id.startsWith('local-') && (
               <div className="flex items-center gap-1.5 shrink-0">

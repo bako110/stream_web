@@ -187,7 +187,7 @@ function CommentsSheet({
                           <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
                             {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
                           </p>
-                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                          <p className="text-sm leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-secondary)' }}>
                             {c.body}
                           </p>
                         </div>
@@ -681,7 +681,7 @@ export default function PostDetailPage() {
                               <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
                                 {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
                               </p>
-                              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                              <p className="text-sm leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-secondary)' }}>
                                 {c.body}
                               </p>
                             </div>
@@ -756,7 +756,7 @@ export default function PostDetailPage() {
                                     <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
                                       {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
                                     </p>
-                                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                    <p className="text-sm leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-secondary)' }}>
                                       {c.body}
                                     </p>
                                   </div>

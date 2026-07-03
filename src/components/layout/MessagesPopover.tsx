@@ -322,7 +322,7 @@ function MiniChatWindow({
                     )}
                     {/* Texte */}
                     {body ? (
-                      <div className="px-3 py-2">
+                      <div className="px-3 py-2 whitespace-pre-line break-words">
                         {body}
                         {msg.edited_at && <span className="text-[9px] ml-1 opacity-50">modifié</span>}
                       </div>

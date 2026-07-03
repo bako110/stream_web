@@ -239,7 +239,7 @@ export default function CommunityFundDetailPage() {
               </div>
 
               {cot.description && (
-                <p className="text-sm text-white/80 mb-3 leading-relaxed">{cot.description}</p>
+                <p className="text-sm text-white/80 mb-3 leading-relaxed whitespace-pre-line">{cot.description}</p>
               )}
 
               {/* Barre progression */}

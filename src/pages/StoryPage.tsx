@@ -555,7 +555,7 @@ function StoryViewer({
             <div className="w-full h-full flex items-center justify-center px-8"
               style={{ background: story.background_color ?? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               {story.caption && (
-                <p className="text-white text-center leading-snug" style={{
+                <p className="text-white text-center leading-snug whitespace-pre-line" style={{
                   fontSize: story.caption.length > 100 ? 18 : story.caption.length > 50 ? 24 : 30,
                   ...(FONT_MAP[story.font_style ?? 'classic'] ?? FONT_MAP.classic),
                 }}>{story.caption}</p>
@@ -605,7 +605,7 @@ function StoryViewer({
         {story.caption && story.media_type !== 'text' && (
           <div className="absolute bottom-16 inset-x-0 px-5 z-20 pointer-events-none">
             <div className="inline-block rounded-2xl px-4 py-2.5" style={{ background: 'rgba(0,0,0,0.55)' }}>
-              <p className="text-white text-sm leading-relaxed">{story.caption}</p>
+              <p className="text-white text-sm leading-relaxed whitespace-pre-line">{story.caption}</p>
             </div>
           </div>
         )}

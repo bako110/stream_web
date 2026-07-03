@@ -218,7 +218,7 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
                             </span>
                           )}
                         </div>
-                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        <p className="text-sm leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-secondary)' }}>
                           {c.body ?? c.content}
                         </p>
                       </div>

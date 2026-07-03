@@ -15,7 +15,7 @@ interface Props {
  * Affiche un texte avec bouton "Voir plus / Voir moins"
  * si le texte dépasse `limit` caractères.
  */
-export function ExpandableText({ text, limit = 280, className = '', style, preWrap = false }: Props) {
+export function ExpandableText({ text, limit = 280, className = '', style, preWrap = true }: Props) {
   const [expanded, setExpanded] = useState(false);
   const isLong = text.length > limit;
   const displayed = isLong && !expanded ? text.slice(0, limit).trimEnd() + '…' : text;

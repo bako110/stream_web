@@ -420,7 +420,7 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
 
               {/* Texte */}
               {body && (
-                <div className="px-3.5 py-2.5">
+                <div className="px-3.5 py-2.5 whitespace-pre-line break-words">
                   {body}
                   {msg.edited_at && <span className="text-[9px] ml-1.5 opacity-60">modifié</span>}
                 </div>
@@ -1175,7 +1175,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
             <div key={msg.id} className="flex justify-end">
               <div className="max-w-[72%] px-3.5 py-2.5 rounded-2xl rounded-br-sm text-sm opacity-60"
                 style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
-                <p>{msg.body}</p>
+                <p className="whitespace-pre-line break-words">{msg.body}</p>
                 <p className="text-[10px] mt-1 text-right opacity-70">Envoi…</p>
               </div>
             </div>

@@ -198,7 +198,7 @@ export default function CommunityMemberProfilePage() {
               )}
           </div>
           {profile.bio && (
-            <p className="text-sm max-w-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{profile.bio}</p>
+            <p className="text-sm max-w-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>{profile.bio}</p>
           )}
           {profile.joined_at && (
             <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>

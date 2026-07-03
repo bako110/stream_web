@@ -718,7 +718,7 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
         </div>
 
         {community.description && (
-          <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm leading-relaxed mb-5 whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
             {community.description}
           </p>
         )}
@@ -898,7 +898,7 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
 
                 {/* Contenu texte */}
                 {msg.content && (
-                  <div className="px-3.5 py-2">
+                  <div className="px-3.5 py-2 whitespace-pre-line break-words">
                     {msg.content}
                     {msg.edited_at && <span className="text-[9px] ml-1.5 opacity-60">modifié</span>}
                   </div>
@@ -1474,7 +1474,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                 {fmtCount(count)} membres · {community.is_private ? 'Privée' : 'Publique'}
               </p>
               {community.description && (
-                <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>{community.description}</p>
+                <p className="text-sm leading-relaxed mb-4 whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>{community.description}</p>
               )}
               <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'var(--text-tertiary)' }}>
                 MEMBRES ({members.length})

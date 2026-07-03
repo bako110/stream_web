@@ -344,7 +344,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm mt-0.5 leading-relaxed" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
+                  <p className="text-sm mt-0.5 leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
                 )}
                 {editingId !== c.id && (
                   <button onClick={() => handleReply(c)}
@@ -1124,7 +1124,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
           {/* Caption */}
           {caption && (
             <div>
-              <p className={`text-white text-xs sm:text-sm leading-snug ${captionExpanded ? '' : 'line-clamp-2'}`}
+              <p className={`text-white text-xs sm:text-sm leading-snug whitespace-pre-line ${captionExpanded ? '' : 'line-clamp-2'}`}
                 style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
                 {renderTextWithLinks(caption, 'underline font-semibold', { color: '#fff' })}
               </p>

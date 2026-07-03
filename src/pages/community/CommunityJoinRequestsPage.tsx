@@ -158,7 +158,7 @@ export default function CommunityJoinRequestsPage() {
                   </div>
 
                   {req.message && (
-                    <div className="mx-4 mb-3 px-3 py-2 rounded-xl text-sm italic leading-relaxed"
+                    <div className="mx-4 mb-3 px-3 py-2 rounded-xl text-sm italic leading-relaxed whitespace-pre-line break-words"
                       style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderLeft: '3px solid #7B3FF240' }}>
                       "{req.message}"
                     </div>

@@ -183,7 +183,7 @@ function StoryViewer({
             <div className="w-full h-full flex items-center justify-center"
               style={{ background: story.background_color ?? '#7B3FF2' }}>
               {story.caption && (
-                <p className="text-white font-black text-2xl text-center px-8 leading-snug">
+                <p className="text-white font-black text-2xl text-center px-8 leading-snug whitespace-pre-line">
                   {renderTextWithLinks(story.caption, 'underline', { color: '#fff' })}
                 </p>
               )}
@@ -201,7 +201,7 @@ function StoryViewer({
         {story.caption && story.media_url && (
           <div className="absolute bottom-16 inset-x-0 px-4 z-10">
             <div className="inline-block rounded-2xl px-4 py-2.5" style={{ background: 'rgba(0,0,0,0.5)' }}>
-              <p className="text-white text-sm leading-relaxed">
+              <p className="text-white text-sm leading-relaxed whitespace-pre-line">
                 {renderTextWithLinks(story.caption, 'underline font-semibold', { color: '#fff' })}
               </p>
             </div>
@@ -1124,7 +1124,7 @@ function CommentsModal({
                         <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
                           {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
                         </p>
-                        <p className="text-sm leading-relaxed break-words" style={{ color: 'var(--text-primary)' }}>
+                        <p className="text-sm leading-relaxed break-words whitespace-pre-line" style={{ color: 'var(--text-primary)' }}>
                           {c.body}
                         </p>
                       </div>

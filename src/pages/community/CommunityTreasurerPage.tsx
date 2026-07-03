@@ -746,7 +746,7 @@ export default function CommunityTreasurerPage() {
                         </div>
 
                         {req.description && (
-                          <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{req.description}</p>
+                          <p className="text-xs mb-3 leading-relaxed whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>{req.description}</p>
                         )}
 
                         {/* Double approbation */}

@@ -402,6 +402,7 @@ export function GuestPreview({
           color: rgba(255,255,255,0.6);
           margin-bottom: 14px;
           word-break: break-word;
+          white-space: pre-line;
           cursor: pointer;
         }
         .gp-body-clamped {

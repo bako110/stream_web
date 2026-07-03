@@ -121,7 +121,7 @@ export default function ExploreConcertDetailPage() {
           {concert.description && (
             <div className="mb-6">
               <h2 className="text-sm uppercase tracking-wider text-[var(--text-tertiary)] mb-2">Description</h2>
-              <p className="text-[var(--text-secondary)] leading-relaxed">{concert.description}</p>
+              <p className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">{concert.description}</p>
             </div>
           )}
 

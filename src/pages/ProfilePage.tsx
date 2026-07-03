@@ -513,7 +513,7 @@ function AboutTab({ user }: { user: User }) {
       {/* Bio */}
       {user.bio && (
         <div className="p-3.5 rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{user.bio}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text-primary)' }}>{user.bio}</p>
         </div>
       )}
 
@@ -695,7 +695,7 @@ export default function ProfilePage() {
           <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>@{user.username}</p>
         )}
         {user.bio && (
-          <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--text-secondary)' }}>{user.bio}</p>
+          <p className="text-sm leading-relaxed mb-3 whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>{user.bio}</p>
         )}
 
         {/* Meta */}

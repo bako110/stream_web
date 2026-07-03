@@ -86,7 +86,7 @@ function LiveChat({ concertId, accessToken }: { concertId: string; accessToken: 
             <Avatar src={m.avatar} name={m.user} size="xs" className="mt-0.5 shrink-0" />
             <div className="min-w-0">
               <span className="text-xs font-semibold text-brand-primary">{m.user} </span>
-              <span className="text-xs text-[var(--text-primary)] break-words">{m.text}</span>
+              <span className="text-xs text-[var(--text-primary)] break-words whitespace-pre-line">{m.text}</span>
             </div>
           </div>
         ))}

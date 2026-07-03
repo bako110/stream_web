@@ -250,7 +250,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
                         {msg.sender_role ? ` · ${msg.sender_role}` : ''}
                       </p>
                     )}
-                    <p className="text-sm">{msg.body}</p>
+                    <p className="text-sm whitespace-pre-line break-words">{msg.body}</p>
                     <p className={`text-[10px] mt-1`}
                       style={{ color: isStaff ? 'var(--text-tertiary)' : 'rgba(255,255,255,0.6)' }}>
                       {formatDistanceToNow(new Date(msg.created_at), { locale: fr, addSuffix: true })}
