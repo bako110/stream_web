@@ -240,13 +240,13 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Prénom</label>
-                <input className="input" type="text" placeholder="Jean"
+                <input className="input" type="text" placeholder="Prénom"
                   value={form.first_name} onChange={field('first_name')} required
                   onFocus={() => setFocused('fn')} onBlur={() => setFocused(null)} style={inp('fn')} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Nom</label>
-                <input className="input" type="text" placeholder="Dupont"
+                <input className="input" type="text" placeholder="Nom"
                   value={form.last_name} onChange={field('last_name')} required
                   onFocus={() => setFocused('ln')} onBlur={() => setFocused(null)} style={inp('ln')} />
               </div>
@@ -267,7 +267,7 @@ export default function RegisterPage() {
               </div>
 
               {authMethod === 'email' ? (
-                <input className="input" type="email" placeholder="jean@exemple.com"
+                <input className="input" type="email" placeholder="email@exemple.com"
                   value={form.email} onChange={field('email')} required
                   onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} style={inp('email')} />
               ) : (
@@ -333,7 +333,7 @@ export default function RegisterPage() {
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                 Nom d'utilisateur <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(optionnel)</span>
               </label>
-              <input className="input" type="text" placeholder="jean_dupont"
+              <input className="input" type="text" placeholder="nom_utilisateur"
                 value={form.username} onChange={field('username')}
                 onFocus={() => setFocused('un')} onBlur={() => setFocused(null)} style={inp('un')} />
               <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
