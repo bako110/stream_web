@@ -267,6 +267,77 @@ function BlockedUsersSection() {
   );
 }
 
+// ── Section utilisateurs éjectés/bannis ───────────────────────────────────────
+
+interface BannedUser {
+  banned_user_id: string;
+  username?:      string | null;
+  display_name?:  string | null;
+  avatar_url?:    string | null;
+  created_at:     string;
+}
+
+function BannedUsersSection() {
+  const { confirm, ConfirmDialog } = useConfirm();
+  const [banned,     setBanned]     = useState<BannedUser[] | null>(null);
+  const [unbanning,  setUnbanning]  = useState<string | null>(null);
+
+  useEffect(() => {
+    apiClient.get<BannedUser[]>(Endpoints.lives.listBans)
+      .then(r => setBanned(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setBanned([]));
+  }, []);
+
+  async function unban(userId: string, name: string) {
+    const ok = await confirm({ title: `Annuler l'éjection de ${name} ?`, message: 'Cette personne pourra à nouveau rejoindre tes lives.', danger: false, confirmLabel: 'Annuler l\'éjection' });
+    if (!ok) return;
+    setUnbanning(userId);
+    try {
+      await apiClient.delete(Endpoints.lives.removeBan(userId));
+      setBanned(prev => prev?.filter(b => b.banned_user_id !== userId) ?? prev);
+    } catch { /* ignore */ }
+    finally { setUnbanning(null); }
+  }
+
+  return (
+    <div>
+      {ConfirmDialog}
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+        style={{ color: 'var(--text-tertiary)' }}>
+        Éjectés{banned && banned.length > 0 && <span> ({banned.length})</span>}
+      </p>
+      {banned === null ? (
+        <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+      ) : banned.length === 0 ? (
+        <div className="flex items-center justify-center py-3 rounded-xl"
+          style={{ background: 'var(--bg-secondary)' }}>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucun utilisateur éjecté</p>
+        </div>
+      ) : (
+        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+          {banned.map(b => {
+            const name = b.display_name ?? b.username ?? 'Utilisateur';
+            return (
+              <div key={b.banned_user_id}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border"
+                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+                <Avatar src={b.avatar_url} name={name} size="xs" className="shrink-0" />
+                <span className="text-xs font-semibold truncate flex-1"
+                  style={{ color: 'var(--text-primary)' }}>{name}</span>
+                <button onClick={() => unban(b.banned_user_id, name)} disabled={unbanning === b.banned_user_id}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 disabled:opacity-50"
+                  style={{ background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                  {unbanning === b.banned_user_id ? <Spinner size="sm" /> : <><ShieldOff size={11} /> Réintégrer</>}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Sheet principal ───────────────────────────────────────────────────────────
 
 export function LiveSettingsSheet({
@@ -501,6 +572,9 @@ export function LiveSettingsSheet({
               onRemove={removeStageMonet}
             />
           </div>
+
+          {/* ── Utilisateurs éjectés/bannis ── */}
+          <BannedUsersSection />
 
           {/* ── Utilisateurs bloqués ── */}
           <BlockedUsersSection />

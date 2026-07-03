@@ -540,7 +540,13 @@ function ParticipantContextMenu({
   isOnStage: boolean; onDone: () => void;
 }) {
   async function act(endpoint: string) {
-    try { await apiClient.post(endpoint); } catch { /* silencieux */ }
+    try {
+      await apiClient.post(endpoint);
+    } catch (e: any) {
+      import('react-hot-toast').then(({ default: toast }) =>
+        toast.error(e?.response?.data?.detail ?? 'Action échouée'));
+      return;
+    }
     onDone();
   }
 
@@ -568,7 +574,7 @@ function ParticipantContextMenu({
       <button onClick={() => act(Endpoints.lives.ban(liveId, identity))}
         className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-lg w-full text-left hover:bg-white/10 transition-colors"
         style={{ color: '#fca5a5' }}>
-        <Ban size={11} /> Exclure ce live
+        <Ban size={11} /> Éjecter maintenant
       </button>
       <button onClick={() => act(Endpoints.lives.globalBan(liveId, identity))}
         className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-lg w-full text-left hover:bg-white/10 transition-colors"
