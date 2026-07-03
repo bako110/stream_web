@@ -173,6 +173,8 @@ function AppShell() {
         <Route path="/posts/:id"    element={<SharedRoute page={<PostDetailPage />} />} />
         <Route path="/concerts/:id" element={<SharedRoute page={<ConcertDetailPage />} />} />
         <Route path="/events/:id"   element={<SharedRoute page={<EventDetailPage />} />} />
+        <Route path="/films/:id"    element={<SharedRoute page={<FilmDetailPage />} />} />
+        <Route path="/series/:id"   element={<SharedRoute page={<SerieDetailPage />} />} />
 
         {/* Reels — dans AppLayout (sidebar visible, style TikTok desktop), accessible sans connexion */}
         <Route element={<AppLayout />}>
@@ -186,9 +188,7 @@ function AppShell() {
           <Route element={<AppLayout />}>
             <Route path="/feed"              element={<FeedPage />} />
             <Route path="/films"             element={<FilmsPage type="film" />} />
-            <Route path="/films/:id"         element={<FilmDetailPage />} />
             <Route path="/series"            element={<FilmsPage type="serie" />} />
-            <Route path="/series/:id"        element={<SerieDetailPage />} />
             <Route path="/concerts"          element={<ConcertsPage />} />
             <Route path="/events"            element={<EventsPage />} />
             <Route path="/live"              element={<LiveListPage />} />
