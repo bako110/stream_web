@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../ui/Spinner';
+import toast from 'react-hot-toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -156,7 +157,9 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
         giftName:   selected.name,
         coins:      selected.coins_cost,
       });
-    } catch { /* silencieux */ }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail ?? 'Envoi du cadeau échoué. Réessayez.');
+    }
     finally { setSending(false); }
   }
 
