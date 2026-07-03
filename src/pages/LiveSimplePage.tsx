@@ -829,11 +829,15 @@ function LiveKitViewer({
 
 // ── Avatars viewers empilés ───────────────────────────────────────────────────
 
-function ViewerAvatars({ onGiftClick, fallbackButton }: {
+function ViewerAvatars({ onGiftClick, fallbackButton, clickable = true }: {
   onGiftClick: (identity: string, name: string) => void;
   /** Affiche un cercle-icône Users par défaut quand personne n'est connecté,
    * au lieu de ne rien rendre — utile dans une barre d'actions (bouton toujours visible). */
   fallbackButton?: boolean;
+  /** Désactive le clic individuel d'envoi de cadeau sur chaque avatar — utile
+   * quand ce composant sert juste d'aperçu visuel dans un bouton englobant
+   * (ex: "Participants") dont le clic doit toujours ouvrir la liste complète. */
+  clickable?: boolean;
 }) {
   const participants = useParticipants();
   const remotesAll   = participants.filter(p => !p.isLocal);
@@ -853,13 +857,19 @@ function ViewerAvatars({ onGiftClick, fallbackButton }: {
     <div className="flex items-center">
       {remotes.map((p, i) => {
         const name = p.name || p.identity || '?';
+        const commonProps = {
+          key: p.identity,
+          style: { marginLeft: i === 0 ? 0 : -8, zIndex: 10 - i, background: 'linear-gradient(135deg,#7B3FF2,#EC4899)', borderColor: 'rgba(0,0,0,0.6)' } as React.CSSProperties,
+          className: `${i >= 3 ? 'hidden sm:flex' : 'flex'} w-6 h-6 sm:w-7 sm:h-7 rounded-full items-center justify-center text-white text-[9px] sm:text-[10px] font-bold border-2 ${clickable ? 'hover:scale-110 transition-transform' : ''}`,
+        };
+        if (!clickable) {
+          return <div {...commonProps}>{name[0].toUpperCase()}</div>;
+        }
         return (
           <button
-            key={p.identity}
+            {...commonProps}
             onClick={() => onGiftClick(p.identity, name)}
             title={`Envoyer un cadeau à ${name}`}
-            style={{ marginLeft: i === 0 ? 0 : -8, zIndex: 10 - i, background: 'linear-gradient(135deg,#7B3FF2,#EC4899)', borderColor: 'rgba(0,0,0,0.6)' }}
-            className={`${i >= 3 ? 'hidden sm:flex' : 'flex'} w-6 h-6 sm:w-7 sm:h-7 rounded-full items-center justify-center text-white text-[9px] sm:text-[10px] font-bold border-2 hover:scale-110 transition-transform`}
           >
             {name[0].toUpperCase()}
           </button>
@@ -1805,10 +1815,10 @@ export default function LiveSimplePage() {
                   role="button" tabIndex={0}
                   onClick={() => { setShowParticipants(v => !v); setShowRequests(false); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
                   className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0 cursor-pointer" style={{ minWidth: 40 }}>
-                  {/* stopPropagation : les avatars individuels ouvrent l'envoi de cadeau,
-                      pas le panel Participants — sans ça le clic remonte au conteneur. */}
-                  <div className="flex items-center justify-center h-9 sm:h-12" onClick={e => e.stopPropagation()}>
-                    <ViewerAvatars fallbackButton onGiftClick={(pid, name) => setGiftTarget({ id: pid, name })} />
+                  {/* Avatars non-cliquables ici — tout clic dans cette zone ouvre le
+                      panel Participants, l'envoi de cadeau se fait depuis le panel. */}
+                  <div className="flex items-center justify-center h-9 sm:h-12">
+                    <ViewerAvatars fallbackButton clickable={false} onGiftClick={() => {}} />
                   </div>
                   <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Participants</span>
                 </div>
