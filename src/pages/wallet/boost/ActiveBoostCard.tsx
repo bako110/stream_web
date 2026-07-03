@@ -212,6 +212,9 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
   const pct        = Math.min(1, Math.max(0, Number(boost.progress ?? 0)));
   const days       = daysLeft(boost.expires_at);
   const isActive   = boost.status === 'active';
+  // Annulation possible uniquement dans les 30 premières minutes (même règle que le backend)
+  const minutesSinceActivation = (Date.now() - new Date(boost.activated_at).getTime()) / 60000;
+  const canCancel  = isActive && minutesSinceActivation <= 30;
   const impressions = Number(boost.impression_count ?? 0);
   const delivered  = impressions > 0 ? impressions : Number(boost.delivered_quantity ?? 0);
   const total      = Number(boost.target_quantity ?? 0);
@@ -320,7 +323,7 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
               style={{ color: 'var(--text-tertiary)' }}>
               {expanded ? <><ChevronUp size={12} /> Moins</> : <><ChevronDown size={12} /> Détails</>}
             </button>
-            {isActive && (
+            {canCancel && (
               <button onClick={() => setShowStop(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all"
                 style={{ background: '#EF444415', color: '#EF4444', border: '1px solid #EF444430' }}>
