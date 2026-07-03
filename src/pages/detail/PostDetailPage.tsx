@@ -272,9 +272,6 @@ export default function PostDetailPage() {
   const [menuOpen,        setMenuOpen]        = useState(false);
   const [otherPosts,      setOtherPosts]      = useState<Post[]>([]);
   const [lightbox,           setLightbox]           = useState<number | null>(null);
-  const [editingPost,        setEditingPost]        = useState(false);
-  const [editPostBody,       setEditPostBody]       = useState('');
-  const [editPostSaving,     setEditPostSaving]     = useState(false);
   const [showCommentsSheet,  setShowCommentsSheet]  = useState(false);
   const [editingCommentId,   setEditingCommentId]   = useState<string | null>(null);
   const [editCommentBody,    setEditCommentBody]    = useState('');
@@ -384,22 +381,9 @@ export default function PostDetailPage() {
   }
 
   function startEditPost() {
-    if (!post) return;
-    setEditPostBody(post.body ?? '');
-    setEditingPost(true);
+    if (!id) return;
     setMenuOpen(false);
-  }
-
-  async function saveEditPost() {
-    if (!id || !post) return;
-    const body = editPostBody.trim();
-    setEditPostSaving(true);
-    try {
-      const res = await apiClient.put<Post>(Endpoints.posts.byId(id), { body });
-      setPost(prev => prev ? { ...prev, body: res.data?.body ?? body } : prev);
-      setEditingPost(false);
-    } catch {}
-    finally { setEditPostSaving(false); }
+    navigate(`/create/post?edit=${id}`);
   }
 
   /* ── Loading / Error states ── */
@@ -526,32 +510,7 @@ export default function PostDetailPage() {
               </div>
 
               {/* Contenu texte */}
-              {editingPost ? (
-                <div className="px-5 pb-4 space-y-2">
-                  <textarea
-                    value={editPostBody}
-                    onChange={e => setEditPostBody(e.target.value)}
-                    rows={4}
-                    autoFocus
-                    className="w-full rounded-xl px-3.5 py-3 text-sm outline-none resize-none"
-                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                  />
-                  <div className="flex items-center gap-2 justify-end">
-                    <button onClick={() => setEditingPost(false)}
-                      disabled={editPostSaving}
-                      className="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                      style={{ color: 'var(--text-secondary)' }}>
-                      Annuler
-                    </button>
-                    <button onClick={saveEditPost}
-                      disabled={editPostSaving || !editPostBody.trim()}
-                      className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50"
-                      style={{ background: 'var(--primary)' }}>
-                      {editPostSaving ? 'Enregistrement…' : 'Enregistrer'}
-                    </button>
-                  </div>
-                </div>
-              ) : post.body && (
+              {post.body && (
                 <div className="px-5 pb-4">
                   <RichText text={post.body}
                     style={{ color: 'var(--text-primary)', lineHeight: 1.7, fontSize: 15 }} />
