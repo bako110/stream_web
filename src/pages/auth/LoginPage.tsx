@@ -382,12 +382,6 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          <p className="text-center mt-4 text-sm">
-            <Link to="/explore/films" className="hover:underline" style={{ color: 'var(--text-tertiary)' }}>
-              ← Continuer sans compte
-            </Link>
-          </p>
-
           <p className="text-center mt-5 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
             En vous connectant, vous acceptez nos{' '}
             <Link to="/cgu" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
