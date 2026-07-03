@@ -445,6 +445,52 @@ function OnStagePanel({
   );
 }
 
+// ── Panel liste des participants ──────────────────────────────────────────────
+
+function ParticipantsPanel({
+  onGiftClick, onClose,
+}: {
+  onGiftClick: (identity: string, name: string) => void;
+  onClose: () => void;
+}) {
+  const participants = useParticipants();
+  return (
+    <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 w-72"
+      style={{ background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(16px)', borderRadius: '1rem', border: '1px solid rgba(123,63,242,0.3)' }}>
+      <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: 'rgba(123,63,242,0.2)' }}>
+        <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: '#a78bfa' }}>
+          <Users size={12} /> Participants ({participants.length})
+        </span>
+        <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <X size={13} />
+        </button>
+      </div>
+      <div className="p-2 space-y-1.5 max-h-72 overflow-y-auto">
+        {participants.map(p => {
+          const name = p.isLocal ? 'Toi' : (p.name || p.identity || 'Participant');
+          return (
+            <div key={p.identity} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
+              style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#EC4899)' }}>
+                {name[0]?.toUpperCase() ?? '?'}
+              </div>
+              <span className="text-xs text-white truncate flex-1">{name}</span>
+              {!p.isLocal && (
+                <button onClick={() => onGiftClick(p.identity, name)}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold shrink-0"
+                  style={{ color: '#fbbf24', background: 'rgba(251,191,36,0.15)' }}>
+                  <Gift size={10} /> Cadeau
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Panel cadeaux reçus (host) ────────────────────────────────────────────────
 
 function GiftHistoryPanel({
@@ -1006,9 +1052,6 @@ function MediaControls({
             label={micOn ? 'Micro' : 'Muet'}
             onClick={toggleGuestMic} active={micOn} color="#10B981" />
           <SideBtn
-            icon={<Gift size={19} />} label="Cadeau"
-            onClick={onGiftToHost} color="#fbbf24" active />
-          <SideBtn
             icon={<ArrowDown size={19} />} label="Descendre"
             onClick={onLeaveStage} danger />
           <SideBtn
@@ -1020,9 +1063,6 @@ function MediaControls({
       {/* VIEWER normal */}
       {!isHost && !isOnStage && (
         <>
-          <SideBtn
-            icon={<Gift size={19} />} label="Cadeau"
-            onClick={onGiftToHost} color="#fbbf24" active />
           <SideBtn
             icon={<Hand size={19} />}
             label={handRaised ? 'En attente...' : 'Lever main'}
@@ -1095,11 +1135,12 @@ export default function LiveSimplePage() {
   const [isOnStage,  setIsOnStage]  = useState(false);
 
   // Panels
-  const [showRequests,   setShowRequests]   = useState(false);
-  const [showOnStage,    setShowOnStage]    = useState(false);
-  const [showGifts,      setShowGifts]      = useState(false);
-  const [showSettings,   setShowSettings]   = useState(false);
-  const [showDesktopMore,setShowDesktopMore]= useState(false);
+  const [showRequests,     setShowRequests]     = useState(false);
+  const [showOnStage,      setShowOnStage]      = useState(false);
+  const [showGifts,        setShowGifts]        = useState(false);
+  const [showSettings,     setShowSettings]     = useState(false);
+  const [showDesktopMore,  setShowDesktopMore]  = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
 
   // Données live localement mutable (monétisation)
   const [liveOverride, setLiveOverride] = useState<Partial<LiveStream>>({});
@@ -1118,6 +1159,15 @@ export default function LiveSimplePage() {
   const live     = liveApi.data ? { ...liveApi.data, ...liveOverride } as LiveStream : null;
   const isHost   = !!(live && user && live.user_id === user.id);
   const isActive = live?.status === 'active';
+
+  // Charge le vrai statut d'abonnement au host — sinon le bouton "Suivre"
+  // repart toujours à zéro visuellement même si on le suit déjà.
+  useEffect(() => {
+    if (!live?.user?.id || isHost) return;
+    apiClient.get<{ is_followed?: boolean }>(Endpoints.users.publicProfile(live.user.id))
+      .then(r => setFollowing(!!r.data?.is_followed))
+      .catch(() => {});
+  }, [live?.user?.id, isHost]);
 
   // Accès payant — vérifié avant de charger le token LiveKit (viewers uniquement,
   // le host a toujours accès à son propre live).
@@ -1252,10 +1302,13 @@ export default function LiveSimplePage() {
 
   const toggleFollow = useCallback(async () => {
     if (!live?.user?.id) return;
-    setFollowing(v => !v);
-    try { await apiClient.post(Endpoints.users.follow(live.user.id)); }
-    catch { setFollowing(v => !v); }
-  }, [live?.user?.id]);
+    const wasFollowing = following;
+    setFollowing(!wasFollowing);
+    try {
+      if (wasFollowing) await apiClient.delete(Endpoints.users.follow(live.user.id));
+      else await apiClient.post(Endpoints.users.follow(live.user.id));
+    } catch { setFollowing(wasFollowing); }
+  }, [live?.user?.id, following]);
 
   const doRaiseHand = useCallback(async () => {
     if (!id || !user) return;
@@ -1337,6 +1390,14 @@ export default function LiveSimplePage() {
 
           {/* Header desktop — au-dessus de la carte vidéo, sur fond transparent */}
           <div className="hidden lg:flex items-start gap-3 mb-3">
+            <button onClick={handleLeave}
+              className="shrink-0 p-2 rounded-xl transition-colors mt-1"
+              style={{ color: 'rgba(255,255,255,0.6)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
+              title="Quitter le live">
+              <ChevronLeft size={22} />
+            </button>
             <Avatar src={live.user?.avatar_url} name={live.user?.display_name ?? live.user?.username} size="lg" className="shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -1627,6 +1688,12 @@ export default function LiveSimplePage() {
                 {showGifts && giftHistory.length > 0 && (
                   <GiftHistoryPanel history={giftHistory} onClose={() => setShowGifts(false)} />
                 )}
+                {showParticipants && (
+                  <ParticipantsPanel
+                    onGiftClick={(pid, name) => { setGiftTarget({ id: pid, name }); setShowParticipants(false); }}
+                    onClose={() => setShowParticipants(false)}
+                  />
+                )}
 
                 <FloatingEmojiOverlay floats={emojiFloats} />
 
@@ -1646,27 +1713,25 @@ export default function LiveSimplePage() {
                   ligne, même gabarit de bouton (cercle w-9/sm:w-12 + label en dessous). */}
               <div className="shrink-0 flex items-center gap-2 sm:gap-4 px-2.5 sm:px-4 py-1.5 border-b"
                 style={{ background: 'rgba(0,0,0,0.9)', borderColor: 'rgba(255,255,255,0.08)' }}>
-                {isHost && (
-                  <MediaControls
-                    isHost={isHost} liveId={id!}
-                    onStop={handleStop} stopping={stopping}
-                    onLeave={handleLeave}
-                    onHandRaise={handleHandRaise} handRaised={handRaised}
-                    onToggleRequests={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
-                    pendingCount={handRequests.length}
-                    onToggleOnStage={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); setShowSettings(false); }}
-                    onStageCount={stageIdentities.size}
-                    onToggleGifts={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); setShowSettings(false); }}
-                    giftsCount={giftHistory.length}
-                    onGiftToHost={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Host' })}
-                    isOnStage={isOnStage}
-                    onLeaveStage={async () => {
-                      try { await apiClient.post(Endpoints.lives.demote(id!, user?.id ?? '')); } catch {}
-                      setIsOnStage(false);
-                    }}
-                    onToggleSettings={() => setShowSettings(v => !v)}
-                  />
-                )}
+                <MediaControls
+                  isHost={isHost} liveId={id!}
+                  onStop={handleStop} stopping={stopping}
+                  onLeave={handleLeave}
+                  onHandRaise={handleHandRaise} handRaised={handRaised}
+                  onToggleRequests={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
+                  pendingCount={handRequests.length}
+                  onToggleOnStage={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); setShowSettings(false); }}
+                  onStageCount={stageIdentities.size}
+                  onToggleGifts={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); setShowSettings(false); }}
+                  giftsCount={giftHistory.length}
+                  onGiftToHost={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Host' })}
+                  isOnStage={isOnStage}
+                  onLeaveStage={async () => {
+                    try { await apiClient.post(Endpoints.lives.demote(id!, user?.id ?? '')); } catch {}
+                    setIsOnStage(false);
+                  }}
+                  onToggleSettings={() => setShowSettings(v => !v)}
+                />
                 <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
                 <button
                   onClick={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
@@ -1677,12 +1742,14 @@ export default function LiveSimplePage() {
                   </div>
                   <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Cadeau</span>
                 </button>
-                <div className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
+                <button
+                  onClick={() => { setShowParticipants(v => !v); setShowRequests(false); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
+                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
                   <div className="flex items-center justify-center h-9 sm:h-12">
                     <ViewerAvatars fallbackButton onGiftClick={(pid, name) => setGiftTarget({ id: pid, name })} />
                   </div>
                   <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Participants</span>
-                </div>
+                </button>
                 <button
                   onClick={() => { navigator.clipboard?.writeText(window.location.href); }}
                   className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
