@@ -1282,16 +1282,22 @@ export default function LiveSimplePage() {
   const handleWsEvent = useCallback((d: any) => {
     switch (d.type) {
       case 'gift_received': {
+        const receiverId = d.gift?.receiver_id ?? null;
+        // Le cadeau peut être destiné à n'importe qui dans le live (host ou
+        // guest sur scène) — on précise le destinataire dès que ce n'est pas
+        // le host, sinon le toast/ticker laisse croire qu'il l'a reçu lui-même.
+        const isForHost = !!receiverId && receiverId === live?.user?.id;
         const n: GiftNotif = {
           id:         d.gift?.id ?? String(Date.now()),
           senderName: d.gift?.sender?.display_name ?? d.gift?.sender?.username ?? 'Quelqu\'un',
           emoji:      d.gift?.gift_type?.emoji ?? d.gift?.emoji ?? '',
           giftName:   d.gift?.gift_type?.name  ?? d.gift?.name  ?? 'Cadeau',
           coins:      d.gift?.coins_spent ?? d.gift?.coins_cost ?? 0,
+          receiverName: isForHost ? undefined : (participantNamesRef.current.get(receiverId) ?? undefined),
         };
         setGiftNotifs(prev => [...prev.slice(-9), n]);
         setGiftHistory(prev => [...prev, { ...n }]);
-        if (isHost) setActiveToast(n);
+        if (isHost && isForHost) setActiveToast(n);
         setTimeout(() => setGiftNotifs(prev => prev.filter(x => x.id !== n.id)), 4000);
         break;
       }
@@ -1363,7 +1369,7 @@ export default function LiveSimplePage() {
         break;
       }
     }
-  }, [isHost, user, navigate]);
+  }, [isHost, user, navigate, live?.user?.id]);
 
   const handleStop = useCallback(async () => {
     if (!id) return;

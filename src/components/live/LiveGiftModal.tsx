@@ -21,6 +21,9 @@ export interface GiftNotif {
   emoji: string;
   giftName: string;
   coins: number;
+  /** Nom du destinataire réel — affiché seulement quand ce n'est pas l'hôte,
+   * pour ne pas laisser croire que le cadeau lui était destiné. */
+  receiverName?: string;
 }
 
 // ── FloatingGift — emoji qui monte depuis le bas ──────────────────────────────
@@ -58,6 +61,12 @@ export function GiftTicker({ notifs }: { notifs: GiftNotif[] }) {
           <span style={{ color: '#FDE68A' }}>{n.senderName}</span>
           <span className="opacity-80">a envoyé</span>
           <span>{n.giftName}</span>
+          {n.receiverName && (
+            <>
+              <span className="opacity-80">à</span>
+              <span style={{ color: '#FDE68A' }}>{n.receiverName}</span>
+            </>
+          )}
           <span className="flex items-center gap-0.5" style={{ color: '#FDE68A' }}>
             <Coins size={10} />{n.coins}
           </span>
@@ -89,7 +98,10 @@ export function GiftToast({ notif, onDone }: { notif: GiftNotif; onDone: () => v
         <Gift size={22} style={{ color: '#fbbf24' }} />
       </div>
       <div>
-        <p className="text-xs font-bold" style={{ color: '#FDE68A' }}>{notif.senderName}</p>
+        <p className="text-xs font-bold" style={{ color: '#FDE68A' }}>
+          {notif.senderName}
+          {notif.receiverName && <span className="font-normal opacity-80"> → {notif.receiverName}</span>}
+        </p>
         <p className="text-sm font-bold">{notif.giftName}</p>
         <p className="text-xs flex items-center gap-1 opacity-80">
           <Coins size={10} /> {notif.coins} coins
