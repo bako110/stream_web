@@ -26,7 +26,7 @@ import { useApi } from '../hooks/useApi';
 import { useWs } from '../context/WebSocketContext';
 import { Spinner } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
-import { WS_BASE_URL } from '../utils/constants';
+import { WS_BASE_URL, API_BASE_URL } from '../utils/constants';
 import { useAuthStore } from '../store/authStore';
 import {
   LiveLikeButton,
@@ -933,6 +933,23 @@ function MediaControls({
     return () => { cancelled = true; };
   }, [localParticipant, isHost]);
 
+  // Active cam+mic automatiquement pour le guest dès qu'il monte sur scène —
+  // sinon il apparaît sur scène sans image/son tant qu'il n'a pas cliqué
+  // manuellement sur Cam/Micro, ce qui donnait l'impression qu'il ne montait pas.
+  useEffect(() => {
+    if (isHost || !isOnStage) return;
+    let cancelled = false;
+    async function enableGuestMedia() {
+      try {
+        await localParticipant.setCameraEnabled(true);
+        if (!cancelled) setCamOn(true);
+        await localParticipant.setMicrophoneEnabled(true);
+      } catch { /* permission refusée */ }
+    }
+    enableGuestMedia();
+    return () => { cancelled = true; };
+  }, [localParticipant, isHost, isOnStage]);
+
   async function toggleCam() {
     const next = !camOn;
     await localParticipant.setCameraEnabled(next);
@@ -1169,6 +1186,30 @@ export default function LiveSimplePage() {
       .catch(() => {});
   }, [live?.user?.id, isHost]);
 
+  // Filet de sécurité : si le host ferme l'onglet / rafraîchit / perd la connexion
+  // sans passer par le bouton Quitter/Terminer, on tente quand même d'arrêter le
+  // live côté serveur pour ne jamais le laisser actif sans personne pour le stopper.
+  // keepalive:true permet à la requête de survivre à la fermeture de la page
+  // (contrairement à sendBeacon, qui ne peut pas porter le header Authorization).
+  // stopRequestedRef évite un appel redondant quand l'arrêt volontaire (bouton
+  // Terminer/Quitter) a déjà été déclenché juste avant que la page se décharge.
+  const stopRequestedRef = useRef(false);
+  useEffect(() => {
+    if (!isHost || !isActive || !id || !accessToken) return;
+    const stopBeacon = () => {
+      if (stopRequestedRef.current) return;
+      try {
+        fetch(`${API_BASE_URL}/api/v1/lives/${id}/stop`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}` },
+          keepalive: true,
+        });
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('pagehide', stopBeacon);
+    return () => window.removeEventListener('pagehide', stopBeacon);
+  }, [isHost, isActive, id, accessToken]);
+
   // Accès payant — vérifié avant de charger le token LiveKit (viewers uniquement,
   // le host a toujours accès à son propre live).
   const [accessGranted,  setAccessGranted]  = useState(false);
@@ -1242,6 +1283,15 @@ export default function LiveSimplePage() {
         if (isHost) { setShowRequests(true); setShowOnStage(false); setShowGifts(false); }
         break;
       }
+      case 'live_hand_dismissed': {
+        // Le host a rejeté la demande — sans ça le bouton "Lever main" restait
+        // bloqué en "En attente..." indéfiniment côté viewer concerné.
+        const identity = d.identity ?? d.user?.identity;
+        if (!identity) break;
+        setHandRequests(prev => prev.filter(r => r.identity !== identity));
+        if (user && identity === user.id) setHandRaised(false);
+        break;
+      }
       case 'live_guest_invited': {
         const identity = d.identity ?? d.user?.identity;
         if (!identity) break;
@@ -1284,21 +1334,29 @@ export default function LiveSimplePage() {
     if (!id) return;
     const ok = await confirm({ title: 'Terminer le live ?', message: 'Tous les viewers seront déconnectés.', danger: true, confirmLabel: 'Terminer' });
     if (!ok) return;
+    stopRequestedRef.current = true;
     setStopping(true);
     try {
       await apiClient.post(Endpoints.lives.stop(id));
       liveApi.refetch();
-    } catch { /* error */ }
+    } catch { stopRequestedRef.current = false; }
     finally { setStopping(false); }
   }, [id, liveApi, confirm]);
 
   const handleLeave = useCallback(async () => {
+    // Le host qui quitte arrête le live pour tout le monde (même confirmation
+    // que le bouton Terminer) — un live ne doit jamais rester actif sans host.
+    if (isHost && isActive) {
+      await handleStop();
+      navigate(-1);
+      return;
+    }
     if (isActive) {
       const ok = await confirm({ title: 'Quitter le live ?', danger: false, confirmLabel: 'Quitter' });
       if (!ok) return;
     }
     navigate(-1);
-  }, [navigate, isActive, confirm]);
+  }, [navigate, isActive, isHost, handleStop, confirm]);
 
   const toggleFollow = useCallback(async () => {
     if (!live?.user?.id) return;
@@ -1351,7 +1409,8 @@ export default function LiveSimplePage() {
 
   const handleDismiss = useCallback((identity: string) => {
     setHandRequests(prev => prev.filter(r => r.identity !== identity));
-  }, []);
+    if (id) apiClient.post(Endpoints.lives.dismissHand(id, identity)).catch(() => {});
+  }, [id]);
 
   if (liveApi.loading) return <PageLoader />;
   if (!live) return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Live introuvable.</div>;
@@ -1742,14 +1801,17 @@ export default function LiveSimplePage() {
                   </div>
                   <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Cadeau</span>
                 </button>
-                <button
+                <div
+                  role="button" tabIndex={0}
                   onClick={() => { setShowParticipants(v => !v); setShowRequests(false); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
-                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
-                  <div className="flex items-center justify-center h-9 sm:h-12">
+                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0 cursor-pointer" style={{ minWidth: 40 }}>
+                  {/* stopPropagation : les avatars individuels ouvrent l'envoi de cadeau,
+                      pas le panel Participants — sans ça le clic remonte au conteneur. */}
+                  <div className="flex items-center justify-center h-9 sm:h-12" onClick={e => e.stopPropagation()}>
                     <ViewerAvatars fallbackButton onGiftClick={(pid, name) => setGiftTarget({ id: pid, name })} />
                   </div>
                   <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Participants</span>
-                </button>
+                </div>
                 <button
                   onClick={() => { navigator.clipboard?.writeText(window.location.href); }}
                   className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
