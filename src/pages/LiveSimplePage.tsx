@@ -7,7 +7,7 @@ import {
   Radio, Eye, Send, X, StopCircle, ChevronLeft,
   Mic, MicOff, VideoIcon, VideoOff, Gift, Hand, FlipHorizontal,
   ShieldOff, Ban, Lock, Users, Trash2, Slash, RefreshCw,
-  Smile, ArrowDown, UserCheck, Settings, ThumbsUp, ThumbsDown, MoreVertical,
+  Smile, ArrowDown, UserCheck, UserPlus, Settings, ThumbsUp, ThumbsDown, MoreVertical,
 } from 'lucide-react';
 import {
   LiveKitRoom,
@@ -226,106 +226,124 @@ const LiveChat = forwardRef<LiveChatHandle, {
     addSysMsg(`${name} a été exclu du live`);
   }
 
+  async function sendQuick(text: string) {
+    if (sending) return;
+    setMessages(prev => [...prev.slice(-149), {
+      id: `local-${Date.now()}`, user: user?.display_name ?? user?.username ?? 'Moi',
+      userId: user?.id, avatar: user?.avatar_url ?? null, text,
+    }]);
+    setSending(true);
+    try { await apiClient.post(Endpoints.social.comments, { body: text, live_id: liveId }); }
+    catch { /* silencieux */ }
+    finally { setSending(false); }
+  }
+
+  const QUICK_REACTIONS = [
+    { label: 'Salut',    emoji: '👋' },
+    { label: "J'adore",  emoji: '😍' },
+    { label: 'Haha',     emoji: '😂' },
+    { label: 'Wow',      emoji: '😮' },
+    { label: 'Triste',   emoji: '😢' },
+  ];
+
   const inputBar = (
-    <div className="relative flex gap-2 pointer-events-auto">
-      <input
-        className="flex-1 min-w-0 text-white text-sm rounded-full px-3.5 py-2 focus:outline-none focus:ring-1"
-        style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', '--tw-ring-color': '#7B3FF2' } as any}
-        placeholder="Commenter..."
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') send(); }}
-      />
-      {input.trim() && (
-        <button onClick={send} disabled={sending}
-          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+    <div className="flex flex-col gap-2 pointer-events-auto">
+      {/* Réactions rapides — un tap envoie directement le commentaire */}
+      <div className="flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        {QUICK_REACTIONS.map(r => (
+          <button key={r.label} onClick={() => sendQuick(`${r.emoji} ${r.label}`)}
+            className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-transform active:scale-95"
+            style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <span>{r.emoji}</span> {r.label}
+          </button>
+        ))}
+      </div>
+      <div className="relative flex gap-2">
+        <input
+          className="flex-1 min-w-0 text-white text-sm rounded-full px-3.5 py-2 focus:outline-none focus:ring-1"
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', '--tw-ring-color': '#7B3FF2' } as any}
+          placeholder="Écris un commentaire..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') send(); }}
+        />
+        <button onClick={send} disabled={sending || !input.trim()}
+          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
           style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
           <Send size={14} className="text-white" />
         </button>
-      )}
+      </div>
     </div>
   );
 
-  // Overlay flottant façon TikTok, superposé bas-gauche de la vidéo, sur tous
-  // les écrans (desktop et mobile) — décalé au-dessus de la barre basse pour
-  // ne jamais la masquer ni intercepter ses clics, et pour laisser le live
-  // visible en permanence pendant qu'on lit/écrit des commentaires.
-  // Sur mobile, la barre de saisie est téléportée (portail) sur la même ligne
-  // que les boutons Cadeau/Lever main/Quitter — seuls les messages défilent ici.
+  // Liste de commentaires en flux normal (fond opaque), plus un overlay flottant
+  // sur la vidéo — chaque message est une ligne avatar + nom + texte, scrollable
+  // indépendamment. La saisie est fournie par le composant parent (LiveCommentBar)
+  // et rendue ici en portail pour rester dans le même flux WS/état que la liste.
   return (
-    <div className="absolute left-0 z-30 flex flex-col justify-end pointer-events-none bottom-[84px] sm:bottom-[168px]"
-      style={{ width: 'min(78%, 340px)', maxHeight: '32%' }}>
-      {/* Dégradé de fondu — assure la lisibilité même sur fond clair (avatar, halo) */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 65%, transparent 100%)' }} />
-
-      <div className="relative overflow-y-auto px-3 pt-8 pb-2 flex flex-col gap-1.5"
-        style={{ maxHeight: '100%', scrollbarWidth: 'none', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%)' }}>
-        {messages.map(m => {
-          if (m.isSys) return (
-            <div key={m.id} className="text-[10px] py-0.5 px-2 rounded-full w-fit pointer-events-auto"
-              style={{ color: 'rgba(255,255,255,0.75)', background: 'rgba(0,0,0,0.55)', animation: 'chatMsgIn 0.4s ease-out both' }}>{m.text}</div>
-          );
-          if (m.isGift) return (
-            <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs w-fit pointer-events-auto"
-              style={{ background: 'rgba(80,60,0,0.85)', border: '1px solid rgba(255,215,0,0.5)', boxShadow: '0 1px 6px rgba(0,0,0,0.5)', animation: 'chatMsgIn 0.4s ease-out both' }}>
-              <Gift size={12} style={{ color: '#fbbf24', flexShrink: 0 }} />
-              <span className="font-medium" style={{ color: '#fde68a' }}>{m.text}</span>
-            </div>
-          );
-          const isMe   = m.userId && user && m.userId === user.id;
-          const canMod = isHost && m.userId && !isMe;
-          const isMsgHost = m.userId && hostId && m.userId === hostId;
-          return (
-            <div key={m.id}
-              className="group flex items-center gap-1.5 px-2.5 py-1 rounded-2xl w-fit max-w-full pointer-events-auto"
-              style={{
-                background: isMsgHost ? 'rgba(90,40,180,0.85)' : 'rgba(0,0,0,0.72)',
-                border: isMsgHost ? '1px solid rgba(123,63,242,0.6)' : '1px solid rgba(255,255,255,0.06)',
-                boxShadow: '0 1px 6px rgba(0,0,0,0.5)',
-                animation: 'chatMsgIn 0.4s ease-out both',
-              }}>
-              <Avatar src={m.avatar} name={m.user} size="xs" className="shrink-0" />
-              <div className="min-w-0">
-                <span className="text-xs font-bold" style={{ color: isMsgHost ? '#c4b5fd' : '#7B3FF2' }}>{m.user} </span>
-                <span className="text-xs break-words" style={{ color: 'rgba(255,255,255,0.95)' }}>{m.text}</span>
+    <div className="px-3 py-2 flex flex-col gap-2"
+      style={{ background: 'rgba(15,15,20,0.97)', flex: '1 1 0%', minHeight: 0, overflowY: 'auto' }}>
+      {messages.length === 0 && (
+        <p className="text-xs text-center py-4" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          Aucun commentaire pour le moment
+        </p>
+      )}
+      {messages.map(m => {
+        if (m.isSys) return (
+          <div key={m.id} className="text-[11px] py-1 px-2.5 rounded-full w-fit"
+            style={{ color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.06)' }}>{m.text}</div>
+        );
+        if (m.isGift) return (
+          <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs w-fit"
+            style={{ background: 'rgba(80,60,0,0.35)', border: '1px solid rgba(255,215,0,0.3)' }}>
+            <Gift size={13} style={{ color: '#fbbf24', flexShrink: 0 }} />
+            <span className="font-medium" style={{ color: '#fde68a' }}>{m.text}</span>
+          </div>
+        );
+        const isMe   = m.userId && user && m.userId === user.id;
+        const canMod = isHost && m.userId && !isMe;
+        const isMsgHost = m.userId && hostId && m.userId === hostId;
+        return (
+          <div key={m.id} className="group flex items-start gap-2">
+            <Avatar src={m.avatar} name={m.user} size="xs" className="shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold" style={{ color: isMsgHost ? '#c4b5fd' : '#a78bfa' }}>
+                  {m.user}
+                </span>
+                {isMsgHost && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                    style={{ background: '#7B3FF2' }}>Hôte</span>
+                )}
               </div>
-              {!m.id.startsWith('local-') && (
-                <div className="flex items-center gap-1 shrink-0 ml-0.5">
-                  <button onClick={() => toggleCommentReaction(m.id, 'like')}
-                    className="flex items-center gap-0.5 transition-transform active:scale-90"
-                    style={{ color: m.myReaction === 'like' ? '#7B3FF2' : 'rgba(255,255,255,0.45)' }}>
-                    <ThumbsUp size={11} fill={m.myReaction === 'like' ? '#7B3FF2' : 'none'} />
-                    {!!m.likeCount && <span className="text-[10px] font-semibold">{m.likeCount}</span>}
-                  </button>
-                  <button onClick={() => toggleCommentReaction(m.id, 'dislike')}
-                    className="flex items-center gap-0.5 transition-transform active:scale-90"
-                    style={{ color: m.myReaction === 'dislike' ? '#EF4444' : 'rgba(255,255,255,0.45)' }}>
-                    <ThumbsDown size={11} fill={m.myReaction === 'dislike' ? '#EF4444' : 'none'} />
-                    {!!m.dislikeCount && <span className="text-[10px] font-semibold">{m.dislikeCount}</span>}
-                  </button>
-                </div>
-              )}
-              {canMod && (
-                <div className="hidden group-hover:flex gap-1.5 shrink-0 ml-1">
-                  <button onClick={() => deleteMsg(m.id)} title="Supprimer" style={{ color: '#f87171' }}>
-                    <Trash2 size={11} />
-                  </button>
-                  <button onClick={() => banFromMsg(m.userId!, m.user)} title="Exclure" style={{ color: '#f87171' }}>
-                    <Slash size={11} />
-                  </button>
-                </div>
-              )}
+              <span className="text-sm break-words" style={{ color: 'rgba(255,255,255,0.92)' }}>{m.text}</span>
             </div>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
+            {!m.id.startsWith('local-') && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button onClick={() => toggleCommentReaction(m.id, 'like')}
+                  className="flex items-center gap-0.5 transition-transform active:scale-90"
+                  style={{ color: m.myReaction === 'like' ? '#7B3FF2' : 'rgba(255,255,255,0.4)' }}>
+                  <ThumbsUp size={12} fill={m.myReaction === 'like' ? '#7B3FF2' : 'none'} />
+                  {!!m.likeCount && <span className="text-[10px] font-semibold">{m.likeCount}</span>}
+                </button>
+                {canMod && (
+                  <div className="hidden group-hover:flex gap-1.5 shrink-0">
+                    <button onClick={() => deleteMsg(m.id)} title="Supprimer" style={{ color: '#f87171' }}>
+                      <Trash2 size={12} />
+                    </button>
+                    <button onClick={() => banFromMsg(m.userId!, m.user)} title="Exclure" style={{ color: '#f87171' }}>
+                      <Slash size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div ref={bottomRef} />
 
-      {/* Desktop : barre de saisie inline en bas de l'overlay */}
-      <div className="hidden sm:block px-3 pb-3 pt-1">{inputBar}</div>
-
-      {/* Mobile : barre de saisie téléportée sur la ligne des boutons Cadeau/Lever main/Quitter */}
+      {/* Saisie téléportée depuis le composant parent (LiveCommentBar, tout en bas de page) */}
       {mobileInputTarget && createPortal(inputBar, mobileInputTarget)}
 
       {ConfirmChatDialog}
@@ -533,6 +551,26 @@ function useActiveSpeakersSet(): Set<string> {
   return ids;
 }
 
+// Source de vérité unique pour l'état micro local — évite un state dupliqué
+// entre l'avatar (LiveKitViewer) et la barre de contrôles (MediaControls).
+function useLocalMicEnabled(): boolean {
+  const { localParticipant } = useLocalParticipant();
+  const [enabled, setEnabled] = useState(() => localParticipant.isMicrophoneEnabled);
+  useEffect(() => {
+    const sync = () => setEnabled(localParticipant.isMicrophoneEnabled);
+    sync();
+    localParticipant.on('trackMuted', sync);
+    localParticipant.on('trackUnmuted', sync);
+    localParticipant.on('localTrackPublished', sync);
+    return () => {
+      localParticipant.off('trackMuted', sync);
+      localParticipant.off('trackUnmuted', sync);
+      localParticipant.off('localTrackPublished', sync);
+    };
+  }, [localParticipant]);
+  return enabled;
+}
+
 function LiveKitViewer({
   isHost, liveId, stageIdentities, participantNames, onGiftClick, streamerAvatarUrl, streamerName,
 }: {
@@ -545,8 +583,31 @@ function LiveKitViewer({
   const tracks       = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const participants = useParticipants();
   const speakingIds  = useActiveSpeakersSet();
+  const { localParticipant } = useLocalParticipant();
+  const micOn = useLocalMicEnabled();
   const [spotlightId,   setSpotlightId]   = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  const [showMicHint,   setShowMicHint]   = useState(false);
+  const micHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (micHintTimer.current) clearTimeout(micHintTimer.current); }, []);
+
+  function revealMicHint() {
+    if (!isHost) return;
+    setShowMicHint(true);
+    if (micHintTimer.current) clearTimeout(micHintTimer.current);
+    micHintTimer.current = setTimeout(() => setShowMicHint(false), 2500);
+  }
+
+  async function activateCamera() {
+    if (!isHost) return;
+    try { await localParticipant.setCameraEnabled(true); } catch { /* permission refusée */ }
+  }
+
+  async function toggleMicFromAvatar(e: React.MouseEvent) {
+    e.stopPropagation();
+    try { await localParticipant.setMicrophoneEnabled(!micOn); } catch { /* permission refusée */ }
+  }
 
   useEffect(() => {
     if (!contextMenuId) return;
@@ -574,14 +635,41 @@ function LiveKitViewer({
 
   if (activeTracks.length === 0) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3" style={{ paddingBottom: '28%' }}>
-        <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center"
-          style={{ boxShadow: '0 0 0 3px rgba(123,63,242,0.5), 0 0 30px rgba(123,63,242,0.35)' }}>
-          <Avatar src={streamerAvatarUrl} name={streamerName} size="xl" className="w-full h-full animate-pulse" />
+      <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
+        <div className="relative"
+          onMouseEnter={revealMicHint}
+          onTouchStart={revealMicHint}
+        >
+          <button
+            onClick={activateCamera}
+            disabled={!isHost}
+            className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center transition-transform"
+            style={{
+              boxShadow: '0 0 0 3px rgba(123,63,242,0.5), 0 0 30px rgba(123,63,242,0.35)',
+              cursor: isHost ? 'pointer' : 'default',
+            }}
+            title={isHost ? 'Activer ma caméra' : undefined}
+          >
+            <Avatar src={streamerAvatarUrl} name={streamerName} size="xl" className="w-full h-full animate-pulse" />
+          </button>
+          {isHost && showMicHint && (
+            <button
+              onClick={toggleMicFromAvatar}
+              className="absolute bottom-0 right-0 w-9 h-9 rounded-full flex items-center justify-center transition-all"
+              style={{
+                background: micOn ? 'rgba(16,185,129,0.9)' : 'rgba(239,68,68,0.9)',
+                border: '2px solid rgba(0,0,0,0.6)',
+                animation: 'fadeInScale 0.2s ease-out',
+              }}
+              title={micOn ? 'Couper le micro' : 'Activer le micro'}
+            >
+              {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#fff" />}
+            </button>
+          )}
         </div>
         <p className="text-sm font-semibold">{streamerName}</p>
         <p className="text-sm opacity-60">
-          {isHost ? 'Active ta caméra pour démarrer' : 'En attente de la diffusion...'}
+          {isHost ? 'Clique sur ta photo pour activer ta caméra' : 'En attente de la diffusion...'}
         </p>
         <p className="text-xs opacity-40">{participants.length} connecté(s)</p>
       </div>
@@ -591,18 +679,19 @@ function LiveKitViewer({
   // ── Mode grille (2+ participants) — mosaïque égale façon TikTok multi-guest ──
   if (isGridMode) {
     // Disposition des cases : 2 → colonne de 2 (empilées), 3 → 1 en haut + 2 en bas,
-    // 4 → 2×2, 5-6 → 2 colonnes × 3 lignes. Toujours des cases de taille égale.
+    // 4 → 2×2, 5+ → 2 colonnes, hauteur de case fixe et scroll vertical si ça déborde.
     const n = activeTracks.length;
     const gridClass =
       n === 2 ? 'grid-cols-1 grid-rows-2' :
       n === 3 ? 'grid-cols-2 grid-rows-2' :
       n === 4 ? 'grid-cols-2 grid-rows-2' :
-      'grid-cols-2';
+      'grid-cols-2 auto-rows-[160px]';
+    const scrollable = n > 4;
 
     return (
       <div className="relative w-full h-full bg-black overflow-hidden">
         <RoomAudioRenderer />
-        <div className={`grid ${gridClass} w-full h-full gap-0.5`}>
+        <div className={`grid ${gridClass} w-full gap-1.5 p-1.5 ${scrollable ? 'h-full overflow-y-auto' : 'h-full'}`}>
           {activeTracks.map((t, i) => {
             const identity = t.participant.identity;
             const name     = t.participant.isLocal ? 'Toi' : (participantNames.get(identity) ?? t.participant.name ?? identity);
@@ -614,8 +703,8 @@ function LiveKitViewer({
             return (
               <div
                 key={identity}
-                className={`relative overflow-hidden ${spanFull ? 'col-span-2' : ''}`}
-                style={{ border: `1px solid ${speaking ? '#22c55e' : 'rgba(255,255,255,0.12)'}` }}
+                className={`relative overflow-hidden rounded-xl ${spanFull ? 'col-span-2' : ''}`}
+                style={{ border: `1.5px solid ${speaking ? '#22c55e' : 'rgba(255,255,255,0.12)'}` }}
                 onClick={() => { if (showMenu) setContextMenuId(null); }}
               >
                 <VideoTrack trackRef={t} className="w-full h-full object-cover" />
@@ -694,13 +783,26 @@ function LiveKitViewer({
 
 // ── Avatars viewers empilés ───────────────────────────────────────────────────
 
-function ViewerAvatars({ onGiftClick }: { onGiftClick: (identity: string, name: string) => void }) {
+function ViewerAvatars({ onGiftClick, fallbackButton }: {
+  onGiftClick: (identity: string, name: string) => void;
+  /** Affiche un cercle-icône Users par défaut quand personne n'est connecté,
+   * au lieu de ne rien rendre — utile dans une barre d'actions (bouton toujours visible). */
+  fallbackButton?: boolean;
+}) {
   const participants = useParticipants();
   const remotesAll   = participants.filter(p => !p.isLocal);
   const remotes       = remotesAll.slice(0, 6);
   const extraMobile   = Math.max(0, remotesAll.length - 3);
   const extraDesktop  = Math.max(0, remotesAll.length - 6);
-  if (remotes.length === 0) return null;
+  if (remotes.length === 0) {
+    if (!fallbackButton) return null;
+    return (
+      <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
+        style={{ background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+        <Users size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+      </div>
+    );
+  }
   return (
     <div className="flex items-center">
       {remotes.map((p, i) => {
@@ -754,7 +856,6 @@ function MediaControls({
   onToggleRequests, pendingCount, onToggleOnStage, onStageCount,
   onToggleGifts, giftsCount, onGiftToHost,
   isOnStage, onLeaveStage, onToggleSettings,
-  mobileChatInputRef,
 }: {
   isHost: boolean; liveId: string;
   onStop: () => void; stopping: boolean; onLeave: () => void;
@@ -765,11 +866,11 @@ function MediaControls({
   onGiftToHost?: () => void;
   isOnStage?: boolean; onLeaveStage?: () => void;
   onToggleSettings?: () => void;
-  mobileChatInputRef?: (el: HTMLDivElement | null) => void;
 }) {
   const { localParticipant } = useLocalParticipant();
+  const micOn = useLocalMicEnabled();
   const [camOn, setCamOn] = useState(false);
-  const [micOn, setMicOn] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   // Active cam+mic automatiquement pour le host
   useEffect(() => {
@@ -780,7 +881,6 @@ function MediaControls({
         await localParticipant.setCameraEnabled(true);
         if (!cancelled) setCamOn(true);
         await localParticipant.setMicrophoneEnabled(true);
-        if (!cancelled) setMicOn(true);
       } catch { /* permission refusée */ }
     }
     enableMedia();
@@ -791,11 +891,6 @@ function MediaControls({
     const next = !camOn;
     await localParticipant.setCameraEnabled(next);
     setCamOn(next);
-  }
-  async function toggleMic() {
-    const next = !micOn;
-    await localParticipant.setMicrophoneEnabled(next);
-    setMicOn(next);
   }
 
   async function flipCam() {
@@ -827,24 +922,17 @@ function MediaControls({
   async function toggleGuestMic() {
     const pub = localParticipant.getTrackPublication(Track.Source.Microphone);
     if (pub?.track) {
-      const next = pub.isMuted;
-      await localParticipant.setMicrophoneEnabled(next);
-      setMicOn(next);
+      await localParticipant.setMicrophoneEnabled(pub.isMuted);
     } else {
-      try {
-        await localParticipant.setMicrophoneEnabled(true);
-        setMicOn(true);
-      } catch { /* permission refusée */ }
+      try { await localParticipant.setMicrophoneEnabled(true); } catch { /* permission refusée */ }
     }
   }
 
-  // Sync état cam/mic avec l'état LiveKit réel pour le guest
+  // Sync état cam avec l'état LiveKit réel pour le guest (le micro suit useLocalMicEnabled)
   useEffect(() => {
     if (isHost || !isOnStage) return;
     const camPub = localParticipant.getTrackPublication(Track.Source.Camera);
-    const micPub = localParticipant.getTrackPublication(Track.Source.Microphone);
     setCamOn(camPub ? !camPub.isMuted : false);
-    setMicOn(micPub ? !micPub.isMuted : false);
   }, [isOnStage, localParticipant, isHost]);
 
   function SideBtn({ icon, label, onClick, active, color, badge, danger }: {
@@ -871,36 +959,36 @@ function MediaControls({
     );
   }
 
+  function MoreMenuItem({ icon, label, onClick, badge }: {
+    icon: React.ReactNode; label: string; onClick: () => void; badge?: number;
+  }) {
+    return (
+      <button onClick={onClick}
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors"
+        style={{ color: '#fff' }}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+        <span style={{ color: 'rgba(255,255,255,0.7)' }}>{icon}</span>
+        <span className="flex-1 text-left">{label}</span>
+        {badge !== undefined && badge > 0 && (
+          <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+            style={{ background: '#7B3FF2' }}>
+            {badge}
+          </span>
+        )}
+      </button>
+    );
+  }
+
   return (
-    <div className="flex items-end gap-2 sm:gap-4 flex-wrap justify-center py-1 sm:py-2">
+    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
 
-      {/* Mobile : saisie du chat sur la même ligne que les boutons — prend l'espace
-          restant et s'adapte (les boutons passent à la ligne si besoin, comme ci-dessous) */}
-      {mobileChatInputRef && (
-        <div className="sm:hidden flex-1 min-w-[120px] self-center" ref={mobileChatInputRef} />
-      )}
-
-      {/* HOST */}
+      {/* HOST — barre principale : essentiel uniquement, le reste dans le menu "Plus" */}
       {isHost && (
         <>
           <SideBtn icon={camOn ? <VideoIcon size={19} /> : <VideoOff size={19} />}
             label={camOn ? 'Cam' : 'Cam off'} onClick={toggleCam} active={camOn} color="#10B981" />
-          <SideBtn icon={micOn ? <Mic size={19} /> : <MicOff size={19} />}
-            label={micOn ? 'Micro' : 'Muet'} onClick={toggleMic} active={micOn} color="#10B981" />
-          <SideBtn icon={<FlipHorizontal size={19} />} label="Flip" onClick={flipCam} />
-          <SideBtn icon={<Hand size={19} />}
-            label={pendingCount > 0 ? `${pendingCount} dem.` : 'Demandes'}
-            onClick={onToggleRequests} active={pendingCount > 0} color="#fbbf24" badge={pendingCount} />
-          {onStageCount > 0 && (
-            <SideBtn icon={<Users size={19} />} label="Scène"
-              onClick={onToggleOnStage} active color="#22c55e" badge={onStageCount} />
-          )}
-          {giftsCount > 0 && (
-            <SideBtn icon={<Gift size={19} />} label="Cadeaux"
-              onClick={onToggleGifts} active color="#fbbf24" badge={giftsCount} />
-          )}
-          <SideBtn icon={<Settings size={19} />}
-            label="Paramètres" onClick={onToggleSettings} />
+
           <SideBtn icon={<StopCircle size={19} />}
             label={stopping ? '...' : 'Terminer'} onClick={onStop} danger />
         </>
@@ -983,6 +1071,7 @@ export default function LiveSimplePage() {
   const [stopping, setStopping] = useState(false);
   const [showLaunchBanner, setShowLaunchBanner] = useState(false);
   const [joinToast, setJoinToast] = useState<string | null>(null);
+  const [following, setFollowing] = useState(false);
 
   const [emojiFloats, setEmojiFloats] = useState<EmojiFloat[]>([]);
 
@@ -1006,10 +1095,11 @@ export default function LiveSimplePage() {
   const [isOnStage,  setIsOnStage]  = useState(false);
 
   // Panels
-  const [showRequests,  setShowRequests]  = useState(false);
-  const [showOnStage,   setShowOnStage]   = useState(false);
-  const [showGifts,     setShowGifts]     = useState(false);
-  const [showSettings,  setShowSettings]  = useState(false);
+  const [showRequests,   setShowRequests]   = useState(false);
+  const [showOnStage,    setShowOnStage]    = useState(false);
+  const [showGifts,      setShowGifts]      = useState(false);
+  const [showSettings,   setShowSettings]   = useState(false);
+  const [showDesktopMore,setShowDesktopMore]= useState(false);
 
   // Données live localement mutable (monétisation)
   const [liveOverride, setLiveOverride] = useState<Partial<LiveStream>>({});
@@ -1160,6 +1250,13 @@ export default function LiveSimplePage() {
     navigate(-1);
   }, [navigate, isActive, confirm]);
 
+  const toggleFollow = useCallback(async () => {
+    if (!live?.user?.id) return;
+    setFollowing(v => !v);
+    try { await apiClient.post(Endpoints.users.follow(live.user.id)); }
+    catch { setFollowing(v => !v); }
+  }, [live?.user?.id]);
+
   const doRaiseHand = useCallback(async () => {
     if (!id || !user) return;
     setHandRaised(true);
@@ -1235,15 +1332,131 @@ export default function LiveSimplePage() {
         }
       `}</style>
 
-      <div className="flex h-full overflow-hidden bg-black">
-        <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex h-full overflow-hidden bg-black lg:justify-center lg:gap-4 lg:p-4">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:flex-none lg:w-[980px]">
+
+          {/* Header desktop — au-dessus de la carte vidéo, sur fond transparent */}
+          <div className="hidden lg:flex items-start gap-3 mb-3">
+            <Avatar src={live.user?.avatar_url} name={live.user?.display_name ?? live.user?.username} size="lg" className="shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-bold text-white text-base truncate">{live.title}</p>
+                <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full text-white shrink-0"
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
+                </span>
+                <span className="flex items-center gap-1 text-xs font-semibold shrink-0" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                  <Eye size={12} /> {(live.current_viewers ?? 0).toLocaleString()}
+                </span>
+              </div>
+              <p className="text-sm truncate" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                {live.user?.display_name ?? live.user?.username}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {!isHost && (
+                <button onClick={toggleFollow}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all"
+                  style={{
+                    background: following ? 'rgba(123,63,242,0.12)' : 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
+                    color: following ? 'var(--primary)' : '#fff',
+                    border: following ? '1px solid rgba(123,63,242,0.3)' : 'none',
+                  }}>
+                  {following ? <UserCheck size={14} /> : <UserPlus size={14} />}
+                  {following ? 'Suivi' : 'Suivre'}
+                </button>
+              )}
+              <button onClick={() => navigator.clipboard?.writeText(window.location.href)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all"
+                style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <Send size={14} /> Partager
+              </button>
+              {isHost && (
+                <>
+                  <button
+                    onClick={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
+                    className="relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all"
+                    style={{
+                      background: showRequests || handRequests.length > 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.08)',
+                      color: showRequests || handRequests.length > 0 ? '#fbbf24' : '#fff',
+                      border: `1px solid ${showRequests || handRequests.length > 0 ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.15)'}`,
+                    }}>
+                    <Hand size={14} /> Demandes
+                    {handRequests.length > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                        style={{ background: '#fbbf24' }}>
+                        {handRequests.length}
+                      </span>
+                    )}
+                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowDesktopMore(v => !v)}
+                      className="flex items-center justify-center w-9 h-9 rounded-xl transition-all"
+                      style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
+                      <MoreVertical size={16} />
+                    </button>
+                    {showDesktopMore && (
+                      <>
+                        <div className="fixed inset-0 z-30" onClick={() => setShowDesktopMore(false)} />
+                        <div className="absolute top-full right-0 mt-2 z-40 rounded-2xl overflow-hidden shadow-2xl"
+                          style={{ background: 'rgba(20,20,26,0.97)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 200, backdropFilter: 'blur(12px)' }}>
+                          <button
+                            onClick={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); setShowSettings(false); setShowDesktopMore(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors"
+                            style={{ color: '#fff' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <Users size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                            <span className="flex-1 text-left">Sur scène</span>
+                            {stageIdentities.size > 0 && (
+                              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: '#7B3FF2' }}>
+                                {stageIdentities.size}
+                              </span>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); setShowSettings(false); setShowDesktopMore(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors"
+                            style={{ color: '#fff' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <Gift size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                            <span className="flex-1 text-left">Cadeaux reçus</span>
+                            {giftHistory.length > 0 && (
+                              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: '#7B3FF2' }}>
+                                {giftHistory.length}
+                              </span>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => { setShowSettings(v => !v); setShowDesktopMore(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors"
+                            style={{ color: '#fff' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <Settings size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                            <span className="flex-1 text-left">Paramètres</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col min-w-0 lg:w-full lg:rounded-2xl lg:overflow-hidden"
+            style={{ flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}>
           {isActive && lkToken && lkUrl ? (
             <LiveKitRoom
               token={lkToken}
               serverUrl={lkUrl}
               connect
               options={isHost ? CREATOR_ROOM_OPTIONS : VIEWER_ROOM_OPTIONS}
-              className="flex-1 flex flex-col min-w-0 min-h-0"
+              className="flex flex-col min-w-0 lg:flex-row-reverse"
+              style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}
             >
               <RoomAudioRenderer />
               <JoinToastWatcher isHost={isHost} onJoin={name => {
@@ -1251,8 +1464,9 @@ export default function LiveSimplePage() {
                 setTimeout(() => setJoinToast(null), 3000);
               }} />
 
-              {/* Header */}
-              <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-b shrink-0 flex-nowrap overflow-hidden"
+            <div className="shrink-0 flex flex-col min-w-0 lg:flex-1 lg:h-full lg:min-h-0 lg:justify-between lg:overflow-y-auto">
+              {/* Header mobile — remplacé par le header desktop au-dessus de la carte sur lg+ */}
+              <div className="flex lg:hidden items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-b shrink-0 flex-nowrap overflow-hidden"
                 style={{ background: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <button onClick={handleLeave} style={{ color: 'rgba(255,255,255,0.6)' }}
                   className="hover:text-white transition-colors shrink-0">
@@ -1282,12 +1496,79 @@ export default function LiveSimplePage() {
                   )}
                   <LiveTimer startedAt={live.started_at} />
                   <ViewerCount />
+                  {isHost && (
+                    <>
+                      <button
+                        onClick={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
+                        className="relative w-7 h-7 rounded-full flex items-center justify-center"
+                        style={{
+                          background: showRequests || handRequests.length > 0 ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.1)',
+                          color: showRequests || handRequests.length > 0 ? '#fbbf24' : '#fff',
+                        }}>
+                        <Hand size={13} />
+                        {handRequests.length > 0 && (
+                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
+                            style={{ background: '#fbbf24' }}>
+                            {handRequests.length}
+                          </span>
+                        )}
+                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowDesktopMore(v => !v)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center"
+                          style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+                          <MoreVertical size={13} />
+                        </button>
+                        {showDesktopMore && (
+                          <>
+                            <div className="fixed inset-0 z-30" onClick={() => setShowDesktopMore(false)} />
+                            <div className="absolute top-full right-0 mt-2 z-40 rounded-2xl overflow-hidden shadow-2xl"
+                              style={{ background: 'rgba(20,20,26,0.97)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 190, backdropFilter: 'blur(12px)' }}>
+                              <button
+                                onClick={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); setShowSettings(false); setShowDesktopMore(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors"
+                                style={{ color: '#fff' }}>
+                                <Users size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                                <span className="flex-1 text-left">Sur scène</span>
+                                {stageIdentities.size > 0 && (
+                                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: '#7B3FF2' }}>
+                                    {stageIdentities.size}
+                                  </span>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); setShowSettings(false); setShowDesktopMore(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors"
+                                style={{ color: '#fff' }}>
+                                <Gift size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                                <span className="flex-1 text-left">Cadeaux reçus</span>
+                                {giftHistory.length > 0 && (
+                                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: '#7B3FF2' }}>
+                                    {giftHistory.length}
+                                  </span>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => { setShowSettings(v => !v); setShowDesktopMore(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors"
+                                style={{ color: '#fff' }}>
+                                <Settings size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                                <span className="flex-1 text-left">Paramètres</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
 
               </div>
 
-              {/* Player + overlays */}
-              <div className="flex-1 relative bg-black overflow-hidden">
+              {/* Vidéo — hauteur contenue, ne prend plus tout l'écran restant */}
+              <div className="relative bg-black overflow-hidden shrink-0 rounded-2xl mx-2 mt-2 sm:mx-3 sm:mt-3 lg:mx-0 lg:mt-0 lg:rounded-none"
+                style={{ height: '42vh', minHeight: 220, maxHeight: 420 }}>
                 <LiveKitViewer
                   isHost={isHost} liveId={id!}
                   stageIdentities={stageIdentities}
@@ -1320,7 +1601,7 @@ export default function LiveSimplePage() {
 
                 {/* Toast arrivée viewer */}
                 {joinToast && (
-                  <div className="absolute bottom-32 left-3 z-30 flex items-center gap-2 px-3 py-2 rounded-xl text-white text-xs font-semibold"
+                  <div className="absolute bottom-3 left-3 z-30 flex items-center gap-2 px-3 py-2 rounded-xl text-white text-xs font-semibold"
                     style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', animation: 'fadeInLeft 0.3s ease' }}>
                     <span className="w-2 h-2 rounded-full bg-green-400" />
                     {joinToast} a rejoint
@@ -1349,91 +1630,85 @@ export default function LiveSimplePage() {
 
                 <FloatingEmojiOverlay floats={emojiFloats} />
 
-                {/* Gift ticker */}
-                <div className="absolute bottom-24 left-3 z-30">
-                  <GiftTicker notifs={giftNotifs} />
-                </div>
-
                 {/* Gift toast host */}
                 {isHost && activeToast && (
-                  <div className="absolute top-16 right-3 z-30">
+                  <div className="absolute top-3 right-3 z-30">
                     <GiftToast notif={activeToast} onDone={() => setActiveToast(null)} />
                   </div>
                 )}
+              </div>
 
-                {/* Chat — overlay flottant sur la vidéo (style TikTok), visible sur tous les écrans.
-                    Sur mobile, la saisie est téléportée dans la barre basse (mobileChatInputEl),
-                    sur la même ligne que les boutons Cadeau/Lever main/Quitter — seuls les
-                    messages qui défilent vers le haut restent dans l'overlay flottant. */}
-                <LiveChat
-                  ref={chatRef}
-                  liveId={id!} accessToken={accessToken}
-                  isHost={isHost} hostId={live.user?.id}
-                  mobileInputTarget={mobileChatInputEl}
-                  onWsEvent={handleWsEvent}
-                />
-
-                {/* Barre basse */}
-                <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-4 z-20"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }}>
-                  <div className="flex items-end gap-2 sm:gap-4">
-                    <div className="flex-1 min-w-0">
-                      <MediaControls
-                        isHost={isHost} liveId={id!}
-                        onStop={handleStop} stopping={stopping}
-                        onLeave={handleLeave}
-                        onHandRaise={handleHandRaise} handRaised={handRaised}
-                        onToggleRequests={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
-                        pendingCount={handRequests.length}
-                        onToggleOnStage={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); setShowSettings(false); }}
-                        onStageCount={stageIdentities.size}
-                        onToggleGifts={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); setShowSettings(false); }}
-                        giftsCount={giftHistory.length}
-                        onGiftToHost={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Host' })}
-                        isOnStage={isOnStage}
-                        onLeaveStage={async () => {
-                          try { await apiClient.post(Endpoints.lives.demote(id!, user?.id ?? '')); } catch {}
-                          setIsOnStage(false);
-                        }}
-                        onToggleSettings={() => setShowSettings(v => !v)}
-                        mobileChatInputRef={setMobileChatInputEl}
-                      />
-                    </div>
-
-                    {/* Interactions droite */}
-                    <div className="flex flex-col gap-2 sm:gap-3 shrink-0">
-                      <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
-                      <LiveReactionPicker
-                        liveId={id!}
-                        onFloats={items => {
-                          setEmojiFloats(prev => [...prev.slice(-15), ...items]);
-                          items.forEach(f => setTimeout(() => setEmojiFloats(prev => prev.filter(x => x.id !== f.id)), 2000));
-                        }}
-                      />
-                      {!isHost && live.user?.id && (
-                        <button
-                          onClick={() => setGiftTarget({ id: live.user!.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
-                          className="flex flex-col items-center gap-1">
-                          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center"
-                            style={{ background: 'rgba(123,63,242,0.15)', border: '1.5px solid rgba(123,63,242,0.35)' }}>
-                            <Gift size={16} className="sm:hidden" style={{ color: '#fbbf24' }} />
-                            <Gift size={18} className="hidden sm:block" style={{ color: '#fbbf24' }} />
-                          </div>
-                          <span className="text-white text-[10px] sm:text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>Cadeau</span>
-                        </button>
-                      )}
-                    </div>
+              {/* Groupe bas — barre d'actions + description, collés ensemble et
+                  poussés en bas de la carte sur desktop (justify-between sur le parent). */}
+              <div className="shrink-0 flex flex-col">
+              {/* Barre d'actions unique — contrôles techniques host (Cam/Terminer) et
+                  interactions sociales (Like/Cadeau/Participants/Partager) sur la même
+                  ligne, même gabarit de bouton (cercle w-9/sm:w-12 + label en dessous). */}
+              <div className="shrink-0 flex items-center gap-2 sm:gap-4 px-2.5 sm:px-4 py-1.5 border-b"
+                style={{ background: 'rgba(0,0,0,0.9)', borderColor: 'rgba(255,255,255,0.08)' }}>
+                {isHost && (
+                  <MediaControls
+                    isHost={isHost} liveId={id!}
+                    onStop={handleStop} stopping={stopping}
+                    onLeave={handleLeave}
+                    onHandRaise={handleHandRaise} handRaised={handRaised}
+                    onToggleRequests={() => { setShowRequests(v => !v); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
+                    pendingCount={handRequests.length}
+                    onToggleOnStage={() => { setShowOnStage(v => !v); setShowRequests(false); setShowGifts(false); setShowSettings(false); }}
+                    onStageCount={stageIdentities.size}
+                    onToggleGifts={() => { setShowGifts(v => !v); setShowRequests(false); setShowOnStage(false); setShowSettings(false); }}
+                    giftsCount={giftHistory.length}
+                    onGiftToHost={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Host' })}
+                    isOnStage={isOnStage}
+                    onLeaveStage={async () => {
+                      try { await apiClient.post(Endpoints.lives.demote(id!, user?.id ?? '')); } catch {}
+                      setIsOnStage(false);
+                    }}
+                    onToggleSettings={() => setShowSettings(v => !v)}
+                  />
+                )}
+                <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
+                <button
+                  onClick={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
+                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
+                    style={{ background: 'rgba(251,191,36,0.15)', border: '1.5px solid rgba(251,191,36,0.4)' }}>
+                    <Gift size={18} style={{ color: '#fbbf24' }} />
                   </div>
+                  <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Cadeau</span>
+                </button>
+                <div className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
+                  <div className="flex items-center justify-center h-9 sm:h-12">
+                    <ViewerAvatars fallbackButton onGiftClick={(pid, name) => setGiftTarget({ id: pid, name })} />
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Participants</span>
+                </div>
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(window.location.href); }}
+                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+                    <Send size={17} style={{ color: 'rgba(255,255,255,0.85)' }} />
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Partager</span>
+                </button>
+                <div className="ml-auto">
+                  <LiveReactionPicker
+                    liveId={id!}
+                    onFloats={items => {
+                      setEmojiFloats(prev => [...prev.slice(-15), ...items]);
+                      items.forEach(f => setTimeout(() => setEmojiFloats(prev => prev.filter(x => x.id !== f.id)), 2000));
+                    }}
+                  />
                 </div>
               </div>
 
-              <LiveSuggestionsBar lives={suggestedLives} />
-
               {live.description && (
-                <div className="shrink-0 px-4 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.8)' }}>
+                <div className="hidden lg:block shrink-0 px-4 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.8)' }}>
                   <p className="text-xs line-clamp-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{live.description}</p>
                 </div>
               )}
+              </div>
 
               {/* Paramètres host — à l'intérieur de LiveKitRoom pour accès à useLocalParticipant */}
               {isHost && showSettings && (
@@ -1448,11 +1723,44 @@ export default function LiveSimplePage() {
                   onClose={() => setShowSettings(false)}
                 />
               )}
+            </div>
+
+            {/* Colonne commentaires — à gauche du live sur desktop (lg:flex-row-reverse
+                sur LiveKitRoom place cette colonne, déclarée en 2e, visuellement en 1er). */}
+            <div className="flex-1 flex flex-col lg:w-[420px] lg:flex-none lg:shrink-0 lg:border-r"
+              style={{ borderColor: 'rgba(255,255,255,0.08)', minHeight: 0, height: '100%', overflow: 'hidden' }}>
+              {/* Gift ticker — juste au-dessus des commentaires */}
+              {giftNotifs.length > 0 && (
+                <div className="shrink-0 px-3 py-1.5">
+                  <GiftTicker notifs={giftNotifs} />
+                </div>
+              )}
+
+              {/* Commentaires — liste opaque en flux, scroll indépendant */}
+              <LiveChat
+                ref={chatRef}
+                liveId={id!} accessToken={accessToken}
+                isHost={isHost} hostId={live.user?.id}
+                mobileInputTarget={mobileChatInputEl}
+                onWsEvent={handleWsEvent}
+              />
+
+              {/* Réactions rapides + saisie — toujours tout en bas de la colonne */}
+              <div className="shrink-0 px-3 py-2 border-t" style={{ background: 'rgba(15,15,20,0.98)', borderColor: 'rgba(255,255,255,0.08)' }}>
+                <div ref={setMobileChatInputEl} />
+              </div>
+
+              {live.description && (
+                <div className="lg:hidden shrink-0 px-4 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.8)' }}>
+                  <p className="text-xs line-clamp-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{live.description}</p>
+                </div>
+              )}
+            </div>
             </LiveKitRoom>
 
           ) : isActive ? (
             <>
-              <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0"
+              <div className="flex lg:hidden items-center gap-3 px-4 py-3 border-b shrink-0"
                 style={{ background: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <button onClick={handleLeave} style={{ color: 'rgba(255,255,255,0.6)' }}>
                   <ChevronLeft size={20} />
@@ -1475,7 +1783,7 @@ export default function LiveSimplePage() {
             </>
           ) : (
             <>
-              <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0"
+              <div className="flex lg:hidden items-center gap-3 px-4 py-3 border-b shrink-0"
                 style={{ background: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <button onClick={handleLeave} style={{ color: 'rgba(255,255,255,0.6)' }}>
                   <ChevronLeft size={20} />
@@ -1495,6 +1803,7 @@ export default function LiveSimplePage() {
               </div>
             </>
           )}
+          </div>
         </div>
 
         <LiveBoostedRail lives={suggestedLives} />
