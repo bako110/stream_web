@@ -90,6 +90,11 @@ export default function WalletBuyPage() {
   );
 
   useEffect(() => {
+    toast.error('Service temporairement indisponible. Nous rencontrons un problème technique, notre équipe travaille dessus.');
+    navigate('/wallet', { replace: true });
+  }, [navigate]);
+
+  useEffect(() => {
     apiClient.get<CoinPackage[]>(Endpoints.wallet.packages)
       .then(r => { if (Array.isArray(r.data) && r.data.length > 0) setPackages(r.data); })
       .catch(() => {});
