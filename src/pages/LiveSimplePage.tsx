@@ -1828,15 +1828,17 @@ export default function LiveSimplePage() {
                   onStageDetected={() => setIsOnStage(true)}
                 />
                 <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
-                <button
-                  onClick={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
-                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
-                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
-                    style={{ background: 'rgba(251,191,36,0.15)', border: '1.5px solid rgba(251,191,36,0.4)' }}>
-                    <Gift size={18} style={{ color: '#fbbf24' }} />
-                  </div>
-                  <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Cadeau</span>
-                </button>
+                {!isHost && (
+                  <button
+                    onClick={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
+                    className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
+                    <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
+                      style={{ background: 'rgba(251,191,36,0.15)', border: '1.5px solid rgba(251,191,36,0.4)' }}>
+                      <Gift size={18} style={{ color: '#fbbf24' }} />
+                    </div>
+                    <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Cadeau</span>
+                  </button>
+                )}
                 <div
                   role="button" tabIndex={0}
                   onClick={() => { setShowParticipants(v => !v); setShowRequests(false); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
