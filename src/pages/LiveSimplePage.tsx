@@ -768,21 +768,23 @@ function LiveKitViewer({
                   {onStage && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />}
                   {name}
                 </div>
-                {!t.participant.isLocal && !isHost && (
-                  <button
-                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(0,0,0,0.55)' }}
-                    onClick={e => { e.stopPropagation(); onGiftClick(identity, name); }}>
-                    <Gift size={13} style={{ color: '#fbbf24' }} />
-                  </button>
-                )}
-                {isHost && !t.participant.isLocal && (
-                  <button
-                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(0,0,0,0.55)' }}
-                    onClick={e => { e.stopPropagation(); setContextMenuId(showMenu ? null : identity); }}>
-                    <MoreVertical size={13} color="#fff" />
-                  </button>
+                {!t.participant.isLocal && (
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5">
+                    <button
+                      className="w-7 h-7 rounded-full flex items-center justify-center"
+                      style={{ background: 'rgba(0,0,0,0.55)' }}
+                      onClick={e => { e.stopPropagation(); onGiftClick(identity, name); }}>
+                      <Gift size={13} style={{ color: '#fbbf24' }} />
+                    </button>
+                    {isHost && (
+                      <button
+                        className="w-7 h-7 rounded-full flex items-center justify-center"
+                        style={{ background: 'rgba(0,0,0,0.55)' }}
+                        onClick={e => { e.stopPropagation(); setContextMenuId(showMenu ? null : identity); }}>
+                        <MoreVertical size={13} color="#fff" />
+                      </button>
+                    )}
+                  </div>
                 )}
                 {showMenu && (
                   <ParticipantContextMenu
