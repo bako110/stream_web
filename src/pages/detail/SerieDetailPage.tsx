@@ -11,6 +11,8 @@ import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { VideoPlayer } from '../../components/ui/VideoPlayer';
+import { GuestPreview } from '../../components/ui/GuestPreview';
+import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
 // 1 EUR = 100 coins (taux unifié plateforme)
@@ -210,6 +212,7 @@ export default function SerieDetailPage() {
   const id            = decodeId(slug!);
   const navigate      = useNavigate();
   const location      = useLocation();
+  const { user }      = useAuthStore();
 
   const stateItem = (location.state as { item?: Content } | null)?.item ?? null;
 
@@ -338,6 +341,17 @@ export default function SerieDetailPage() {
 
   if (serie.loading) return <PageLoader />;
   if (!serie.data)   return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Série introuvable.</div>;
+
+  if (!user) {
+    return (
+      <GuestPreview
+        type="serie"
+        thumbnail={serie.data.banner_url ?? serie.data.thumbnail_url ?? null}
+        title={serie.data.title}
+        body={serie.data.short_synopsis ?? serie.data.synopsis ?? null}
+      />
+    );
+  }
 
   const s            = serie.data;
   const isPremium    = !!s.is_premium;

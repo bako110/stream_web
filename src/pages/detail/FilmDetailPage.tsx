@@ -11,6 +11,8 @@ import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { VideoPlayer } from '../../components/ui/VideoPlayer';
+import { GuestPreview } from '../../components/ui/GuestPreview';
+import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
 // ── Conversion coins : 1 EUR = 100 coins ─────────────────────────────────────
@@ -201,6 +203,7 @@ export default function FilmDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id            = decodeId(slug!);
   const navigate      = useNavigate();
+  const { user }      = useAuthStore();
 
   const [playingVideo,    setPlayingVideo]    = useState<VideoMeta | null>(null);
   const [expandSynopsis,  setExpandSynopsis]  = useState(false);
@@ -236,6 +239,17 @@ export default function FilmDetailPage() {
 
   if (film.loading) return <PageLoader />;
   if (!film.data)   return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Contenu introuvable.</div>;
+
+  if (!user) {
+    return (
+      <GuestPreview
+        type="film"
+        thumbnail={film.data.banner_url ?? film.data.thumbnail_url ?? null}
+        title={film.data.title}
+        body={film.data.short_synopsis ?? film.data.synopsis ?? null}
+      />
+    );
+  }
 
   const f            = film.data;
   const isPremium    = !!f.is_premium;

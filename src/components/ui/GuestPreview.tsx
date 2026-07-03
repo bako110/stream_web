@@ -5,7 +5,7 @@ import { fr } from 'date-fns/locale';
 import { RoundLogo } from './RoundLogo';
 import { renderTextWithLinks } from './RichText';
 
-export type GuestPreviewType = 'post' | 'reel' | 'event' | 'concert';
+export type GuestPreviewType = 'post' | 'reel' | 'event' | 'concert' | 'film' | 'serie'| 'communauty';
 
 interface GuestPreviewProps {
   type: GuestPreviewType;
@@ -42,8 +42,8 @@ const TYPE_CONFIG: Record<GuestPreviewType, { label: string; cta: string; icon: 
     ),
   },
   reel: {
-    label: 'Vidéo',
-    cta: 'Connecte-toi pour regarder cette vidéo',
+    label: 'Réel',
+    cta: 'Connecte-toi pour regarder ce réel',
     icon: (
       <svg width="9" height="9" viewBox="0 0 12 12" fill="white">
         <path d="M3 2l7 4-7 4V2z" fill="white"/>
@@ -69,9 +69,40 @@ const TYPE_CONFIG: Record<GuestPreviewType, { label: string; cta: string; icon: 
       </svg>
     ),
   },
+  film: {
+    label: 'Film',
+    cta: 'Connecte-toi pour regarder ce film',
+    icon: (
+      <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+        <rect x="1" y="1" width="10" height="10" rx="1.5" stroke="white" strokeWidth="1.3" fill="none"/>
+        <path d="M1 4h10M4 1v3M4 8v3" stroke="white" strokeWidth="1.1"/>
+      </svg>
+    ),
+  },
+  serie: {
+    label: 'Série',
+    cta: 'Connecte-toi pour regarder cette série',
+    icon: (
+      <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+        <rect x="1" y="1" width="10" height="10" rx="1.5" stroke="white" strokeWidth="1.3" fill="none"/>
+        <path d="M1 4h10M4 1v3M4 8v3" stroke="white" strokeWidth="1.1"/>
+      </svg>
+    ),
+  },
+  communauty: {
+    label: 'Communauté',
+    cta: 'Connecte-toi pour rejoindre la communauté',
+    icon: (
+      <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+        <circle cx="4" cy="4" r="1.8" stroke="white" strokeWidth="1.2" fill="none"/>
+        <circle cx="8.5" cy="4" r="1.8" stroke="white" strokeWidth="1.2" fill="none"/>
+        <path d="M1 10.5c0-2.2 1.6-3.5 3.5-3.5S8 8.3 8 10.5M6 10.5c0-1.8 1.3-2.8 2.5-2.8s2.5 1 2.5 2.8" stroke="white" strokeWidth="1.1" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
 };
 
-const isMedia = (type: GuestPreviewType) => type === 'reel' || type === 'concert';
+const isMedia = (type: GuestPreviewType) => type === 'reel' || type === 'concert' || type === 'film' || type === 'serie';
 
 export function GuestPreview({
   type, thumbnail, thumbnails, title, body, author, date,
