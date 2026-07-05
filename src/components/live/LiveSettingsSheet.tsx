@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   X, VideoIcon, VideoOff, Mic, MicOff, UserCheck,
-  Lock, Unlock, Edit2, GoGold, Gift, ChevronLeft, Check, Radio, ShieldOff,
+  Lock, Unlock, Edit2, Coins as GoGold, Gift, ChevronLeft, Check, Radio, ShieldOff,
 } from 'lucide-react';
 import { useConfirm } from '../ui/Dialog';
 import { useLocalParticipant } from '@livekit/components-react';

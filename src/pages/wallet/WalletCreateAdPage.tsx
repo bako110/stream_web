@@ -361,7 +361,7 @@ export default function WalletCreateAdPage() {
                 border: `1.5px solid ${cpmEur === o.cpm ? o.color : 'var(--border)'}`,
                 background: cpmEur === o.cpm ? `${o.color}12` : 'var(--bg-secondary)' }}>
               <span className="text-[10px] font-bold mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{o.label}</span>
-              <span className="text-base font-black" style={{ color: o.color }}>{o.GoGold}</span>
+              <span className="text-base font-black" style={{ color: o.color }}>{o.gogold}</span>
               <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>GoGold</span>
             </button>
           ))}
@@ -383,13 +383,13 @@ export default function WalletCreateAdPage() {
         </div>
         {budgetNum > 0 && (
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            = <span className="font-bold" style={{ color: 'var(--primary)' }}>{coinsNeeded.toLocaleString('fr-FR')} GoGold</span>
+            = <span className="font-bold" style={{ color: 'var(--primary)' }}>{goGoldNeeded.toLocaleString('fr-FR')} GoGold</span>
             {' '}· ~<span className="font-bold">{estImpressions.toLocaleString('fr-FR')}</span> impressions estimées
           </p>
         )}
         {insufficient && (
           <p className="text-xs font-semibold" style={{ color: '#EF4444' }}>
-            Solde insuffisant — il vous manque {(coinsNeeded - (walletCoins ?? 0)).toLocaleString('fr-FR')} GoGold
+            Solde insuffisant — il vous manque {(goGoldNeeded - (walletGoGold ?? 0)).toLocaleString('fr-FR')} GoGold
           </p>
         )}
 
@@ -435,7 +435,7 @@ export default function WalletCreateAdPage() {
         style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.35)' }}>
         {loading ? <><Spinner size="sm" /> Traitement…</> : isEdit
           ? <><CheckCircle size={16} /> Enregistrer les modifications</>
-          : <><Megaphone size={16} /> Lancer la campagne · {coinsNeeded > 0 ? `${coinsNeeded.toLocaleString('fr-FR')} GoGold` : '…'}</>
+          : <><Megaphone size={16} /> Lancer la campagne · {goGoldNeeded > 0 ? `${goGoldNeeded.toLocaleString('fr-FR')} GoGold` : '…'}</>
         }
       </button>
     </div>

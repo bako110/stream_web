@@ -13,7 +13,7 @@ import {
   Video,
   Euro,
   Check,
-  GoGold,
+  Coins as GoGold,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';

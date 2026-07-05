@@ -19,7 +19,7 @@ interface Member {
   display_name?: string | null; username?: string | null; avatar_url?: string | null;
   role: 'admin' | 'moderator' | 'member';
   joined_at?: string | null;
-  GoGold?: number;
+  gogold?: number;
 }
 
 type RoleFilter = 'all' | 'admin' | 'moderator' | 'member';

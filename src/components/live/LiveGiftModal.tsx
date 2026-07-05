@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, GoGold, Gift, ExternalLink } from 'lucide-react';
+import { X, Coins as GoGold, Gift, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';

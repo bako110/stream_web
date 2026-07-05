@@ -5,7 +5,7 @@ import { encodeId, decodeId } from '../../utils/slugId';
 import {
   ArrowLeft, Shield, Star, User, UserX, Ban, Award,
   Film as FilmIcon, Heart, MessageCircle, Eye, Users,
-  ChevronRight, BarChart2, GoGold,
+  ChevronRight, BarChart2, Coins as GoGold,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';

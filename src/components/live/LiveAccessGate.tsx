@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Crown, GoGold } from 'lucide-react';
+import { Lock, Crown, Coins as GoGold } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../ui/Avatar';

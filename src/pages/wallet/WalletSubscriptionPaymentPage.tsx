@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, GoGold, CreditCard, Check, AlertTriangle, Monitor, Tv, Users, Download } from 'lucide-react';
+  ArrowLeft, Coins as GoGold, CreditCard, Check, AlertTriangle, Monitor, Tv, Users, Download } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 
 interface WalletBalance {
   balance: number;
-  GoGold?: number;
+  gogold?: number;
 }
 
 interface PlanConfig {

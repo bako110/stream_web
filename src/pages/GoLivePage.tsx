@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
-  Radio, Music, Globe, Lock, GoGold, Gift, X, ChevronDown, ChevronUp,
+  Radio, Music, Globe, Lock, Coins as GoGold, Gift, X, ChevronDown, ChevronUp,
   ArrowRight, AlignLeft, Type, Check,
 } from 'lucide-react';
 import { apiClient } from '../api';

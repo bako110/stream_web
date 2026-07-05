@@ -36,7 +36,7 @@ const TX_CONFIG: Record<string, { color: string; bg: string; icon: React.FC<any>
 };
 
 function goGoldToEur(gogold: number): string {
-  return ((GoGold / 100) * 0.35).toFixed(2);
+  return ((gogold / 100) * 0.35).toFixed(2);
 }
 
 export default function CommunityTreasuryPage() {

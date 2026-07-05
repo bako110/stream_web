@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId, encodeId } from '../../utils/slugId';
 import {
-  Play, Star, Crown, ChevronDown, ChevronUp, Lock, GoGold,
+  Play, Star, Crown, ChevronDown, ChevronUp, Lock, Coins as GoGold,
   Check, AlertTriangle, X, Wallet, Share2,
 } from 'lucide-react';
 import type { Content, VideoMeta } from '../../types';

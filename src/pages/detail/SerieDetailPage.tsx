@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { decodeId, encodeId } from '../../utils/slugId';
 import {
   Play, Star, Crown, ChevronDown, ChevronUp, Lock, Film, Clock,
-  GoGold, Check, AlertTriangle, X, Wallet, Share2,
+  Coins as GoGold, Check, AlertTriangle, X, Wallet, Share2,
 } from 'lucide-react';
 import type { Content, Season, Episode, VideoMeta } from '../../types';
 import { apiClient } from '../../api';
