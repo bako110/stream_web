@@ -9,7 +9,7 @@ import { fr } from 'date-fns/locale';
 
 interface CreatorStats {
   total_gifts_received: number;
-  total_coins_earned: number;
+  total_gogold_earned: number;
   total_views: number;
   total_likes: number;
   total_followers: number;
@@ -18,7 +18,7 @@ interface CreatorStats {
   top_content: Array<{ id: string; title: string; views: number; likes: number; gifts: number }>;
 }
 
-const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
+const goGoldToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
 export default function WalletDashboardPage() {
   const navigate = useNavigate();
@@ -37,12 +37,12 @@ export default function WalletDashboardPage() {
   const month = format(new Date(), 'MMMM yyyy', { locale: fr });
 
   const KPI = [
-    { label: 'Gains ce mois',   value: `${coinsToEur(stats?.earnings_this_month ?? 0)} €`,  sub: `${(stats?.earnings_this_month ?? 0).toLocaleString('fr-FR')} coins`, color: '#22C55E', icon: <DollarSign size={18}/> },
+    { label: 'Gains ce mois',   value: `${goGoldToEur(stats?.earnings_this_month ?? 0)} €`,  sub: `${(stats?.earnings_this_month ?? 0).toLocaleString('fr-FR')} GoGold`, color: '#22C55E', icon: <DollarSign size={18}/> },
     { label: 'Cadeaux reçus',   value: (stats?.total_gifts_received ?? 0).toLocaleString('fr-FR'), color: '#E85DAD', icon: <Gift size={18}/> },
     { label: 'Vues totales',    value: (stats?.total_views ?? 0).toLocaleString('fr-FR'),  color: '#7B3FF2', icon: <Eye size={18}/> },
     { label: 'Likes totaux',    value: (stats?.total_likes ?? 0).toLocaleString('fr-FR'),  color: '#7B3FF2', icon: <Heart size={18}/> },
     { label: 'Abonnés',         value: (stats?.total_followers ?? 0).toLocaleString('fr-FR'), color: '#7B3FF2', icon: <Users size={18}/> },
-    { label: 'Total gagné',     value: `${coinsToEur(stats?.total_coins_earned ?? 0)} €`,  sub: `${(stats?.total_coins_earned ?? 0).toLocaleString('fr-FR')} coins`, color: '#7B3FF2', icon: <TrendingUp size={18}/> },
+    { label: 'Total gagné',     value: `${goGoldToEur(stats?.total_gogold_earned ?? 0)} €`,  sub: `${(stats?.total_gogold_earned ?? 0).toLocaleString('fr-FR')} GoGold`, color: '#7B3FF2', icon: <TrendingUp size={18}/> },
   ];
 
   return (
@@ -71,11 +71,11 @@ export default function WalletDashboardPage() {
           <p className="text-xs text-white/70 font-medium uppercase tracking-wider mb-3">Gains</p>
           <div className="flex items-end gap-6">
             <div>
-              <p className="text-3xl font-black text-white">{coinsToEur(stats.earnings_this_month)} €</p>
+              <p className="text-3xl font-black text-white">{goGoldToEur(stats.earnings_this_month)} €</p>
               <p className="text-xs text-white/60">Ce mois</p>
             </div>
             <div className="pb-1">
-              <p className="text-xl font-black text-white/60">{coinsToEur(stats.earnings_last_month)} €</p>
+              <p className="text-xl font-black text-white/60">{goGoldToEur(stats.earnings_last_month)} €</p>
               <p className="text-xs text-white/40">Mois dernier</p>
             </div>
           </div>

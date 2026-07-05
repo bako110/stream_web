@@ -146,14 +146,14 @@ export interface LiveStream {
   // Monétisation accès
   is_monetized?:          boolean;
   monetization_type?:     string | null;
-  monetization_coins?:    number | null;
+  monetization_gogold?:    number | null;
   monetization_gift_id?:  string | null;
   monetization_gift_name?: string | null;
   monetization_gift_emoji?: string | null;
   // Monétisation montée scène
   stage_monetized?:       boolean;
   stage_type?:            string | null;
-  stage_coins?:           number | null;
+  stage_gogold?:           number | null;
   stage_gift_id?:         string | null;
   stage_gift_name?:       string | null;
   stage_gift_emoji?:      string | null;

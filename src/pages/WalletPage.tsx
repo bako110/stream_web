@@ -13,9 +13,9 @@ import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 
 interface WalletBalance {
-  coins_balance: number;
-  coins_earned: number;
-  coins_spent: number;
+  gogold_balance: number;
+  gogold_earned: number;
+  gogold_spent: number;
   total_earned: number;
   total_spent: number;
   pending_withdrawal: number;
@@ -24,13 +24,13 @@ interface WalletBalance {
 interface Transaction {
   public_id: string;
   transaction_type: string;
-  coins_amount: number;
+  gogold_amount: number;
   description: string | null;
   created_at: string;
   status: 'completed' | 'pending' | 'failed';
 }
 
-const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
+const goGoldToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
 const TX_CONFIG: Record<string, { icon: React.ReactNode; color: string; credit: boolean }> = {
   credit_purchase:      { icon: <ShoppingCart size={18} />, color: '#7B3FF2',  credit: true  },
@@ -79,7 +79,7 @@ export default function WalletPage() {
       ]);
       setBalance(balRes.data);
       setTxs(Array.isArray(txRes.data) ? txRes.data : []);
-      animateCount(balRes.data?.coins_balance ?? 0);
+      animateCount(balRes.data?.gogold_balance ?? 0);
     } catch (e: any) {
       setError(e?.message ?? 'Erreur de chargement');
     }
@@ -124,7 +124,7 @@ export default function WalletPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Mon Portefeuille</h1>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Coins & transactions</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoGold & transactions</p>
         </div>
         <button onClick={() => { setLoading(true); fetchData().finally(() => setLoading(false)); }}
           className="p-2.5 rounded-xl transition-all"
@@ -144,17 +144,17 @@ export default function WalletPage() {
             style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1), transparent 60%)' }} />
           <p className="text-xs font-bold uppercase tracking-widest text-white/70">Solde total</p>
           <p className="text-5xl font-black text-white leading-none mt-1">{display.toLocaleString('fr-FR')}</p>
-          <p className="text-sm text-white/60 font-medium">coins</p>
+          <p className="text-sm text-white/60 font-medium">GoGold</p>
           <div className="flex items-center gap-1 mt-2 px-4 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
-            <span className="text-white/75 text-sm font-semibold">≈ {coinsToEur(balance?.coins_balance ?? 0)} EUR</span>
+            <span className="text-white/75 text-sm font-semibold">≈ {goGoldToEur(balance?.gogold_balance ?? 0)} EUR</span>
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 gap-3">
           {[
-            { label: 'Gagné',   value: balance?.coins_earned ?? 0,       color: '#22C55E' },
-            { label: 'Dépensé', value: balance?.coins_spent ?? 0,        color: '#7B3FF2' },
+            { label: 'Gagné',   value: balance?.gogold_earned ?? 0,       color: '#22C55E' },
+            { label: 'Dépensé', value: balance?.gogold_spent ?? 0,        color: '#7B3FF2' },
             { label: 'Attente', value: balance?.pending_withdrawal ?? 0, color: '#7B3FF2' },
           ].map(s => (
             <div key={s.label} className="rounded-xl px-4 py-3 flex items-center justify-between"
@@ -204,7 +204,7 @@ export default function WalletPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             {txs.map((tx, i) => {
               const cfg = TX_CONFIG[tx.transaction_type] ?? TX_CONFIG.default;
-              const isCredit = tx.coins_amount >= 0;
+              const isCredit = tx.gogold_amount >= 0;
               return (
                 <div key={tx.public_id} className="flex items-center gap-3 px-4 py-3.5"
                   style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}>
@@ -222,7 +222,7 @@ export default function WalletPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-black" style={{ color: isCredit ? '#22C55E' : '#7B3FF2' }}>
-                      {isCredit ? '+' : ''}{tx.coins_amount.toLocaleString('fr-FR')} <span className="font-normal text-xs">coins</span>
+                      {isCredit ? '+' : ''}{tx.gogold_amount.toLocaleString('fr-FR')} <span className="font-normal text-xs">GoGold</span>
                     </p>
                     {tx.status === 'pending' && <p className="text-[10px] font-medium" style={{ color: '#7B3FF2' }}>En attente</p>}
                     {tx.status === 'failed'  && <p className="text-[10px] font-medium" style={{ color: '#7B3FF2' }}>Échoué</p>}

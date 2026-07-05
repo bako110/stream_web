@@ -52,7 +52,7 @@ Restez connectés — GoFolyX 2026 est juste le début.`,
     slug:     'monetisation-createurs',
     cat:      'Monétisation',
     title:    'Guide complet : toutes les façons de gagner sur GoFolyX',
-    excerpt:  'Abonnements, coins, publicités CPM, vente de billets — découvrez comment les créateurs transforment leur audience en revenus récurrents.',
+    excerpt:  'Abonnements, GoGold, publicités CPM, vente de billets — découvrez comment les créateurs transforment leur audience en revenus récurrents.',
     date:     '28 mai 2026',
     readTime: 10,
     gradient: 'linear-gradient(135deg,#10B981,#059669)',
@@ -67,9 +67,9 @@ Le système d'abonnement vous permet de proposer un accès exclusif à votre con
 
 GoFolyX prend une commission de 20% — en dessous de la plupart des plateformes du marché. Les paiements sont versés chaque mois, directement sur votre compte mobile money ou bancaire.
 
-## 2. Les coins
+## 2. Les GoGold
 
-Les fans peuvent acheter des coins et vous les offrir pendant vos lives ou en réaction à vos posts. 100 coins = 0,35 € reversés au créateur (achat : 1 € = 100 coins). Les dons sont instantanément visibles et créent un lien fort entre vous et votre communauté.
+Les fans peuvent acheter des GoGold et vous les offrir pendant vos lives ou en réaction à vos posts. 100 GoGold = 0,35 € reversés au créateur (achat : 1 € = 100 GoGold). Les dons sont instantanément visibles et créent un lien fort entre vous et votre communauté.
 
 Astuce : les créateurs qui activent les dons sur leurs lives voient en moyenne 3× plus d'engagement que ceux qui ne le font pas.
 
@@ -112,7 +112,7 @@ Les membres peuvent réagir, commenter et partager directement dans les canaux. 
 
 ## La trésorerie commune
 
-Les membres peuvent contribuer à une trésorerie partagée avec leurs coins. Cette cagnotte peut financer un événement, un cadeau pour le créateur ou un projet communautaire. Toutes les transactions sont transparentes et visibles par tous les membres.
+Les membres peuvent contribuer à une trésorerie partagée avec leurs GoGold. Cette cagnotte peut financer un événement, un cadeau pour le créateur ou un projet communautaire. Toutes les transactions sont transparentes et visibles par tous les membres.
 
 Le trésorier est élu par vote et gère les dépenses avec validation collective. C'est une vraie démocratie participative.
 
@@ -255,7 +255,7 @@ Plus besoin de passer par une plateforme tierce. GoFolyX gère la vente de bille
 
 ## Ce que disent les artistes
 
-"Mon premier live sur GoFolyX m'a rapporté plus que six mois de concerts en salle. La différence, c'est l'audience mondiale et les coins que les fans envoient en direct."
+"Mon premier live sur GoFolyX m'a rapporté plus que six mois de concerts en salle. La différence, c'est l'audience mondiale et les GoGold que les fans envoient en direct."
 
 "Je pouvais parler à mes fans pendant que je jouais. C'est quelque chose d'impossible dans une grande salle — sur GoFolyX, c'est la base."
 

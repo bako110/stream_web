@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface WalletInfo {
-  coins_balance: number;
+  gogold_balance: number;
   total_received: number;
   total_withdrawn: number;
   eur_balance?: number;
@@ -35,8 +35,8 @@ const TX_CONFIG: Record<string, { color: string; bg: string; icon: React.FC<any>
   manual_debit:        { color: '#EF4444', bg: '#EF444415', icon: TrendingDown },
 };
 
-function coinsToEur(coins: number): string {
-  return ((coins / 100) * 0.35).toFixed(2);
+function goGoldToEur(gogold: number): string {
+  return ((GoGold / 100) * 0.35).toFixed(2);
 }
 
 export default function CommunityTreasuryPage() {
@@ -115,19 +115,19 @@ export default function CommunityTreasuryPage() {
                 </div>
               </div>
               <p className="text-4xl font-black text-white mb-0.5">
-                {(wallet?.coins_balance ?? 0).toLocaleString()} <span className="text-xl font-bold text-white/80">coins</span>
+                {(wallet?.gogold_balance ?? 0).toLocaleString()} <span className="text-xl font-bold text-white/80">GoGold</span>
               </p>
-              <p className="text-sm text-white/60">≈ {coinsToEur(wallet?.coins_balance ?? 0)} EUR</p>
+              <p className="text-sm text-white/60">≈ {goGoldToEur(wallet?.gogold_balance ?? 0)} EUR</p>
               <div className="flex gap-4 mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
                 <div>
                   <p className="text-[10px] font-bold tracking-widest text-white/60">TOTAL COLLECTÉ</p>
-                  <p className="text-sm font-bold text-white">{(wallet?.total_received ?? 0).toLocaleString()} coins</p>
-                  <p className="text-[11px] text-white/50">{coinsToEur(wallet?.total_received ?? 0)} EUR</p>
+                  <p className="text-sm font-bold text-white">{(wallet?.total_received ?? 0).toLocaleString()} GoGold</p>
+                  <p className="text-[11px] text-white/50">{goGoldToEur(wallet?.total_received ?? 0)} EUR</p>
                 </div>
                 <div style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: 16 }}>
                   <p className="text-[10px] font-bold tracking-widest text-white/60">TOTAL RETIRÉ</p>
-                  <p className="text-sm font-bold text-white">{(wallet?.total_withdrawn ?? 0).toLocaleString()} coins</p>
-                  <p className="text-[11px] text-white/50">{coinsToEur(wallet?.total_withdrawn ?? 0)} EUR</p>
+                  <p className="text-sm font-bold text-white">{(wallet?.total_withdrawn ?? 0).toLocaleString()} GoGold</p>
+                  <p className="text-[11px] text-white/50">{goGoldToEur(wallet?.total_withdrawn ?? 0)} EUR</p>
                 </div>
               </div>
             </div>
@@ -206,7 +206,7 @@ export default function CommunityTreasuryPage() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold" style={{ color: isCredit ? '#10B981' : '#EF4444' }}>
-                          {isCredit ? '+' : ''}{tx.amount.toLocaleString()} coins
+                          {isCredit ? '+' : ''}{tx.amount.toLocaleString()} GoGold
                         </p>
                         <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
                           Solde : {tx.balance_after.toLocaleString()}

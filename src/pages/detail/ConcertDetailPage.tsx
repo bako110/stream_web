@@ -76,7 +76,7 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
           style={{ background: 'var(--bg-secondary)' }}>
           <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total</span>
           <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-            {(days * PRICE_PER_DAY).toLocaleString()} coins
+            {(days * PRICE_PER_DAY).toLocaleString()} GoGold
           </span>
         </div>
         {error && <p className="text-xs mb-3" style={{ color: '#ef4444' }}>{error}</p>}

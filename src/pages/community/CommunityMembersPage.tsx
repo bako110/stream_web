@@ -19,7 +19,7 @@ interface Member {
   display_name?: string | null; username?: string | null; avatar_url?: string | null;
   role: 'admin' | 'moderator' | 'member';
   joined_at?: string | null;
-  coins?: number;
+  GoGold?: number;
 }
 
 type RoleFilter = 'all' | 'admin' | 'moderator' | 'member';
@@ -31,8 +31,8 @@ const ROLE_CFG: Record<string, { label: string; color: string; bg: string; Icon:
 };
 
 // ── Podium ────────────────────────────────────────────────────────────────────
-function PodiumBar({ member, rank, maxCoins }: { member: Member; rank: number; maxCoins: number }) {
-  const pct      = maxCoins > 0 ? (member.coins ?? 0) / maxCoins : 0;
+function PodiumBar({ member, rank, maxGoGold }: { member: Member; rank: number; maxGoGold: number }) {
+  const pct      = maxGoGold > 0 ? (member.gogold ?? 0) / maxGoGold : 0;
   const heights  = [64, 48, 32];
   const h        = heights[rank - 1] ?? 32;
   const colors   = ['linear-gradient(180deg, #7B3FF2, #E0389A)', 'rgba(148,163,184,0.5)', 'rgba(205,124,58,0.5)'];
@@ -59,9 +59,9 @@ function PodiumBar({ member, rank, maxCoins }: { member: Member; rank: number; m
         style={{ color: 'var(--text-primary)' }}>
         {member.display_name ?? member.username}
       </p>
-      {(member.coins ?? 0) > 0 && (
+      {(member.gogold ?? 0) > 0 && (
         <p className="text-[9px] font-bold" style={{ color: 'var(--text-tertiary)' }}>
-          {abbrev(member.coins ?? 0)} coins
+          {abbrev(member.gogold ?? 0)} GoGold
         </p>
       )}
       <div className="w-full rounded-t-xl flex items-end justify-center"
@@ -230,14 +230,14 @@ export default function CommunityMembersPage() {
     member:    members.filter(m => m.role === 'member').length,
   }), [members]);
 
-  // Podium : top 3 triés par coins décroissant
+  // Podium : top 3 triés par GoGold décroissant
   const showPodium  = filter === 'all' && !query.trim();
-  const sortedCoins = useMemo(() =>
-    [...members].sort((a, b) => (b.coins ?? 0) - (a.coins ?? 0)),
+  const sortedGoGold = useMemo(() =>
+    [...members].sort((a, b) => (b.gogold ?? 0) - (a.gogold ?? 0)),
     [members]
   );
-  const maxCoins = sortedCoins[0]?.coins ?? 0;
-  const top3     = showPodium && maxCoins > 0 ? sortedCoins.slice(0, 3) : [];
+  const maxGoGold = sortedGoGold[0]?.gogold ?? 0;
+  const top3     = showPodium && maxGoGold > 0 ? sortedGoGold.slice(0, 3) : [];
   const rest     = showPodium && top3.length === 3 ? visible.slice(3) : visible;
 
   function canActOn(m: Member) {
@@ -312,14 +312,14 @@ export default function CommunityMembersPage() {
       ) : (
         <div className="flex-1 overflow-y-auto">
 
-          {/* Podium top 3 (par coins) */}
+          {/* Podium top 3 (par GoGold) */}
           {top3.length === 3 && (
             <div className="px-4 pt-4 pb-2">
               <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>TOP MEMBRES</p>
               <div className="flex items-end justify-center gap-2">
-                <PodiumBar member={top3[1]} rank={2} maxCoins={maxCoins} />
-                <PodiumBar member={top3[0]} rank={1} maxCoins={maxCoins} />
-                <PodiumBar member={top3[2]} rank={3} maxCoins={maxCoins} />
+                <PodiumBar member={top3[1]} rank={2} maxGoGold={maxGoGold} />
+                <PodiumBar member={top3[0]} rank={1} maxGoGold={maxGoGold} />
+                <PodiumBar member={top3[2]} rank={3} maxGoGold={maxGoGold} />
               </div>
             </div>
           )}
@@ -351,9 +351,9 @@ export default function CommunityMembersPage() {
                         <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>@{m.username}</p>
                       </div>
                     </button>
-                    {(m.coins ?? 0) > 0 && (
+                    {(m.gogold ?? 0) > 0 && (
                       <p className="text-[10px] font-bold shrink-0" style={{ color: 'var(--text-tertiary)' }}>
-                        {(m.coins ?? 0) >= 1000 ? `${((m.coins ?? 0) / 1000).toFixed(1)}k` : m.coins} coins
+                        {(m.gogold ?? 0) >= 1000 ? `${((m.gogold ?? 0) / 1000).toFixed(1)}k` : m.gogold} GoGold
                       </p>
                     )}
                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0"

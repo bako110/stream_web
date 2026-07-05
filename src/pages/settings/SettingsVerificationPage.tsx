@@ -48,17 +48,17 @@ export default function SettingsVerificationPage() {
   const [links,       setLinks]       = useState('');
   const [loading,     setLoading]     = useState(false);
   const [verifNote,   setVerifNote]   = useState<string | null>((user as any)?.verification_note ?? null);
-  const [myCoins,     setMyCoins]     = useState<number | null>(null);
+  const [myGoGold,     setMyGoGold]     = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
       const [verifRes, walletRes] = await Promise.all([
         apiClient.get<{ status: VerifStatus; is_verified: boolean; verification_note?: string }>(Endpoints.users.verificationStatus),
-        apiClient.get<{ coins_balance: number }>(Endpoints.wallet.balance),
+        apiClient.get<{ gogold_balance: number }>(Endpoints.wallet.balance),
       ]);
       setStatus(verifRes.data.status);
-      setMyCoins(walletRes.data?.coins_balance ?? 0);
+      setMyGoGold(walletRes.data?.gogold_balance ?? 0);
       if (verifRes.data.verification_note) setVerifNote(verifRes.data.verification_note);
     } catch {}
     finally { setFetching(false); }
@@ -71,8 +71,8 @@ export default function SettingsVerificationPage() {
   }, [fetchStatus]);
 
   async function handleSubmit() {
-    if (myCoins !== null && myCoins < VERIFICATION_FEE) {
-      toast.error(`Solde insuffisant. Il te manque ${VERIFICATION_FEE - myCoins} coins.`);
+    if (myGoGold !== null && myGoGold < VERIFICATION_FEE) {
+      toast.error(`Solde insuffisant. Il te manque ${VERIFICATION_FEE - myGoGold} GoGold.`);
       navigate('/wallet/buy');
       return;
     }
@@ -85,16 +85,16 @@ export default function SettingsVerificationPage() {
         links.trim() ? `Liens: ${links.trim()}` : '',
       ].filter(Boolean).join('\n');
       await apiClient.post(Endpoints.users.verifyRequest, { note });
-      setMyCoins(prev => prev !== null ? prev - VERIFICATION_FEE : null);
+      setMyGoGold(prev => prev !== null ? prev - VERIFICATION_FEE : null);
       setStatus('pending');
       setStep(0);
     } catch (e: any) {
       const detail = e?.response?.data?.detail ?? '';
       if (e?.response?.status === 402 || detail.toLowerCase().includes('insuffisant')) {
-        const walletRes = await apiClient.get<{ coins_balance: number }>(Endpoints.wallet.balance).catch(() => null);
-        const realBalance = walletRes?.data?.coins_balance ?? 0;
-        setMyCoins(realBalance);
-        toast.error(`Solde insuffisant (${realBalance} coins). Il te manque ${VERIFICATION_FEE - realBalance} coins.`);
+        const walletRes = await apiClient.get<{ gogold_balance: number }>(Endpoints.wallet.balance).catch(() => null);
+        const realBalance = walletRes?.data?.gogold_balance ?? 0;
+        setMyGoGold(realBalance);
+        toast.error(`Solde insuffisant (${realBalance} GoGold). Il te manque ${VERIFICATION_FEE - realBalance} GoGold.`);
         navigate('/wallet/buy');
       } else {
         toast.error(detail || "Impossible d'envoyer la demande.");
@@ -104,8 +104,8 @@ export default function SettingsVerificationPage() {
 
   const showWizard = (status === 'none' || status === 'rejected') && step > 0;
   const STEPS = ['Type', 'Infos', 'Envoi'];
-  const canAfford = myCoins === null || myCoins >= VERIFICATION_FEE;
-  const soldeApres = myCoins !== null ? myCoins - VERIFICATION_FEE : null;
+  const canAfford = myGoGold === null || myGoGold >= VERIFICATION_FEE;
+  const soldeApres = myGoGold !== null ? myGoGold - VERIFICATION_FEE : null;
 
   const renderStatus = () => {
     const CFG = {
@@ -180,7 +180,7 @@ export default function SettingsVerificationPage() {
               {verifNote ?? "Votre demande n'a pas été approuvée."}
             </p>
             <p className="text-xs mt-1" style={{ color: '#22C55E' }}>
-              Tes {VERIFICATION_FEE} coins ont été remboursés dans ton wallet.
+              Tes {VERIFICATION_FEE} GoGold ont été remboursés dans ton wallet.
             </p>
           </div>
         </div>
@@ -352,26 +352,26 @@ export default function SettingsVerificationPage() {
           <div className="flex items-center gap-2">
             <Zap size={16} color={canAfford ? BLUE : '#EF4444'} />
             <p className="text-sm font-black" style={{ color: canAfford ? BLUE : '#EF4444' }}>
-              Frais de dossier : {VERIFICATION_FEE} coins
+              Frais de dossier : {VERIFICATION_FEE} GoGold
             </p>
           </div>
-          {myCoins !== null && (
+          {myGoGold !== null && (
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              Ton solde : {myCoins.toLocaleString('fr-FR')} coins
-              {canAfford && soldeApres !== null ? ` → ${soldeApres.toLocaleString('fr-FR')} coins après` : ''}
+              Ton solde : {myGoGold.toLocaleString('fr-FR')} GoGold
+              {canAfford && soldeApres !== null ? ` → ${soldeApres.toLocaleString('fr-FR')} GoGold après` : ''}
             </p>
           )}
           <div className="flex items-start gap-1.5">
             <RotateCcw size={12} color="#22C55E" className="shrink-0 mt-0.5" />
             <p className="text-xs" style={{ color: '#22C55E' }}>
-              Ces coins sont remboursés automatiquement si ta demande est refusée.
+              Ces GoGold sont remboursés automatiquement si ta demande est refusée.
             </p>
           </div>
           {!canAfford && (
             <button onClick={() => navigate('/wallet/buy')}
               className="w-full mt-2 py-2.5 rounded-xl font-bold text-white text-sm"
               style={{ background: '#EF4444' }}>
-              Acheter des coins — il te manque {VERIFICATION_FEE - (myCoins ?? 0)} coins
+              Acheter des GoGold — il te manque {VERIFICATION_FEE - (myGoGold ?? 0)} GoGold
             </button>
           )}
         </div>
@@ -392,7 +392,7 @@ export default function SettingsVerificationPage() {
           <button onClick={handleSubmit} disabled={loading || !canAfford}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-black text-white disabled:opacity-60"
             style={{ background: canAfford ? BLUE : 'var(--border)' }}>
-            {loading ? <Spinner size="sm" /> : <><Send size={14} /> Envoyer — {VERIFICATION_FEE} coins</>}
+            {loading ? <Spinner size="sm" /> : <><Send size={14} /> Envoyer — {VERIFICATION_FEE} GoGold</>}
           </button>
         </div>
       </div>

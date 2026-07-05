@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
-  Radio, Music, Globe, Lock, Coins, Gift, X, ChevronDown, ChevronUp,
+  Radio, Music, Globe, Lock, GoGold, Gift, X, ChevronDown, ChevronUp,
   ArrowRight, AlignLeft, Type, Check,
 } from 'lucide-react';
 import { apiClient } from '../api';
@@ -13,17 +13,17 @@ import type { GiftType } from '../components/live/LiveGiftModal';
 
 // ── Modal monétisation (bottom sheet) ────────────────────────────────────────
 
-type MonetType = 'coins' | 'gift';
+type MonetType = 'gogold' | 'gift';
 
 function MonetModal({
   onClose,
   onConfirm,
 }: {
   onClose: () => void;
-  onConfirm: (type: MonetType, coins: number, gift: GiftType | null) => void;
+  onConfirm: (type: MonetType, gogold: number, gift: GiftType | null) => void;
 }) {
   const [type,   setType]   = useState<MonetType | null>(null);
-  const [coins,  setCoins]  = useState('');
+  const [gogold,  setGoGold]  = useState('');
   const [gift,   setGift]   = useState<GiftType | null>(null);
   const [gifts,  setGifts]  = useState<GiftType[]>([]);
   const [loading,setLoading]= useState(false);
@@ -40,10 +40,10 @@ function MonetModal({
   }, []);
 
   function handleConfirm() {
-    if (type === 'coins') {
-      const v = parseInt(coins, 10);
+    if (type === 'gogold') {
+      const v = parseInt(gogold, 10);
       if (!v || v < 1) return;
-      onConfirm('coins', v, null);
+      onConfirm('gogold', v, null);
     }
     if (type === 'gift') {
       if (!gift) return;
@@ -51,7 +51,7 @@ function MonetModal({
     }
   }
 
-  const canConfirm = type === 'coins' ? parseInt(coins, 10) > 0 : type === 'gift' ? gift !== null : false;
+  const canConfirm = type === 'gogold' ? parseInt(gogold, 10) > 0 : type === 'gift' ? gift !== null : false;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
@@ -75,18 +75,18 @@ function MonetModal({
         <div className="px-4 pb-5 space-y-3">
           {/* Choix du type — 2 boutons compacts */}
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => setType('coins')}
+            <button type="button" onClick={() => setType('gogold')}
               className="relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 transition-all text-left"
               style={{
-                borderColor: type === 'coins' ? '#F59E0B' : 'var(--border)',
-                background:  type === 'coins' ? 'rgba(245,158,11,0.08)' : 'var(--bg-secondary)',
+                borderColor: type === 'gogold' ? '#F59E0B' : 'var(--border)',
+                background:  type === 'gogold' ? 'rgba(245,158,11,0.08)' : 'var(--bg-secondary)',
               }}>
-              <Coins size={18} style={{ color: type === 'coins' ? '#F59E0B' : 'var(--text-tertiary)', flexShrink: 0 }} />
+              <GoGold size={18} style={{ color: type === 'gogold' ? '#F59E0B' : 'var(--text-tertiary)', flexShrink: 0 }} />
               <div>
-                <p className="text-xs font-bold" style={{ color: type === 'coins' ? '#F59E0B' : 'var(--text-primary)' }}>Coins</p>
+                <p className="text-xs font-bold" style={{ color: type === 'gogold' ? '#F59E0B' : 'var(--text-primary)' }}>GoGold</p>
                 <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Montant fixe</p>
               </div>
-              {type === 'coins' && <Check size={12} className="absolute top-2 right-2" style={{ color: '#F59E0B' }} />}
+              {type === 'gogold' && <Check size={12} className="absolute top-2 right-2" style={{ color: '#F59E0B' }} />}
             </button>
 
             <button type="button" onClick={() => setType('gift')}
@@ -104,21 +104,21 @@ function MonetModal({
             </button>
           </div>
 
-          {/* Saisie coins */}
-          {type === 'coins' && (
+          {/* Saisie GoGold */}
+          {type === 'gogold' && (
             <div className="flex items-center gap-2 rounded-xl border-2 px-3 h-11"
               style={{ borderColor: '#F59E0B', background: 'var(--bg-secondary)' }}>
-              <Coins size={16} style={{ color: '#F59E0B', flexShrink: 0 }} />
+              <GoGold size={16} style={{ color: '#F59E0B', flexShrink: 0 }} />
               <input
                 type="number" min={1} max={999999}
                 className="flex-1 bg-transparent text-base font-bold focus:outline-none"
                 style={{ color: 'var(--text-primary)' }}
                 placeholder="Montant..."
-                value={coins}
-                onChange={e => setCoins(e.target.value.replace(/[^0-9]/g, ''))}
+                value={gogold}
+                onChange={e => setGoGold(e.target.value.replace(/[^0-9]/g, ''))}
                 autoFocus
               />
-              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>coins</span>
+              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoGold</span>
             </div>
           )}
 
@@ -143,7 +143,7 @@ function MonetModal({
                     <span className="text-xl">{g.emoji}</span>
                     <span className="text-[9px] font-semibold truncate w-full text-center"
                       style={{ color: 'var(--text-primary)' }}>{g.name}</span>
-                    <span className="text-[9px] font-bold" style={{ color: '#fbbf24' }}>{g.coins_cost}</span>
+                    <span className="text-[9px] font-bold" style={{ color: '#fbbf24' }}>{g.gogold_cost}</span>
                   </button>
                 ))}
               </div>
@@ -187,20 +187,20 @@ export default function GoLivePage() {
   // Monétisation
   const [showMonetModal, setShowMonetModal] = useState(false);
   const [monetType,      setMonetType]      = useState<MonetType | null>(null);
-  const [monetCoins,     setMonetCoins]     = useState(0);
+  const [monetGoGold,     setMonetGoGold]     = useState(0);
   const [monetGift,      setMonetGift]      = useState<GiftType | null>(null);
 
   const isMonetized = monetType !== null;
 
   const monetLabel = isMonetized
-    ? monetType === 'coins'
-      ? `${monetCoins} coins`
+    ? monetType === 'gogold'
+      ? `${monetGoGold} GoGold`
       : monetGift ? `${monetGift.name}` : null
     : null;
 
   function cancelMonet() {
     setMonetType(null);
-    setMonetCoins(0);
+    setMonetGoGold(0);
     setMonetGift(null);
   }
 
@@ -216,7 +216,7 @@ export default function GoLivePage() {
         is_private:   isPrivate,
         is_monetized: isMonetized,
       };
-      if (monetType === 'coins') { payload.monetization_type = 'coins'; payload.monetization_coins = monetCoins; }
+      if (monetType === 'gogold') { payload.monetization_type = 'gogold'; payload.monetization_gogold = monetGoGold; }
       if (monetType === 'gift')  { payload.monetization_type = 'gift';  payload.monetization_gift_id = monetGift?.id; }
 
       const r = await apiClient.post<LiveStartResponse>(Endpoints.lives.start, payload);
@@ -289,7 +289,7 @@ export default function GoLivePage() {
                 borderColor: isMonetized ? '#F59E0B' : 'var(--border)',
                 background:  isMonetized ? 'rgba(245,158,11,0.08)' : 'var(--bg-secondary)',
               }}>
-              <Coins size={15} style={{ color: isMonetized ? '#F59E0B' : 'var(--text-tertiary)', flexShrink: 0 }} />
+              <GoGold size={15} style={{ color: isMonetized ? '#F59E0B' : 'var(--text-tertiary)', flexShrink: 0 }} />
               <span className="text-xs font-semibold flex-1 truncate" style={{ color: isMonetized ? '#F59E0B' : 'var(--text-secondary)' }}>
                 {isMonetized ? monetLabel : 'Monétiser'}
               </span>
@@ -373,10 +373,10 @@ export default function GoLivePage() {
           {isMonetized && (
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border"
               style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.3)' }}>
-              <Coins size={13} style={{ color: '#F59E0B', flexShrink: 0 }} />
+              <GoGold size={13} style={{ color: '#F59E0B', flexShrink: 0 }} />
               <span className="text-xs font-semibold flex-1" style={{ color: '#F59E0B' }}>
-                {monetType === 'coins'
-                  ? `Live payant · ${monetCoins} coins pour rejoindre`
+                {monetType === 'gogold'
+                  ? `Live payant · ${monetGoGold} GoGold pour rejoindre`
                   : `Live payant · cadeau requis : ${monetGift?.name}`}
               </span>
             </div>
@@ -433,9 +433,9 @@ export default function GoLivePage() {
       {showMonetModal && (
         <MonetModal
           onClose={() => setShowMonetModal(false)}
-          onConfirm={(type, coins, gift) => {
+          onConfirm={(type, gogold, gift) => {
             setMonetType(type);
-            setMonetCoins(coins);
+            setMonetGoGold(gogold);
             setMonetGift(gift);
             setShowMonetModal(false);
           }}

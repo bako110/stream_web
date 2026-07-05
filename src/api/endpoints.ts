@@ -265,7 +265,7 @@ export const Endpoints = {
     monetization:      (id: string) => `${V1}/lives/${id}/monetization`,
     stageMonetization: (id: string) => `${V1}/lives/${id}/stage-monetization`,
     checkAccess:       (id: string) => `${V1}/lives/${id}/access`,
-    accessCoins:       (id: string) => `${V1}/lives/${id}/access/coins`,
+    accessGoGold:       (id: string) => `${V1}/lives/${id}/access/gogold`,
     accessGift:        (id: string) => `${V1}/lives/${id}/access/gift`,
   },
   activity: {

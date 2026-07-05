@@ -90,7 +90,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   const [editPrivate,           setEditPrivate]           = useState(community.is_private);
   const [editApproval,          setEditApproval]          = useState((community as any).requires_approval ?? false);
   const [editMembersOnly,       setEditMembersOnly]       = useState((community as any).members_only_chat ?? false);
-  const [editEntryPrice,        setEditEntryPrice]        = useState(String((community as any).entry_price_coins ?? 0));
+  const [editEntryPrice,        setEditEntryPrice]        = useState(String((community as any).entry_price_gogold ?? 0));
   const [editHideFromPublic,    setEditHideFromPublic]    = useState((community as any).members_list_hidden_public ?? false);
   const [editHideFromMembers,   setEditHideFromMembers]   = useState((community as any).members_list_hidden_members ?? false);
   const [editInviteOnlyAdmin,   setEditInviteOnlyAdmin]   = useState((community as any).invite_only_admin ?? false);
@@ -133,7 +133,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
         is_private: editPrivate,
         requires_approval: editApproval,
         members_only_chat: editMembersOnly,
-        entry_price_coins: Number(editEntryPrice) || 0,
+        entry_price_gogold: Number(editEntryPrice) || 0,
         members_list_hidden_public: editHideFromPublic,
         members_list_hidden_members: editHideFromMembers,
         invite_only_admin: editInviteOnlyAdmin,
@@ -394,7 +394,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                     className="flex-1 bg-transparent text-sm font-semibold outline-none"
                     style={{ color: 'var(--text-primary)' }}
                     placeholder="0" />
-                  <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>coins · 0 = gratuit</span>
+                  <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoGold · 0 = gratuit</span>
                 </div>
               </div>
 
@@ -667,7 +667,7 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
     } catch { toast.error('Erreur lors de l\'annulation'); }
   }
 
-  const entryPrice = (community as any).entry_price_coins ?? 0;
+  const entryPrice = (community as any).entry_price_gogold ?? 0;
   const requiresApproval = (community as any).requires_approval ?? community.is_private;
 
   return (
@@ -752,7 +752,7 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
                 <span style={{ fontSize: 10, color: '#7B3FF2', fontWeight: 700 }}>C</span>
               </div>
               <p className="text-xs font-bold" style={{ color: '#7B3FF2' }}>
-                {entryPrice} coins requis pour adhérer
+                {entryPrice} GoGold requis pour adhérer
               </p>
             </div>
           )}

@@ -13,7 +13,7 @@ import {
   Video,
   Euro,
   Check,
-  Coins,
+  GoGold,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -32,8 +32,8 @@ interface CreatorProfile {
 interface CreatorStats {
   total_views: number;
   total_gifts_received: number;
-  total_coins_earned: number;
-  monthly_earnings_coins: number;
+  total_gogold_earned: number;
+  monthly_earnings_gogold: number;
   monthly_earnings_eur: number;
   current_balance: number;
   available_balance: number;
@@ -45,7 +45,7 @@ interface TopReel {
   caption?: string;
   views_count: number;
   gifts_count: number;
-  coins_earned: number;
+  gogold_earned: number;
 }
 
 interface GiftReceived {
@@ -54,15 +54,15 @@ interface GiftReceived {
   sender_avatar?: string;
   gift_emoji: string;
   gift_name: string;
-  coins: number;
+  gogold: number;
   created_at: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-// Taux retrait : 100 coins = 0.35 €
-const coinsToEur = (coins: number | string) =>
-  ((parseFloat(String(coins ?? 0)) / 100) * 0.35).toFixed(2);
+// Taux retrait : 100 GoGold = 0.35 €
+const goGoldToEur = (gogold: number | string) =>
+  ((parseFloat(String(GoGold ?? 0)) / 100) * 0.35).toFixed(2);
 
 const fmtNum = (n: number) =>
   n >= 1_000_000
@@ -201,7 +201,7 @@ export default function WalletCreatorDashboardPage() {
   };
 
   const availableBalance = stats?.available_balance ?? 0;
-  const canWithdraw = availableBalance >= 500; // minimum retrait : 500 coins
+  const canWithdraw = availableBalance >= 500; // minimum retrait : 500 GoGold
 
   if (loading) return <PageLoader />;
 
@@ -293,10 +293,10 @@ export default function WalletCreatorDashboardPage() {
               color="#E85DAD"
             />
             <StatCard
-              icon={<Coins size={18} />}
-              label="Coins gagnés"
-              value={fmtNum(stats.total_coins_earned ?? 0)}
-              sub={`≈ ${coinsToEur(stats.total_coins_earned)} €`}
+              icon={<GoGold size={18} />}
+              label="GoGold gagnés"
+              value={fmtNum(stats.total_gogold_earned ?? 0)}
+              sub={`≈ ${goGoldToEur(stats.total_gogold_earned)} €`}
               color="#FFD700"
             />
             <StatCard
@@ -383,13 +383,13 @@ export default function WalletCreatorDashboardPage() {
                 </div>
               </div>
 
-              {/* Coins earned */}
+              {/* GoGold earned */}
               <div className="flex-shrink-0 text-right">
                 <p className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
-                  {reel.coins_earned.toLocaleString('fr-FR')}
+                  {reel.gogold_earned.toLocaleString('fr-FR')}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  coins
+                  GoGold
                 </p>
               </div>
             </div>
@@ -470,10 +470,10 @@ export default function WalletCreatorDashboardPage() {
             {availableBalance.toLocaleString('fr-FR')}
           </p>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            coins disponibles
+            GoGold disponibles
           </p>
           <p className="text-sm font-semibold" style={{ color: 'var(--primary)' }}>
-            ≈ {coinsToEur(availableBalance)} EUR
+            ≈ {goGoldToEur(availableBalance)} EUR
           </p>
         </div>
 
@@ -495,7 +495,7 @@ export default function WalletCreatorDashboardPage() {
 
         {!canWithdraw && (
           <p className="text-xs text-center" style={{ color: 'var(--text-secondary)' }}>
-            Minimum 500 coins ({coinsToEur(500)} €) requis
+            Minimum 500 GoGold ({goGoldToEur(500)} €) requis
           </p>
         )}
       </div>
@@ -605,7 +605,7 @@ export default function WalletCreatorDashboardPage() {
               </div>
 
               <span className="text-sm font-bold flex-shrink-0" style={{ color: '#22C55E' }}>
-                +{g.coins.toLocaleString('fr-FR')}
+                +{g.gogold.toLocaleString('fr-FR')}
               </span>
             </div>
           ))}

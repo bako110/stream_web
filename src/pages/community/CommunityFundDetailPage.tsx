@@ -19,8 +19,8 @@ import toast from 'react-hot-toast';
 interface Cotisation {
   id: string; title: string; description?: string | null;
   amount_per_member: number;
-  target_amount_coins: number;
-  collected_coins: number;
+  target_amount_gogold: number;
+  collected_gogold: number;
   member_count_paid: number;
   member_count_total: number;
   progress_pct: number;
@@ -32,7 +32,7 @@ interface Cotisation {
 interface Contribution {
   id: string; user_id: string;
   username?: string | null; display_name?: string | null; avatar_url?: string | null;
-  coins_paid: number;
+  gogold_paid: number;
   status: 'pending' | 'paid' | 'exempt';
   note?: string | null;
   paid_at?: string | null;
@@ -47,7 +47,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; Ico
   exempt:  { label: 'Exempté',    color: '#3B82F6', bg: '#3B82F615', Icon: Shield     },
 };
 
-function coinsToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
+function goGoldToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
 
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function CommunityFundDetailPage() {
@@ -130,7 +130,7 @@ export default function CommunityFundDetailPage() {
       const status = e?.response?.status;
       const detail = e?.response?.data?.detail ?? '';
       if (status === 402 || detail.toLowerCase().includes('solde') || detail.toLowerCase().includes('insuffi')) {
-        toast.error('Solde insuffisant — rechargez vos coins');
+        toast.error('Solde insuffisant — rechargez vos GoGold');
       } else {
         toast.error(detail || 'Impossible de payer');
       }
@@ -234,7 +234,7 @@ export default function CommunityFundDetailPage() {
                 </div>
                 <div className="text-right shrink-0 ml-2">
                   <p className="text-xl font-black text-white">{cot.amount_per_member.toLocaleString()}</p>
-                  <p className="text-[11px] text-white/60">coins/membre</p>
+                  <p className="text-[11px] text-white/60">GoGold/membre</p>
                 </div>
               </div>
 
@@ -246,7 +246,7 @@ export default function CommunityFundDetailPage() {
               <div className="mb-3">
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-[11px] font-bold text-white/80">
-                    {cot.collected_coins.toLocaleString()} / {cot.target_amount_coins.toLocaleString()} coins
+                    {cot.collected_gogold.toLocaleString()} / {cot.target_amount_gogold.toLocaleString()} GoGold
                   </span>
                   <span className="text-sm font-black text-white">{Math.round(cot.progress_pct ?? 0)}%</span>
                 </div>
@@ -308,7 +308,7 @@ export default function CommunityFundDetailPage() {
                 <button onClick={pay} disabled={paying}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white transition-all"
                   style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
-                  {paying ? <Spinner size="sm" /> : <><Target size={16} /> Payer {cot.amount_per_member.toLocaleString()} coins</>}
+                  {paying ? <Spinner size="sm" /> : <><Target size={16} /> Payer {cot.amount_per_member.toLocaleString()} GoGold</>}
                 </button>
               )}
             </div>
@@ -374,9 +374,9 @@ export default function CommunityFundDetailPage() {
                         </p>
                       )}
                     </div>
-                    {c.coins_paid > 0 && (
+                    {c.gogold_paid > 0 && (
                       <p className="text-xs font-bold shrink-0" style={{ color: 'var(--text-secondary)' }}>
-                        {c.coins_paid.toLocaleString()} coins
+                        {c.gogold_paid.toLocaleString()} GoGold
                       </p>
                     )}
                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0"

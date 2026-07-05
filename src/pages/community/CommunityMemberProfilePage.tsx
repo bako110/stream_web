@@ -5,7 +5,7 @@ import { encodeId, decodeId } from '../../utils/slugId';
 import {
   ArrowLeft, Shield, Star, User, UserX, Ban, Award,
   Film as FilmIcon, Heart, MessageCircle, Eye, Users,
-  ChevronRight, BarChart2, Coins,
+  ChevronRight, BarChart2, GoGold,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -21,7 +21,7 @@ interface MemberProfile {
   display_name?: string | null; username?: string | null; avatar_url?: string | null;
   role: 'admin' | 'moderator' | 'member';
   joined_at?: string | null; bio?: string | null;
-  coins_total: number; badges: string[];
+  gogold_total: number; badges: string[];
   posts_count: number; reactions_given: number; events_attended: number;
   is_online: boolean; last_seen?: string | null;
 }
@@ -31,7 +31,7 @@ interface CreatorStats {
   posts_count: number; posts_likes: number; posts_comments: number;
   stories_count: number; stories_views: number;
   followers: number; following: number;
-  total_coins_earned: number; gifts_coins_earned: number; community_coins_earned: number;
+  total_gogold_earned: number; gifts_gogold_earned: number; community_gogold_earned: number;
 }
 
 const ROLE_COLORS: Record<string, string> = { admin: '#7B3FF2', moderator: '#7B3FF2', member: '#9390AB' };
@@ -220,7 +220,7 @@ export default function CommunityMemberProfilePage() {
         <div className="p-4">
           <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>ACTIVITÉ DANS LA COMMUNAUTÉ</p>
           <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <StatRow icon={<Award size={15} />} label="Coins gagnés" value={profile.coins_total} color="#7B3FF2" />
+            <StatRow icon={<Award size={15} />} label="GoGold gagnés" value={profile.gogold_total} color="#7B3FF2" />
             <StatRow icon={<MessageCircle size={15} />} label="Messages envoyés" value={profile.posts_count} color="#7B3FF2" />
             <StatRow icon={<Heart size={15} />} label="Réactions données" value={profile.reactions_given} color="#EF4444" />
             <div className="flex items-center gap-3 py-2.5 px-4">
@@ -258,8 +258,8 @@ export default function CommunityMemberProfilePage() {
                   <StatRow icon={<Heart size={15} />} label="Likes reels" value={creatorStats.reels_likes.toLocaleString()} color="#EF4444" />
                   <StatRow icon={<MessageCircle size={15} />} label="Posts publiés" value={creatorStats.posts_count} color="#7B3FF2" />
                   <StatRow icon={<Users size={15} />} label="Abonnés" value={creatorStats.followers.toLocaleString()} color="#7B3FF2" />
-                  <StatRow icon={<Coins size={15} />} label="Coins gagnés (total)" value={creatorStats.total_coins_earned} color="#7B3FF2" />
-                  <StatRow icon={<Award size={15} />} label="Coins communauté" value={creatorStats.community_coins_earned} color="#7B3FF2" />
+                  <StatRow icon={<GoGold size={15} />} label="GoGold gagnés (total)" value={creatorStats.total_gogold_earned} color="#7B3FF2" />
+                  <StatRow icon={<Award size={15} />} label="GoGold communauté" value={creatorStats.community_gogold_earned} color="#7B3FF2" />
                 </div>
               ) : null}
           </div>

@@ -30,7 +30,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 // ── Gift picker modal ─────────────────────────────────────────────────────────
-interface GiftType { id: string; name: string; emoji: string; coins_cost: number; }
+interface GiftType { id: string; name: string; emoji: string; gogold_cost: number; }
 
 function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
   reelId: string; receiverId: string; receiverName: string; onClose: () => void;
@@ -46,10 +46,10 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
   useEffect(() => {
     Promise.all([
       apiClient.get<GiftType[]>(Endpoints.wallet.gifts),
-      apiClient.get<{ coins_balance: number }>(Endpoints.wallet.balance),
+      apiClient.get<{ gogold_balance: number }>(Endpoints.wallet.balance),
     ]).then(([g, w]) => {
       setGifts(Array.isArray(g.data) ? g.data : []);
-      setBalance((w.data as any)?.coins_balance ?? 0);
+      setBalance((w.data as any)?.gogold_balance ?? 0);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -62,7 +62,7 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
         receiver_id:  receiverId,
         reel_id:      reelId,
       });
-      setBalance(b => b - selected.coins_cost);
+      setBalance(b => b - selected.gogold_cost);
       setFlyEmoji(selected.emoji);
       setSent(true);
       setTimeout(onClose, 1800);
@@ -93,7 +93,7 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
               style={{ background: 'rgba(255,215,0,0.12)', color: '#FFD700', border: '1px solid rgba(255,215,0,0.3)' }}>
-              <span>🪙</span> {balance.toLocaleString()} coins
+              <span>🪙</span> {balance.toLocaleString()} GoGold
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
@@ -123,7 +123,7 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
                     }}>
                     <span style={{ fontSize: 32 }}>{g.emoji}</span>
                     <span className="text-xs font-semibold text-center leading-tight" style={{ color: 'var(--text-primary)' }}>{g.name}</span>
-                    <span className="text-xs font-bold" style={{ color: '#FFD700' }}>{g.coins_cost} 🪙</span>
+                    <span className="text-xs font-bold" style={{ color: '#FFD700' }}>{g.gogold_cost} 🪙</span>
                   </button>
                 );
               })}
@@ -135,28 +135,28 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
         <div className="px-5 pt-2">
           <button
             onClick={handleSend}
-            disabled={!selected || sending || sent || balance < (selected?.coins_cost ?? 0)}
+            disabled={!selected || sending || sent || balance < (selected?.gogold_cost ?? 0)}
             className="w-full py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
             style={{
-              background: (!selected || sending || sent || balance < (selected?.coins_cost ?? 0))
+              background: (!selected || sending || sent || balance < (selected?.gogold_cost ?? 0))
                 ? 'var(--bg-secondary)'
                 : 'linear-gradient(135deg,#FFD700,#FF8C00)',
-              color: (!selected || sending || sent || balance < (selected?.coins_cost ?? 0))
+              color: (!selected || sending || sent || balance < (selected?.gogold_cost ?? 0))
                 ? 'var(--text-tertiary)'
                 : '#fff',
-              boxShadow: (selected && !sending && !sent && balance >= (selected?.coins_cost ?? 0))
+              boxShadow: (selected && !sending && !sent && balance >= (selected?.gogold_cost ?? 0))
                 ? '0 4px 18px rgba(255,215,0,0.4)'
                 : 'none',
             }}>
             {sending ? <Spinner size="sm" /> : sent ? (
               <><span>{flyEmoji}</span> Cadeau envoyé !</>
             ) : selected ? (
-              <><Gift size={15} /> Envoyer {selected.emoji} · {selected.coins_cost} coins</>
+              <><Gift size={15} /> Envoyer {selected.emoji} · {selected.gogold_cost} GoGold</>
             ) : (
               <><Gift size={15} /> Choisir un cadeau</>
             )}
           </button>
-          {selected && balance < selected.coins_cost && (
+          {selected && balance < selected.gogold_cost && (
             <p className="text-xs text-center mt-2" style={{ color: '#E53E3E' }}>
               Solde insuffisant — rechargez votre wallet
             </p>

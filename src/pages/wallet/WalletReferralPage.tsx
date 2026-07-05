@@ -12,8 +12,8 @@ import { Spinner , PageLoader} from '../../components/ui/Spinner';
 interface ReferralStats {
   referral_code:        string | null;
   total_referred:       number;
-  total_coins_earned:   number;
-  monthly_coins_earned: number;
+  total_gogold_earned:   number;
+  monthly_gogold_earned: number;
   monthly_cap:          number;
 }
 
@@ -23,7 +23,7 @@ interface ReferredUser {
   display_name:    string | null;
   avatar_url:      string | null;
   joined_at:       string;
-  coins_generated: number;
+  gogold_generated: number;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export default function WalletReferralPage() {
 
   const handleShare = useCallback(async () => {
     if (!stats?.referral_code) return;
-    const text = `Rejoins-moi sur GoFolyX ! Utilise mon code de parrainage ${stats.referral_code} lors de ton inscription et gagne 20 coins bonus.`;
+    const text = `Rejoins-moi sur GoFolyX ! Utilise mon code de parrainage ${stats.referral_code} lors de ton inscription et gagne 20 GoGold bonus.`;
     if (navigator.share) {
       await navigator.share({ title: 'Invite un ami sur GoFolyX', text }).catch(() => {});
     } else {
@@ -86,13 +86,13 @@ export default function WalletReferralPage() {
   }, [stats]);
 
   const monthlyPct = stats
-    ? Math.min(100, Math.round((stats.monthly_coins_earned / (stats.monthly_cap || 500)) * 100))
+    ? Math.min(100, Math.round((stats.monthly_gogold_earned / (stats.monthly_cap || 500)) * 100))
     : 0;
 
   const HOW_STEPS = [
     { Icon: Share2,    text: 'Partagez votre code avec vos amis' },
     { Icon: UserCheck, text: "L'ami entre votre code lors de son inscription" },
-    { Icon: Gift,      text: 'Il reçoit 20 coins, vous recevez 30 coins' },
+    { Icon: Gift,      text: 'Il reçoit 20 GoGold, vous recevez 30 GoGold' },
     { Icon: Percent,   text: 'Vous gagnez 5 % sur chacun de ses achats (max 500/mois)' },
   ];
 
@@ -112,7 +112,7 @@ export default function WalletReferralPage() {
         </button>
         <div>
           <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Parrainage</h1>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Invitez vos amis, gagnez des coins</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Invitez vos amis, gagnez des GoGold</p>
         </div>
       </div>
 
@@ -139,7 +139,7 @@ export default function WalletReferralPage() {
               Invitez vos amis
             </h2>
             <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-              Gagnez des coins pour chaque ami qui rejoint GoFolyX et chaque achat qu'il effectue.
+              Gagnez des GoGold pour chaque ami qui rejoint GoFolyX et chaque achat qu'il effectue.
             </p>
 
             {/* Reward pills */}
@@ -150,7 +150,7 @@ export default function WalletReferralPage() {
               >
                 <UserPlus size={13} style={{ color: 'var(--primary)' }} />
                 <span className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
-                  +30 coins / inscription
+                  +30 GoGold / inscription
                 </span>
               </div>
               <div
@@ -244,9 +244,9 @@ export default function WalletReferralPage() {
                 <Award size={20} />
               </div>
               <p className="text-3xl font-black" style={{ color: 'var(--text-primary)' }}>
-                {(stats?.total_coins_earned ?? 0).toLocaleString('fr-FR')}
+                {(stats?.total_gogold_earned ?? 0).toLocaleString('fr-FR')}
               </p>
-              <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Coins gagnés</p>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>GoGold gagnés</p>
             </div>
           </div>
 
@@ -260,7 +260,7 @@ export default function WalletReferralPage() {
                 Ce mois-ci
               </p>
               <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                {stats?.monthly_coins_earned ?? 0} / {stats?.monthly_cap ?? 500} coins
+                {stats?.monthly_gogold_earned ?? 0} / {stats?.monthly_cap ?? 500} GoGold
               </p>
             </div>
 
@@ -281,7 +281,7 @@ export default function WalletReferralPage() {
             </div>
 
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              Plafond : {stats?.monthly_cap ?? 500} coins/mois de commissions affiliation
+              Plafond : {stats?.monthly_cap ?? 500} GoGold/mois de commissions affiliation
             </p>
           </div>
 
@@ -351,17 +351,17 @@ export default function WalletReferralPage() {
                         </p>
                       </div>
 
-                      {/* Coins générés */}
-                      {u.coins_generated > 0 && (
+                      {/* GoGold générés */}
+                      {u.gogold_generated > 0 && (
                         <div
                           className="flex items-baseline gap-0.5 px-2.5 py-1 rounded-full shrink-0"
                           style={{ background: 'rgba(255,215,0,0.10)' }}
                         >
                           <span className="text-sm font-black" style={{ color: '#FFD700' }}>
-                            +{u.coins_generated.toLocaleString('fr-FR')}
+                            +{u.gogold_generated.toLocaleString('fr-FR')}
                           </span>
                           <span className="text-xs font-medium" style={{ color: '#FFD700' }}>
-                            {' '}coins
+                            {' '}GoGold
                           </span>
                         </div>
                       )}

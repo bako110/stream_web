@@ -9,16 +9,16 @@ import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 
-const COINS_PER_EUR = 100;
+const GOGOLD_PER_EUR = 100;
 const POLL_INTERVAL = 3000;
 const MAX_POLL_TIME = 15 * 60 * 1000; // 15 min
 
-interface CoinPackage {
+interface GoGoldPackage {
   id: string;
   name: string;
-  coins: number;
+  gogold: number;
   bonus?: number;
-  bonus_coins?: number;
+  bonus_gogold?: number;
   price_eur: number | string;
   is_popular?: boolean;
   popular?: boolean;
@@ -31,7 +31,7 @@ interface CinetPayInitResponse {
   must_be_redirected: boolean;
   status: string;
   message: string;
-  coins_to_add: number;
+  gogold_to_add: number;
   amount: number;
   currency: string;
 }
@@ -40,22 +40,22 @@ interface CinetPayStatusResponse {
   merchant_transaction_id: string;
   status: 'INITIATED' | 'SUCCESS' | 'FAILED' | 'PENDING' | string;
   message: string;
-  coins_added?: number;
+  gogold_added?: number;
   new_balance?: number;
 }
 
-const MOCK_PACKAGES: CoinPackage[] = [
-  { id: '1', name: 'Starter', coins: 100,  bonus_coins: 0,   price_eur: 0.99,  is_popular: false },
-  { id: '2', name: 'Popular', coins: 500,  bonus_coins: 75,  price_eur: 3.99,  is_popular: true  },
-  { id: '3', name: 'Pro',     coins: 1000, bonus_coins: 200, price_eur: 7.99,  is_popular: false },
-  { id: '4', name: 'Elite',   coins: 2500, bonus_coins: 750, price_eur: 17.99, is_popular: false },
+const MOCK_PACKAGES: GoGoldPackage[] = [
+  { id: '1', name: 'Starter', gogold: 100,  bonus_gogold: 0,   price_eur: 0.99,  is_popular: false },
+  { id: '2', name: 'Popular', gogold: 500,  bonus_gogold: 75,  price_eur: 3.99,  is_popular: true  },
+  { id: '3', name: 'Pro',     gogold: 1000, bonus_gogold: 200, price_eur: 7.99,  is_popular: false },
+  { id: '4', name: 'Elite',   gogold: 2500, bonus_gogold: 750, price_eur: 17.99, is_popular: false },
 ];
 
 const PACK_ICONS = [Zap, Star, Sparkles, Crown, Crown, Crown];
 
-function bonusOf(pkg: CoinPackage): number { return pkg.bonus_coins ?? pkg.bonus ?? 0; }
-function priceOf(pkg: CoinPackage): number  { return Number(pkg.price_eur); }
-function isPopular(pkg: CoinPackage): boolean { return !!(pkg.is_popular ?? pkg.popular); }
+function bonusOf(pkg: GoGoldPackage): number { return pkg.bonus_gogold ?? pkg.bonus ?? 0; }
+function priceOf(pkg: GoGoldPackage): number  { return Number(pkg.price_eur); }
+function isPopular(pkg: GoGoldPackage): boolean { return !!(pkg.is_popular ?? pkg.popular); }
 
 type PayStep = 'select' | 'waiting' | 'success' | 'failed';
 
@@ -63,7 +63,7 @@ export default function WalletBuyPage() {
   const navigate = useNavigate();
 
   // Packages
-  const [packages, setPackages]   = useState<CoinPackage[]>(MOCK_PACKAGES);
+  const [packages, setPackages]   = useState<GoGoldPackage[]>(MOCK_PACKAGES);
   const [selected, setSelected]   = useState<string | null>(null);
   const [customMode, setCustomMode] = useState(false);
   const [customEur, setCustomEur]   = useState('');
@@ -72,7 +72,7 @@ export default function WalletBuyPage() {
   const [step, setStep]                 = useState<PayStep>('select');
   const [initiating, setInitiating]     = useState(false);
   const [merchantTxId, setMerchantTxId] = useState<string | null>(null);
-  const [coinsToAdd, setCoinsToAdd]     = useState(0);
+  const [goGoldToAdd, setGoGoldToAdd]     = useState(0);
   const [statusMsg, setStatusMsg]       = useState('');
   const [finalBalance, setFinalBalance] = useState<number | null>(null);
 
@@ -80,7 +80,7 @@ export default function WalletBuyPage() {
   const pollStart  = useRef<number>(0);
 
   const customAmount = parseFloat(customEur.replace(',', '.')) || 0;
-  const customCoins  = Math.floor(customAmount * COINS_PER_EUR);
+  const customGoGold  = Math.floor(customAmount * GOGOLD_PER_EUR);
   // Validation stricte : montant fini, positif, dans la plage autorisée, max 2 décimales
   const customValid  = (
     Number.isFinite(customAmount) &&
@@ -95,7 +95,7 @@ export default function WalletBuyPage() {
   }, [navigate]);
 
   useEffect(() => {
-    apiClient.get<CoinPackage[]>(Endpoints.wallet.packages)
+    apiClient.get<GoGoldPackage[]>(Endpoints.wallet.packages)
       .then(r => { if (Array.isArray(r.data) && r.data.length > 0) setPackages(r.data); })
       .catch(() => {});
   }, []);
@@ -107,7 +107,7 @@ export default function WalletBuyPage() {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   }, []);
 
-  const pollStatus = useCallback(async (txId: string, expectedCoins: number) => {
+  const pollStatus = useCallback(async (txId: string, expectedGoGold: number) => {
     // Timeout global de 15 min
     if (Date.now() - pollStart.current > MAX_POLL_TIME) {
       stopPolling();
@@ -120,13 +120,13 @@ export default function WalletBuyPage() {
       const res = await apiClient.get<CinetPayStatusResponse>(
         Endpoints.wallet.cinetpayStatus(txId)
       );
-      const { status, message, coins_added, new_balance } = res.data;
+      const { status, message, gogold_added, new_balance } = res.data;
       setStatusMsg(message ?? '');
 
       if (status === 'SUCCESS') {
         stopPolling();
         setFinalBalance(new_balance ?? null);
-        setCoinsToAdd(coins_added ?? expectedCoins);
+        setGoGoldToAdd(gogold_added ?? expectedGoGold);
         setStep('success');
       } else if (status === 'FAILED') {
         stopPolling();
@@ -139,12 +139,12 @@ export default function WalletBuyPage() {
     }
   }, [stopPolling]);
 
-  const startPolling = useCallback((txId: string, expectedCoins: number) => {
+  const startPolling = useCallback((txId: string, expectedGoGold: number) => {
     pollStart.current = Date.now();
-    pollRef.current = setInterval(() => pollStatus(txId, expectedCoins), POLL_INTERVAL);
+    pollRef.current = setInterval(() => pollStatus(txId, expectedGoGold), POLL_INTERVAL);
   }, [pollStatus]);
 
-  async function initPayment(packageId: string | null, amountEur: number | null, expectedCoins: number) {
+  async function initPayment(packageId: string | null, amountEur: number | null, expectedGoGold: number) {
     setInitiating(true);
     try {
       const body = packageId
@@ -157,7 +157,7 @@ export default function WalletBuyPage() {
       const data = res.data;
 
       setMerchantTxId(data.merchant_transaction_id);
-      setCoinsToAdd(data.coins_to_add);
+      setGoGoldToAdd(data.gogold_to_add);
       setStatusMsg(data.message ?? 'En attente de votre paiement…');
 
       if (data.status === 'SUCCESS') {
@@ -182,7 +182,7 @@ export default function WalletBuyPage() {
       }
 
       setStep('waiting');
-      startPolling(data.merchant_transaction_id, data.coins_to_add);
+      startPolling(data.merchant_transaction_id, data.gogold_to_add);
     } catch (e: any) {
       toast.error(e?.response?.data?.detail ?? 'Impossible d\'initier le paiement.');
     } finally {
@@ -190,15 +190,15 @@ export default function WalletBuyPage() {
     }
   }
 
-  function handleBuyPackage(pkg: CoinPackage) {
-    initPayment(pkg.id, null, pkg.coins + bonusOf(pkg));
+  function handleBuyPackage(pkg: GoGoldPackage) {
+    initPayment(pkg.id, null, pkg.gogold + bonusOf(pkg));
   }
 
   function handleBuyCustom() {
     if (!customValid) return;
     // Arrondi à 2 décimales pour éviter les flottants imprévisibles (ex: 1.999999)
     const safeAmount = Math.round(customAmount * 100) / 100;
-    initPayment(null, safeAmount, Math.floor(safeAmount * COINS_PER_EUR));
+    initPayment(null, safeAmount, Math.floor(safeAmount * GOGOLD_PER_EUR));
   }
 
   function handleRetry() {
@@ -220,11 +220,11 @@ export default function WalletBuyPage() {
         <div>
           <h2 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Paiement confirmé</h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            +{coinsToAdd.toLocaleString('fr-FR')} coins ont été ajoutés à votre portefeuille
+            +{goGoldToAdd.toLocaleString('fr-FR')} GoGold ont été ajoutés à votre portefeuille
           </p>
           {finalBalance != null && (
             <p className="text-xs mt-2 font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-              Nouveau solde : {finalBalance.toLocaleString('fr-FR')} coins
+              Nouveau solde : {finalBalance.toLocaleString('fr-FR')} GoGold
             </p>
           )}
         </div>
@@ -287,7 +287,7 @@ export default function WalletBuyPage() {
           <div className="text-left">
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Montant attendu</p>
             <p className="text-lg font-black" style={{ color: 'var(--primary)' }}>
-              +{coinsToAdd.toLocaleString('fr-FR')} <span className="text-sm font-semibold">coins</span>
+              +{goGoldToAdd.toLocaleString('fr-FR')} <span className="text-sm font-semibold">GoGold</span>
             </p>
           </div>
           <Spinner size="sm" />
@@ -299,7 +299,7 @@ export default function WalletBuyPage() {
 
         {merchantTxId && (
           <button
-            onClick={() => pollStatus(merchantTxId, coinsToAdd)}
+            onClick={() => pollStatus(merchantTxId, goGoldToAdd)}
             className="flex items-center gap-2 text-xs px-4 py-2 rounded-xl transition-all"
             style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
             <RefreshCw size={13} /> Vérifier maintenant
@@ -328,7 +328,7 @@ export default function WalletBuyPage() {
           <ArrowLeft size={17} />
         </button>
         <div>
-          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Acheter des coins</h1>
+          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Acheter des GoGold</h1>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Paiement sécurisé via CinetPay</p>
         </div>
       </div>
@@ -399,9 +399,9 @@ export default function WalletBuyPage() {
                     <span className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>{pkg.name}</span>
                   </div>
                   <p className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
-                    {pkg.coins.toLocaleString('fr-FR')}
+                    {pkg.gogold.toLocaleString('fr-FR')}
                   </p>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>coins</p>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>GoGold</p>
                   {bonus > 0 && (
                     <p className="text-xs font-bold mt-0.5" style={{ color: '#22C55E' }}>
                       +{bonus.toLocaleString('fr-FR')} bonus
@@ -418,7 +418,7 @@ export default function WalletBuyPage() {
           {/* Buy button */}
           {selected && (() => {
             const pkg   = packages.find(p => p.id === selected)!;
-            const total = pkg.coins + bonusOf(pkg);
+            const total = pkg.gogold + bonusOf(pkg);
             const price = priceOf(pkg);
             return (
               <button onClick={() => handleBuyPackage(pkg)} disabled={initiating}
@@ -426,7 +426,7 @@ export default function WalletBuyPage() {
                 style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.35)' }}>
                 {initiating
                   ? <Spinner size="sm" />
-                  : <><ExternalLink size={15} /> Payer {total.toLocaleString('fr-FR')} coins — {price.toFixed(2)} €</>}
+                  : <><ExternalLink size={15} /> Payer {total.toLocaleString('fr-FR')} GoGold — {price.toFixed(2)} €</>}
               </button>
             );
           })()}
@@ -457,7 +457,7 @@ export default function WalletBuyPage() {
               style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.1),rgba(123,63,242,0.07))', border: '1px solid rgba(123,63,242,0.15)' }}>
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Vous recevrez</p>
               <p className="text-lg font-black" style={{ color: 'var(--primary)' }}>
-                {customCoins.toLocaleString('fr-FR')} <span className="text-sm font-semibold">coins</span>
+                {customGoGold.toLocaleString('fr-FR')} <span className="text-sm font-semibold">GoGold</span>
               </p>
             </div>
           )}
@@ -477,7 +477,7 @@ export default function WalletBuyPage() {
             {initiating
               ? <Spinner size="sm" />
               : customValid
-                ? <><ExternalLink size={15} /> Payer {customCoins.toLocaleString('fr-FR')} coins — {customAmount.toFixed(2)} €</>
+                ? <><ExternalLink size={15} /> Payer {customGoGold.toLocaleString('fr-FR')} GoGold — {customAmount.toFixed(2)} €</>
                 : 'Saisissez un montant valide'}
           </button>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Crown, Coins } from 'lucide-react';
+import { Lock, Crown, GoGold } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../ui/Avatar';
@@ -15,19 +15,19 @@ interface Props {
 
 /**
  * Verrou d'accès pour les lives monétisés — affiché avant de charger le token
- * LiveKit tant que l'utilisateur n'a pas payé (coins ou cadeau requis par le host).
+ * LiveKit tant que l'utilisateur n'a pas payé (GoGold ou cadeau requis par le host).
  * Équivalent du LiveAccessGate mobile (stream_mobile/src/components/live/LiveAccessGate.tsx).
  */
 export function LiveAccessGate({ live, liveId, onAccessGranted, onLeave }: Props) {
   const navigate = useNavigate();
-  const isCoins = live.monetization_type === 'coins';
+  const isGoGold = live.monetization_type === 'gogold';
 
   const hostName   = live.user?.display_name ?? live.user?.username ?? 'Créateur';
   const hostAvatar = live.user?.avatar_url ?? null;
 
   const requiredGiftName  = live.monetization_gift_name ?? 'Cadeau';
   const requiredGiftEmoji = live.monetization_gift_emoji ?? '🎁';
-  const requiredCoins     = live.monetization_coins ?? 0;
+  const requiredGoGold     = live.monetization_gogold ?? 0;
 
   const [myBalance, setMyBalance] = useState<number | null>(null);
   const [checking,  setChecking]  = useState(false);
@@ -35,17 +35,17 @@ export function LiveAccessGate({ live, liveId, onAccessGranted, onLeave }: Props
 
   useEffect(() => {
     apiClient.get<any>(Endpoints.wallet.balance)
-      .then(r => setMyBalance(r.data?.coins_balance ?? r.data?.balance ?? 0))
+      .then(r => setMyBalance(r.data?.gogold_balance ?? r.data?.balance ?? 0))
       .catch(() => setMyBalance(null));
   }, []);
 
-  const hasEnough = myBalance !== null && (isCoins ? myBalance >= requiredCoins : true);
+  const hasEnough = myBalance !== null && (isGoGold ? myBalance >= requiredGoGold : true);
 
-  async function handlePayCoins() {
+  async function handlePayGoGold() {
     setChecking(true);
     setError(null);
     try {
-      const r = await apiClient.post<any>(Endpoints.lives.accessCoins(liveId));
+      const r = await apiClient.post<any>(Endpoints.lives.accessGoGold(liveId));
       if (r.data?.access_granted) onAccessGranted();
       else setError('Solde insuffisant. Recharge ton portefeuille pour continuer.');
     } catch (e: any) {
@@ -113,18 +113,18 @@ export function LiveAccessGate({ live, liveId, onAccessGranted, onLeave }: Props
           <h2 className="text-xl font-black mb-2" style={{ color: 'var(--text-primary)' }}>Live payant</h2>
           <p className="text-sm text-center mb-5" style={{ color: 'var(--text-secondary)' }}>
             {hostName} a rendu ce live accessible sur condition.<br />
-            {isCoins ? `Envoie ${requiredCoins} coins pour regarder.` : `Envoie le cadeau requis pour regarder.`}
+            {isGoGold ? `Envoie ${requiredGoGold} GoGold pour regarder.` : `Envoie le cadeau requis pour regarder.`}
           </p>
 
           <div className="w-full flex items-center gap-3 rounded-2xl p-4 mb-5"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-            <span className="text-3xl">{isCoins ? '🪙' : requiredGiftEmoji}</span>
+            <span className="text-3xl">{isGoGold ? '🪙' : requiredGiftEmoji}</span>
             <div className="flex-1">
               <p className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-                {isCoins ? "Prix d'accès" : 'Cadeau requis'}
+                {isGoGold ? "Prix d'accès" : 'Cadeau requis'}
               </p>
-              <p className="text-lg font-black" style={{ color: isCoins ? '#F59E0B' : '#E85DAD' }}>
-                {isCoins ? `${requiredCoins} coins` : requiredGiftName}
+              <p className="text-lg font-black" style={{ color: isGoGold ? '#F59E0B' : '#E85DAD' }}>
+                {isGoGold ? `${requiredGoGold} GoGold` : requiredGiftName}
               </p>
             </div>
           </div>
@@ -137,7 +137,7 @@ export function LiveAccessGate({ live, liveId, onAccessGranted, onLeave }: Props
               }}>
               <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Ton solde</span>
               <span className="text-sm font-black" style={{ color: !hasEnough ? '#F0365A' : '#3FEDB6' }}>
-                {myBalance} coins{isCoins && !hasEnough ? ` (manque ${requiredCoins - myBalance})` : ''}
+                {myBalance} GoGold{isGoGold && !hasEnough ? ` (manque ${requiredGoGold - myBalance})` : ''}
               </span>
             </div>
           )}
@@ -146,22 +146,22 @@ export function LiveAccessGate({ live, liveId, onAccessGranted, onLeave }: Props
             <p className="text-xs text-center mb-3" style={{ color: '#F0365A' }}>{error}</p>
           )}
 
-          {isCoins && !hasEnough && myBalance !== null ? (
+          {isGoGold && !hasEnough && myBalance !== null ? (
             <button onClick={() => navigate('/wallet')}
               className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-black text-white"
               style={{ background: 'linear-gradient(135deg,#F0365A,#9B65F5)' }}>
-              <Coins size={18} /> Recharger mon solde
+              <GoGold size={18} /> Recharger mon solde
             </button>
           ) : (
-            <button onClick={isCoins ? handlePayCoins : handleSendGift} disabled={checking}
+            <button onClick={isGoGold ? handlePayGoGold : handleSendGift} disabled={checking}
               className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-black text-white disabled:opacity-50"
-              style={{ background: isCoins ? 'linear-gradient(135deg,#F59E0B,#F97316)' : 'linear-gradient(135deg,#E85DAD,#9B65F5)' }}>
+              style={{ background: isGoGold ? 'linear-gradient(135deg,#F59E0B,#F97316)' : 'linear-gradient(135deg,#E85DAD,#9B65F5)' }}>
               {checking ? (
                 <span className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
               ) : (
                 <>
-                  <span className="text-lg">{isCoins ? '🪙' : requiredGiftEmoji}</span>
-                  {isCoins ? `Payer ${requiredCoins} coins` : `Envoyer ${requiredGiftName}`}
+                  <span className="text-lg">{isGoGold ? '🪙' : requiredGiftEmoji}</span>
+                  {isGoGold ? `Payer ${requiredGoGold} GoGold` : `Envoyer ${requiredGiftName}`}
                 </>
               )}
             </button>

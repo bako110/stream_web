@@ -4,7 +4,7 @@
  * Events dispatches :
  *   feed_updated, story_added, concert_live, concert_ended
  *   live_started, live_ended, live_viewers_updated
- *   new_follower, coin_transfer_received, gift_received
+ *   new_follower, gogold_transfer_received, gift_received
  *   reaction_on_content, comment_on_content
  *   presence, activity, notification
  *   message, read (messages directs)
@@ -44,8 +44,8 @@ export interface NewFollowerPayload   { from_user_id: string; from_username: str
 export interface StoryAddedPayload    { user_id: string; username: string; display_name?: string; avatar_url?: string; }
 export interface ReactionPayload      { action: string; target_type: string; target_id: string; reaction_type: string; from_user_id: string; from_username: string; }
 export interface CommentPayload       { target_type: string; target_id: string; comment: unknown; from_user_id: string; from_username: string; }
-export interface CoinTransferPayload  { coins_amount: number; note?: string; from_user_id: string; from_username: string; }
-export interface GiftReceivedPayload  { coins_amount: number; gift_name: string; gift_emoji: string; reel_id?: string; from_user_id: string; from_username: string; }
+export interface GoGoldTransferPayload  { gogold_amount: number; note?: string; from_user_id: string; from_username: string; }
+export interface GiftReceivedPayload  { gogold_amount: number; gift_name: string; gift_emoji: string; reel_id?: string; from_user_id: string; from_username: string; }
 export interface PresencePayload      { user_id: string; is_online: boolean; last_seen_at?: string; }
 
 // ── Valeur du contexte ────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ interface WsContextValue {
   lastStoryAdded:       StoryAddedPayload | null;
   lastReactionOnContent: ReactionPayload | null;
   lastCommentOnContent:  CommentPayload | null;
-  lastCoinTransfer:     CoinTransferPayload | null;
+  lastGoGoldTransfer:     GoGoldTransferPayload | null;
   lastGiftReceived:     GiftReceivedPayload | null;
   lastPresenceUpdate:   PresencePayload | null;
   unreadMessages:       number;
@@ -92,7 +92,7 @@ const Ctx = createContext<WsContextValue>({
   lastStoryAdded: null,
   lastReactionOnContent: null,
   lastCommentOnContent: null,
-  lastCoinTransfer: null,
+  lastGoGoldTransfer: null,
   lastGiftReceived: null,
   lastPresenceUpdate: null,
   unreadMessages: 0,
@@ -147,7 +147,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [lastStoryAdded,       setLastStoryAdded]       = useState<StoryAddedPayload | null>(null);
   const [lastReactionOnContent, setLastReactionOnContent] = useState<ReactionPayload | null>(null);
   const [lastCommentOnContent,  setLastCommentOnContent]  = useState<CommentPayload | null>(null);
-  const [lastCoinTransfer,     setLastCoinTransfer]     = useState<CoinTransferPayload | null>(null);
+  const [lastGoGoldTransfer,     setLastGoGoldTransfer]     = useState<GoGoldTransferPayload | null>(null);
   const [lastGiftReceived,     setLastGiftReceived]     = useState<GiftReceivedPayload | null>(null);
   const [lastPresenceUpdate,   setLastPresenceUpdate]   = useState<PresencePayload | null>(null);
 
@@ -199,8 +199,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       case 'comment_on_content':
         setLastCommentOnContent(payload as unknown as CommentPayload);
         break;
-      case 'coin_transfer_received':
-        setLastCoinTransfer(payload as unknown as CoinTransferPayload);
+      case 'gogold_transfer_received':
+        setLastGoGoldTransfer(payload as unknown as GoGoldTransferPayload);
         break;
       case 'gift_received':
         setLastGiftReceived(payload as unknown as GiftReceivedPayload);
@@ -344,7 +344,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     lastStoryAdded,
     lastReactionOnContent,
     lastCommentOnContent,
-    lastCoinTransfer,
+    lastGoGoldTransfer,
     lastGiftReceived,
     lastPresenceUpdate,
     unreadMessages,
@@ -359,7 +359,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     lastConcertLive, lastConcertEnded,
     lastNewFollower, lastStoryAdded,
     lastReactionOnContent, lastCommentOnContent,
-    lastCoinTransfer, lastGiftReceived, lastPresenceUpdate,
+    lastGoGoldTransfer, lastGiftReceived, lastPresenceUpdate,
     unreadMessages, unreadActivity, unreadNotifications,
   ]);
 

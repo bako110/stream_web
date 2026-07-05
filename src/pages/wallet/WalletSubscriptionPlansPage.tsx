@@ -135,7 +135,7 @@ export default function WalletSubscriptionPlansPage() {
       const r = await apiClient.get<any>(Endpoints.subscriptions.walletCheck(plan.id));
       const data = r.data?.data ?? r.data;
       if (data?.sufficient === false) {
-        toast(`Solde insuffisant — il vous manque ${data.missing ?? ''} coins.`);
+        toast(`Solde insuffisant — il vous manque ${data.missing ?? ''} GoGold.`);
       }
       navigate(`/wallet/subscription/payment?plan=${plan.id}`);
     } catch {

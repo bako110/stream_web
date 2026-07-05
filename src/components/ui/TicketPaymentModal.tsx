@@ -32,14 +32,14 @@ interface Props {
   onBuy:           (tierKey?: TicketTier['key']) => Promise<any>;
 }
 
-// ── Constantes — alignées sur coins.ts (source unique de vérité) ───────────────
+// ── Constantes — alignées sur GoGold.ts (source unique de vérité) ───────────────
 
 const FEES_RATE    = 0.10;
-const EUR_TO_COINS = 100;   // achat : 1 € = 100 coins
+const EUR_TO_GOGOLD = 100;   // achat : 1 € = 100 GoGold
 
-const coinsToEur = (c: number) => (c / 100) * 0.35;  // retrait : 100 coins = 0,35 €
-const eurToCoins = (e: number | string) => Math.ceil(Number(e) * EUR_TO_COINS);
-const fmtCoins   = (c: number) => c.toLocaleString('fr-FR');
+const goGoldToEur = (c: number) => (c / 100) * 0.35;  // retrait : 100 GoGold = 0,35 €
+const eurToGoGold = (e: number | string) => Math.ceil(Number(e) * EUR_TO_GOGOLD);
+const fmtGoGold   = (c: number) => c.toLocaleString('fr-FR');
 const fmtEur     = (e: number | string) => Number(e).toFixed(2).replace('.', ',') + ' €';
 
 const TIER_ICONS: Record<string, React.ReactNode> = {
@@ -70,11 +70,11 @@ export function TicketPaymentModal({
   const priceEur   = activeTier?.price ?? 0;
   const feesEur    = Math.round(priceEur * FEES_RATE * 100) / 100;
   const totalEur   = priceEur + feesEur;
-  const priceCoins = eurToCoins(totalEur);
-  const hasEnough  = balance !== null && balance >= priceCoins;
-  const coinsAfter = balance !== null ? balance - priceCoins : null;
-  const missing    = balance !== null ? Math.max(0, priceCoins - balance) : 0;
-  const missingEur = coinsToEur(missing);
+  const priceGoGold = eurToGoGold(totalEur);
+  const hasEnough  = balance !== null && balance >= priceGoGold;
+  const goGoldAfter = balance !== null ? balance - priceGoGold : null;
+  const missing    = balance !== null ? Math.max(0, priceGoGold - balance) : 0;
+  const missingEur = goGoldToEur(missing);
 
   // Reset + fetch balance à chaque ouverture
   useEffect(() => {
@@ -97,8 +97,8 @@ export function TicketPaymentModal({
   async function fetchBalance() {
     setLoadingBal(true);
     try {
-      const res = await apiClient.get<{ coins_balance: number }>(Endpoints.wallet.balance);
-      setBalance((res.data as any)?.coins_balance ?? 0);
+      const res = await apiClient.get<{ gogold_balance: number }>(Endpoints.wallet.balance);
+      setBalance((res.data as any)?.gogold_balance ?? 0);
     } catch {
       setBalance(0);
     } finally {
@@ -263,10 +263,10 @@ export function TicketPaymentModal({
                       <Spinner size="sm" />
                     ) : (
                       <p className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>
-                        {fmtCoins(balance ?? 0)}{' '}
-                        <span className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>coins</span>
+                        {fmtGoGold(balance ?? 0)}{' '}
+                        <span className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>GoGold</span>
                         {'  '}
-                        <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>≈ {fmtEur(coinsToEur(balance ?? 0))}</span>
+                        <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>≈ {fmtEur(goGoldToEur(balance ?? 0))}</span>
                       </p>
                     )}
                   </div>
@@ -308,16 +308,16 @@ export function TicketPaymentModal({
                       <span className="text-base font-black" style={{ color: activeTier.color }}>{fmtEur(totalEur)}</span>
                     </div>
                     <div className="flex items-center justify-between py-1">
-                      <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Équivalent coins</span>
-                      <span className="text-sm font-bold" style={{ color: 'var(--primary)' }}>{fmtCoins(priceCoins)} coins</span>
+                      <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Équivalent GoGold</span>
+                      <span className="text-sm font-bold" style={{ color: 'var(--primary)' }}>{fmtGoGold(priceGoGold)} GoGold</span>
                     </div>
-                    {!loadingBal && coinsAfter !== null && (
+                    {!loadingBal && goGoldAfter !== null && (
                       <div className="flex items-center justify-between py-1"
                         style={{ borderTop: '1px solid var(--border)', marginTop: 2 }}>
                         <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Solde après</span>
                         <span className="text-sm font-bold"
                           style={{ color: hasEnough ? '#10B981' : '#EF4444' }}>
-                          {hasEnough ? `${fmtCoins(coinsAfter)} coins` : 'Insuffisant'}
+                          {hasEnough ? `${fmtGoGold(goGoldAfter)} GoGold` : 'Insuffisant'}
                         </span>
                       </div>
                     )}
@@ -330,9 +330,9 @@ export function TicketPaymentModal({
                     style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.4)' }}>
                     <AlertCircle size={18} color="#EF4444" className="shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold" style={{ color: '#EF4444' }}>Pas assez de coins</p>
+                      <p className="text-sm font-bold" style={{ color: '#EF4444' }}>Pas assez de GoGold</p>
                       <p className="text-xs mt-0.5 leading-relaxed" style={{ color: '#EF4444', opacity: 0.85 }}>
-                        Il te manque {fmtCoins(missing)} coins (≈ {fmtEur(missingEur)}). Recharge en 30 secondes !
+                        Il te manque {fmtGoGold(missing)} GoGold (≈ {fmtEur(missingEur)}). Recharge en 30 secondes !
                       </p>
                     </div>
                   </div>
@@ -372,7 +372,7 @@ export function TicketPaymentModal({
                       {!isPaid ? <Check size={15} /> : <Lock size={15} />}
                       {!isPaid
                         ? 'Je réserve ma place !'
-                        : `Payer — ${fmtCoins(priceCoins)} coins`}
+                        : `Payer — ${fmtGoGold(priceGoGold)} GoGold`}
                     </>
                   )}
                 </button>

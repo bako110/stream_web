@@ -15,7 +15,7 @@ interface CommunityStats {
   members: { total: number; new_week: number; new_month: number; growth: number; };
   engagement: { messages_today: number; messages_week: number; active_members: number; reactions: number; };
   content: { posts: number; pinned: number; polls: number; media: number; };
-  top_contributors: { id: string; user_id: string; name: string; username: string; avatar_url: string | null; coins: number; posts: number; }[];
+  top_contributors: { id: string; user_id: string; name: string; username: string; avatar_url: string | null; gogold: number; posts: number; }[];
   activity: { day: string; msgs: number }[];
   roles: { admin: number; moderator: number; member: number };
   retention: { d1: number; d7: number; d30: number };
@@ -214,7 +214,7 @@ export default function CommunityStatsPage() {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <Award size={13} style={{ color: '#7B3FF2' }} />
-                      <span className="text-xs font-bold" style={{ color: '#7B3FF2' }}>{c.coins}</span>
+                      <span className="text-xs font-bold" style={{ color: '#7B3FF2' }}>{c.gogold}</span>
                     </div>
                   </div>
                 ))}

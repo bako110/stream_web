@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   X, VideoIcon, VideoOff, Mic, MicOff, UserCheck,
-  Lock, Unlock, Edit2, Coins, Gift, ChevronLeft, Check, Radio, ShieldOff,
+  Lock, Unlock, Edit2, GoGold, Gift, ChevronLeft, Check, Radio, ShieldOff,
 } from 'lucide-react';
 import { useConfirm } from '../ui/Dialog';
 import { useLocalParticipant } from '@livekit/components-react';
@@ -17,12 +17,12 @@ interface HandRequest { identity: string; name: string; avatar?: string | null; 
 interface LiveData {
   is_monetized?: boolean;
   monetization_type?: string | null;
-  monetization_coins?: number | null;
+  monetization_gogold?: number | null;
   monetization_gift_id?: string | null;
   monetization_gift_name?: string | null;
   stage_monetized?: boolean;
   stage_type?: string | null;
-  stage_coins?: number | null;
+  stage_gogold?: number | null;
   stage_gift_id?: string | null;
   stage_gift_name?: string | null;
 }
@@ -42,18 +42,18 @@ interface Props {
 
 function MonetForm({
   title, accentColor, isActive,
-  currentType, currentCoins, currentGiftId, currentGiftName,
+  currentType, currentGoGold, currentGiftId, currentGiftName,
   onSave, onRemove,
 }: {
   title: string; accentColor: string; isActive: boolean;
-  currentType?: string | null; currentCoins?: number | null;
+  currentType?: string | null; currentGoGold?: number | null;
   currentGiftId?: string | null; currentGiftName?: string | null;
-  onSave: (type: 'coins' | 'gift', coins: number | null, gift: GiftType | null) => Promise<void>;
+  onSave: (type: 'gogold' | 'gift', gogold: number | null, gift: GiftType | null) => Promise<void>;
   onRemove: () => void;
 }) {
   const [showForm,     setShowForm]     = useState(false);
-  const [type,         setType]         = useState<'coins' | 'gift' | null>((currentType as any) ?? null);
-  const [coins,        setCoins]        = useState(currentCoins ? String(currentCoins) : '');
+  const [type,         setType]         = useState<'gogold' | 'gift' | null>((currentType as any) ?? null);
+  const [gogold,        setGoGold]        = useState(currentGoGold ? String(currentGoGold) : '');
   const [gift,         setGift]         = useState<GiftType | null>(null);
   const [gifts,        setGifts]        = useState<GiftType[]>([]);
   const [giftsLoading, setGiftsLoading] = useState(false);
@@ -75,10 +75,10 @@ function MonetForm({
 
   async function save() {
     if (!type) return;
-    if (type === 'coins' && (!parseInt(coins, 10) || parseInt(coins, 10) < 1)) { setError('Montant invalide'); return; }
+    if (type === 'gogold' && (!parseInt(gogold, 10) || parseInt(gogold, 10) < 1)) { setError('Montant invalide'); return; }
     if (type === 'gift' && !gift) { setError('Choisis un cadeau'); return; }
     setError(null); setSaving(true);
-    try { await onSave(type, type === 'coins' ? parseInt(coins, 10) : null, type === 'gift' ? gift : null); setShowForm(false); }
+    try { await onSave(type, type === 'gogold' ? parseInt(gogold, 10) : null, type === 'gift' ? gift : null); setShowForm(false); }
     catch (e: any) { setError(e?.response?.data?.detail ?? 'Erreur'); }
     setSaving(false);
   }
@@ -95,7 +95,7 @@ function MonetForm({
         {/* Type selector — 2 boutons compacts */}
         <div className="flex gap-2">
           {([
-            { key: 'coins', icon: <Coins size={13} />, label: 'Coins', color: '#F59E0B' },
+            { key: 'gogold', icon: <GoGold size={13} />, label: 'GoGold', color: '#F59E0B' },
             { key: 'gift',  icon: <Gift  size={13} />, label: 'Cadeau', color: '#E85DAD' },
           ] as const).map(opt => (
             <button key={opt.key} type="button" onClick={() => setType(opt.key)}
@@ -111,17 +111,17 @@ function MonetForm({
           ))}
         </div>
 
-        {type === 'coins' && (
+        {type === 'gogold' && (
           <div className="flex items-center gap-2 rounded-lg border px-2.5 h-9"
             style={{ borderColor: '#F59E0B', background: 'var(--surface)' }}>
-            <Coins size={13} style={{ color: '#F59E0B', flexShrink: 0 }} />
+            <GoGold size={13} style={{ color: '#F59E0B', flexShrink: 0 }} />
             <input type="number" min={1}
               className="flex-1 bg-transparent text-sm font-bold focus:outline-none"
               style={{ color: 'var(--text-primary)' }}
-              placeholder="Montant..." value={coins}
-              onChange={e => setCoins(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="Montant..." value={gogold}
+              onChange={e => setGoGold(e.target.value.replace(/[^0-9]/g, ''))}
               autoFocus />
-            <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>coins</span>
+            <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>GoGold</span>
           </div>
         )}
 
@@ -142,7 +142,7 @@ function MonetForm({
                       <span className="text-base">{g.emoji}</span>
                       <span className="text-[8px] truncate w-full text-center font-semibold"
                         style={{ color: 'var(--text-primary)' }}>{g.name}</span>
-                      <span className="text-[8px] font-bold" style={{ color: '#fbbf24' }}>{g.coins_cost}</span>
+                      <span className="text-[8px] font-bold" style={{ color: '#fbbf24' }}>{g.gogold_cost}</span>
                     </button>
                   ))}
                 </div>
@@ -169,7 +169,7 @@ function MonetForm({
       <Lock size={13} style={{ color: isActive ? accentColor : 'var(--text-tertiary)', flexShrink: 0 }} />
       <span className="flex-1 text-xs truncate" style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
         {isActive
-          ? (currentType === 'coins' ? `${currentCoins} coins` : `Cadeau : ${currentGiftName ?? ''}`)
+          ? (currentType === 'gogold' ? `${currentGoGold} GoGold` : `Cadeau : ${currentGiftName ?? ''}`)
           : title}
       </span>
       {isActive ? (
@@ -391,13 +391,13 @@ export function LiveSettingsSheet({
     setMicOn(next);
   }
 
-  async function saveAccessMonet(type: 'coins' | 'gift', coins: number | null, gift: GiftType | null) {
+  async function saveAccessMonet(type: 'gogold' | 'gift', gogold: number | null, gift: GiftType | null) {
     const payload: any = { is_monetized: true, monetization_type: type,
-      monetization_coins: type === 'coins' ? coins : null,
+      monetization_gogold: type === 'gogold' ? gogold : null,
       monetization_gift_id: type === 'gift' ? gift!.id : null };
     await apiClient.patch(Endpoints.lives.monetization(liveId), payload);
     onMonetizationUpdated({ is_monetized: true, monetization_type: type,
-      monetization_coins: type === 'coins' ? coins : undefined,
+      monetization_gogold: type === 'gogold' ? gogold : undefined,
       monetization_gift_id: type === 'gift' ? gift!.id : undefined,
       monetization_gift_name: type === 'gift' ? gift!.name : undefined });
   }
@@ -407,17 +407,17 @@ export function LiveSettingsSheet({
     if (!ok) return;
     try {
       await apiClient.patch(Endpoints.lives.monetization(liveId), { is_monetized: false });
-      onMonetizationUpdated({ is_monetized: false, monetization_type: null, monetization_coins: null });
+      onMonetizationUpdated({ is_monetized: false, monetization_type: null, monetization_gogold: null });
     } catch { /* ignore */ }
   }
 
-  async function saveStageMonet(type: 'coins' | 'gift', coins: number | null, gift: GiftType | null) {
+  async function saveStageMonet(type: 'gogold' | 'gift', gogold: number | null, gift: GiftType | null) {
     const payload: any = { stage_monetized: true, stage_type: type,
-      stage_coins: type === 'coins' ? coins : null,
+      stage_gogold: type === 'gogold' ? gogold : null,
       stage_gift_id: type === 'gift' ? gift!.id : null };
     await apiClient.patch(Endpoints.lives.stageMonetization(liveId), payload);
     onMonetizationUpdated({ stage_monetized: true, stage_type: type,
-      stage_coins: type === 'coins' ? coins : undefined,
+      stage_gogold: type === 'gogold' ? gogold : undefined,
       stage_gift_id: type === 'gift' ? gift!.id : undefined,
       stage_gift_name: type === 'gift' ? gift!.name : undefined });
   }
@@ -427,7 +427,7 @@ export function LiveSettingsSheet({
     if (!ok) return;
     try {
       await apiClient.patch(Endpoints.lives.stageMonetization(liveId), { stage_monetized: false });
-      onMonetizationUpdated({ stage_monetized: false, stage_type: null, stage_coins: null });
+      onMonetizationUpdated({ stage_monetized: false, stage_type: null, stage_gogold: null });
     } catch { /* ignore */ }
   }
 
@@ -548,7 +548,7 @@ export function LiveSettingsSheet({
               accentColor="#F59E0B"
               isActive={live?.is_monetized ?? false}
               currentType={live?.monetization_type}
-              currentCoins={live?.monetization_coins}
+              currentGoGold={live?.monetization_gogold}
               currentGiftId={live?.monetization_gift_id}
               currentGiftName={live?.monetization_gift_name}
               onSave={saveAccessMonet}
@@ -565,7 +565,7 @@ export function LiveSettingsSheet({
               accentColor="#9B65F5"
               isActive={live?.stage_monetized ?? false}
               currentType={live?.stage_type}
-              currentCoins={live?.stage_coins}
+              currentGoGold={live?.stage_gogold}
               currentGiftId={live?.stage_gift_id}
               currentGiftName={live?.stage_gift_name}
               onSave={saveStageMonet}

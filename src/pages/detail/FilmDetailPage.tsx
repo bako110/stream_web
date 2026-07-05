@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId, encodeId } from '../../utils/slugId';
 import {
-  Play, Star, Crown, ChevronDown, ChevronUp, Lock, Coins,
+  Play, Star, Crown, ChevronDown, ChevronUp, Lock, GoGold,
   Check, AlertTriangle, X, Wallet, Share2,
 } from 'lucide-react';
 import type { Content, VideoMeta } from '../../types';
@@ -15,9 +15,9 @@ import { GuestPreview } from '../../components/ui/GuestPreview';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
-// ── Conversion coins : 1 EUR = 100 coins ─────────────────────────────────────
-const COINS_PER_EUR = 100;
-const eurToCoins = (eur: number) => Math.ceil(eur * COINS_PER_EUR);
+// ── Conversion GoGold : 1 EUR = 100 GoGold ─────────────────────────────────────
+const GOGOLD_PER_EUR = 100;
+const eurToGoGold = (eur: number) => Math.ceil(eur * GOGOLD_PER_EUR);
 
 // ── Paywall modal ─────────────────────────────────────────────────────────────
 
@@ -25,17 +25,17 @@ function PaywallModal({ film, onClose, onPurchased }: {
   film: Content; onClose: () => void; onPurchased: () => void;
 }) {
   const navigate          = useNavigate();
-  const coinsRequired     = eurToCoins(film.price ?? 0);
+  const goGoldRequired     = eurToGoGold(film.price ?? 0);
   const [balance, setBalance] = useState<number | null>(null);
   const [buying,  setBuying]  = useState(false);
 
   useEffect(() => {
     apiClient.get<any>(Endpoints.wallet.balance)
-      .then(r => setBalance(r.data?.coins_balance ?? r.data?.balance ?? r.data?.coins ?? 0))
+      .then(r => setBalance(r.data?.gogold_balance ?? r.data?.balance ?? r.data?.gogold ?? 0))
       .catch(() => setBalance(0));
   }, []);
 
-  const sufficient = balance !== null && balance >= coinsRequired;
+  const sufficient = balance !== null && balance >= goGoldRequired;
 
   async function handleBuy() {
     setBuying(true);
@@ -76,11 +76,11 @@ function PaywallModal({ film, onClose, onPurchased }: {
           <div className="flex items-center justify-between p-3.5 rounded-2xl"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
             <div className="flex items-center gap-2">
-              <Coins size={18} style={{ color: 'var(--primary)' }} />
-              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Coins requis</span>
+              <GoGold size={18} style={{ color: 'var(--primary)' }} />
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>GoGold requis</span>
             </div>
             <span className="font-black text-lg" style={{ color: 'var(--primary)' }}>
-              {coinsRequired.toLocaleString('fr-FR')}
+              {goGoldRequired.toLocaleString('fr-FR')}
             </span>
           </div>
 
@@ -89,7 +89,7 @@ function PaywallModal({ film, onClose, onPurchased }: {
             <div className="flex items-center justify-between px-1">
               <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Votre solde</span>
               <span className="text-sm font-bold" style={{ color: sufficient ? '#22C55E' : '#EF4444' }}>
-                {balance.toLocaleString('fr-FR')} coins
+                {balance.toLocaleString('fr-FR')} GoGold
               </span>
             </div>
           )}
@@ -101,7 +101,7 @@ function PaywallModal({ film, onClose, onPurchased }: {
               <AlertTriangle size={15} style={{ color: '#EF4444', flexShrink: 0 }} />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold" style={{ color: '#EF4444' }}>
-                  Solde insuffisant — il vous manque {(coinsRequired - balance).toLocaleString('fr-FR')} coins
+                  Solde insuffisant — il vous manque {(goGoldRequired - balance).toLocaleString('fr-FR')} GoGold
                 </p>
               </div>
             </div>
@@ -110,7 +110,7 @@ function PaywallModal({ film, onClose, onPurchased }: {
           {/* Prix EUR info */}
           {film.price && (
             <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              Accès à vie · {film.price.toFixed(2)} € · 1 € = {COINS_PER_EUR} coins
+              Accès à vie · {film.price.toFixed(2)} € · 1 € = {GOGOLD_PER_EUR} GoGold
             </p>
           )}
 
@@ -343,7 +343,7 @@ export default function FilmDetailPage() {
                 </div>
                 <p className="text-white text-sm font-bold"
                   style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
-                  {f.price ? `${eurToCoins(f.price).toLocaleString('fr-FR')} coins` : 'Contenu Premium'}
+                  {f.price ? `${eurToGoGold(f.price).toLocaleString('fr-FR')} GoGold` : 'Contenu Premium'}
                 </p>
               </div>
             ) : (
@@ -469,7 +469,7 @@ export default function FilmDetailPage() {
             <div>
               <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Accès à vie</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                {f.price ? `${eurToCoins(f.price).toLocaleString('fr-FR')} coins · ${f.price.toFixed(2)} €` : 'Contenu premium'}
+                {f.price ? `${eurToGoGold(f.price).toLocaleString('fr-FR')} GoGold · ${f.price.toFixed(2)} €` : 'Contenu premium'}
               </p>
             </div>
             <button onClick={() => setShowPaywall(true)}

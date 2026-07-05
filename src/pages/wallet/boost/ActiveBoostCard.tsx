@@ -17,7 +17,7 @@ export interface BoostRecord {
   tier_label: string;
   quantity_label: string;
   duration_days: number;
-  coins_spent: number;
+  gogold_spent: number;
   status: 'active' | 'completed' | 'cancelled' | 'paused';
   progress: number;
   delivered_quantity?: number;
@@ -114,7 +114,7 @@ function StopModal({
   const totalSec   = Math.max(1, (new Date(boost.expires_at).getTime() - new Date(boost.activated_at).getTime()) / 1000);
   const elapsedSec = (Date.now() - new Date(boost.activated_at).getTime()) / 1000;
   const elapsedPct = elapsedSec / totalSec;
-  const refund     = elapsedPct < 0.5 ? Math.round(Number(boost.coins_spent ?? 0) * 0.5) : 0;
+  const refund     = elapsedPct < 0.5 ? Math.round(Number(boost.gogold_spent ?? 0) * 0.5) : 0;
 
   return (
     <>
@@ -160,7 +160,7 @@ function StopModal({
               Remboursement
             </span>
             <span className="text-xs font-black" style={{ color: refund > 0 ? '#22C55E' : '#EF4444' }}>
-              {refund > 0 ? `+${refund.toLocaleString('fr-FR')} coins` : 'Aucun'}
+              {refund > 0 ? `+${refund.toLocaleString('fr-FR')} GoGold` : 'Aucun'}
             </span>
           </div>
           {refund === 0 && (
@@ -219,7 +219,7 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
   const delivered  = impressions > 0 ? impressions : Number(boost.delivered_quantity ?? 0);
   const total      = Number(boost.target_quantity ?? 0);
   const mult       = Number(boost.feed_multiplier ?? 1.0);
-  const coinsSpent = Number(boost.coins_spent ?? 0);
+  const goGoldSpent = Number(boost.gogold_spent ?? 0);
   const hasContent = !!boost.target_content_title;
   const unitLabel  = UNIT_LABELS[boost.target] ?? 'unités livrées';
 
@@ -228,14 +228,14 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
     try {
       const res = await apiClient.delete<{
         message: string;
-        refund_coins: number;
+        refund_gogold: number;
         new_balance: number;
         boost: BoostRecord;
       }>(`/api/v1/wallet/boosts/${boost.id}`);
       setBoost(res.data.boost);
       setShowStop(false);
       toast.success(res.data.message);
-      onCancelled?.(boost.id, res.data.refund_coins, res.data.new_balance);
+      onCancelled?.(boost.id, res.data.refund_gogold, res.data.new_balance);
     } catch (e: any) {
       toast.error(e?.response?.data?.detail ?? 'Erreur lors de l\'annulation.');
     } finally {
@@ -360,8 +360,8 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
                   color: 'var(--text-secondary)',
                 },
                 {
-                  label: 'Coins dépensés',
-                  value: coinsSpent.toLocaleString('fr-FR'),
+                  label: 'GoGold dépensés',
+                  value: goGoldSpent.toLocaleString('fr-FR'),
                   icon: <Zap size={11} />,
                   color: g1,
                 },

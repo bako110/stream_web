@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Coins, Gift, ExternalLink } from 'lucide-react';
+import { X, GoGold, Gift, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -12,7 +12,7 @@ export interface GiftType {
   id: string;
   name: string;
   emoji: string;
-  coins_cost: number;
+  gogold_cost: number;
 }
 
 export interface GiftNotif {
@@ -20,7 +20,7 @@ export interface GiftNotif {
   senderName: string;
   emoji: string;
   giftName: string;
-  coins: number;
+  gogold: number;
   /** Nom du destinataire réel — affiché seulement quand ce n'est pas l'hôte,
    * pour ne pas laisser croire que le cadeau lui était destiné. */
   receiverName?: string;
@@ -68,7 +68,7 @@ export function GiftTicker({ notifs }: { notifs: GiftNotif[] }) {
             </>
           )}
           <span className="flex items-center gap-0.5" style={{ color: '#FDE68A' }}>
-            <Coins size={10} />{n.coins}
+            <GoGold size={10} />{n.gogold}
           </span>
         </div>
       ))}
@@ -104,7 +104,7 @@ export function GiftToast({ notif, onDone }: { notif: GiftNotif; onDone: () => v
         </p>
         <p className="text-sm font-bold">{notif.giftName}</p>
         <p className="text-xs flex items-center gap-1 opacity-80">
-          <Coins size={10} /> {notif.coins} coins
+          <GoGold size={10} /> {notif.gogold} GoGold
         </p>
       </div>
     </div>
@@ -140,7 +140,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
       setGifts(list);
       if (list.length > 0) setSelected(list[0]);
       const bd = br.data?.data ?? br.data;
-      setBalance(bd?.coins_balance ?? bd?.balance ?? bd?.coins ?? 0);
+      setBalance(bd?.gogold_balance ?? bd?.balance ?? bd?.gogold ?? 0);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -161,13 +161,13 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
         live_id:      liveId,
       });
       spawnFloat(selected.emoji);
-      setBalance(b => (b !== null ? b - selected.coins_cost : b));
+      setBalance(b => (b !== null ? b - selected.gogold_cost : b));
       onSent?.({
         id:         String(Date.now()),
         senderName: 'Toi',
         emoji:      selected.emoji,
         giftName:   selected.name,
-        coins:      selected.coins_cost,
+        gogold:      selected.gogold_cost,
       });
     } catch (e: any) {
       toast.error(e?.response?.data?.detail ?? 'Envoi du cadeau échoué. Réessayez.');
@@ -175,7 +175,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
     finally { setSending(false); }
   }
 
-  const sufficient = balance !== null && selected ? balance >= selected.coins_cost : false;
+  const sufficient = balance !== null && selected ? balance >= selected.gogold_cost : false;
 
   return (
     <>
@@ -225,7 +225,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
             {balance !== null && (
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
                 style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}>
-                <Coins size={12} /> {balance.toLocaleString('fr-FR')} coins
+                <GoGold size={12} /> {balance.toLocaleString('fr-FR')} GoGold
               </div>
             )}
             <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center"
@@ -246,7 +246,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {gifts.map(g => {
-                const locked = balance !== null && balance < g.coins_cost;
+                const locked = balance !== null && balance < g.gogold_cost;
                 const isSel  = selected?.id === g.id;
                 return (
                   <button key={g.id} onClick={() => setSelected(g)}
@@ -266,7 +266,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
                     </span>
                     <span className="text-[10px] font-bold flex items-center gap-0.5"
                       style={{ color: isSel ? '#FDE68A' : 'var(--primary)' }}>
-                      <Coins size={9} /> {g.coins_cost}
+                      <GoGold size={9} /> {g.gogold_cost}
                     </span>
                   </button>
                 );
@@ -279,7 +279,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
         <div className="px-5 pb-6 pt-2 space-y-3">
           {balance !== null && !sufficient && selected && (
             <div className="text-xs text-center" style={{ color: '#EF4444' }}>
-              Solde insuffisant — il vous manque {(selected.coins_cost - balance).toLocaleString('fr-FR')} coins
+              Solde insuffisant — il vous manque {(selected.gogold_cost - balance).toLocaleString('fr-FR')} GoGold
             </div>
           )}
           <div className="flex gap-3">

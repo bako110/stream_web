@@ -9,7 +9,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import type { Ad, AdFormat, AdPlacement } from './WalletAdsPage';
 
-const EUR_TO_COINS = 100;
+const EUR_TO_GOGOLD = 100;
 
 const PLACEMENT_OPTIONS: { value: AdPlacement; label: string; desc: string }[] = [
   { value: 'feed',    label: 'Feed',      desc: '1 pub / 7 cartes' },
@@ -25,10 +25,10 @@ const FORMAT_OPTIONS: { value: AdFormat; label: string; icon: React.ReactNode }[
 ];
 
 const CPM_OPTIONS = [
-  { label: 'Économique', cpm: 1,  coins: 100,  color: '#22C55E' },
-  { label: 'Standard',   cpm: 2,  coins: 200,  color: '#7B3FF2' },
-  { label: 'Premium',    cpm: 5,  coins: 500,  color: '#7B3FF2' },
-  { label: 'Top',        cpm: 10, coins: 1000, color: '#EF4444' },
+  { label: 'Économique', cpm: 1,  gogold: 100,  color: '#22C55E' },
+  { label: 'Standard',   cpm: 2,  gogold: 200,  color: '#7B3FF2' },
+  { label: 'Premium',    cpm: 5,  gogold: 500,  color: '#7B3FF2' },
+  { label: 'Top',        cpm: 10, gogold: 1000, color: '#EF4444' },
 ];
 
 export default function WalletCreateAdPage() {
@@ -62,18 +62,18 @@ export default function WalletCreateAdPage() {
   const [error,   setError]   = useState<string | null>(null);
 
   // Wallet balance
-  const [walletCoins, setWalletCoins] = useState<number | null>(null);
+  const [walletGoGold, setWalletGoGold] = useState<number | null>(null);
   useEffect(() => {
     apiClient.get<any>(Endpoints.wallet.balance)
-      .then(r => setWalletCoins(r.data?.coins_balance ?? null))
+      .then(r => setWalletGoGold(r.data?.gogold_balance ?? null))
       .catch(() => {});
   }, []);
 
   // Estimations
   const budgetNum   = parseFloat(budgetEur) || 0;
-  const coinsNeeded = Math.round(budgetNum * EUR_TO_COINS);
+  const goGoldNeeded = Math.round(budgetNum * EUR_TO_GOGOLD);
   const estImpressions = cpmEur > 0 ? Math.round((budgetNum / cpmEur) * 1000) : 0;
-  const insufficient = !isEdit && walletCoins !== null && coinsNeeded > walletCoins;
+  const insufficient = !isEdit && walletGoGold !== null && goGoldNeeded > walletGoGold;
 
   // Upload image
   async function handleImageUpload(file: File) {
@@ -190,8 +190,8 @@ export default function WalletCreateAdPage() {
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Impressions est.',  value: estImpressions > 0 ? estImpressions.toLocaleString('fr-FR') : '—' },
-            { label: 'Coût total',        value: coinsNeeded > 0 ? `${coinsNeeded.toLocaleString('fr-FR')} coins` : '—' },
-            { label: 'CPM',               value: `${cpmEur * EUR_TO_COINS} coins` },
+            { label: 'Coût total',        value: goGoldNeeded > 0 ? `${goGoldNeeded.toLocaleString('fr-FR')} GoGold` : '—' },
+            { label: 'CPM',               value: `${cpmEur * EUR_TO_GOGOLD} GoGold` },
           ].map(s => (
             <div key={s.label} className="rounded-xl p-3 text-center"
               style={{ background: 'rgba(255,255,255,0.1)' }}>
@@ -200,11 +200,11 @@ export default function WalletCreateAdPage() {
             </div>
           ))}
         </div>
-        {walletCoins !== null && !isEdit && (
+        {walletGoGold !== null && !isEdit && (
           <div className="mt-3 flex items-center justify-between text-xs">
             <span className="text-white/70">Votre solde</span>
             <span className={`font-bold ${insufficient ? 'text-red-300' : 'text-white'}`}>
-              {walletCoins.toLocaleString('fr-FR')} coins {insufficient ? '⚠ insuffisant' : '✓'}
+              {walletGoGold.toLocaleString('fr-FR')} GoGold {insufficient ? '⚠ insuffisant' : '✓'}
             </span>
           </div>
         )}
@@ -361,8 +361,8 @@ export default function WalletCreateAdPage() {
                 border: `1.5px solid ${cpmEur === o.cpm ? o.color : 'var(--border)'}`,
                 background: cpmEur === o.cpm ? `${o.color}12` : 'var(--bg-secondary)' }}>
               <span className="text-[10px] font-bold mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{o.label}</span>
-              <span className="text-base font-black" style={{ color: o.color }}>{o.coins}</span>
-              <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>coins</span>
+              <span className="text-base font-black" style={{ color: o.color }}>{o.GoGold}</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>GoGold</span>
             </button>
           ))}
         </div>
@@ -383,13 +383,13 @@ export default function WalletCreateAdPage() {
         </div>
         {budgetNum > 0 && (
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            = <span className="font-bold" style={{ color: 'var(--primary)' }}>{coinsNeeded.toLocaleString('fr-FR')} coins</span>
+            = <span className="font-bold" style={{ color: 'var(--primary)' }}>{coinsNeeded.toLocaleString('fr-FR')} GoGold</span>
             {' '}· ~<span className="font-bold">{estImpressions.toLocaleString('fr-FR')}</span> impressions estimées
           </p>
         )}
         {insufficient && (
           <p className="text-xs font-semibold" style={{ color: '#EF4444' }}>
-            Solde insuffisant — il vous manque {(coinsNeeded - (walletCoins ?? 0)).toLocaleString('fr-FR')} coins
+            Solde insuffisant — il vous manque {(coinsNeeded - (walletCoins ?? 0)).toLocaleString('fr-FR')} GoGold
           </p>
         )}
 
@@ -417,7 +417,7 @@ export default function WalletCreateAdPage() {
           style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
           <Zap size={14} style={{ color: '#22C55E' }} />
           <p className="text-xs" style={{ color: '#22C55E' }}>
-            La pub est diffusée immédiatement après validation. Les coins sont débités à la création.
+            La pub est diffusée immédiatement après validation. Les GoGold sont débités à la création.
           </p>
         </div>
       )}
@@ -435,7 +435,7 @@ export default function WalletCreateAdPage() {
         style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.35)' }}>
         {loading ? <><Spinner size="sm" /> Traitement…</> : isEdit
           ? <><CheckCircle size={16} /> Enregistrer les modifications</>
-          : <><Megaphone size={16} /> Lancer la campagne · {coinsNeeded > 0 ? `${coinsNeeded.toLocaleString('fr-FR')} coins` : '…'}</>
+          : <><Megaphone size={16} /> Lancer la campagne · {coinsNeeded > 0 ? `${coinsNeeded.toLocaleString('fr-FR')} GoGold` : '…'}</>
         }
       </button>
     </div>

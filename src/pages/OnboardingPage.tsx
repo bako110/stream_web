@@ -147,14 +147,14 @@ const STEPS = [
     icon: Wallet,
     color: '#7B3FF2',
     gradient: ['#7B3FF2', '#5B2EC4'],
-    title: 'Monétisation & Coins',
-    description: 'Devenez créateur, gagnez des coins, envoyez des cadeaux. Retirez vos gains directement sur votre compte ou mobile money.',
+    title: 'Monétisation & GoGold',
+    description: 'Devenez créateur, gagnez des GoGold, envoyez des cadeaux. Retirez vos gains directement sur votre compte ou mobile money.',
     visual: (
       <div className="relative w-full max-w-[280px] mx-auto">
         <div className="rounded-3xl overflow-hidden p-5"
           style={{ background: 'linear-gradient(135deg,#1a0533,#0d0118)', border: '1px solid rgba(123,63,242,0.3)' }}>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>Solde GoFolyX Coins</p>
+            <p className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>Solde GoFolyX GoGold</p>
             <Wallet size={16} color="#7B3FF2" />
           </div>
           <p className="text-3xl font-black text-white mb-1">2,450 <span className="text-lg">FXC</span></p>

@@ -38,13 +38,13 @@ export interface Ad {
   starts_at: string | null;
   ends_at: string | null;
   created_at: string;
-  coins_debited?:   number;
-  coins_spent?:     number;
-  coins_remaining?: number;
+  gogold_debited?:   number;
+  gogold_spent?:     number;
+  gogold_remaining?: number;
 }
 
-const EUR_TO_COINS = 100;
-const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
+const EUR_TO_GOGOLD = 100;
+const goGoldToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
 const PLACEMENT_LABELS: Record<AdPlacement, string> = {
   feed: 'Feed principal', reels: 'Reels', stories: 'Stories', search: 'Recherche',
@@ -58,10 +58,10 @@ const STATUS_CONFIG: Record<AdStatus, { label: string; color: string; bg: string
 };
 
 const CPM_TIERS = [
-  { label: 'Économique', cpm: 1,  coins: 100,  est: '~1000 imp/€' },
-  { label: 'Standard',   cpm: 2,  coins: 200,  est: '~500 imp/€'  },
-  { label: 'Premium',    cpm: 5,  coins: 500,  est: '~200 imp/€'  },
-  { label: 'Top',        cpm: 10, coins: 1000, est: '~100 imp/€'  },
+  { label: 'Économique', cpm: 1,  gogold: 100,  est: '~1000 imp/€' },
+  { label: 'Standard',   cpm: 2,  gogold: 200,  est: '~500 imp/€'  },
+  { label: 'Premium',    cpm: 5,  gogold: 500,  est: '~200 imp/€'  },
+  { label: 'Top',        cpm: 10, gogold: 1000, est: '~100 imp/€'  },
 ];
 
 function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
@@ -72,11 +72,11 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
   onEdit:   (ad: Ad)     => void;
 }) {
   const cfg         = STATUS_CONFIG[ad.status];
-  const budgetCoins = ad.coins_debited   ?? Math.round(ad.budget_eur * EUR_TO_COINS);
-  const spentCoins  = ad.coins_spent     ?? Math.round(ad.spent_eur  * EUR_TO_COINS);
-  const remaining   = ad.coins_remaining ?? Math.max(0, budgetCoins - spentCoins);
-  const progress    = budgetCoins > 0 ? Math.min((spentCoins / budgetCoins) * 100, 100) : 0;
-  const cpmCoins    = Math.round(ad.cpm_eur * EUR_TO_COINS);
+  const budgetGoGold = ad.gogold_debited   ?? Math.round(ad.budget_eur * EUR_TO_GOGOLD);
+  const spentGoGold  = ad.gogold_spent     ?? Math.round(ad.spent_eur  * EUR_TO_GOGOLD);
+  const remaining   = ad.gogold_remaining ?? Math.max(0, budgetGoGold - spentGoGold);
+  const progress    = budgetGoGold > 0 ? Math.min((spentGoGold / budgetGoGold) * 100, 100) : 0;
+  const cpmGoGold    = Math.round(ad.cpm_eur * EUR_TO_GOGOLD);
 
   return (
     <div className="rounded-2xl overflow-hidden transition-all"
@@ -117,7 +117,7 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
         <div className="flex items-center justify-between text-[11px] mb-1.5">
           <span style={{ color: 'var(--text-tertiary)' }}>Budget utilisé</span>
           <span style={{ color: 'var(--text-secondary)' }}>
-            {spentCoins.toLocaleString('fr-FR')} / {budgetCoins.toLocaleString('fr-FR')} coins
+            {spentGoGold.toLocaleString('fr-FR')} / {budgetGoGold.toLocaleString('fr-FR')} GoGold
           </span>
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
@@ -147,7 +147,7 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
       <div className="px-4 py-2.5 flex items-center justify-between"
         style={{ borderTop: '1px solid var(--border)' }}>
         <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          CPM : <span className="font-bold" style={{ color: 'var(--text-secondary)' }}>{cpmCoins} coins ({ad.cpm_eur}€)</span>
+          CPM : <span className="font-bold" style={{ color: 'var(--text-secondary)' }}>{cpmGoGold} GoGold ({ad.cpm_eur}€)</span>
         </span>
         {/* Actions */}
         <div className="flex items-center gap-1.5">
@@ -230,8 +230,8 @@ export default function WalletAdsPage() {
   const rejected = byStatus('rejected');
 
   // Stats globales
-  const totalBudget     = ads.reduce((s, a) => s + a.budget_eur * EUR_TO_COINS, 0);
-  const totalSpent      = ads.reduce((s, a) => s + a.spent_eur  * EUR_TO_COINS, 0);
+  const totalBudget     = ads.reduce((s, a) => s + a.budget_eur * EUR_TO_GOGOLD, 0);
+  const totalSpent      = ads.reduce((s, a) => s + a.spent_eur  * EUR_TO_GOGOLD, 0);
   const totalImpressions = ads.reduce((s, a) => s + a.impressions, 0);
   const avgCtr          = ads.length ? ads.reduce((s, a) => s + a.ctr_pct, 0) / ads.length : 0;
 
@@ -293,14 +293,14 @@ export default function WalletAdsPage() {
             <p className="font-bold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>Comment ça marche</p>
             <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
               Vos pubs sont diffusées nativement dans le feed, les reels, les stories et la recherche.
-              Vous payez au CPM (coût pour 1000 impressions) en coins.
+              Vous payez au CPM (coût pour 1000 impressions) en GoGold.
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {CPM_TIERS.map(t => (
                 <div key={t.label} className="rounded-xl p-2.5 text-center"
                   style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   <p className="text-xs font-black" style={{ color: 'var(--text-primary)' }}>{t.label}</p>
-                  <p className="text-base font-black mt-0.5" style={{ color: 'var(--primary)' }}>{t.coins} coins</p>
+                  <p className="text-base font-black mt-0.5" style={{ color: 'var(--primary)' }}>{t.gogold} GoGold</p>
                   <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{t.est}</p>
                 </div>
               ))}
@@ -313,8 +313,8 @@ export default function WalletAdsPage() {
       {ads.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Budget total',    value: `${totalBudget.toLocaleString('fr-FR')} coins`,     color: '#7B3FF2', icon: <Zap size={16}/> },
-            { label: 'Dépensé',         value: `${totalSpent.toLocaleString('fr-FR')} coins`,      color: '#EF4444', icon: <BarChart2 size={16}/> },
+            { label: 'Budget total',    value: `${totalBudget.toLocaleString('fr-FR')} GoGold`,     color: '#7B3FF2', icon: <Zap size={16}/> },
+            { label: 'Dépensé',         value: `${totalSpent.toLocaleString('fr-FR')} GoGold`,      color: '#EF4444', icon: <BarChart2 size={16}/> },
             { label: 'Impressions',     value: totalImpressions.toLocaleString('fr-FR'),           color: '#7B3FF2', icon: <Eye size={16}/> },
             { label: 'CTR moyen',       value: `${avgCtr.toFixed(1)}%`,                            color: '#22C55E', icon: <TrendingUp size={16}/> },
           ].map(s => (

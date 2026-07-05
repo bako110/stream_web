@@ -17,8 +17,8 @@ import toast from 'react-hot-toast';
 interface Cotisation {
   id: string; title: string; description?: string | null;
   amount_per_member: number;
-  target_amount_coins: number;
-  collected_coins: number;
+  target_amount_gogold: number;
+  collected_gogold: number;
   member_count_paid: number;
   member_count_total: number;
   progress_pct: number;
@@ -27,12 +27,12 @@ interface Cotisation {
   created_at: string;
   my_contribution?: {
     status: 'paid' | 'pending' | 'exempt';
-    coins_paid: number;
+    gogold_paid: number;
     paid_at?: string | null;
   } | null;
 }
 
-function coinsToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
+function goGoldToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
 
 function deadlineLabel(d: string) {
   const date = new Date(d);
@@ -76,10 +76,10 @@ function CotisationCard({ cot, paying, onPay, onPress }: {
               )}
             </div>
             <p className="text-xl font-black" style={{ color: 'var(--primary)' }}>
-              {cot.amount_per_member.toLocaleString()} <span className="text-xs font-bold">coins</span>
+              {cot.amount_per_member.toLocaleString()} <span className="text-xs font-bold">GoGold</span>
             </p>
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-              par membre · ≈ {coinsToEur(cot.amount_per_member)} EUR
+              par membre · ≈ {goGoldToEur(cot.amount_per_member)} EUR
             </p>
           </div>
           <div className="shrink-0">
@@ -113,7 +113,7 @@ function CotisationCard({ cot, paying, onPay, onPress }: {
         <div className="mb-2">
           <div className="flex justify-between items-center mb-1">
             <span className="text-[10px] font-bold" style={{ color: 'var(--text-tertiary)' }}>
-              {cot.collected_coins.toLocaleString()} / {cot.target_amount_coins.toLocaleString()} coins
+              {cot.collected_gogold.toLocaleString()} / {cot.target_amount_gogold.toLocaleString()} GoGold
             </span>
             <span className="text-[10px] font-black" style={{ color: 'var(--primary)' }}>{Math.round(pct)}%</span>
           </div>
@@ -152,7 +152,7 @@ function CreateModal({ communityId, onClose, onCreated }: {
 
   async function submit() {
     if (!title.trim())                { toast.error('Titre requis'); return; }
-    if (!amount || Number(amount) < 1) { toast.error('Montant min : 1 coin'); return; }
+    if (!amount || Number(amount) < 1) { toast.error('Montant min : 1 GoGold'); return; }
     setSaving(true);
     try {
       await apiClient.post(`/api/v1/communities/${communityId}/cotisations`, {
@@ -192,13 +192,13 @@ function CreateModal({ communityId, onClose, onCreated }: {
               className="input w-full resize-none" placeholder="Détails optionnels…" />
           </div>
           <div>
-            <label className="text-[10px] font-bold tracking-widest mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>MONTANT PAR MEMBRE (COINS) *</label>
+            <label className="text-[10px] font-bold tracking-widest mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>MONTANT PAR MEMBRE (GOGOLD) *</label>
             <div className="relative">
               <input type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)}
                 className="input w-full pr-24" placeholder="Ex: 500" />
               {amount && Number(amount) > 0 && (
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-                  ≈ {coinsToEur(Number(amount))} EUR
+                  ≈ {goGoldToEur(Number(amount))} EUR
                 </span>
               )}
             </div>
@@ -234,7 +234,7 @@ export default function CommunityFundPage() {
   const canManage = myRole === 'admin' || myRole === 'moderator';
 
   const stats = useMemo(() => ({
-    totalCoins:  cots.reduce((s, c) => s + (c.collected_coins ?? 0), 0),
+    totalGoGold:  cots.reduce((s, c) => s + (c.collected_gogold ?? 0), 0),
     activeCount: cots.filter(c => c.status === 'active').length,
     total:       cots.length,
   }), [cots]);
@@ -272,7 +272,7 @@ export default function CommunityFundPage() {
       const status = e?.response?.status;
       const detail = e?.response?.data?.detail ?? '';
       if (status === 402 || detail.toLowerCase().includes('solde') || detail.toLowerCase().includes('insuffi')) {
-        toast.error('Solde insuffisant — rechargez vos coins');
+        toast.error('Solde insuffisant — rechargez vos GoGold');
       } else {
         toast.error(detail || 'Impossible de payer. Réessayez.');
       }
@@ -325,7 +325,7 @@ export default function CommunityFundPage() {
                 <p className="text-[11px] font-bold tracking-widest text-white/70 mb-3">RÉSUMÉ</p>
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { label: 'Collecté', value: stats.totalCoins.toLocaleString(), sub: 'coins' },
+                    { label: 'Collecté', value: stats.totalGoGold.toLocaleString(), sub: 'GoGold' },
                     { label: 'Actives',  value: String(stats.activeCount),          sub: '' },
                     { label: 'Total',    value: String(stats.total),                sub: '' },
                   ].map(s => (

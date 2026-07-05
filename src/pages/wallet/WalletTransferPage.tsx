@@ -59,10 +59,10 @@ export default function WalletTransferPage() {
     try {
       await apiClient.post(Endpoints.wallet.transfer, {
         receiver_id: recipient.id,
-        coins_amount: Number(amount),
+        gogold_amount: Number(amount),
         note: note.trim() || undefined,
       });
-      toast.success(`${amount} coins envoyés à @${recipient.username} !`);
+      toast.success(`${amount} GoGold envoyés à @${recipient.username} !`);
       navigate('/wallet');
     } catch (e: any) {
       toast.error(e?.response?.data?.detail ?? 'Transfert échoué.');
@@ -83,7 +83,7 @@ export default function WalletTransferPage() {
           <ArrowLeft size={17} />
         </button>
         <div>
-          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Transférer des coins</h1>
+          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Transférer des GoGold</h1>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Envoyer à un autre utilisateur</p>
         </div>
       </div>
@@ -167,7 +167,7 @@ export default function WalletTransferPage() {
                 className="flex-1 bg-transparent py-3.5 text-2xl font-black outline-none"
                 style={{ color: 'var(--text-primary)' }}
               />
-              <span className="text-sm font-bold" style={{ color: 'var(--text-tertiary)' }}>coins</span>
+              <span className="text-sm font-bold" style={{ color: 'var(--text-tertiary)' }}>GoGold</span>
             </div>
           </div>
 
@@ -189,7 +189,7 @@ export default function WalletTransferPage() {
             disabled={transferring || !amount || Number(amount) <= 0}
             className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.35)' }}>
-            {transferring ? <Spinner size="sm" /> : <><Send size={16} /> Envoyer {amount || '0'} coins</>}
+            {transferring ? <Spinner size="sm" /> : <><Send size={16} /> Envoyer {amount || '0'} GoGold</>}
           </button>
         </div>
       )}

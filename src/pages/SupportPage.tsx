@@ -33,8 +33,8 @@ interface SupportTicket {
 
 const FAQS = [
   {
-    q: 'Comment acheter des GoFolyX Coins ?',
-    a: 'Rendez-vous dans Wallet > Acheter des coins. Vous pouvez payer par carte bancaire, mobile money ou virement. Les coins sont credites instantanement.',
+    q: 'Comment acheter des GoFolyX GoGold ?',
+    a: 'Rendez-vous dans Wallet > Acheter des GoGold. Vous pouvez payer par carte bancaire, mobile money ou virement. Les GoGold sont credites instantanement.',
   },
   {
     q: 'Comment devenir createur monetise ?',

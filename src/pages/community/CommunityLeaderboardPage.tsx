@@ -14,7 +14,7 @@ interface LeaderEntry {
   display_name?: string | null;
   avatar_url?: string | null;
   score: number;
-  coins_spent?: number;
+  gogold_spent?: number;
   messages_count?: number;
   reactions_count?: number;
 }

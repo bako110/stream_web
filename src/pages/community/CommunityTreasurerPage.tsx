@@ -37,7 +37,7 @@ interface Election {
 
 interface WithdrawalRequest {
   id: string;
-  coins_amount: number;  // champ exact API : `coins_amount`
+  gogold_amount: number;  // champ exact API : `gogold_amount`
   eur_amount?: number;
   description?: string | null;
   status: 'pending' | 'approved_admin' | 'approved_treasurer' | 'approved' | 'rejected' | 'cancelled';
@@ -66,7 +66,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; Ico
   cancelled:          { label: 'Annulé',             color: '#9390AB', bg: '#9390AB15', Icon: X    },
 };
 
-function coinsToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
+function goGoldToEur(c: number) { return ((c / 100) * 0.35).toFixed(2); }
 
 // ── Modal: demande de retrait (admin seulement) ───────────────────────────────
 function WithdrawModal({ communityId, balance, hasTreasurer, onClose, onCreated }: {
@@ -80,11 +80,11 @@ function WithdrawModal({ communityId, balance, hasTreasurer, onClose, onCreated 
   async function submit() {
     const n = Number(amount);
     if (!amount || n <= 0) { toast.error('Montant requis'); return; }
-    if (n > balance)       { toast.error(`Solde insuffisant — max ${balance.toLocaleString()} coins`); return; }
+    if (n > balance)       { toast.error(`Solde insuffisant — max ${balance.toLocaleString()} GoGold`); return; }
     setSaving(true);
     try {
       await apiClient.post(`/api/v1/communities/${communityId}/withdrawal-requests`, {
-        coins_amount: n,
+        gogold_amount: n,
         description: desc.trim() || null,
       });
       toast.success('Demande soumise');
@@ -112,7 +112,7 @@ function WithdrawModal({ communityId, balance, hasTreasurer, onClose, onCreated 
               <div>
                 <p className="text-xs font-bold" style={{ color: '#7B3FF2' }}>Solde disponible</p>
                 <p className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>
-                  {balance.toLocaleString()} coins ≈ {coinsToEur(balance)} EUR
+                  {balance.toLocaleString()} GoGold ≈ {goGoldToEur(balance)} EUR
                 </p>
               </div>
             </div>
@@ -125,13 +125,13 @@ function WithdrawModal({ communityId, balance, hasTreasurer, onClose, onCreated 
               </div>
             )}
             <div>
-              <label className="text-[10px] font-bold tracking-widest mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>MONTANT (COINS)</label>
+              <label className="text-[10px] font-bold tracking-widest mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>MONTANT (GOGOLD)</label>
               <div className="relative">
                 <input type="number" min="1" max={balance} value={amount} onChange={e => setAmount(e.target.value)}
                   className="input w-full pr-24" placeholder={`Max ${balance.toLocaleString()}`} />
                 {amount && Number(amount) > 0 && (
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-                    ≈ {coinsToEur(Number(amount))} EUR
+                    ≈ {goGoldToEur(Number(amount))} EUR
                   </span>
                 )}
               </div>
@@ -298,7 +298,7 @@ export default function CommunityTreasurerPage() {
   const reqStats = useMemo(() => ({
     pending:  requests.filter(r => r.status === 'pending').length,
     approved: requests.filter(r => r.status === 'approved').length,
-    total:    requests.reduce((s, r) => s + (r.status === 'approved' ? r.coins_amount : 0), 0),
+    total:    requests.reduce((s, r) => s + (r.status === 'approved' ? r.gogold_amount : 0), 0),
   }), [requests]);
 
   // Membres candidats pour l'élection (non-admin)
@@ -341,7 +341,7 @@ export default function CommunityTreasurerPage() {
 
       if (wRes.status === 'fulfilled') {
         const wd = wRes.value.data?.data ?? wRes.value.data;
-        setBalance(wd?.coins_balance ?? 0);
+        setBalance(wd?.gogold_balance ?? 0);
       }
 
       if (mRes.status === 'fulfilled') {
@@ -484,7 +484,7 @@ export default function CommunityTreasurerPage() {
             <div className="p-5">
               <p className="text-[11px] font-bold tracking-widest text-white/70 mb-1">SOLDE COMMUNAUTAIRE</p>
               <p className="text-3xl font-black text-white">{balance.toLocaleString()}</p>
-              <p className="text-sm text-white/70">coins ≈ {coinsToEur(balance)} EUR</p>
+              <p className="text-sm text-white/70">GoGold ≈ {goGoldToEur(balance)} EUR</p>
               <div className="flex gap-4 mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
                 <div>
                   <p className="text-[10px] text-white/60">En attente</p>
@@ -496,7 +496,7 @@ export default function CommunityTreasurerPage() {
                 </div>
                 <div>
                   <p className="text-[10px] text-white/60">Total retiré</p>
-                  <p className="text-sm font-black text-white">{reqStats.total.toLocaleString()} coins</p>
+                  <p className="text-sm font-black text-white">{reqStats.total.toLocaleString()} GoGold</p>
                 </div>
               </div>
             </div>
@@ -733,10 +733,10 @@ export default function CommunityTreasurerPage() {
                         <div className="flex items-start justify-between gap-2 mb-3">
                           <div>
                             <p className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>
-                              {req.coins_amount.toLocaleString()} <span className="text-sm font-bold">coins</span>
+                              {req.gogold_amount.toLocaleString()} <span className="text-sm font-bold">GoGold</span>
                             </p>
                             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                              ≈ {req.eur_amount?.toFixed(2) ?? coinsToEur(req.coins_amount)} EUR
+                              ≈ {req.eur_amount?.toFixed(2) ?? goGoldToEur(req.gogold_amount)} EUR
                             </p>
                           </div>
                           <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0"

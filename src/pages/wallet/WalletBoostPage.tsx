@@ -12,7 +12,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 import {
   BOOST_CATEGORIES, CUSTOM_UNITS, CUSTOM_REACH_CONFIG,
-  computeCustomCoins, fmtNum,
+  computeCustomGoGold, fmtNum,
   type BoostTier,
 } from './boost/BoostCatalog';
 import { ActiveBoostCard, type BoostRecord } from './boost/ActiveBoostCard';
@@ -66,8 +66,8 @@ export default function WalletBoostPage() {
 
   // ── Init ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    apiClient.get<{ coins_balance: number }>(Endpoints.wallet.balance)
-      .then(r => setBalance(r.data?.coins_balance ?? 0))
+    apiClient.get<{ gogold_balance: number }>(Endpoints.wallet.balance)
+      .then(r => setBalance(r.data?.gogold_balance ?? 0))
       .catch(() => {});
     apiClient.get<any>(`/api/v1/wallet/boosts/active`)
       .then(r => setActiveBoosts(Array.isArray(r.data) ? r.data : r.data?.items ?? []))
@@ -102,8 +102,8 @@ export default function WalletBoostPage() {
       toast.error('Sélectionnez d\'abord un contenu à booster.');
       return;
     }
-    if (balance < tier.coins) {
-      toast.error('Solde insuffisant. Achetez des coins d\'abord.');
+    if (balance < tier.gogold) {
+      toast.error('Solde insuffisant. Achetez des GoGold d\'abord.');
       return;
     }
     setSelectedTier(tier);
@@ -111,7 +111,7 @@ export default function WalletBoostPage() {
   }
 
   const reachCfg    = CUSTOM_REACH_CONFIG[cat.id] ?? CUSTOM_REACH_CONFIG['content_reach'];
-  const customCoins = computeCustomCoins(cat.id, customReach, customDays);
+  const customGoGold = computeCustomGoGold(cat.id, customReach, customDays);
   const customUnit  = CUSTOM_UNITS[cat.id] ?? 'unités';
 
   function handleSelectCustom() {
@@ -119,14 +119,14 @@ export default function WalletBoostPage() {
       toast.error('Sélectionnez d\'abord un contenu à booster.');
       return;
     }
-    if (balance < customCoins) { toast.error('Solde insuffisant.'); return; }
+    if (balance < customGoGold) { toast.error('Solde insuffisant.'); return; }
     setSelectedTier({
       id: 'custom', label: 'Custom',
       quantity: `${fmtNum(customReach)} ${customUnit}`,
       quantity_num: customReach,
       duration: `${customDays} jour${customDays > 1 ? 's' : ''}`,
       duration_days: customDays,
-      coins: customCoins,
+      gogold: customGoGold,
     });
     setShowModal(true);
   }
@@ -139,7 +139,7 @@ export default function WalletBoostPage() {
       const payload: Record<string, unknown> = {
         boost_option_id: cat.id,
         tier_id: selectedTier.id,
-        coins_amount: selectedTier.coins,
+        gogold_amount: selectedTier.gogold,
       };
       if (selectedTier.id === 'custom') {
         payload.custom_reach    = customReach;
@@ -153,7 +153,7 @@ export default function WalletBoostPage() {
       const res = await apiClient.post<{ boost: BoostRecord; new_balance: number }>(
         Endpoints.wallet.boostsPurchase, payload,
       );
-      setBalance(res.data?.new_balance ?? (balance - selectedTier.coins));
+      setBalance(res.data?.new_balance ?? (balance - selectedTier.gogold));
       if (res.data?.boost) setActiveBoosts(prev => [res.data.boost, ...prev]);
       setShowModal(false);
       setSelectedTier(null);
@@ -188,7 +188,7 @@ export default function WalletBoostPage() {
           style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.2)' }}>
           <Zap size={13} style={{ color: 'var(--primary)' }} />
           <span className="text-xs font-black" style={{ color: 'var(--primary)' }}>
-            {balance.toLocaleString('fr-FR')} coins
+            {balance.toLocaleString('fr-FR')} GoGold
           </span>
         </button>
       </div>
@@ -321,7 +321,7 @@ export default function WalletBoostPage() {
           {!customMode ? (
             <div className="grid grid-cols-2 gap-3">
               {cat.tiers.map(tier => {
-                const afford  = balance >= tier.coins;
+                const afford  = balance >= tier.gogold;
                 const locked  = !!cat.contentType && !targetContent;
                 const isSel   = selectedTier?.id === tier.id;
                 return (
@@ -360,7 +360,7 @@ export default function WalletBoostPage() {
                     <div className="flex items-center gap-1.5 pt-3" style={{ borderTop: `1px solid ${g1}20` }}>
                       <Zap size={13} style={{ color: g1 }} />
                       <p className="text-sm font-black" style={{ color: g1 }}>
-                        {tier.coins.toLocaleString('fr-FR')} coins
+                        {tier.gogold.toLocaleString('fr-FR')} GoGold
                       </p>
                     </div>
                     {!afford && <p className="text-[10px] mt-1" style={{ color: '#EF4444' }}>Solde insuffisant</p>}
@@ -443,36 +443,36 @@ export default function WalletBoostPage() {
                     {fmtNum(customReach)} {customUnit} · {customDays} jour{customDays > 1 ? 's' : ''}
                   </p>
                   <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                    Solde après : {Math.max(0, balance - customCoins).toLocaleString('fr-FR')} coins
+                    Solde après : {Math.max(0, balance - customGoGold).toLocaleString('fr-FR')} GoGold
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-black" style={{ color: g1 }}>{customCoins.toLocaleString('fr-FR')}</p>
-                  <p className="text-[10px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>coins</p>
+                  <p className="text-xl font-black" style={{ color: g1 }}>{customGoGold.toLocaleString('fr-FR')}</p>
+                  <p className="text-[10px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>GoGold</p>
                 </div>
               </div>
 
-              <button onClick={handleSelectCustom} disabled={balance < customCoins}
+              <button onClick={handleSelectCustom} disabled={balance < customGoGold}
                 className="w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
                 style={{
-                  background: balance >= customCoins ? `linear-gradient(135deg,${g1},${g2})` : 'var(--bg-secondary)',
-                  boxShadow: balance >= customCoins ? `0 6px 20px ${g1}35` : 'none',
-                  color: balance >= customCoins ? '#fff' : 'var(--text-tertiary)',
+                  background: balance >= customGoGold ? `linear-gradient(135deg,${g1},${g2})` : 'var(--bg-secondary)',
+                  boxShadow: balance >= customGoGold ? `0 6px 20px ${g1}35` : 'none',
+                  color: balance >= customGoGold ? '#fff' : 'var(--text-tertiary)',
                 }}>
                 <Zap size={15} />
-                {balance >= customCoins ? `Booster pour ${customCoins.toLocaleString('fr-FR')} coins` : 'Solde insuffisant'}
+                {balance >= customGoGold ? `Booster pour ${customGoGold.toLocaleString('fr-FR')} GoGold` : 'Solde insuffisant'}
               </button>
             </div>
           )}
 
-          {/* Buy coins CTA */}
+          {/* Buy GoGold CTA */}
           {balance === 0 && (
             <button onClick={() => navigate('/wallet/buy')}
               className="w-full flex items-center gap-3 p-4 rounded-2xl transition-all"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <ShoppingBag size={18} style={{ color: 'var(--text-tertiary)' }} />
               <p className="flex-1 text-xs text-left" style={{ color: 'var(--text-secondary)' }}>
-                Vous n'avez pas de coins. Achetez-en pour activer un boost.
+                Vous n'avez pas de GoGold. Achetez-en pour activer un boost.
               </p>
               <span className="text-xs font-black px-3 py-1.5 rounded-full text-white shrink-0"
                 style={{ background: 'var(--primary)' }}>
@@ -482,7 +482,7 @@ export default function WalletBoostPage() {
           )}
 
           <p className="text-[11px] text-center px-6 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-            Les coins sont débités immédiatement. Remboursement de 90 % si vous annulez dans les 30 premières minutes. Les impressions sont comptées en temps réel dans votre tableau de bord.
+            Les GoGold sont débités immédiatement. Remboursement de 90 % si vous annulez dans les 30 premières minutes. Les impressions sont comptées en temps réel dans votre tableau de bord.
           </p>
         </div>
       )}
@@ -595,9 +595,9 @@ export default function WalletBoostPage() {
               </div>
               <div className="p-4 space-y-2.5">
                 {[
-                  { label: 'Coût',              value: `${selectedTier.coins.toLocaleString('fr-FR')} coins`, color: g1 },
-                  { label: 'Solde actuel',      value: `${balance.toLocaleString('fr-FR')} coins` },
-                  { label: 'Solde restant',     value: `${(balance - selectedTier.coins).toLocaleString('fr-FR')} coins` },
+                  { label: 'Coût',              value: `${selectedTier.gogold.toLocaleString('fr-FR')} GoGold`, color: g1 },
+                  { label: 'Solde actuel',      value: `${balance.toLocaleString('fr-FR')} GoGold` },
+                  { label: 'Solde restant',     value: `${(balance - selectedTier.gogold).toLocaleString('fr-FR')} GoGold` },
                   { label: 'Remboursement',     value: `90 % si annulé sous 30 min`, color: '#22C55E' },
                 ].map(row => (
                   <div key={row.label} className="flex items-center justify-between">

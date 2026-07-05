@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { decodeId, encodeId } from '../../utils/slugId';
 import {
   Play, Star, Crown, ChevronDown, ChevronUp, Lock, Film, Clock,
-  Coins, Check, AlertTriangle, X, Wallet, Share2,
+  GoGold, Check, AlertTriangle, X, Wallet, Share2,
 } from 'lucide-react';
 import type { Content, Season, Episode, VideoMeta } from '../../types';
 import { apiClient } from '../../api';
@@ -15,9 +15,9 @@ import { GuestPreview } from '../../components/ui/GuestPreview';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
-// 1 EUR = 100 coins (taux unifié plateforme)
-const COINS_PER_EUR = 100;
-const eurToCoins = (eur: number) => Math.ceil(eur * COINS_PER_EUR);
+// 1 EUR = 100 GoGold (taux unifié plateforme)
+const GOGOLD_PER_EUR = 100;
+const eurToGoGold = (eur: number) => Math.ceil(eur * GOGOLD_PER_EUR);
 
 function toArray<T>(raw: unknown): T[] {
   if (!raw) return [];
@@ -42,17 +42,17 @@ function PaywallModal({ serie, onClose, onPurchased }: {
   serie: Content; onClose: () => void; onPurchased: () => void;
 }) {
   const navigate      = useNavigate();
-  const coinsRequired = eurToCoins(serie.price ?? 0);
+  const goGoldRequired = eurToGoGold(serie.price ?? 0);
   const [balance, setBalance] = useState<number | null>(null);
   const [buying,  setBuying]  = useState(false);
 
   useEffect(() => {
     apiClient.get<any>(Endpoints.wallet.balance)
-      .then(r => setBalance(r.data?.coins_balance ?? r.data?.balance ?? r.data?.coins ?? 0))
+      .then(r => setBalance(r.data?.gogold_balance ?? r.data?.balance ?? r.data?.gogold ?? 0))
       .catch(() => setBalance(0));
   }, []);
 
-  const sufficient = balance !== null && balance >= coinsRequired;
+  const sufficient = balance !== null && balance >= goGoldRequired;
 
   async function handleBuy() {
     setBuying(true);
@@ -91,11 +91,11 @@ function PaywallModal({ serie, onClose, onPurchased }: {
           <div className="flex items-center justify-between p-3.5 rounded-2xl"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
             <div className="flex items-center gap-2">
-              <Coins size={18} style={{ color: 'var(--primary)' }} />
-              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Coins requis</span>
+              <GoGold size={18} style={{ color: 'var(--primary)' }} />
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>GoGold requis</span>
             </div>
             <span className="font-black text-lg" style={{ color: 'var(--primary)' }}>
-              {coinsRequired.toLocaleString('fr-FR')}
+              {goGoldRequired.toLocaleString('fr-FR')}
             </span>
           </div>
 
@@ -103,7 +103,7 @@ function PaywallModal({ serie, onClose, onPurchased }: {
             <div className="flex items-center justify-between px-1">
               <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Votre solde</span>
               <span className="text-sm font-bold" style={{ color: sufficient ? '#22C55E' : '#EF4444' }}>
-                {balance.toLocaleString('fr-FR')} coins
+                {balance.toLocaleString('fr-FR')} GoGold
               </span>
             </div>
           )}
@@ -113,14 +113,14 @@ function PaywallModal({ serie, onClose, onPurchased }: {
               style={{ background: '#EF444410', border: '1px solid #EF444430' }}>
               <AlertTriangle size={15} style={{ color: '#EF4444', flexShrink: 0 }} />
               <p className="text-xs font-semibold" style={{ color: '#EF4444' }}>
-                Solde insuffisant — il vous manque {(coinsRequired - balance).toLocaleString('fr-FR')} coins
+                Solde insuffisant — il vous manque {(goGoldRequired - balance).toLocaleString('fr-FR')} GoGold
               </p>
             </div>
           )}
 
           {serie.price && (
             <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              Accès à toute la série · {serie.price.toFixed(2)} € · 1 € = {COINS_PER_EUR} coins
+              Accès à toute la série · {serie.price.toFixed(2)} € · 1 € = {GOGOLD_PER_EUR} GoGold
             </p>
           )}
 
@@ -494,7 +494,7 @@ export default function SerieDetailPage() {
             <div>
               <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Accès à toute la série</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                {s.price ? `${eurToCoins(s.price).toLocaleString('fr-FR')} coins · ${s.price.toFixed(2)} €` : 'Contenu premium'}
+                {s.price ? `${eurToGoGold(s.price).toLocaleString('fr-FR')} GoGold · ${s.price.toFixed(2)} €` : 'Contenu premium'}
               </p>
             </div>
             <button onClick={() => setShowPaywall(true)}

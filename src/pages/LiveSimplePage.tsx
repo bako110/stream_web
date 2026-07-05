@@ -85,7 +85,7 @@ interface ChatMsg {
 }
 interface EmojiFloat  { id: number; emoji: string; x: number; size: number; }
 interface HandRequest { identity: string; name: string; avatar?: string | null; }
-interface GiftTick    { id: string; emoji: string; senderName: string; giftName: string; coins: number; }
+interface GiftTick    { id: string; emoji: string; senderName: string; giftName: string; gogold: number; }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
 
@@ -499,7 +499,7 @@ function GiftHistoryPanel({
   history: GiftTick[];
   onClose: () => void;
 }) {
-  const total = history.reduce((s, t) => s + t.coins, 0);
+  const total = history.reduce((s, t) => s + t.gogold, 0);
   return (
     <div className="absolute top-16 right-3 z-40 w-64"
       style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderRadius: '1rem', border: '1px solid rgba(255,215,0,0.25)' }}>
@@ -512,7 +512,7 @@ function GiftHistoryPanel({
         </button>
       </div>
       <div className="px-3 py-1.5 border-b" style={{ borderColor: 'rgba(255,215,0,0.1)' }}>
-        <span className="text-xs font-bold" style={{ color: '#fde68a' }}>Total : {total.toLocaleString()} coins</span>
+        <span className="text-xs font-bold" style={{ color: '#fde68a' }}>Total : {total.toLocaleString()} GoGold</span>
       </div>
       <div className="p-2 space-y-2 max-h-56 overflow-y-auto">
         {history.slice(0, 20).map((t, i) => (
@@ -523,7 +523,7 @@ function GiftHistoryPanel({
               <p className="text-xs text-white font-semibold truncate">{t.senderName}</p>
               <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.5)' }}>{t.giftName}</p>
             </div>
-            <span className="text-[10px] font-bold shrink-0" style={{ color: '#fbbf24' }}>{t.coins}</span>
+            <span className="text-[10px] font-bold shrink-0" style={{ color: '#fbbf24' }}>{t.gogold}</span>
           </div>
         ))}
       </div>
@@ -1292,7 +1292,7 @@ export default function LiveSimplePage() {
           senderName: d.gift?.sender?.display_name ?? d.gift?.sender?.username ?? 'Quelqu\'un',
           emoji:      d.gift?.gift_type?.emoji ?? d.gift?.emoji ?? '',
           giftName:   d.gift?.gift_type?.name  ?? d.gift?.name  ?? 'Cadeau',
-          coins:      d.gift?.coins_spent ?? d.gift?.coins_cost ?? 0,
+          gogold:      d.gift?.gogold_spent ?? d.gift?.gogold_cost ?? 0,
           receiverName: isForHost ? undefined : (participantNamesRef.current.get(receiverId) ?? undefined),
         };
         setGiftNotifs(prev => [...prev.slice(-9), n]);

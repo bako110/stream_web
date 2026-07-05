@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Coins, CreditCard, Check, AlertTriangle, Monitor, Tv, Users, Download } from 'lucide-react';
+  ArrowLeft, GoGold, CreditCard, Check, AlertTriangle, Monitor, Tv, Users, Download } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 
 interface WalletBalance {
   balance: number;
-  coins?: number;
+  GoGold?: number;
 }
 
 interface PlanConfig {
@@ -29,7 +29,7 @@ interface PlanConfig {
   features: string[];
 }
 
-type PaymentMethod = 'coins' | 'stripe';
+type PaymentMethod = 'GoGold' | 'stripe';
 
 // ---------------------------------------------------------------------------
 // Static plan data (mirrors Plans page)
@@ -81,8 +81,8 @@ const PLANS: Record<string, PlanConfig> = {
     color: '#10B981',
     features: ['Tout le contenu Premium', '6 ecrans simultanes', 'Qualite 4K Ultra HD', '6 profils', '50 telechargements / mois', 'Controle parental avance'] } };
 
-// 1 EUR = 100 coins (taux unifié plateforme)
-const eurToCoins = (eur: number) => Math.ceil(eur * 100);
+// 1 EUR = 100 GoGold (taux unifié plateforme)
+const eurToGoGold = (eur: number) => Math.ceil(eur * 100);
 
 // ---------------------------------------------------------------------------
 // Success Overlay
@@ -126,19 +126,19 @@ export default function WalletSubscriptionPaymentPage() {
   const planId         = searchParams.get('plan') ?? 'basic';
   const plan           = PLANS[planId] ?? PLANS.basic;
 
-  const coinsRequired  = eurToCoins(plan.price);
+  const goGoldRequired  = eurToGoGold(plan.price);
 
   const [balance,  setBalance]  = useState<number>(0);
   const [loadingW, setLoadingW] = useState(true);
-  const [method,   setMethod]   = useState<PaymentMethod>('coins');
+  const [method,   setMethod]   = useState<PaymentMethod>('GoGold');
   const [paying,   setPaying]   = useState(false);
   const [success,  setSuccess]  = useState(false);
 
-  const hasEnoughCoins = balance >= coinsRequired;
+  const hasEnoughGoGold = balance >= goGoldRequired;
 
   useEffect(() => {
     apiClient.get<WalletBalance>(Endpoints.wallet.balance)
-      .then(r => setBalance(r.data.coins ?? r.data.balance ?? 0))
+      .then(r => setBalance(r.data.gogold ?? r.data.balance ?? 0))
       .catch(() => {})
       .finally(() => setLoadingW(false));
   }, []);
@@ -147,7 +147,7 @@ export default function WalletSubscriptionPaymentPage() {
     if (paying) return;
     setPaying(true);
     try {
-      if (method === 'coins') {
+      if (method === 'GoGold') {
         await apiClient.post(Endpoints.subscriptions.subscribeWallet(plan.id));
       } else {
         await apiClient.post(Endpoints.subscriptions.subscribe, { plan: plan.id });
@@ -241,13 +241,13 @@ export default function WalletSubscriptionPaymentPage() {
               Mode de paiement
             </p>
 
-            {/* Coins option */}
+            {/* GoGold option */}
             <button
-              onClick={() => setMethod('coins')}
+              onClick={() => setMethod('GoGold')}
               className="w-full rounded-2xl p-4 text-left transition-all"
               style={{
-                background: method === 'coins' ? 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.08))' : 'var(--surface)',
-                border: method === 'coins' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
+                background: method === 'GoGold' ? 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.08))' : 'var(--surface)',
+                border: method === 'GoGold' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -255,17 +255,17 @@ export default function WalletSubscriptionPaymentPage() {
                     className="w-9 h-9 rounded-xl flex items-center justify-center"
                     style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}
                   >
-                    <Coins size={18} />
+                    <GoGold size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Payer avec des Coins</p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Payer avec des GoGold</p>
                     {loadingW ? (
                       <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Chargement...</p>
                     ) : (
-                      <p className="text-xs" style={{ color: hasEnoughCoins ? '#22C55E' : '#EF4444' }}>
-                        {balance.toLocaleString('fr-FR')} coins disponibles
+                      <p className="text-xs" style={{ color: hasEnoughGoGold ? '#22C55E' : '#EF4444' }}>
+                        {balance.toLocaleString('fr-FR')} GoGold disponibles
                         {' '}&bull;{' '}
-                        {coinsRequired.toLocaleString('fr-FR')} requis
+                        {goGoldRequired.toLocaleString('fr-FR')} requis
                       </p>
                     )}
                   </div>
@@ -273,15 +273,15 @@ export default function WalletSubscriptionPaymentPage() {
                 <div
                   className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                   style={{
-                    borderColor: method === 'coins' ? 'var(--primary)' : 'var(--border)',
-                    background: method === 'coins' ? 'var(--primary)' : 'transparent' }}
+                    borderColor: method === 'GoGold' ? 'var(--primary)' : 'var(--border)',
+                    background: method === 'GoGold' ? 'var(--primary)' : 'transparent' }}
                 >
-                  {method === 'coins' && <Check size={10} strokeWidth={3} className="text-white" />}
+                  {method === 'GoGold' && <Check size={10} strokeWidth={3} className="text-white" />}
                 </div>
               </div>
 
               {/* Insufficient balance warning */}
-              {method === 'coins' && !loadingW && !hasEnoughCoins && (
+              {method === 'GoGold' && !loadingW && !hasEnoughGoGold && (
                 <div
                   className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5"
                   style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
@@ -345,11 +345,11 @@ export default function WalletSubscriptionPaymentPage() {
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Frequence</span>
             <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Mensuel</span>
           </div>
-          {plan.price > 0 && method === 'coins' && (
+          {plan.price > 0 && method === 'GoGold' && (
             <div className="flex items-center justify-between">
               <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Deduction wallet</span>
               <span className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
-                -{coinsRequired.toLocaleString('fr-FR')} coins
+                -{goGoldRequired.toLocaleString('fr-FR')} GoGold
               </span>
             </div>
           )}
@@ -367,7 +367,7 @@ export default function WalletSubscriptionPaymentPage() {
         {/* Confirm button */}
         <button
           onClick={handleConfirm}
-          disabled={paying || (plan.price > 0 && method === 'coins' && !hasEnoughCoins)}
+          disabled={paying || (plan.price > 0 && method === 'GoGold' && !hasEnoughGoGold)}
           className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
           style={{ background: plan.gradient, boxShadow: `0 8px 24px ${plan.color}40` }}
         >

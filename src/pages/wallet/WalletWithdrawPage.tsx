@@ -7,12 +7,12 @@ import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 
 interface WalletBalance {
-  coins_balance: number;
+  gogold_balance: number;
   pending_withdrawal: number;
 }
 
-// Taux retrait : 100 coins = 0.35 € | Minimum : 500 coins = 1.75 €
-const coinsToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
+// Taux retrait : 100 GoGold = 0.35 € | Minimum : 500 GoGold = 1.75 €
+const goGoldToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 const MIN_WITHDRAW = 500;
 
 export default function WalletWithdrawPage() {
@@ -37,15 +37,15 @@ export default function WalletWithdrawPage() {
   }, []);
 
   async function handleWithdraw() {
-    const coins = Number(amount);
-    if (!coins || coins < MIN_WITHDRAW) { toast.error(`Minimum ${MIN_WITHDRAW} coins.`); return; }
+    const gogold = Number(amount);
+    if (!gogold || gogold < MIN_WITHDRAW) { toast.error(`Minimum ${MIN_WITHDRAW} GoGold.`); return; }
     if (!iban.trim()) { toast.error('IBAN requis.'); return; }
     if (!name.trim()) { toast.error('Nom du titulaire requis.'); return; }
-    if (balance && coins > balance.coins_balance) { toast.error('Solde insuffisant.'); return; }
+    if (balance && gogold > balance.gogold_balance) { toast.error('Solde insuffisant.'); return; }
 
     setWithdrawing(true);
     try {
-      await apiClient.post(Endpoints.wallet.withdraw, { amount: coins, iban: iban.trim(), account_name: name.trim() });
+      await apiClient.post(Endpoints.wallet.withdraw, { amount: gogold, iban: iban.trim(), account_name: name.trim() });
       toast.success('Demande de retrait envoyée ! Traitement sous 3-5 jours ouvrés.');
       navigate('/wallet');
     } catch (e: any) {
@@ -55,7 +55,7 @@ export default function WalletWithdrawPage() {
 
   if (loading) return <PageLoader />;
 
-  const euros = coinsToEur(Number(amount) || 0);
+  const euros = goGoldToEur(Number(amount) || 0);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
@@ -70,7 +70,7 @@ export default function WalletWithdrawPage() {
         </button>
         <div>
           <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Retirer mes gains</h1>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Convertir vos coins en euros</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Convertir vos GoGold en euros</p>
         </div>
       </div>
 
@@ -79,8 +79,8 @@ export default function WalletWithdrawPage() {
         style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
         <div>
           <p className="text-xs text-white/70 font-medium">Solde disponible</p>
-          <p className="text-3xl font-black text-white">{(balance?.coins_balance ?? 0).toLocaleString('fr-FR')}</p>
-          <p className="text-sm text-white/60">≈ {coinsToEur(balance?.coins_balance ?? 0)} EUR</p>
+          <p className="text-3xl font-black text-white">{(balance?.gogold_balance ?? 0).toLocaleString('fr-FR')}</p>
+          <p className="text-sm text-white/60">≈ {goGoldToEur(balance?.gogold_balance ?? 0)} EUR</p>
         </div>
         {(balance?.pending_withdrawal ?? 0) > 0 && (
           <div className="text-right">
@@ -95,14 +95,14 @@ export default function WalletWithdrawPage() {
         style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.2)' }}>
         <Info size={15} style={{ color: '#7B3FF2', flexShrink: 0, marginTop: 2 }} />
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-          Minimum {MIN_WITHDRAW} coins ({coinsToEur(MIN_WITHDRAW)} €). Taux : 100 coins = 0,35 €. Délai : 3-5 jours ouvrés.
+          Minimum {MIN_WITHDRAW} GoGold ({goGoldToEur(MIN_WITHDRAW)} €). Taux : 100 GoGold = 0,35 €. Délai : 3-5 jours ouvrés.
         </p>
       </div>
 
       {/* Form */}
       <div className="space-y-3">
         <div>
-          <label className="text-xs font-black uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>Montant (coins)</label>
+          <label className="text-xs font-black uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>Montant (GoGold)</label>
           <div className="flex items-center gap-2 px-4 rounded-xl"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <input
@@ -114,7 +114,7 @@ export default function WalletWithdrawPage() {
               style={{ color: 'var(--text-primary)' }}
             />
             <span className="text-sm font-bold" style={{ color: 'var(--text-tertiary)' }}>
-              coins{Number(amount) > 0 ? ` = ${euros} €` : ''}
+              GoGold{Number(amount) > 0 ? ` = ${euros} €` : ''}
             </span>
           </div>
         </div>
