@@ -124,16 +124,16 @@ function LiveCard({ live }: { live: LiveStream }) {
 
 export default function LiveSimpleListPage() {
   const navigate = useNavigate();
-  const { data: initialLives, loading, refetch } = useApi<LiveStream[]>(
-    () => apiClient.get<LiveStream[]>(Endpoints.lives.list),
+  const { data: initialLivesPage, loading, refetch } = useApi<{ items: LiveStream[]; total: number; has_more: boolean }>(
+    () => apiClient.get<{ items: LiveStream[]; total: number; has_more: boolean }>(Endpoints.lives.list),
   );
   const { lastLiveStarted, lastLiveEnded, lastLiveViewersUpdated } = useWs();
 
   const [lives, setLives] = useState<LiveStream[]>([]);
 
   useEffect(() => {
-    if (initialLives) setLives(initialLives);
-  }, [initialLives]);
+    if (initialLivesPage) setLives(initialLivesPage.items);
+  }, [initialLivesPage]);
 
   useEffect(() => {
     if (!lastLiveStarted) return;

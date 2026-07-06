@@ -14,8 +14,8 @@ export function useLiveSuggestions(excludeId: string) {
 
   useEffect(() => {
     let cancelled = false;
-    apiClient.get<LiveStream[]>(Endpoints.lives.list)
-      .then(r => { if (!cancelled) setLives((r.data ?? []).filter(l => l.id !== excludeId)); })
+    apiClient.get<{ items: LiveStream[] }>(Endpoints.lives.list)
+      .then(r => { if (!cancelled) setLives((r.data?.items ?? []).filter(l => l.id !== excludeId)); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [excludeId]);
