@@ -82,6 +82,7 @@ const PressePage                     = lazy(() => import('./pages/PressePage'));
 const CarrieresPage                  = lazy(() => import('./pages/CarrieresPage'));
 const CookiesPage                    = lazy(() => import('./pages/CookiesPage'));
 const PolitiqueConfidentialitePage   = lazy(() => import('./pages/PolitiqueConfidentialitePage'));
+const EncryptionPage                 = lazy(() => import('./pages/EncryptionPage'));
 const MyEventsPage                   = lazy(() => import('./pages/MyEventsPage'));
 const MyConcertsPage                 = lazy(() => import('./pages/MyConcertsPage'));
 const BlockedUsersPage   = lazy(() => import('./pages/BlockedUsersPage'));
@@ -273,6 +274,7 @@ function AppShell() {
         {/* Pages publiques — accessibles sans connexion */}
         <Route path="/cgu"                            element={<CGUPage />} />
         <Route path="/politique-confidentialite"      element={<PolitiqueConfidentialitePage />} />
+        <Route path="/chiffrement"                    element={<EncryptionPage />} />
         <Route path="/cookies"                        element={<CookiesPage />} />
         <Route path="/a-propos"                       element={<AboutPage />} />
         <Route path="/blog"                           element={<BlogPage />} />
