@@ -144,12 +144,12 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
 
 // ── Bannière flottante (routes autorisées sur mobile) ─────────────────────────
 
+const AUTO_DISMISS_MS = 15_000;
+
 function AppBanner({ ios }: { ios: boolean }) {
   const [dismissed, setDismissed] = useState(
     () => sessionStorage.getItem('gofolyx_banner_dismissed') === '1',
   );
-
-  if (dismissed) return null;
 
   const storeUrl = ios ? APP_STORE_URL : PLAY_STORE_URL;
 
@@ -157,6 +157,14 @@ function AppBanner({ ios }: { ios: boolean }) {
     sessionStorage.setItem('gofolyx_banner_dismissed', '1');
     setDismissed(true);
   }
+
+  useEffect(() => {
+    if (dismissed) return;
+    const timer = setTimeout(dismiss, AUTO_DISMISS_MS);
+    return () => clearTimeout(timer);
+  }, [dismissed]);
+
+  if (dismissed) return null;
 
   return (
     <div style={{
