@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import Hls from 'hls.js';
 
 interface Props {
@@ -22,7 +22,11 @@ export function HoverVideoPreview({ src, poster, className, style, children }: P
 
   const setupVideo = useCallback((v: HTMLVideoElement | null) => {
     videoRef.current = v;
-    if (!v || !src || loadedRef.current) return;
+  }, []);
+
+  function loadAndPlay() {
+    const v = videoRef.current;
+    if (!v || !src || loadedRef.current) { v?.play().catch(() => {}); return; }
     loadedRef.current = true;
     const isHls = src.includes('.m3u8') || src.includes('/hls/');
     if (isHls && Hls.isSupported()) {
@@ -36,16 +40,18 @@ export function HoverVideoPreview({ src, poster, className, style, children }: P
       v.src = src;
       v.play().catch(() => {});
     }
-  }, [src]);
+  }
 
   function handleEnter() {
     setHovering(true);
-    videoRef.current?.play().catch(() => {});
+    loadAndPlay();
   }
   function handleLeave() {
     setHovering(false);
     if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; }
   }
+
+  useEffect(() => () => { hlsRef.current?.destroy(); }, []);
 
   return (
     <div className={className} style={style} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>

@@ -2676,6 +2676,8 @@ export default function FeedPage() {
   const postsCursorRef   = useRef<{ created_at: string; id: string } | null>(null);
   const postsHasMoreRef  = useRef(true);
   const reelsHasMoreRef  = useRef(true);
+  const searchFeedHasMoreRef = useRef(true);
+  const emptyStreakRef   = useRef(0);
   const nonReelCountRef  = useRef(0);
   const suggestCountRef  = useRef(0);
   const commCountRef     = useRef(0);
@@ -2706,6 +2708,8 @@ export default function FeedPage() {
     postsCursorRef.current  = null;
     postsHasMoreRef.current = true;
     reelsHasMoreRef.current = true;
+    searchFeedHasMoreRef.current = true;
+    emptyStreakRef.current  = 0;
     nonReelCountRef.current = 0;
     suggestCountRef.current = 0;
     commCountRef.current    = 0;
@@ -2901,10 +2905,22 @@ export default function FeedPage() {
 
       feedPageRef.current = nextPage;
 
+      // /search/feed n'a pas de curseur — au-delà d'une certaine page il ne renvoie plus
+      // rien de nouveau (contenu déjà vu, dédupliqué par seenIdsRef). On le désactive dès
+      // qu'une page ne ramène aucun concert/événement.
+      if (feedRaw.length === 0) searchFeedHasMoreRef.current = false;
+
       if (freshNonReel.length === 0 && freshReels.length === 0) {
-        setHasMoreFeed(postsHasMoreRef.current || reelsHasMoreRef.current);
+        // Rien de nouveau sur cette page (tout dédupliqué) — on arrête après quelques
+        // essais consécutifs à vide pour éviter une boucle infinie de requêtes tant
+        // qu'une source affirme encore avoir du contenu.
+        emptyStreakRef.current += 1;
+        const stillMore = emptyStreakRef.current < 3
+          && (postsHasMoreRef.current || reelsHasMoreRef.current || searchFeedHasMoreRef.current);
+        setHasMoreFeed(stillMore);
         return;
       }
+      emptyStreakRef.current = 0;
 
       const SUGGEST_EVERY = 8;
       const COMM_EVERY    = 12;
