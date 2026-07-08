@@ -2496,13 +2496,13 @@ function SuggestionsPanel() {
       ) : users.length === 0 ? (
         <p className="text-center py-8 text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucune suggestion</p>
       ) : (
-        <>
+        <div className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
           {users.map((u: any, i: number) => {
             const isFollowed  = followedIds.has(u.id);
             const isFollowing = followingIds.has(u.id);
             return (
             <div key={u.id}
-              className="flex items-center gap-3 px-4 py-2.5 transition-all"
+              className="flex items-center gap-2.5 px-4 py-2.5 transition-all"
               style={{ borderBottom: i < users.length - 1 ? '1px solid var(--border)' : 'none' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -2510,21 +2510,24 @@ function SuggestionsPanel() {
                 <Avatar src={u.avatar_url} name={u.display_name ?? u.username} size="sm" verified={u.is_verified} />
               </button>
               <button onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="min-w-0 flex-1 text-left">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <p className="text-sm font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
                     {u.display_name ?? u.username}
                   </p>
                   {u.is_verified && <VerifiedBadge size={14} />}
                 </div>
-                {u.username && <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>}
+                {u.username && <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>@{u.username}</p>}
               </button>
               <button
                 onClick={() => isFollowed ? unfollow(u.id) : follow(u.id)}
                 disabled={isFollowing}
-                className="shrink-0 flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition-all"
-                style={isFollowed
-                  ? { background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
-                  : { background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}
+                className="shrink-0 flex items-center justify-center gap-1 text-[11px] font-bold rounded-xl transition-all"
+                style={{
+                  width: 74, height: 28,
+                  ...(isFollowed
+                    ? { background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
+                    : { background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }),
+                }}
                 onMouseEnter={e => { if (!isFollowed) { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; } }}
                 onMouseLeave={e => { if (!isFollowed) { e.currentTarget.style.background = 'rgba(123,63,242,0.1)'; e.currentTarget.style.color = 'var(--primary)'; } }}>
                 {isFollowing ? <Spinner size="sm" /> : isFollowed ? 'Abonné' : <><UserPlus size={11} /> Suivre</>}
@@ -2532,16 +2535,7 @@ function SuggestionsPanel() {
             </div>
             );
           })}
-          <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-            <button onClick={() => navigate('/discover/people')}
-              className="text-xs font-bold w-full text-center py-1.5 rounded-xl transition-all"
-              style={{ color: 'var(--primary)' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.07)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              Voir plus →
-            </button>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -2589,7 +2583,7 @@ function CommunitiesSidePanel() {
           </button>
         </div>
       ) : (
-        <>
+        <div className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
           {communities.map((c, i) => {
             const [g1, g2] = commGradient(c.name);
             const count    = c.members_count ?? c.member_count ?? 0;
@@ -2617,16 +2611,7 @@ function CommunitiesSidePanel() {
               </button>
             );
           })}
-          <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-            <button onClick={() => navigate('/discover/communities')}
-              className="text-xs font-bold w-full text-center py-1.5 rounded-xl transition-all"
-              style={{ color: 'var(--primary)' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(123,63,242,0.07)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              Voir toutes les communautés →
-            </button>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );
