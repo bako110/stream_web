@@ -141,6 +141,9 @@ export const Endpoints = {
     messageDeleteForMe: (messageId: string) => `${V1}/messages/messages/${messageId}/for-me`,
     unreadCount:        `${V1}/messages/unread-count`,
     usersSearch:        `${V1}/search`,
+    requestStatus:      (userId: string) => `${V1}/messages/conversations/${userId}/request-status`,
+    acceptConversation: (userId: string) => `${V1}/messages/conversations/${userId}/accept`,
+    blockConversation:  (userId: string) => `${V1}/messages/conversations/${userId}/block`,
   },
   communities: {
     list:     `${V1}/communities`,

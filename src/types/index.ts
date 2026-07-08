@@ -299,8 +299,11 @@ export interface Notification {
 }
 
 // ── Message ───────────────────────────────────────────────────────────────
+export type ConversationRequestStatus =
+  | 'none' | 'pending_incoming' | 'pending_outgoing' | 'accepted' | 'blocked' | 'blocked_by_me';
 export interface Conversation {
   user: UserPublic; last_message: string | null; last_message_at: string | null; unread_count: number;
+  request_status?: ConversationRequestStatus;
 }
 export interface Message {
   id: string; sender_id: string; receiver_id: string; body: string | null;

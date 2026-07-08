@@ -13,7 +13,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useWs } from '../../context/WebSocketContext';
 import type { WsPayload } from '../../context/WebSocketContext';
 import { encodeId } from '../../utils/slugId';
-import type { Conversation, UserPublic } from '../../types';
+import type { Conversation, ConversationRequestStatus, UserPublic } from '../../types';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -82,6 +82,8 @@ function MiniChatWindow({
   const [sending,  setSending]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   const [peer,     setPeer]     = useState<UserPublic | null>(null);
+  const [requestStatus, setRequestStatus] = useState<ConversationRequestStatus>('none');
+  const [requestActionLoading, setRequestActionLoading] = useState(false);
   const [replyTo,  setReplyTo]  = useState<ExtMsg | null>(null);
   const [uploading,setUploading]= useState(false);
   const [emojiFor, setEmojiFor] = useState<string | null>(null);
@@ -103,12 +105,15 @@ function MiniChatWindow({
   }, [userId]);
 
   useEffect(() => {
-    setMessages([]); setPeer(null); setReplyTo(null); setInput('');
+    setMessages([]); setPeer(null); setReplyTo(null); setInput(''); setRequestStatus('none');
     loadMessages(true);
     apiClient.get<unknown>(Endpoints.users.publicProfile(userId))
       .then(r => { const raw = r.data as any; setPeer(raw?.user ?? raw); })
       .catch(() => {});
     apiClient.put(Endpoints.messages.markRead(userId)).catch(() => {});
+    apiClient.get<{ status: ConversationRequestStatus }>(Endpoints.messages.requestStatus(userId))
+      .then(r => setRequestStatus(r.data.status))
+      .catch(() => {});
   }, [userId, loadMessages]);
 
   // WS
@@ -138,6 +143,12 @@ function MiniChatWindow({
       const w = wsPayload as any;
       setMessages(prev => prev.map(m => m.id === w.message_id ? { ...m, reaction: w.emoji } : m));
     }
+    if (wsPayload.type === 'conversation_accepted' && (wsPayload as any).user_id === userId) {
+      setRequestStatus('accepted');
+    }
+    if (wsPayload.type === 'conversation_blocked' && (wsPayload as any).user_id === userId) {
+      setRequestStatus('blocked');
+    }
   }, [wsPayload, userId, me?.id]);
 
   useEffect(() => {
@@ -166,11 +177,28 @@ function MiniChatWindow({
         setMessages(prev => prev.map(m => m.id === tempId ? { ...msg, body: msg.body ?? msg.content ?? body } : m));
       } else { await loadMessages(false); }
       onMessageSent(body);
-    } catch {
+    } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== tempId));
       setInput(body);
-      toast.error('Erreur envoi');
+      const code = e?.response?.data?.detail?.code;
+      if (code === 'pending_limit') setRequestStatus('pending_outgoing');
+      else if (code === 'conversation_blocked') setRequestStatus('blocked');
+      else toast.error('Erreur envoi');
     } finally { setSending(false); setTimeout(() => inputRef.current?.focus(), 50); }
+  }
+
+  async function acceptConversation() {
+    setRequestActionLoading(true);
+    try { await apiClient.post(Endpoints.messages.acceptConversation(userId)); setRequestStatus('accepted'); }
+    catch { toast.error('Erreur lors de l\'acceptation'); }
+    finally { setRequestActionLoading(false); }
+  }
+
+  async function blockConversation() {
+    setRequestActionLoading(true);
+    try { await apiClient.post(Endpoints.messages.blockConversation(userId)); setRequestStatus('blocked_by_me'); }
+    catch { toast.error('Erreur lors du blocage'); }
+    finally { setRequestActionLoading(false); }
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -403,6 +431,44 @@ function MiniChatWindow({
             <button onClick={() => setReplyTo(null)} style={{ color: 'var(--text-tertiary)' }}><X size={12} /></button>
           </div>
         )}
+        {/* Demande de conversation entrante */}
+        {requestStatus === 'pending_incoming' && (
+          <div className="px-3 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+            <p className="text-[11px] mb-2" style={{ color: 'var(--text-tertiary)' }}>
+              {peer?.display_name ?? peer?.username ?? 'Cette personne'} vous a envoyé un message.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={acceptConversation} disabled={requestActionLoading}
+                className="flex-1 py-1.5 rounded-full text-xs font-bold text-white disabled:opacity-60"
+                style={{ background: 'var(--primary)' }}>
+                Autoriser
+              </button>
+              <button onClick={blockConversation} disabled={requestActionLoading}
+                className="flex-1 py-1.5 rounded-full text-xs font-bold"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                Bloquer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {requestStatus === 'pending_outgoing' && (
+          <div className="px-3 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+            <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+              En attente d'autorisation de {peer?.display_name ?? peer?.username ?? 'cette personne'}.
+            </span>
+          </div>
+        )}
+
+        {(requestStatus === 'blocked' || requestStatus === 'blocked_by_me') && (
+          <div className="px-3 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+            <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+              {requestStatus === 'blocked_by_me' ? 'Vous avez bloqué cette conversation.' : 'Cette personne a bloqué la conversation.'}
+            </span>
+          </div>
+        )}
+
+        {requestStatus !== 'pending_outgoing' && requestStatus !== 'blocked' && requestStatus !== 'blocked_by_me' && (
         <div className="flex items-center gap-1.5 px-2.5 py-2">
           <button onClick={() => fileRef.current?.click()} disabled={uploading}
             className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all"
@@ -423,6 +489,7 @@ function MiniChatWindow({
             {sending ? <Spinner size="sm" /> : <Send size={13} style={{ color: input.trim() ? '#fff' : 'var(--text-tertiary)' }} />}
           </button>
         </div>
+        )}
       </div>
     </div>
   );
@@ -548,9 +615,17 @@ function MiniConvoList({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-1">
-                <p className="font-semibold text-xs truncate" style={{ color: 'var(--text-primary)' }}>
-                  {c.user.display_name ?? c.user.username}
-                </p>
+                <div className="flex items-center gap-1 min-w-0">
+                  <p className="font-semibold text-xs truncate" style={{ color: 'var(--text-primary)' }}>
+                    {c.user.display_name ?? c.user.username}
+                  </p>
+                  {c.request_status === 'pending_incoming' && (
+                    <span className="shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full"
+                      style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}>
+                      Demande
+                    </span>
+                  )}
+                </div>
                 {(c as any).last_time && (
                   <span className="text-[10px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                     {fmtTime((c as any).last_time)}

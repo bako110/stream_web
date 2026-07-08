@@ -8,7 +8,7 @@ import {
   PinOff, Smile, Image as ImageIcon, Check, CheckCheck, Trash,
   Mic, MicOff, Play, Square, Paperclip,
 } from 'lucide-react';
-import type { Conversation, Message, UserPublic } from '../types';
+import type { Conversation, ConversationRequestStatus, Message, UserPublic } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
@@ -262,10 +262,18 @@ const ConversationList = forwardRef<ConvoListHandle, {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                    {c.user.display_name ?? c.user.username}
-                  </p>
+                <div className="flex items-center gap-1.5 justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                      {c.user.display_name ?? c.user.username}
+                    </p>
+                    {c.request_status === 'pending_incoming' && (
+                      <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}>
+                        Demande
+                      </span>
+                    )}
+                  </div>
                   {(c as any).last_time && (
                     <span className="text-[10px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                       {formatMsgTime((c as any).last_time)}
@@ -633,6 +641,8 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   const [sending,  setSending] = useState(false);
   const [error,    setError]   = useState<string | null>(null);
   const [peer,     setPeer]    = useState<UserPublic | null>(null);
+  const [requestStatus, setRequestStatus] = useState<ConversationRequestStatus>('none');
+  const [requestActionLoading, setRequestActionLoading] = useState(false);
   const [replyTo,  setReplyTo] = useState<ExtMessage | null>(null);
   const [editingId,setEditingId]= useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -668,12 +678,17 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   }, [userId]);
 
   useEffect(() => {
-    setMessages([]); setError(null); setPeer(null); setReplyTo(null);
+    setMessages([]); setError(null); setPeer(null); setReplyTo(null); setRequestStatus('none');
     loadMessages(true);
     apiClient.get<unknown>(Endpoints.users.publicProfile(userId))
       .then(r => { const raw = r.data as any; setPeer(raw?.user ?? raw); })
       .catch(() => {});
     apiClient.put(Endpoints.messages.markRead(userId)).catch(() => {});
+    // Connaître à l'avance le statut de la demande de conversation — évite de
+    // laisser taper un message qui échouera silencieusement à l'envoi
+    apiClient.get<{ status: ConversationRequestStatus }>(Endpoints.messages.requestStatus(userId))
+      .then(r => setRequestStatus(r.data.status))
+      .catch(() => {});
   }, [userId, loadMessages]);
 
   // WS
@@ -733,6 +748,12 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       const w = wsPayload as any;
       setMessages(prev => prev.map(m => m.id === w.message_id ? { ...m, pinned: false } : m));
     }
+    if (wsPayload.type === 'conversation_accepted' && (wsPayload as any).user_id === userId) {
+      setRequestStatus('accepted');
+    }
+    if (wsPayload.type === 'conversation_blocked' && (wsPayload as any).user_id === userId) {
+      setRequestStatus('blocked');
+    }
   }, [wsPayload, userId, me?.id]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -780,10 +801,27 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
         setMessages(prev => prev.map(m => m.id === tempId ? { ...msg, body: msg.body ?? msg.content ?? body } : m));
       } else { await loadMessages(false); }
       onMessageSent(body);
-    } catch {
+    } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== tempId));
       setInput(body);
+      const code = e?.response?.data?.detail?.code;
+      if (code === 'pending_limit') setRequestStatus('pending_outgoing');
+      else if (code === 'conversation_blocked') setRequestStatus('blocked');
     } finally { setSending(false); setTimeout(() => inputRef.current?.focus(), 50); }
+  }
+
+  async function acceptConversation() {
+    setRequestActionLoading(true);
+    try { await apiClient.post(Endpoints.messages.acceptConversation(userId)); setRequestStatus('accepted'); }
+    catch { toast.error('Erreur lors de l\'acceptation'); }
+    finally { setRequestActionLoading(false); }
+  }
+
+  async function blockConversation() {
+    setRequestActionLoading(true);
+    try { await apiClient.post(Endpoints.messages.blockConversation(userId)); setRequestStatus('blocked_by_me'); }
+    catch { toast.error('Erreur lors du blocage'); }
+    finally { setRequestActionLoading(false); }
   }
 
   // ── Upload via presigned URL (même approche que le mobile → bypass validation content_type) ──
@@ -1271,6 +1309,51 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
             </button>
           </div>
         )}
+        {/* Demande de conversation entrante — j'ai reçu un 1er message, je décide */}
+        {requestStatus === 'pending_incoming' && (
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+            <p className="text-xs mb-2.5" style={{ color: 'var(--text-tertiary)' }}>
+              {peer?.display_name ?? peer?.username ?? 'Cette personne'} vous a envoyé un message. Autoriser cette personne à vous écrire ?
+            </p>
+            <div className="flex gap-2.5">
+              <button onClick={acceptConversation} disabled={requestActionLoading}
+                className="flex-1 py-2 rounded-full text-sm font-bold text-white disabled:opacity-60"
+                style={{ background: 'var(--primary)' }}>
+                Autoriser
+              </button>
+              <button onClick={blockConversation} disabled={requestActionLoading}
+                className="flex-1 py-2 rounded-full text-sm font-bold"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                Bloquer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* J'ai envoyé le message initial, j'attends la décision du destinataire */}
+        {requestStatus === 'pending_outgoing' && (
+          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              En attente que {peer?.display_name ?? peer?.username ?? 'cette personne'} autorise la conversation.
+            </span>
+          </div>
+        )}
+
+        {/* Conversation bloquée */}
+        {(requestStatus === 'blocked' || requestStatus === 'blocked_by_me') && (
+          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              {requestStatus === 'blocked_by_me'
+                ? 'Vous avez bloqué cette conversation.'
+                : 'Cette personne a bloqué la conversation.'}
+            </span>
+          </div>
+        )}
+
+        {/* Barre de saisie — masquée seulement si en attente de réponse (pending_outgoing)
+            ou si la conversation est bloquée ; reste active pour pending_incoming car
+            répondre vaut acceptation implicite */}
+        {requestStatus !== 'pending_outgoing' && requestStatus !== 'blocked' && requestStatus !== 'blocked_by_me' && (
         <div className="flex items-center gap-2 px-3 py-2">
           <button onClick={() => fileRef.current?.click()} disabled={uploading || recording}
             className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
@@ -1301,6 +1384,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
             {sending ? <Spinner size="sm" /> : <Send size={16} style={{ color: input.trim() ? '#fff' : 'var(--text-tertiary)' }} />}
           </button>
         </div>
+        )}
       </div>
 
       {forwardMsg && (
