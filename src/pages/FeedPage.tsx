@@ -804,7 +804,7 @@ type FeedItem =
   | { kind: 'reel_row';     id: string; data: Reel[] }
   | { kind: 'suggestions';  id: string; data: null }
   | { kind: 'communities';  id: string; data: Community[] }
-  | { kind: 'ad';           id: string; data: FeedAd };
+  | { kind: 'ad';           id: string; data: FeedAd | null };
 
 const EVENT_COLORS: Record<string, string> = {
   concert: '#7B3FF2', birthday: '#7B3FF2', festival: '#7B3FF2',
@@ -2676,8 +2676,6 @@ export default function FeedPage() {
   const postsCursorRef   = useRef<{ created_at: string; id: string } | null>(null);
   const postsHasMoreRef  = useRef(true);
   const reelsHasMoreRef  = useRef(true);
-  const searchFeedHasMoreRef = useRef(true);
-  const emptyStreakRef   = useRef(0);
   const nonReelCountRef  = useRef(0);
   const suggestCountRef  = useRef(0);
   const commCountRef     = useRef(0);
@@ -2686,6 +2684,7 @@ export default function FeedPage() {
   const commDataRef      = useRef<Community[]>([]);
   const loadingMoreRef   = useRef(false);
   const sentinelRef      = useRef<HTMLDivElement | null>(null);
+  const seenAdIdsRef     = useRef<string[]>([]);
 
   // Suggestions fetched once — shared across all SuggestionsInline instances
   const [suggestUsers,   setSuggestUsers]   = useState<any[]>([]);
@@ -2708,13 +2707,12 @@ export default function FeedPage() {
     postsCursorRef.current  = null;
     postsHasMoreRef.current = true;
     reelsHasMoreRef.current = true;
-    searchFeedHasMoreRef.current = true;
-    emptyStreakRef.current  = 0;
     nonReelCountRef.current = 0;
     suggestCountRef.current = 0;
     commCountRef.current    = 0;
     adCountRef.current      = 0;
     reelRowIdxRef.current   = 0;
+    seenAdIdsRef.current    = [];
     setHasMoreFeed(true);
     try {
       if (filter === 'all') {
@@ -2729,7 +2727,7 @@ export default function FeedPage() {
           apiClient.get<any>(`${Endpoints.communities.discover}?limit=8`).catch(() => null),
           apiClient.get<any>(Endpoints.ads.feedNext('feed')).catch(() => null),
         ]);
-        if (adRes?.data) setFeedAd(adRes.data);
+        if (adRes?.data) { setFeedAd(adRes.data); seenAdIdsRef.current = [adRes.data.id]; }
 
         // /search/feed: events + concerts only (exclude reels — they have their own feed)
         const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
@@ -2855,18 +2853,17 @@ export default function FeedPage() {
     setLoadingMore(true);
     try {
       const nextPage = feedPageRef.current + 1;
+      // Comme le mobile : on interroge toujours les 3 sources à chaque page (pas de
+      // hasMore par source qui coupe une source trop tôt) — seul le dédoublonnage
+      // global décide si la page ramène quelque chose de neuf.
       const [feedRes, reelsRes, postsRes] = await Promise.all([
         apiClient.get<any>(`${Endpoints.search.feed}?page=${nextPage}&limit=20`).catch(() => null),
-        reelsHasMoreRef.current
-          ? apiClient.get<any>(`${Endpoints.reels.feed}?page=${nextPage}&limit=20`).catch(() => null)
-          : Promise.resolve(null),
-        postsHasMoreRef.current
-          ? apiClient.get<any>(
-              `${Endpoints.posts.feed}?limit=20${postsCursorRef.current
-                ? `&cursor_created_at=${encodeURIComponent(postsCursorRef.current.created_at)}&cursor_id=${postsCursorRef.current.id}`
-                : ''}`,
-            ).catch(() => null)
-          : Promise.resolve(null),
+        apiClient.get<any>(`${Endpoints.reels.feed}?page=${nextPage}&limit=20`).catch(() => null),
+        apiClient.get<any>(
+          `${Endpoints.posts.feed}?limit=20${postsCursorRef.current
+            ? `&cursor_created_at=${encodeURIComponent(postsCursorRef.current.created_at)}&cursor_id=${postsCursorRef.current.id}`
+            : ''}`,
+        ).catch(() => null),
       ]);
 
       const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
@@ -2878,16 +2875,12 @@ export default function FeedPage() {
       const reelItems: FeedItem[] = reelsRaw
         .filter((d: any) => d.id)
         .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
-      if (reelsRes) reelsHasMoreRef.current = !!(reelsRes.data?.has_more ?? (reelsRaw.length >= 20));
 
       const postsRaw: any[] = postsRes ? toArray<any>(postsRes.data) : [];
       const postItems: FeedItem[] = postsRaw
         .filter((d: any) => d.id)
         .map((d: any) => ({ kind: 'post' as const, id: String(d.id), data: d }));
-      if (postsRes) {
-        postsCursorRef.current  = postsRes.data?.next_cursor ?? null;
-        postsHasMoreRef.current = !!(postsRes.data?.has_more);
-      }
+      if (postsRes) postsCursorRef.current = postsRes.data?.next_cursor ?? null;
 
       const seen = seenIdsRef.current;
       const freshNonReel = [...feedItems, ...postItems].filter(item => {
@@ -2905,22 +2898,11 @@ export default function FeedPage() {
 
       feedPageRef.current = nextPage;
 
-      // /search/feed n'a pas de curseur — au-delà d'une certaine page il ne renvoie plus
-      // rien de nouveau (contenu déjà vu, dédupliqué par seenIdsRef). On le désactive dès
-      // qu'une page ne ramène aucun concert/événement.
-      if (feedRaw.length === 0) searchFeedHasMoreRef.current = false;
-
       if (freshNonReel.length === 0 && freshReels.length === 0) {
-        // Rien de nouveau sur cette page (tout dédupliqué) — on arrête après quelques
-        // essais consécutifs à vide pour éviter une boucle infinie de requêtes tant
-        // qu'une source affirme encore avoir du contenu.
-        emptyStreakRef.current += 1;
-        const stillMore = emptyStreakRef.current < 3
-          && (postsHasMoreRef.current || reelsHasMoreRef.current || searchFeedHasMoreRef.current);
-        setHasMoreFeed(stillMore);
+        // Rien de nouveau sur cette page (tout dédupliqué ou sources épuisées) — fin du flux.
+        setHasMoreFeed(false);
         return;
       }
-      emptyStreakRef.current = 0;
 
       const SUGGEST_EVERY = 8;
       const COMM_EVERY    = 12;
@@ -2933,6 +2915,7 @@ export default function FeedPage() {
 
       const appended: FeedItem[] = [];
       let reelRowInserted = false;
+      const adSlotIds: string[] = [];
       freshNonReel.forEach((item, localI) => {
         const i = nonReelCountRef.current + localI;
         appended.push(item);
@@ -2948,14 +2931,33 @@ export default function FeedPage() {
           appended.push({ kind: 'communities', id: `__communities__${++commCountRef.current}`, data: commData });
         }
         if (i > 0 && i % AD_EVERY === 0 && feedAd) {
-          appended.push({ kind: 'ad', id: `__ad__${++adCountRef.current}`, data: feedAd });
+          const slotId = `__ad__${++adCountRef.current}`;
+          adSlotIds.push(slotId);
+          appended.push({ kind: 'ad', id: slotId, data: null });
         }
       });
       if (reelRow && !reelRowInserted) appended.push(reelRow);
 
       nonReelCountRef.current += freshNonReel.length;
       setItems(prev => [...prev, ...appended]);
-      setHasMoreFeed(postsHasMoreRef.current || reelsHasMoreRef.current || feedItems.length >= 20);
+
+      // Tire une pub distincte (non déjà vue dans ce feed) pour chaque nouveau slot,
+      // comme le mobile — évite de réafficher indéfiniment la même campagne en boucle.
+      for (const slotId of adSlotIds) {
+        try {
+          const exclude = seenAdIdsRef.current.join(',');
+          const res = await apiClient.get<any>(
+            `${Endpoints.ads.feedNext('feed')}${exclude ? `&exclude_ids=${exclude}` : ''}`,
+          );
+          if (res.data?.id) {
+            seenAdIdsRef.current.push(res.data.id);
+            setItems(prev => prev.map(it => it.id === slotId ? { ...it, data: res.data } : it));
+          }
+        } catch { /* silencieux — le slot reste vide si aucune pub dispo */ }
+      }
+      // Une page a ramené du contenu neuf → il peut y en avoir encore ; la vraie fin
+      // est détectée au prochain appel si la page suivante ne ramène plus rien (ci-dessus).
+      setHasMoreFeed(true);
     } catch { /* silencieux */ }
     finally {
       loadingMoreRef.current = false;
@@ -3103,7 +3105,7 @@ export default function FeedPage() {
                   return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;
                 }
                 if (item.kind === 'ad') {
-                  return <FeedAdCard key={item.id} ad={item.data} />;
+                  return item.data ? <FeedAdCard key={item.id} ad={item.data} /> : null;
                 }
                 return null;
               })}
