@@ -5,7 +5,7 @@ import { RoundLogo } from '../ui/RoundLogo';
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const BREAKPOINT     = 768;
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.sahelys.gofolyx';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.gofolyx.mobile';
 const APP_STORE_URL  = 'https://apps.apple.com/app/gofolyx/id0000000000';
 
 /**
