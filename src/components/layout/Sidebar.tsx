@@ -13,8 +13,8 @@ import { useThemeStore } from '../../store/themeStore';
 import { Avatar } from '../ui/Avatar';
 import { RoundLogo } from '../ui/RoundLogo';
 
-const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.0.0.3.apk';
-const APK_VERSION = '1.0.0.3';
+const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.0.0.4.apk';
+const APK_VERSION = '1.0.0.4';
 
 const SECTIONS = [
   {
