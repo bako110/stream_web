@@ -2663,10 +2663,27 @@ export default function FeedPage() {
   const [items, setItems]   = useState<FeedItem[]>([]);
   const [live,  setLive]    = useState<Concert[]>([]);
   const [loading, setLoading]  = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreFeed, setHasMoreFeed] = useState(true);
   const { followedIds, toggle: toggleFollow } = useFollow();
   const [commentTarget,   setCommentTarget]   = useState<{ id: string; kind: 'event'|'concert'|'post'|'reel'; count: number } | null>(null);
   const [commentCounts,   setCommentCounts]   = useState<Record<string, number>>({});
   const [feedAd,          setFeedAd]          = useState<FeedAd | null>(null);
+
+  // ── Pagination infinie (tab "all") ──────────────────────────────────────────
+  const seenIdsRef       = useRef<Set<string>>(new Set());
+  const feedPageRef      = useRef(1);
+  const postsCursorRef   = useRef<{ created_at: string; id: string } | null>(null);
+  const postsHasMoreRef  = useRef(true);
+  const reelsHasMoreRef  = useRef(true);
+  const nonReelCountRef  = useRef(0);
+  const suggestCountRef  = useRef(0);
+  const commCountRef     = useRef(0);
+  const adCountRef       = useRef(0);
+  const reelRowIdxRef    = useRef(0);
+  const commDataRef      = useRef<Community[]>([]);
+  const loadingMoreRef   = useRef(false);
+  const sentinelRef      = useRef<HTMLDivElement | null>(null);
 
   // Suggestions fetched once — shared across all SuggestionsInline instances
   const [suggestUsers,   setSuggestUsers]   = useState<any[]>([]);
@@ -2683,6 +2700,18 @@ export default function FeedPage() {
   }
   async function loadFeed(filter: typeof tab) {
     setLoading(true);
+    // Reset pagination state — nouveau tirage complet
+    seenIdsRef.current      = new Set();
+    feedPageRef.current     = 1;
+    postsCursorRef.current  = null;
+    postsHasMoreRef.current = true;
+    reelsHasMoreRef.current = true;
+    nonReelCountRef.current = 0;
+    suggestCountRef.current = 0;
+    commCountRef.current    = 0;
+    adCountRef.current      = 0;
+    reelRowIdxRef.current   = 0;
+    setHasMoreFeed(true);
     try {
       if (filter === 'all') {
         // Parallel load — apiClient.get returns { data, status }
@@ -2709,21 +2738,25 @@ export default function FeedPage() {
         const reelItems: FeedItem[] = reelsRaw
           .filter((d: any) => d.id)
           .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
+        reelsHasMoreRef.current = !!(reelsRes?.data?.has_more ?? (reelsRaw.length >= 20));
 
-        // /posts/feed: flat array
+        // /posts/feed: { items, has_more, next_cursor }
         const postsRaw: any[] = postsRes ? toArray<any>(postsRes.data) : [];
         const postItems: FeedItem[] = postsRaw
           .filter((d: any) => d.id)
           .map((d: any) => ({ kind: 'post' as const, id: String(d.id), data: d }));
+        postsCursorRef.current  = postsRes?.data?.next_cursor ?? null;
+        postsHasMoreRef.current = !!(postsRes?.data?.has_more);
 
         // Communities for inline injection
         const commRaw: Community[] = commRes
           ? (Array.isArray(commRes.data) ? commRes.data : commRes.data?.items ?? commRes.data?.data ?? [])
           : [];
         const commData = [...commRaw].sort(() => Math.random() - 0.5);
+        commDataRef.current = commData;
 
         // Merge non-reel items, deduplicate by composite key
-        const seen = new Set<string>();
+        const seen = seenIdsRef.current;
         const merged = [...feedItems, ...postItems].filter(item => {
           const key = `${item.kind}-${item.id}`;
           if (seen.has(key)) return false;
@@ -2757,42 +2790,39 @@ export default function FeedPage() {
         const REEL_ROW_EVERY = 5;
         const SUGGEST_EVERY  = 8;
         const COMM_EVERY     = 12;
+        const AD_EVERY       = 8; // identique mobile
 
-        let reelRowIdx    = 0;
-        let suggestCount  = 0;
-        let commCount     = 0;
         const result: FeedItem[] = [];
-
-        const AD_EVERY = 8; // identique mobile
-        let adCount = 0;
 
         merged.forEach((item, i) => {
           result.push(item);
 
           // reel_row: first at i===2, then every 5
-          if (reelRowIdx < reelRows.length && (i === 2 || (i > 2 && (i - 2) % REEL_ROW_EVERY === 0))) {
-            result.push(reelRows[reelRowIdx++]);
+          if (reelRowIdxRef.current < reelRows.length && (i === 2 || (i > 2 && (i - 2) % REEL_ROW_EVERY === 0))) {
+            result.push(reelRows[reelRowIdxRef.current++]);
           }
           // suggestions: first at i===4, then every 8
           if (i === 4 || (i > 4 && (i - 4) % SUGGEST_EVERY === 0)) {
-            result.push({ kind: 'suggestions', id: `__suggestions__${++suggestCount}`, data: null });
+            result.push({ kind: 'suggestions', id: `__suggestions__${++suggestCountRef.current}`, data: null });
           }
           // communities: first at i===9, then every 12
           if (commData.length > 0 && (i === 9 || (i > 9 && (i - 9) % COMM_EVERY === 0))) {
-            result.push({ kind: 'communities', id: `__communities__${++commCount}`, data: commData });
+            result.push({ kind: 'communities', id: `__communities__${++commCountRef.current}`, data: commData });
           }
           // ad: toutes les 8 cartes (placement=feed, identique mobile)
           if (adRes?.data && i > 0 && i % AD_EVERY === 0) {
-            result.push({ kind: 'ad', id: `__ad__${++adCount}`, data: adRes.data });
+            result.push({ kind: 'ad', id: `__ad__${++adCountRef.current}`, data: adRes.data });
           }
         });
 
         // Append remaining reel_rows at end
-        while (reelRowIdx < reelRows.length) {
-          result.push(reelRows[reelRowIdx++]);
+        while (reelRowIdxRef.current < reelRows.length) {
+          result.push(reelRows[reelRowIdxRef.current++]);
         }
 
+        nonReelCountRef.current = merged.length;
         setItems(result);
+        setHasMoreFeed(postsHasMoreRef.current || reelsHasMoreRef.current || feedItems.length >= 40);
       } else {
         // Filter-specific — sorted by date, no shuffle
         const results: FeedItem[] = [];
@@ -2814,6 +2844,109 @@ export default function FeedPage() {
     finally { setLoading(false); }
   }
 
+  const loadMoreFeed = useCallback(async () => {
+    if (tab !== 'all') return; // pagination infinie gérée uniquement sur le flux principal
+    if (loadingMoreRef.current || !hasMoreFeed) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const nextPage = feedPageRef.current + 1;
+      const [feedRes, reelsRes, postsRes] = await Promise.all([
+        apiClient.get<any>(`${Endpoints.search.feed}?page=${nextPage}&limit=20`).catch(() => null),
+        reelsHasMoreRef.current
+          ? apiClient.get<any>(`${Endpoints.reels.feed}?page=${nextPage}&limit=20`).catch(() => null)
+          : Promise.resolve(null),
+        postsHasMoreRef.current
+          ? apiClient.get<any>(
+              `${Endpoints.posts.feed}?limit=20${postsCursorRef.current
+                ? `&cursor_created_at=${encodeURIComponent(postsCursorRef.current.created_at)}&cursor_id=${postsCursorRef.current.id}`
+                : ''}`,
+            ).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+      const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
+      const feedItems: FeedItem[] = feedRaw
+        .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert'))
+        .map((d: any) => ({ kind: d.kind as 'event' | 'concert', id: String(d.id), data: d }));
+
+      const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
+      const reelItems: FeedItem[] = reelsRaw
+        .filter((d: any) => d.id)
+        .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
+      if (reelsRes) reelsHasMoreRef.current = !!(reelsRes.data?.has_more ?? (reelsRaw.length >= 20));
+
+      const postsRaw: any[] = postsRes ? toArray<any>(postsRes.data) : [];
+      const postItems: FeedItem[] = postsRaw
+        .filter((d: any) => d.id)
+        .map((d: any) => ({ kind: 'post' as const, id: String(d.id), data: d }));
+      if (postsRes) {
+        postsCursorRef.current  = postsRes.data?.next_cursor ?? null;
+        postsHasMoreRef.current = !!(postsRes.data?.has_more);
+      }
+
+      const seen = seenIdsRef.current;
+      const freshNonReel = [...feedItems, ...postItems].filter(item => {
+        const key = `${item.kind}-${item.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      const freshReels = reelItems.filter(item => {
+        const key = `reel-${item.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      feedPageRef.current = nextPage;
+
+      if (freshNonReel.length === 0 && freshReels.length === 0) {
+        setHasMoreFeed(postsHasMoreRef.current || reelsHasMoreRef.current);
+        return;
+      }
+
+      const SUGGEST_EVERY = 8;
+      const COMM_EVERY    = 12;
+      const AD_EVERY      = 8;
+      const commData = commDataRef.current;
+
+      const reelRow: FeedItem | null = freshReels.length > 0
+        ? { kind: 'reel_row', id: `__reel_row__page_${nextPage}`, data: freshReels.map(r => r.data as Reel) }
+        : null;
+
+      const appended: FeedItem[] = [];
+      let reelRowInserted = false;
+      freshNonReel.forEach((item, localI) => {
+        const i = nonReelCountRef.current + localI;
+        appended.push(item);
+
+        if (!reelRowInserted && reelRow) {
+          appended.push(reelRow);
+          reelRowInserted = true;
+        }
+        if (i === 4 || (i > 4 && (i - 4) % SUGGEST_EVERY === 0)) {
+          appended.push({ kind: 'suggestions', id: `__suggestions__${++suggestCountRef.current}`, data: null });
+        }
+        if (commData.length > 0 && (i === 9 || (i > 9 && (i - 9) % COMM_EVERY === 0))) {
+          appended.push({ kind: 'communities', id: `__communities__${++commCountRef.current}`, data: commData });
+        }
+        if (i > 0 && i % AD_EVERY === 0 && feedAd) {
+          appended.push({ kind: 'ad', id: `__ad__${++adCountRef.current}`, data: feedAd });
+        }
+      });
+      if (reelRow && !reelRowInserted) appended.push(reelRow);
+
+      nonReelCountRef.current += freshNonReel.length;
+      setItems(prev => [...prev, ...appended]);
+      setHasMoreFeed(postsHasMoreRef.current || reelsHasMoreRef.current || feedItems.length >= 20);
+    } catch { /* silencieux */ }
+    finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [tab, hasMoreFeed, feedAd]);
+
   // Load live concerts once
   useEffect(() => {
     apiClient.get<any>(Endpoints.concerts.live)
@@ -2823,6 +2956,18 @@ export default function FeedPage() {
 
   // Reload when tab changes
   useEffect(() => { loadFeed(tab); }, [tab]);
+
+  // Infinite scroll — sentinel observé en bas de liste
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreFeed(); },
+      { rootMargin: '600px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loadMoreFeed]);
 
   function handleRefresh() { loadFeed(tab); }
 
@@ -2946,6 +3091,18 @@ export default function FeedPage() {
                 }
                 return null;
               })}
+
+              {/* ── Sentinel scroll infini ── */}
+              {tab === 'all' && hasMoreFeed && (
+                <div ref={sentinelRef} className="flex justify-center py-4">
+                  {loadingMore && <Spinner size="sm" />}
+                </div>
+              )}
+              {tab === 'all' && !hasMoreFeed && items.length > 0 && (
+                <p className="text-center text-xs py-4" style={{ color: 'var(--text-tertiary)' }}>
+                  Vous avez tout vu
+                </p>
+              )}
             </div>
           )}
         </div>
