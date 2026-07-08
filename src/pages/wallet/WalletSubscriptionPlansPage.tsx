@@ -56,7 +56,7 @@ const PLANS: PlanConfig[] = [
   {
     id: 'basic',
     label: 'Basic',
-    price: 4.99,
+    price: 3.99,
     screens: 2,
     quality: 'HD',
     profiles: 2,
@@ -74,7 +74,7 @@ const PLANS: PlanConfig[] = [
   {
     id: 'premium',
     label: 'Premium',
-    price: 9.99,
+    price: 6.99,
     screens: 4,
     quality: '4K',
     profiles: 4,
@@ -93,7 +93,7 @@ const PLANS: PlanConfig[] = [
   {
     id: 'family',
     label: 'Famille',
-    price: 14.99,
+    price: 9.99,
     screens: 6,
     quality: '4K',
     profiles: 6,

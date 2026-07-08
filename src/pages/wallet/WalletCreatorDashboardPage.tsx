@@ -62,7 +62,7 @@ interface GiftReceived {
 
 // Taux retrait : 100 GoGold = 0.35 €
 const goGoldToEur = (gogold: number | string) =>
-  ((parseFloat(String(GoGold ?? 0)) / 100) * 0.35).toFixed(2);
+  ((parseFloat(String(gogold ?? 0)) / 100) * 0.35).toFixed(2);
 
 const fmtNum = (n: number) =>
   n >= 1_000_000

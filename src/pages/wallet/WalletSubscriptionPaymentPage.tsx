@@ -50,7 +50,7 @@ const PLANS: Record<string, PlanConfig> = {
   basic: {
     id: 'basic',
     label: 'Basic',
-    price: 4.99,
+    price: 3.99,
     screens: 2,
     quality: 'HD',
     profiles: 2,
@@ -61,7 +61,7 @@ const PLANS: Record<string, PlanConfig> = {
   premium: {
     id: 'premium',
     label: 'Premium',
-    price: 9.99,
+    price: 6.99,
     screens: 4,
     quality: '4K',
     profiles: 4,
@@ -72,7 +72,7 @@ const PLANS: Record<string, PlanConfig> = {
   family: {
     id: 'family',
     label: 'Famille',
-    price: 14.99,
+    price: 9.99,
     screens: 6,
     quality: '4K',
     profiles: 6,
@@ -145,13 +145,13 @@ export default function WalletSubscriptionPaymentPage() {
 
   async function handleConfirm() {
     if (paying) return;
+    if (method === 'stripe') {
+      toast.error('Le paiement par carte arrive bientot — utilisez les GoGold pour le moment.');
+      return;
+    }
     setPaying(true);
     try {
-      if (method === 'GoGold') {
-        await apiClient.post(Endpoints.subscriptions.subscribeWallet(plan.id));
-      } else {
-        await apiClient.post(Endpoints.subscriptions.subscribe, { plan: plan.id });
-      }
+      await apiClient.post(Endpoints.subscriptions.subscribeWallet(plan.id));
       setSuccess(true);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
@@ -317,7 +317,13 @@ export default function WalletSubscriptionPaymentPage() {
                     <CreditCard size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Payer par carte</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Payer par carte</p>
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
+                        style={{ background: 'rgba(234,179,8,0.15)', color: '#EAB308' }}>
+                        Bientot
+                      </span>
+                    </div>
                     <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Visa, Mastercard, CB — via Stripe</p>
                   </div>
                 </div>
@@ -367,11 +373,11 @@ export default function WalletSubscriptionPaymentPage() {
         {/* Confirm button */}
         <button
           onClick={handleConfirm}
-          disabled={paying || (plan.price > 0 && method === 'GoGold' && !hasEnoughGoGold)}
+          disabled={paying || method === 'stripe' || (plan.price > 0 && method === 'GoGold' && !hasEnoughGoGold)}
           className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
           style={{ background: plan.gradient, boxShadow: `0 8px 24px ${plan.color}40` }}
         >
-          {paying ? <Spinner size="sm" /> : `Confirmer l'abonnement`}
+          {paying ? <Spinner size="sm" /> : method === 'stripe' ? 'Paiement carte bientot disponible' : `Confirmer l'abonnement`}
         </button>
 
         <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
