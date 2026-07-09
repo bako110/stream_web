@@ -217,7 +217,7 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
 
           <h1 className="lp-display text-[3.6rem] sm:text-[4.6rem] lg:text-[5.2rem] leading-[0.94] mb-7 lp-rise"
             style={{ color: 'var(--lp-ink-text)', animationDelay: '80ms' }}>
-            La culture,<br />
+            Tout se passe,<br />
             en <span className="lp-amber-text lp-amber-underline">direct</span>.
           </h1>
 
@@ -592,7 +592,7 @@ function CtaSection() {
           <div className="relative z-10">
             <p className="lp-eyebrow mb-5" style={{ color: 'var(--lp-amber)' }}>Rejoins la scène</p>
             <h2 className="lp-display text-4xl md:text-5xl text-white leading-tight mb-5">
-              Prêt à vivre<br />la culture en direct ?
+              Prêt à tout vivre<br />en direct ?
             </h2>
             <p className="text-lg mb-10 max-w-lg mx-auto" style={{ color: 'rgba(245,243,250,0.7)' }}>
               Rejoins des milliers d'utilisateurs qui vivent la musique, le cinéma et les événements en direct.
