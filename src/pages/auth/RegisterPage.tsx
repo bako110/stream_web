@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown, ArrowLeft, ArrowRight, Gift, Check } from 'lucide-react';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { RoundLogo } from '../../components/ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
@@ -37,17 +36,32 @@ const COUNTRIES = [
   { code: 'GH', dial: '+233', flag: '🇬🇭', name: 'Ghana' },
 ];
 
+const STEPS = 3;
+const STEP_LABELS = ['Identité', 'Compte', 'Sécurité'];
+
+interface FormState {
+  first_name: string; last_name: string;
+  email: string; phone: string; username: string;
+  password: string; confirm: string; referral_code: string;
+}
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect') ?? '/feed';
   const { register: signup, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
-  const [form, setForm]       = useState({ first_name: '', last_name: '', email: '', phone: '', username: '', password: '' });
+
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState<FormState>({
+    first_name: '', last_name: '', email: '', phone: '', username: '',
+    password: '', confirm: '', referral_code: '',
+  });
   const [authMethod, setAuthMethod]   = useState<AuthMethod>('email');
   const [country,     setCountry]     = useState(COUNTRIES[0]);
   const [showCountry, setShowCountry] = useState(false);
-  const [showPwd, setShowPwd] = useState(false);
+  const [showPwd,     setShowPwd]     = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [gLoading, setGLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -92,21 +106,51 @@ export default function RegisterPage() {
     if (isAuthenticated) navigate(redirectTo, { replace: true });
   }, [isAuthenticated, navigate]);
 
-  function field(key: string) {
-    return (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [key]: e.target.value }));
+  function field(key: keyof FormState) {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm(f => ({ ...f, [key]: e.target.value }));
+      setFormError('');
+    };
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    clearError();
+  function validateStep1(): string | null {
+    if (form.first_name.trim().length < 2) return 'Le prénom doit faire au moins 2 caractères';
+    if (form.last_name.trim().length < 2)  return 'Le nom doit faire au moins 2 caractères';
+    return null;
+  }
+
+  function validateStep2(): string | null {
+    if (authMethod === 'email' && !form.email.trim()) return "L'email est requis";
+    if (authMethod === 'email' && !form.email.includes('@')) return 'Email invalide';
+    if (authMethod === 'phone' && form.phone.trim().length < 6) return 'Numéro de téléphone invalide';
+    if (form.username.trim() && form.username.trim().length < 3) return "Le nom d'utilisateur doit faire au moins 3 caractères";
+    if (form.username.trim() && !/^[\w\-.]+$/.test(form.username.trim())) return "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, _, - et . (sans espaces ni caractères spéciaux)";
+    return null;
+  }
+
+  function validateStep3(): string | null {
+    if (form.password.length < 8) return 'Le mot de passe doit faire au moins 8 caractères';
+    if (form.password !== form.confirm) return 'Les mots de passe ne correspondent pas';
+    return null;
+  }
+
+  function goNext() {
+    const err = step === 1 ? validateStep1() : step === 2 ? validateStep2() : null;
+    if (err) return setFormError(err);
     setFormError('');
-    if (form.first_name.trim().length < 2) return setFormError('Le prénom doit faire au moins 2 caractères');
-    if (form.last_name.trim().length < 2)  return setFormError('Le nom doit faire au moins 2 caractères');
-    if (authMethod === 'email' && !form.email.trim())  return setFormError('L\'email est requis');
-    if (authMethod === 'phone' && !form.phone.trim())  return setFormError('Le numéro de téléphone est requis');
-    if (form.password.length < 8)          return setFormError('Le mot de passe doit faire au moins 8 caractères');
-    if (form.username.trim() && form.username.trim().length < 3) return setFormError('Le nom d\'utilisateur doit faire au moins 3 caractères');
-    if (form.username.trim() && !/^[\w\-\.]+$/.test(form.username.trim())) return setFormError('Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, _, - et . (sans espaces ni caractères spéciaux)');
+    setStep(s => Math.min(STEPS, s + 1));
+  }
+
+  function goBack() {
+    if (step > 1) { setFormError(''); setStep(s => s - 1); }
+    else navigate('/auth/login');
+  }
+
+  async function handleSubmit() {
+    clearError();
+    const err = validateStep3();
+    if (err) return setFormError(err);
+    setFormError('');
     try {
       const phoneTrimmed = form.phone.trim();
       const hasOwnDialCode = /^(\+|00)\d/.test(phoneTrimmed);
@@ -118,6 +162,7 @@ export default function RegisterPage() {
         last_name:  form.last_name,
         password:   form.password,
         username:   form.username,
+        referral_code: form.referral_code.trim() || undefined,
         ...(authMethod === 'email' ? { email: form.email } : { phone }),
       });
       navigate(redirectTo, { replace: true });
@@ -128,6 +173,20 @@ export default function RegisterPage() {
     boxShadow:   focused === name ? '0 0 0 3px rgba(123,63,242,0.18)' : 'none',
     borderColor: focused === name ? 'var(--primary)' : 'var(--border)',
   });
+
+  const strength = [
+    form.password.length >= 8,
+    /[A-Z]/.test(form.password),
+    /[0-9]/.test(form.password),
+    /[^A-Za-z0-9]/.test(form.password),
+  ].filter(Boolean).length;
+  const strengthLevels = [
+    { label: 'Faible',    color: '#ef4444' },
+    { label: 'Moyen',     color: '#f59e0b' },
+    { label: 'Fort',      color: '#22c55e' },
+    { label: 'Très fort', color: '#10b981' },
+  ];
+  const strengthLvl = strengthLevels[Math.max(0, strength - 1)];
 
   return (
     <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -197,36 +256,29 @@ export default function RegisterPage() {
             <RoundLogo size={52} />
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Créer un compte</h2>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Rejoignez GoFolyX gratuitement</p>
+          <div className="mb-5 flex items-center gap-3">
+            {step > 1 && (
+              <button onClick={goBack} type="button"
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <div>
+              <h2 className="text-2xl font-black mb-0.5" style={{ color: 'var(--text-primary)' }}>Créer un compte</h2>
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                Étape {step} sur {STEPS} — {STEP_LABELS[step - 1]}
+              </p>
+            </div>
           </div>
 
-          {/* Google */}
-          <button onClick={handleGoogle} disabled={gLoading}
-            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl mb-5 transition-all font-semibold text-sm disabled:opacity-60"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-            {gLoading ? (
-              <span className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }} />
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-            )}
-            {gLoading ? 'Connexion…' : 'S\'inscrire avec Google'}
-          </button>
-
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              ou avec {authMethod === 'email' ? 'email' : 'téléphone'}
-            </span>
-            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          {/* Barre de progression */}
+          <div className="flex gap-1.5 mb-7">
+            {Array.from({ length: STEPS }).map((_, i) => (
+              <div key={i} className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                {i < step && <div className="w-full h-full" style={{ background: 'var(--primary)' }} />}
+              </div>
+            ))}
           </div>
 
           {(error || formError) && (
@@ -236,156 +288,249 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Prénom</label>
-                <input className="input" type="text" placeholder="Prénom"
-                  value={form.first_name} onChange={field('first_name')} required
-                  onFocus={() => setFocused('fn')} onBlur={() => setFocused(null)} style={inp('fn')} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Nom</label>
-                <input className="input" type="text" placeholder="Nom"
-                  value={form.last_name} onChange={field('last_name')} required
-                  onFocus={() => setFocused('ln')} onBlur={() => setFocused(null)} style={inp('ln')} />
-              </div>
-            </div>
+          {/* ── Étape 1 — Identité ── */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <button onClick={handleGoogle} disabled={gLoading} type="button"
+                className="w-full flex items-center justify-center gap-3 py-3 rounded-xl mb-1 transition-all font-semibold text-sm disabled:opacity-60"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                {gLoading ? (
+                  <span className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }} />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                )}
+                {gLoading ? 'Connexion…' : "S'inscrire avec Google"}
+              </button>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  {authMethod === 'email' ? 'Email' : 'Numéro de téléphone'}
-                </label>
-                <button type="button" onClick={switchAuthMethod}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all"
-                  style={{ background: 'rgba(123,63,242,0.12)', border: '1px solid rgba(123,63,242,0.35)', color: 'var(--primary)' }}>
-                  {authMethod === 'email'
-                    ? <><Smartphone size={11} /> Téléphone</>
-                    : <><Mail size={11} /> Email</>}
-                </button>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+                <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>ou avec vos informations</span>
+                <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
               </div>
 
-              {authMethod === 'email' ? (
-                <input className="input" type="email" placeholder="email@exemple.com"
-                  value={form.email} onChange={field('email')} required
-                  onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} style={inp('email')} />
-              ) : (
-                <div className="flex gap-2">
-                  {/* Sélecteur pays */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={e => { e.stopPropagation(); setShowCountry(v => !v); }}
-                      className="flex items-center gap-1.5 h-full px-3 rounded-xl text-sm font-semibold transition-all"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: `1px solid ${focused === 'phone' ? 'var(--primary)' : 'var(--border)'}`,
-                        color: 'var(--text-primary)',
-                        minWidth: 90,
-                      }}>
-                      <span className="text-base">{country.flag}</span>
-                      <span>{country.dial}</span>
-                      <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
-                    </button>
-
-                    {showCountry && (
-                      <div className="absolute top-full left-0 mt-1 z-50 rounded-xl overflow-hidden shadow-xl"
-                        style={{ background: 'var(--surface)', border: '1px solid var(--border)', width: 220, maxHeight: 260, overflowY: 'auto' }}
-                        onClick={e => e.stopPropagation()}>
-                        {COUNTRIES.map(c => (
-                          <button key={c.code} type="button"
-                            onClick={() => { setCountry(c); setShowCountry(false); }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-all"
-                            style={{
-                              background: c.code === country.code ? 'rgba(123,63,242,0.1)' : 'transparent',
-                              color: c.code === country.code ? 'var(--primary)' : 'var(--text-primary)',
-                            }}
-                            onMouseEnter={e => { if (c.code !== country.code) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
-                            onMouseLeave={e => { if (c.code !== country.code) e.currentTarget.style.background = 'transparent'; }}>
-                            <span className="text-base">{c.flag}</span>
-                            <span className="flex-1 truncate">{c.name}</span>
-                            <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>{c.dial}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Numéro */}
-                  <input
-                    type="tel"
-                    placeholder="77 000 00 00"
-                    value={form.phone}
-                    onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))}
-                    onFocus={() => setFocused('phone')}
-                    onBlur={() => setFocused(null)}
-                    required
-                    autoComplete="tel"
-                    className="input flex-1"
-                    style={inp('phone')}
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Prénom</label>
+                  <input className="input" type="text" placeholder="Prénom" autoFocus
+                    value={form.first_name} onChange={field('first_name')}
+                    onFocus={() => setFocused('fn')} onBlur={() => setFocused(null)} style={inp('fn')} />
                 </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                Nom d'utilisateur <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(optionnel)</span>
-              </label>
-              <input className="input" type="text" placeholder="nom_utilisateur"
-                value={form.username} onChange={field('username')}
-                onFocus={() => setFocused('un')} onBlur={() => setFocused(null)} style={inp('un')} />
-              <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                Lettres, chiffres, _ - . uniquement — pas d'espaces
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Mot de passe</label>
-              <div className="relative">
-                <input className="input pr-11" type={showPwd ? 'text' : 'password'} placeholder="Min. 8 caractères"
-                  value={form.password} onChange={field('password')} required minLength={8}
-                  onFocus={() => setFocused('pw')} onBlur={() => setFocused(null)} style={inp('pw')} />
-                <button type="button" onClick={() => setShowPwd(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                  style={{ color: 'var(--text-tertiary)' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Nom</label>
+                  <input className="input" type="text" placeholder="Nom"
+                    value={form.last_name} onChange={field('last_name')}
+                    onFocus={() => setFocused('ln')} onBlur={() => setFocused(null)} style={inp('ln')}
+                    onKeyDown={e => e.key === 'Enter' && goNext()} />
+                </div>
               </div>
-            </div>
 
-            <button type="submit" disabled={isLoading} className="btn-primary w-full gap-2 mt-1"
-              style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
-              {isLoading ? (
-                <span className="inline-flex gap-1">
-                  {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-white"
-                    style={{ animation: `blink 1s ease-in-out ${i*0.15}s infinite` }} />)}
-                </span>
-              ) : <Sparkles size={16} />}
-              {isLoading ? 'Création…' : 'Créer mon compte'}
-            </button>
-          </form>
+              <button type="button" onClick={goNext} className="btn-primary w-full gap-2 mt-1"
+                style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
+                Continuer <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* ── Étape 2 — Compte ── */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    {authMethod === 'email' ? 'Email' : 'Numéro de téléphone'}
+                  </label>
+                  <button type="button" onClick={switchAuthMethod}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all"
+                    style={{ background: 'rgba(123,63,242,0.12)', border: '1px solid rgba(123,63,242,0.35)', color: 'var(--primary)' }}>
+                    {authMethod === 'email'
+                      ? <><Smartphone size={11} /> Téléphone</>
+                      : <><Mail size={11} /> Email</>}
+                  </button>
+                </div>
+
+                {authMethod === 'email' ? (
+                  <input className="input" type="email" placeholder="email@exemple.com" autoFocus
+                    value={form.email} onChange={field('email')}
+                    onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} style={inp('email')}
+                    onKeyDown={e => e.key === 'Enter' && goNext()} />
+                ) : (
+                  <div className="flex gap-2">
+                    {/* Sélecteur pays */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); setShowCountry(v => !v); }}
+                        className="flex items-center gap-1.5 h-full px-3 rounded-xl text-sm font-semibold transition-all"
+                        style={{
+                          background: 'var(--bg-secondary)',
+                          border: `1px solid ${focused === 'phone' ? 'var(--primary)' : 'var(--border)'}`,
+                          color: 'var(--text-primary)',
+                          minWidth: 90,
+                        }}>
+                        <span className="text-base">{country.flag}</span>
+                        <span>{country.dial}</span>
+                        <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
+                      </button>
+
+                      {showCountry && (
+                        <div className="absolute top-full left-0 mt-1 z-50 rounded-xl overflow-hidden shadow-xl"
+                          style={{ background: 'var(--surface)', border: '1px solid var(--border)', width: 220, maxHeight: 260, overflowY: 'auto' }}
+                          onClick={e => e.stopPropagation()}>
+                          {COUNTRIES.map(c => (
+                            <button key={c.code} type="button"
+                              onClick={() => { setCountry(c); setShowCountry(false); }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-all"
+                              style={{
+                                background: c.code === country.code ? 'rgba(123,63,242,0.1)' : 'transparent',
+                                color: c.code === country.code ? 'var(--primary)' : 'var(--text-primary)',
+                              }}
+                              onMouseEnter={e => { if (c.code !== country.code) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
+                              onMouseLeave={e => { if (c.code !== country.code) e.currentTarget.style.background = 'transparent'; }}>
+                              <span className="text-base">{c.flag}</span>
+                              <span className="flex-1 truncate">{c.name}</span>
+                              <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>{c.dial}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Numéro */}
+                    <input
+                      type="tel"
+                      placeholder="77 000 00 00"
+                      value={form.phone}
+                      onChange={e => { setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') })); setFormError(''); }}
+                      onFocus={() => setFocused('phone')}
+                      onBlur={() => setFocused(null)}
+                      autoComplete="tel"
+                      className="input flex-1"
+                      style={inp('phone')}
+                      onKeyDown={e => e.key === 'Enter' && goNext()}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Nom d'utilisateur <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(optionnel)</span>
+                </label>
+                <input className="input" type="text" placeholder="nom_utilisateur"
+                  value={form.username} onChange={field('username')}
+                  onFocus={() => setFocused('un')} onBlur={() => setFocused(null)} style={inp('un')}
+                  onKeyDown={e => e.key === 'Enter' && goNext()} />
+                <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                  Lettres, chiffres, _ - . uniquement — pas d'espaces
+                </p>
+              </div>
+
+              <button type="button" onClick={goNext} className="btn-primary w-full gap-2 mt-1"
+                style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
+                Continuer <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* ── Étape 3 — Sécurité ── */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Mot de passe</label>
+                <div className="relative">
+                  <input className="input pr-11" type={showPwd ? 'text' : 'password'} placeholder="Min. 8 caractères" autoFocus
+                    value={form.password} onChange={field('password')} minLength={8}
+                    onFocus={() => setFocused('pw')} onBlur={() => setFocused(null)} style={inp('pw')} />
+                  <button type="button" onClick={() => setShowPwd(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                    {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {form.password.length > 0 && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex-1 flex gap-1">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="flex-1 h-1 rounded-full" style={{ background: i <= strength ? strengthLvl.color : 'var(--border)' }} />
+                      ))}
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: strengthLvl.color }}>{strengthLvl.label}</span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Confirmer le mot de passe</label>
+                <div className="relative">
+                  <input className="input pr-11" type={showConfirm ? 'text' : 'password'} placeholder="Retapez le mot de passe"
+                    value={form.confirm} onChange={field('confirm')}
+                    onFocus={() => setFocused('confirm')} onBlur={() => setFocused(null)} style={inp('confirm')}
+                    onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
+                  <button type="button" onClick={() => setShowConfirm(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                  {form.confirm.length > 0 && form.confirm === form.password && (
+                    <Check size={15} className="absolute right-11 top-1/2 -translate-y-1/2" style={{ color: '#22c55e' }} />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Code de parrainage <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(optionnel)</span>
+                </label>
+                <div className="relative">
+                  <Gift size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
+                  <input className="input pl-10" type="text" placeholder="Ex: AB3X9KZW"
+                    value={form.referral_code}
+                    onChange={e => setForm(f => ({ ...f, referral_code: e.target.value.toUpperCase() }))}
+                    onFocus={() => setFocused('referral')} onBlur={() => setFocused(null)} style={inp('referral')}
+                    onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
+                </div>
+              </div>
+
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                En créant un compte, vous acceptez nos{' '}
+                <Link to="/cgu" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                  Conditions Générales d'Utilisation
+                </Link>
+                {' '}et notre{' '}
+                <Link to="/politique-confidentialite" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                  Politique de confidentialité
+                </Link>.
+              </p>
+
+              <button type="button" onClick={handleSubmit} disabled={isLoading} className="btn-primary w-full gap-2 mt-1"
+                style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
+                {isLoading ? (
+                  <span className="inline-flex gap-1">
+                    {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-white"
+                      style={{ animation: `blink 1s ease-in-out ${i*0.15}s infinite` }} />)}
+                  </span>
+                ) : <Sparkles size={16} />}
+                {isLoading ? 'Création…' : 'Créer mon compte'}
+              </button>
+            </div>
+          )}
 
           <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Déjà un compte ?{' '}
             <Link to="/auth/login" className="font-semibold" style={{ color: 'var(--primary)' }}>
               Se connecter
             </Link>
-          </p>
-
-          <p className="text-center mt-5 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-            En créant un compte, vous acceptez nos{' '}
-            <Link to="/cgu" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
-              Conditions Générales d'Utilisation
-            </Link>
-            {' '}et notre{' '}
-            <Link to="/politique-confidentialite" className="underline hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
-              Politique de confidentialité
-            </Link>
-            .
           </p>
 
           <AppDownloadBar className="mt-6" />

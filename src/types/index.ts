@@ -60,6 +60,7 @@ export interface LoginRequest { identifier: string; password: string; }
 export interface RegisterRequest {
   first_name: string; last_name: string; email?: string;
   phone?: string; password: string; username?: string;
+  referral_code?: string;
 }
 export interface AuthToken { access_token: string; refresh_token: string; token_type: string; }
 export interface UserUpdate {
