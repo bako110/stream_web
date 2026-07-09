@@ -47,8 +47,8 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     tiers: [
       { id: 'p1', label: 'Starter', quantity: '500 vues',    quantity_num: 500,   duration: '2 jours',  duration_days: 2,  gogold: 150 },
       { id: 'p2', label: 'Growth',  quantity: '2 000 vues',  quantity_num: 2000,  duration: '5 jours',  duration_days: 5,  gogold: 400, popular: true },
-      { id: 'p3', label: 'Viral',   quantity: '10 000 vues', quantity_num: 10000, duration: '10 jours', duration_days: 10, gogold: 1200 },
-      { id: 'p4', label: 'Mega',    quantity: '50 000 vues', quantity_num: 50000, duration: '21 jours', duration_days: 21, gogold: 4000 },
+      { id: 'p3', label: 'Viral',   quantity: '10 000 vues', quantity_num: 10000, duration: '10 jours', duration_days: 10, gogold: 2000 },
+      { id: 'p4', label: 'Mega',    quantity: '50 000 vues', quantity_num: 50000, duration: '21 jours', duration_days: 21, gogold: 10000 },
     ],
   },
   {
@@ -59,9 +59,9 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     gradient: ['#10B981', '#06B6D4'],
     tiers: [
       { id: 'c1', label: 'Starter', quantity: '1 000 impressions',   quantity_num: 1000,   duration: '3 jours',  duration_days: 3,  gogold: 250 },
-      { id: 'c2', label: 'Growth',  quantity: '5 000 impressions',   quantity_num: 5000,   duration: '7 jours',  duration_days: 7,  gogold: 700, popular: true },
-      { id: 'c3', label: 'Viral',   quantity: '20 000 impressions',  quantity_num: 20000,  duration: '14 jours', duration_days: 14, gogold: 2000 },
-      { id: 'c4', label: 'Mega',    quantity: '100 000 impressions', quantity_num: 100000, duration: '30 jours', duration_days: 30, gogold: 7000 },
+      { id: 'c2', label: 'Growth',  quantity: '5 000 impressions',   quantity_num: 5000,   duration: '7 jours',  duration_days: 7,  gogold: 1000, popular: true },
+      { id: 'c3', label: 'Viral',   quantity: '20 000 impressions',  quantity_num: 20000,  duration: '14 jours', duration_days: 14, gogold: 4000 },
+      { id: 'c4', label: 'Mega',    quantity: '100 000 impressions', quantity_num: 100000, duration: '30 jours', duration_days: 30, gogold: 20000 },
     ],
   },
   {
@@ -74,9 +74,9 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     targetLabel: 'Choisir un Reel',
     tiers: [
       { id: 'r1', label: 'Starter', quantity: '1 000 vues',    quantity_num: 1000,   duration: '2 jours',  duration_days: 2,  gogold: 200 },
-      { id: 'r2', label: 'Growth',  quantity: '5 000 vues',    quantity_num: 5000,   duration: '5 jours',  duration_days: 5,  gogold: 600, popular: true },
-      { id: 'r3', label: 'Viral',   quantity: '25 000 vues',   quantity_num: 25000,  duration: '10 jours', duration_days: 10, gogold: 2000 },
-      { id: 'r4', label: 'Mega',    quantity: '100 000 vues',  quantity_num: 100000, duration: '20 jours', duration_days: 20, gogold: 6000 },
+      { id: 'r2', label: 'Growth',  quantity: '5 000 vues',    quantity_num: 5000,   duration: '5 jours',  duration_days: 5,  gogold: 1000, popular: true },
+      { id: 'r3', label: 'Viral',   quantity: '25 000 vues',   quantity_num: 25000,  duration: '10 jours', duration_days: 10, gogold: 5000 },
+      { id: 'r4', label: 'Mega',    quantity: '100 000 vues',  quantity_num: 100000, duration: '20 jours', duration_days: 20, gogold: 20000 },
     ],
   },
   {
@@ -88,10 +88,10 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
     contentType: 'post',
     targetLabel: 'Choisir un post',
     tiers: [
-      { id: 'po1', label: 'Starter', quantity: '2 000 impressions',   quantity_num: 2000,   duration: '2 jours',  duration_days: 2,  gogold: 200 },
-      { id: 'po2', label: 'Growth',  quantity: '8 000 impressions',   quantity_num: 8000,   duration: '5 jours',  duration_days: 5,  gogold: 550, popular: true },
-      { id: 'po3', label: 'Viral',   quantity: '30 000 impressions',  quantity_num: 30000,  duration: '10 jours', duration_days: 10, gogold: 1600 },
-      { id: 'po4', label: 'Mega',    quantity: '120 000 impressions', quantity_num: 120000, duration: '21 jours', duration_days: 21, gogold: 5500 },
+      { id: 'po1', label: 'Starter', quantity: '2 000 impressions',   quantity_num: 2000,   duration: '2 jours',  duration_days: 2,  gogold: 400 },
+      { id: 'po2', label: 'Growth',  quantity: '8 000 impressions',   quantity_num: 8000,   duration: '5 jours',  duration_days: 5,  gogold: 1600, popular: true },
+      { id: 'po3', label: 'Viral',   quantity: '30 000 impressions',  quantity_num: 30000,  duration: '10 jours', duration_days: 10, gogold: 6000 },
+      { id: 'po4', label: 'Mega',    quantity: '120 000 impressions', quantity_num: 120000, duration: '21 jours', duration_days: 21, gogold: 24000 },
     ],
   },
   {
@@ -143,12 +143,15 @@ export const BOOST_CATEGORIES: BoostCategory[] = [
 
 // ── Custom boost pricing ───────────────────────────────────────────────────────
 
+// profile_views/content_reach/reel_views/post_reach derives du tier Mega
+// des categories correspondantes (BOOST_CATEGORIES ci-dessus) — garantit un
+// CPM effectif >= 2 EUR/1000, aligne sur CPM_DEFAULT du systeme publicitaire.
 export const CUSTOM_RATES: Record<string, number> = {
   followers:     0.48,
-  profile_views: 0.04,
-  content_reach: 0.008,
-  reel_views:    0.025,
-  post_reach:    0.009,
+  profile_views: 0.0095,
+  content_reach: 0.0067,
+  reel_views:    0.01,
+  post_reach:    0.0095,
   event_reach:   0.18,
   concert_reach: 0.25,
   live_viewers:  0.35,
