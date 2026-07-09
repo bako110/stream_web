@@ -1,0 +1,145 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   LANDING PAGE — tokens et styles propres à cette page uniquement.
+   N'affecte jamais les variables globales (--bg, --primary, etc.) utilisées
+   par le reste de l'app — tout ce qui suit est scopé sous .landing-v2.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.landing-v2 {
+  --lp-ink:      #0A0812;
+  --lp-paper:    #F5F3FA;
+  --lp-violet:   #7B3FF2;
+  --lp-violet-2: #5B2EC4;
+  --lp-amber:    #A67CF7;
+  --lp-amber-2:  #9B65F5;
+  --lp-surface-dark:  #15111F;
+  --lp-line-dark:     rgba(255,255,255,0.08);
+  --lp-line-light:    rgba(10,8,18,0.08);
+
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Le thème global de l'app bascule via une classe .dark sur <html>
+   (themeStore.ts → documentElement.classList.toggle('dark', ...)),
+   pas via data-theme — on suit le même mécanisme ici. */
+.dark .landing-v2 {
+  --lp-bg:      var(--lp-ink);
+  --lp-surface: var(--lp-surface-dark);
+  --lp-ink-text:   #F5F3FA;
+  --lp-ink-text-2: #B8B2CC;
+  --lp-ink-text-3: #6E6786;
+  --lp-line: var(--lp-line-dark);
+  --lp-amber:   #9B65F5;
+  --lp-amber-2: #A67CF7;
+}
+.landing-v2 {
+  --lp-bg:      var(--lp-paper);
+  --lp-surface: #FFFFFF;
+  --lp-ink-text:   #0A0812;
+  --lp-ink-text-2: #4A4560;
+  --lp-ink-text-3: #918C9F;
+  --lp-line: var(--lp-line-light);
+}
+
+/* ── Display face — condensé, capitales, énergique (affiche de concert) ── */
+.lp-display {
+  font-family: 'Anton', 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.lp-eyebrow {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ── Accent ambre — le seul endroit où il apparaît, avec parcimonie ── */
+.lp-amber-text { color: var(--lp-amber); }
+.lp-amber-underline {
+  background-image: linear-gradient(transparent 65%, var(--lp-amber) 65%);
+  background-repeat: no-repeat;
+  padding-bottom: 0.05em;
+}
+
+/* ── Hero split layout ── */
+.lp-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+}
+@media (min-width: 1024px) {
+  .lp-hero-grid {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 2rem;
+    align-items: center;
+  }
+}
+
+/* Pile de vignettes en léger décalage ("mur d'affiches") */
+.lp-poster-stack {
+  position: relative;
+  height: 560px;
+}
+.lp-poster-stack > * { position: absolute; }
+
+/* ── Ticket-stub card — coin découpé façon billet de concert ── */
+.lp-stub {
+  position: relative;
+  clip-path: polygon(
+    0% 4%, 4% 0%, 96% 0%, 100% 4%,
+    100% 96%, 96% 100%, 4% 100%, 0% 96%
+  );
+}
+
+/* ── Grain texture overlay — subtil, evite le look "plastique" du glass ── */
+.lp-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.dark .landing-v2 .lp-grain { opacity: 0.05; }
+
+/* ── Section rule — trait fin avec label, remplace les cartes flottantes ── */
+.lp-rule {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.lp-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--lp-line);
+}
+
+/* ── Marquee (bandeau défilant) — variante haute contraste, sur fond plein ── */
+.lp-marquee-track {
+  display: inline-flex;
+  animation: lp-marquee 32s linear infinite;
+  white-space: nowrap;
+}
+@keyframes lp-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── Reveal on scroll (réutilise .sr mais avec courbe plus marquée) ── */
+.lp-rise {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1);
+}
+.lp-rise.visible { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-marquee-track { animation: none; }
+  .lp-rise { transition: none; opacity: 1; transform: none; }
+}

@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
-  Play, Radio, Music2, Calendar, Users, ArrowRight,
-  ChevronRight, Zap, Globe, Shield, Sparkles,
-  Star, TrendingUp, Eye, Sun, Moon, Menu, X, MapPin,
+  Play, Radio, Music2, Calendar, Users, ArrowRight, ArrowUpRight,
+  Sun, Moon, Menu, X, MapPin, Star, Eye, Zap, Shield, Ticket,
 } from 'lucide-react';
 import { publicClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -12,317 +11,19 @@ import type { Concert, Content, Event } from '../types';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { Images } from '../components/assets';
+import './landing.css';
 
 // ── Scroll reveal ─────────────────────────────────────────────────────────────
 function useScrollReveal() {
   useEffect(() => {
-    const els = document.querySelectorAll('.sr,.sr-left,.sr-scale');
+    const els = document.querySelectorAll('.lp-rise');
     const obs = new IntersectionObserver(
       entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' },
+      { threshold: 0.1, rootMargin: '0px 0px -60px 0px' },
     );
     els.forEach(el => obs.observe(el));
     return () => obs.disconnect();
   });
-}
-
-// ── Particle canvas — reads theme from CSS vars on every frame ────────────────
-function ParticleCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { isDark } = useThemeStore();
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let W = (canvas.width  = window.innerWidth);
-    let H = (canvas.height = window.innerHeight * 2.5);
-    const onResize = () => {
-      W = canvas.width  = window.innerWidth;
-      H = canvas.height = window.innerHeight * 2.5;
-    };
-    window.addEventListener('resize', onResize);
-
-    const COLORS = [
-      'rgba(123,63,242,',
-      'rgba(123,63,242,',
-      'rgba(155,101,245,',
-      'rgba(123,63,242,',
-      'rgba(123,63,242,',
-    ];
-
-    interface P { x:number;y:number;vx:number;vy:number;r:number;color:string;op:number;od:number; }
-    const pts: P[] = Array.from({ length: 70 }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.2 - 0.05,
-      r: Math.random() * 1.8 + 0.4,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      op: Math.random() * 0.4 + 0.1,
-      od: Math.random() > 0.5 ? 0.002 : -0.002,
-    }));
-
-    let raf: number;
-    const draw = () => {
-      ctx.clearRect(0, 0, W, H);
-      const opacity = isDark ? 0.55 : 0.22;
-      const lineMax = isDark ? 0.07 : 0.04;
-
-      pts.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        p.op += p.od;
-        if (p.op > 0.55 || p.op < 0.05) p.od *= -1;
-        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
-        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.color + p.op * opacity + ')';
-        ctx.fill();
-      });
-
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].x - pts[j].x;
-          const dy = pts[i].y - pts[j].y;
-          const d  = Math.sqrt(dx*dx + dy*dy);
-          if (d < 110) {
-            ctx.beginPath();
-            ctx.moveTo(pts[i].x, pts[i].y);
-            ctx.lineTo(pts[j].x, pts[j].y);
-            ctx.strokeStyle = `rgba(123,63,242,${(1 - d/110) * lineMax})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-      }
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); };
-  }, [isDark]);   // re-init when theme flips
-
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />;
-}
-
-// ── Orbs — opacity adapts to theme ───────────────────────────────────────────
-function OrbsBg() {
-  const { isDark } = useThemeStore();
-  const o = (dark: number, light: number) => isDark ? dark : light;
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {[
-        { w:700, top:'-200px', left:'-150px',  color:'123,63,242',  dOp:0.18, lOp:0.10, delay:'0s',  blur:60 },
-        { w:600, top:'30%',    right:'-180px', color:'123,63,242',  dOp:0.14, lOp:0.07, delay:'3s',  blur:60 },
-        { w:500, bottom:'10%', left:'25%',     color:'123,63,242',  dOp:0.10, lOp:0.05, delay:'6s',  blur:80 },
-        { w:400, top:'60%',    left:'60%',     color:'123,63,242',  dOp:0.08, lOp:0.04, delay:'9s',  blur:60 },
-      ].map(({ w, color, dOp, lOp, delay, blur, ...pos }, i) => (
-        <div
-          key={i}
-          className={`absolute rounded-full ${i % 2 === 0 ? 'animate-float-slow' : i % 3 === 0 ? 'animate-float-fast' : 'animate-float-mid'}`}
-          style={{
-            width: w, height: w, ...pos,
-            background: `radial-gradient(circle at 45% 45%, rgba(${color},${o(dOp, lOp)}), rgba(${color},${o(dOp, lOp) * 0.2}) 60%, transparent)`,
-            filter: `blur(${blur}px)`,
-            animationDelay: delay,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── Navbar ────────────────────────────────────────────────────────────────────
-function Navbar() {
-  const { isAuthenticated }   = useAuthStore();
-  const { isDark, toggle }    = useThemeStore();
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const navigate               = useNavigate();
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
-
-  const navLinks = [
-    { label: 'Films & Séries', href: '#films'    },
-    { label: 'Concerts',       href: '#concerts'  },
-    { label: 'Événements',     href: '#events'    },
-    { label: 'Fonctionnalités',href: '#features'  },
-  ];
-
-  return (
-    <>
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? 'glass shadow-lg'
-          : 'bg-transparent'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center shrink-0">
-          <RoundLogo size={40} />
-        </Link>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {navLinks.map(({ label, href }) => (
-            <a key={href} href={href}
-              className="px-4 py-2 text-sm rounded-lg transition-all duration-200"
-              style={{ color: 'var(--text-secondary)' }}
-              onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--text-primary)'; (e.target as HTMLElement).style.background = 'var(--bg-secondary)'; }}
-              onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--text-secondary)'; (e.target as HTMLElement).style.background = 'transparent'; }}
-            >
-              {label}
-            </a>
-          ))}
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggle}
-            className="p-2.5 rounded-xl transition-all duration-200"
-            style={{ color: 'var(--text-tertiary)', background: 'transparent' }}
-            onMouseEnter={e => { (e.target as HTMLElement).style.background = 'var(--bg-secondary)'; (e.target as HTMLElement).style.color = 'var(--text-primary)'; }}
-            onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; (e.target as HTMLElement).style.color = 'var(--text-tertiary)'; }}
-            title={isDark ? 'Mode clair' : 'Mode sombre'}
-          >
-            {isDark ? <Sun size={17} /> : <Moon size={17} />}
-          </button>
-
-          {isAuthenticated ? (
-            <button onClick={() => navigate('/feed')} className="btn-primary text-sm px-5 py-2.5">
-              Mon espace
-            </button>
-          ) : (
-            <>
-              <Link to="/auth/login"
-                className="hidden sm:block text-sm px-4 py-2 rounded-xl transition-all duration-200"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Connexion
-              </Link>
-              <Link to="/auth/register" className="btn-primary text-sm px-5 py-2.5">
-                S'inscrire
-              </Link>
-            </>
-          )}
-
-          <button onClick={() => setMenuOpen(v => !v)} className="md:hidden p-2.5" style={{ color: 'var(--text-secondary)' }}>
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-      </div>
-    </nav>
-
-      {/* Mobile menu — fullscreen */}
-      {menuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex flex-col" style={{ background: isDark ? '#2D1B69' : '#ffffff' }}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 h-16 shrink-0" style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : '#e5e7eb'}` }}>
-            <Link to="/" onClick={() => setMenuOpen(false)}>
-              <RoundLogo size={36} />
-            </Link>
-            <button onClick={() => setMenuOpen(false)} style={{ color: isDark ? '#ffffff' : '#0E0D1F' }}>
-              <X size={24} />
-            </button>
-          </div>
-
-          {/* Liens */}
-          <nav className="flex flex-col px-6 pt-6 gap-1">
-            {navLinks.map(({ label, href }) => (
-              <a key={href} href={href} onClick={() => setMenuOpen(false)}
-                className="py-4 text-xl font-medium transition-colors duration-200"
-                style={{
-                  color:        isDark ? 'rgba(255,255,255,0.85)' : '#0E0D1F',
-                  borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : '#e5e7eb'}`,
-                }}
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-
-          {/* CTA */}
-          {!isAuthenticated && (
-            <div className="px-6 pt-8 flex flex-col gap-3">
-              <Link to="/auth/register"
-                className="text-base text-center py-3 rounded-xl font-semibold"
-                style={{ background: isDark ? '#ffffff' : '#7B3FF2', color: isDark ? '#2D1B69' : '#ffffff' }}
-                onClick={() => setMenuOpen(false)}>
-                S'inscrire
-              </Link>
-              <Link to="/auth/login"
-                className="text-base text-center py-3 rounded-xl font-medium"
-                style={{ background: isDark ? 'rgba(255,255,255,0.15)' : '#f3f4f6', color: isDark ? '#ffffff' : '#0E0D1F', border: `1px solid ${isDark ? 'rgba(255,255,255,0.25)' : '#e5e7eb'}` }}
-                onClick={() => setMenuOpen(false)}>
-                Connexion
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  );
-}
-
-// ── Typewriter ────────────────────────────────────────────────────────────────
-function Typewriter({ words }: { words: string[] }) {
-  const [idx,  setIdx]  = useState(0);
-  const [text, setText] = useState('');
-  const [del,  setDel]  = useState(false);
-
-  useEffect(() => {
-    const word  = words[idx % words.length];
-    const speed = del ? 38 : 88;
-    const t = setTimeout(() => {
-      if (!del) {
-        setText(word.slice(0, text.length + 1));
-        if (text.length + 1 === word.length) setTimeout(() => setDel(true), 1800);
-      } else {
-        setText(word.slice(0, text.length - 1));
-        if (text.length === 0) { setDel(false); setIdx(i => i + 1); }
-      }
-    }, speed);
-    return () => clearTimeout(t);
-  }, [text, del, idx, words]);
-
-  return (
-    <span className="shimmer-text">
-      {text}
-      <span className="inline-block w-0.5 h-[0.85em] ml-1 align-middle rounded-sm"
-        style={{ background: '#7B3FF2', animation: 'blink 1s step-end infinite' }} />
-    </span>
-  );
-}
-
-// ── Stat card ─────────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, value, label, color, delay }: {
-  icon: React.ElementType; value: string; label: string; color: string; delay: number;
-}) {
-  return (
-    <div
-      className="glass-card rounded-2xl px-5 py-4 flex items-center gap-3 animate-reveal-up"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
-    >
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: color + '22' }}>
-        <Icon size={18} style={{ color }} />
-      </div>
-      <div>
-        <p className="text-xl font-black leading-none" style={{ color: 'var(--text-primary)' }}>{value}</p>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
-      </div>
-    </div>
-  );
 }
 
 // ── Logo rond réutilisable ────────────────────────────────────────────────────
@@ -331,30 +32,15 @@ function RoundLogo({ size = 40 }: { size?: number }) {
   const border = Math.max(2, Math.round(size * 0.04));
   return (
     <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
-      {/* Glow */}
       <div style={{
-        position: 'absolute', inset: -size * 0.18,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(123,63,242,0.35) 0%, transparent 70%)',
-        filter: `blur(${size * 0.14}px)`,
-        pointerEvents: 'none',
-      }} />
-      {/* Gradient ring */}
-      <div style={{
-        position: 'relative',
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        padding: border,
-        background: 'linear-gradient(135deg, #7B3FF2, #A855F7, #EC4899)',
-        boxShadow: `0 ${size * 0.1}px ${size * 0.45}px rgba(123,63,242,0.45)`,
+        position: 'relative', width: size, height: size, borderRadius: '50%', padding: border,
+        background: 'linear-gradient(135deg, #7B3FF2, #A67CF7)',
         flexShrink: 0,
       }}>
         <div style={{
           width: '100%', height: '100%', borderRadius: '50%',
-          background: isDark ? '#111' : '#fff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden',
+          background: isDark ? '#0A0812' : '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         }}>
           <img
             src={isDark ? Images.logoDark : Images.logoLight}
@@ -367,120 +53,283 @@ function RoundLogo({ size = 40 }: { size?: number }) {
   );
 }
 
-// ── Hero ──────────────────────────────────────────────────────────────────────
-function HeroSection() {
+// ── Navbar ────────────────────────────────────────────────────────────────────
+function Navbar() {
   const { isAuthenticated } = useAuthStore();
-  const navigate            = useNavigate();
+  const { isDark, toggle }  = useThemeStore();
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', fn);
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
+
+  const navLinks = [
+    { label: 'Films & Séries', href: '/explore/films'    },
+    { label: 'Concerts',       href: '/explore/concerts' },
+    { label: 'Événements',     href: '/explore/events'   },
+    { label: 'Pourquoi GoFolyX', href: '#features'        },
+  ];
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-20 hero-grid overflow-hidden">
-      {/* Bottom fade — uses CSS var so it matches bg */}
-      <div className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none z-10"
-        style={{ background: 'linear-gradient(to bottom, transparent, var(--bg))' }} />
+    <>
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+        style={{
+          background: scrolled ? 'var(--lp-bg)' : 'transparent',
+          borderBottom: scrolled ? '1px solid var(--lp-line)' : '1px solid transparent',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2.5 shrink-0">
+            <RoundLogo size={38} />
+            <span className="lp-display text-lg" style={{ color: 'var(--lp-ink-text)' }}>GoFolyX</span>
+          </Link>
 
-      <div className="relative z-10 max-w-5xl mx-auto text-center">
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map(({ label, href }) => href.startsWith('#') ? (
+              <a key={href} href={href}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
+                style={{ color: 'var(--lp-ink-text-2)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-2)')}
+              >{label}</a>
+            ) : (
+              <Link key={href} to={href}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
+                style={{ color: 'var(--lp-ink-text-2)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-2)')}
+              >{label}</Link>
+            ))}
+          </div>
 
-        {/* Badge */}
-        <div
-          className="inline-flex items-center gap-2.5 rounded-full px-5 py-2.5 mb-10 text-sm font-medium animate-reveal-up"
-          style={{
-            background: 'linear-gradient(135deg, rgba(123,63,242,0.12), rgba(123,63,242,0.08))',
-            border: '1px solid rgba(123,63,242,0.25)',
-            animationFillMode: 'both',
-          }}
-        >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inset-0 rounded-full" style={{ background: '#7B3FF2', opacity: 0.7 }} />
-            <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: '#7B3FF2' }} />
-          </span>
-          <span className="gradient-text font-semibold">Streaming · Social · Monétisation</span>
-          <span style={{ color: 'var(--text-tertiary)' }}>· Reels · Concerts · Communautés · Films</span>
-        </div>
-
-        {/* Title */}
-        <h1
-          className="text-6xl sm:text-7xl md:text-8xl lg:text-[5.5rem] font-black leading-[0.92] tracking-tighter mb-4 animate-reveal-up"
-          style={{ animationDelay: '100ms', animationFillMode: 'both', color: 'var(--text-primary)' }}
-        >
-          <span className="block gradient-text">GoFolyX</span>
-          <span className="block mt-2">
-            <Typewriter words={['vis le live', 'crée ta communauté', 'monétise ton talent', 'explore sans limites']} />
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p
-          className="text-lg md:text-xl max-w-2xl mx-auto mt-8 mb-10 leading-relaxed animate-reveal-up"
-          style={{ animationDelay: '200ms', animationFillMode: 'both', color: 'var(--text-secondary)' }}
-        >
-          Reels, concerts live, films & séries, événements, communautés avec
-          trésorerie, billets, cadeaux virtuels et monétisation créateur —{' '}
-          <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-            tout en un. Explore sans inscription.
-          </span>
-        </p>
-
-        {/* CTAs */}
-        <div
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-reveal-up"
-          style={{ animationDelay: '300ms', animationFillMode: 'both' }}
-        >
-          {isAuthenticated ? (
-            <button onClick={() => navigate('/feed')} className="btn-primary text-base px-8 py-4 flex items-center gap-2.5">
-              <Sparkles size={18} /> Mon espace
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggle}
+              className="p-2.5 rounded-full transition-colors duration-200"
+              style={{ color: 'var(--lp-ink-text-3)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-3)')}
+              title={isDark ? 'Mode clair' : 'Mode sombre'}
+            >
+              {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
-          ) : (
-            <>
-              <Link to="/auth/register" className="btn-primary text-base px-8 py-4 flex items-center gap-2.5">
-                <Sparkles size={18} /> Rejoindre GoFolyX <ArrowRight size={18} />
+
+            {isAuthenticated ? (
+              <button onClick={() => navigate('/feed')}
+                className="text-sm font-bold px-5 py-2.5 rounded-full text-white"
+                style={{ background: 'var(--lp-violet)' }}>
+                Mon espace
+              </button>
+            ) : (
+              <>
+                <Link to="/auth/login"
+                  className="hidden sm:block text-sm font-medium px-4 py-2"
+                  style={{ color: 'var(--lp-ink-text-2)' }}>
+                  Connexion
+                </Link>
+                <Link to="/auth/register"
+                  className="text-sm font-bold px-5 py-2.5 rounded-full text-white"
+                  style={{ background: 'var(--lp-violet)' }}>
+                  S'inscrire
+                </Link>
+              </>
+            )}
+
+            <button onClick={() => setMenuOpen(v => !v)} className="md:hidden p-2.5" style={{ color: 'var(--lp-ink-text)' }}>
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {menuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--lp-bg)' }}>
+          <div className="flex items-center justify-between px-5 h-16 shrink-0" style={{ borderBottom: '1px solid var(--lp-line)' }}>
+            <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5">
+              <RoundLogo size={34} />
+              <span className="lp-display text-base" style={{ color: 'var(--lp-ink-text)' }}>GoFolyX</span>
+            </Link>
+            <button onClick={() => setMenuOpen(false)} style={{ color: 'var(--lp-ink-text)' }}><X size={24} /></button>
+          </div>
+          <nav className="flex flex-col px-6 pt-6 gap-1">
+            {navLinks.map(({ label, href }) => href.startsWith('#') ? (
+              <a key={href} href={href} onClick={() => setMenuOpen(false)}
+                className="py-4 text-xl lp-display transition-colors duration-200"
+                style={{ color: 'var(--lp-ink-text)', borderBottom: '1px solid var(--lp-line)' }}
+              >{label}</a>
+            ) : (
+              <Link key={href} to={href} onClick={() => setMenuOpen(false)}
+                className="py-4 text-xl lp-display transition-colors duration-200"
+                style={{ color: 'var(--lp-ink-text)', borderBottom: '1px solid var(--lp-line)' }}
+              >{label}</Link>
+            ))}
+          </nav>
+          {!isAuthenticated && (
+            <div className="px-6 pt-8 flex flex-col gap-3">
+              <Link to="/auth/register"
+                className="text-base text-center py-3.5 rounded-full font-bold text-white"
+                style={{ background: 'var(--lp-violet)' }}
+                onClick={() => setMenuOpen(false)}>
+                S'inscrire
               </Link>
-              <a href="#discover" className="btn-secondary text-base px-8 py-4 flex items-center gap-2.5">
-                <Play size={18} /> Explorer gratuitement
-              </a>
-            </>
+              <Link to="/auth/login"
+                className="text-base text-center py-3.5 rounded-full font-medium"
+                style={{ color: 'var(--lp-ink-text)', border: '1px solid var(--lp-line)' }}
+                onClick={() => setMenuOpen(false)}>
+                Connexion
+              </Link>
+            </div>
           )}
         </div>
+      )}
+    </>
+  );
+}
 
-        {/* Stats */}
-        <StatsRow />
-      </div>
+// ── Hero — split asymétrique, mur d'affiches à droite ─────────────────────────
+function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[] }) {
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
 
-      {/* Scroll hint */}
-      <div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-reveal-up"
-        style={{ animationDelay: '900ms', animationFillMode: 'both' }}
-      >
-        <span className="text-xs tracking-widest uppercase" style={{ color: 'var(--text-tertiary)' }}>Défiler</span>
-        <div className="w-5 h-8 rounded-full border flex items-start justify-center pt-1.5"
-          style={{ borderColor: 'var(--text-tertiary)', opacity: 0.4 }}>
-          <div className="w-1 h-2 rounded-full" style={{ background: 'var(--primary)', animation: 'float-fast 1.5s ease-in-out infinite' }} />
+  const posterA = films[0];
+  const posterB = concerts[0];
+  const posterC = films[1];
+
+  return (
+    <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+      <div className="max-w-7xl mx-auto lp-hero-grid">
+        {/* ── Colonne texte ── */}
+        <div>
+          <div className="lp-rise flex items-center gap-2 mb-7">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inset-0 rounded-full" style={{ background: 'var(--lp-amber)', opacity: 0.7 }} />
+              <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: 'var(--lp-amber)' }} />
+            </span>
+            <span className="lp-eyebrow" style={{ color: 'var(--lp-ink-text-3)' }}>
+              En direct maintenant · {concerts.length > 0 ? `${concerts.length} lives` : 'reels, films, concerts'}
+            </span>
+          </div>
+
+          <h1 className="lp-display text-[3.6rem] sm:text-[4.6rem] lg:text-[5.2rem] leading-[0.94] mb-7 lp-rise"
+            style={{ color: 'var(--lp-ink-text)', animationDelay: '80ms' }}>
+            La culture,<br />
+            en <span className="lp-amber-text lp-amber-underline">direct</span>.
+          </h1>
+
+          <p className="text-lg leading-relaxed max-w-md mb-9 lp-rise" style={{ color: 'var(--lp-ink-text-2)', animationDelay: '160ms' }}>
+            Concerts live, films, séries, reels et communautés — un seul pass pour vivre
+            la scène, l'écran et le direct, où que tu sois.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-4 mb-14 lp-rise" style={{ animationDelay: '240ms' }}>
+            {isAuthenticated ? (
+              <button onClick={() => navigate('/feed')}
+                className="inline-flex items-center gap-2.5 text-white font-bold px-7 py-4 rounded-full text-base"
+                style={{ background: 'var(--lp-violet)', boxShadow: '0 12px 32px rgba(123,63,242,0.35)' }}>
+                Mon espace <ArrowRight size={18} />
+              </button>
+            ) : (
+              <>
+                <Link to="/auth/register"
+                  className="inline-flex items-center gap-2.5 text-white font-bold px-7 py-4 rounded-full text-base"
+                  style={{ background: 'var(--lp-violet)', boxShadow: '0 12px 32px rgba(123,63,242,0.35)' }}>
+                  Rejoindre GoFolyX <ArrowRight size={18} />
+                </Link>
+                <a href="#discover"
+                  className="inline-flex items-center gap-2.5 font-bold px-7 py-4 rounded-full text-base"
+                  style={{ color: 'var(--lp-ink-text)', border: '1.5px solid var(--lp-line)' }}>
+                  <Play size={16} /> Explorer sans compte
+                </a>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-8 lp-rise" style={{ animationDelay: '320ms' }}>
+            {[['500+', 'Films & séries'], ['200+', 'Concerts live'], ['1 000+', 'Communautés']].map(([n, l]) => (
+              <div key={l}>
+                <p className="lp-display text-2xl" style={{ color: 'var(--lp-ink-text)' }}>{n}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--lp-ink-text-3)' }}>{l}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Mur d'affiches ── */}
+        <div className="lp-poster-stack hidden lg:block lp-rise" style={{ animationDelay: '200ms' }}>
+          {posterB && (
+            <div className="lp-stub rounded-2xl overflow-hidden shadow-2xl"
+              style={{ width: 260, height: 330, top: 0, right: 40, transform: 'rotate(-4deg)', background: 'var(--lp-surface)' }}>
+              <div className="relative w-full h-full">
+                {posterB.thumbnail_url
+                  ? <img src={posterB.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7B3FF2,#3C1F80)' }}><Music2 size={40} className="text-white/50" /></div>}
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,8,18,0.85), transparent 55%)' }} />
+                {posterB.status === 'live' && (
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wider"
+                    style={{ background: 'var(--lp-amber)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
+                  </div>
+                )}
+                <div className="absolute bottom-3 left-3 right-3">
+                  <p className="text-white font-bold text-sm truncate">{posterB.title}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          {posterA && (
+            <div className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ width: 210, aspectRatio: '2/3', top: 140, left: 0, transform: 'rotate(3deg)', background: 'var(--lp-surface)' }}>
+              {posterA.thumbnail_url
+                ? <img src={posterA.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5B2EC4,#0A0812)' }}><Play size={32} className="text-white/50" /></div>}
+            </div>
+          )}
+          {posterC && (
+            <div className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ width: 170, aspectRatio: '2/3', bottom: 0, right: 0, transform: 'rotate(-2deg)', background: 'var(--lp-surface)' }}>
+              {posterC.thumbnail_url
+                ? <img src={posterC.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#A67CF7,#7B3FF2)' }}><Play size={28} className="text-white/60" /></div>}
+            </div>
+          )}
+          {/* Glow violet derrière la pile */}
+          <div className="absolute rounded-full pointer-events-none" style={{
+            width: 340, height: 340, top: 100, right: -40, zIndex: -1,
+            background: 'radial-gradient(circle, rgba(123,63,242,0.22), transparent 70%)', filter: 'blur(40px)',
+          }} />
         </div>
       </div>
     </section>
   );
 }
 
-// ── Section header ────────────────────────────────────────────────────────────
-function SectionHeader({ eyebrow, title, sub, seeAllHref }: {
-  eyebrow?: string; title: string; sub?: string; seeAllHref?: string;
+// ── Section header — rule + label, pas de carte flottante ─────────────────────
+function SectionHeader({ index, title, sub, seeAllHref }: {
+  index: string; title: string; sub?: string; seeAllHref?: string;
 }) {
   return (
-    <div className="flex items-end justify-between mb-8 px-6 max-w-7xl mx-auto">
-      <div className="sr">
-        {eyebrow && (
-          <p className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: 'var(--primary)' }}>{eyebrow}</p>
-        )}
-        <h2 className="text-2xl md:text-3xl font-black" style={{ color: 'var(--text-primary)' }}>{title}</h2>
-        {sub && <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>{sub}</p>}
+    <div className="max-w-7xl mx-auto px-6 mb-7 lp-rise">
+      <div className="lp-rule mb-3">
+        <span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>{index}</span>
       </div>
-      {seeAllHref && (
-        <Link to={seeAllHref}
-          className="shrink-0 flex items-center gap-1.5 text-sm font-semibold transition-all duration-200 hover:gap-3 sr"
-          style={{ color: 'var(--primary)', animationDelay: '100ms' }}
-        >
-          Voir tout <ChevronRight size={16} />
-        </Link>
-      )}
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h2 className="lp-display text-3xl md:text-4xl" style={{ color: 'var(--lp-ink-text)' }}>{title}</h2>
+          {sub && <p className="mt-1.5 text-sm" style={{ color: 'var(--lp-ink-text-2)' }}>{sub}</p>}
+        </div>
+        {seeAllHref && (
+          <Link to={seeAllHref}
+            className="shrink-0 flex items-center gap-1.5 text-sm font-bold transition-transform hover:translate-x-1"
+            style={{ color: 'var(--lp-violet)' }}>
+            Tout voir <ArrowUpRight size={15} />
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
@@ -488,102 +337,78 @@ function SectionHeader({ eyebrow, title, sub, seeAllHref }: {
 // ── Poster card (film / série) ────────────────────────────────────────────────
 function PosterCard({ item, onClick }: { item: Content; onClick: () => void }) {
   const [imgErr, setImgErr] = useState(false);
-
   return (
-    <div className="poster-card shrink-0 group" style={{ width: 160 }} onClick={onClick}>
-      <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-xl"
-        style={{ background: 'var(--bg-tertiary)' }}>
+    <div className="shrink-0 group cursor-pointer" style={{ width: 168 }} onClick={onClick}>
+      <div className="relative aspect-[2/3] rounded-2xl overflow-hidden transition-transform duration-500 group-hover:-translate-y-2"
+        style={{ background: 'var(--lp-surface)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}>
         {item.thumbnail_url && !imgErr ? (
           <img src={item.thumbnail_url} alt={item.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             onError={() => setImgErr(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.25),rgba(123,63,242,0.15))' }}>
-            <Play size={28} className="text-white/60" />
+          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5B2EC4,#0A0812)' }}>
+            <Play size={26} className="text-white/50" />
           </div>
         )}
-
-        {/* Play overlay */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-3"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent 50%)' }}>
-          <div className="mx-auto w-9 h-9 rounded-full flex items-center justify-center mb-1"
-            style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-            <Play size={14} className="text-white" fill="white" />
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
+          style={{ background: 'rgba(10,8,18,0.4)' }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--lp-amber)' }}>
+            <Play size={15} className="text-white" fill="white" style={{ marginLeft: 1 }} />
           </div>
         </div>
-
-        {item.is_premium && (
-          <div className="absolute top-2 left-2 text-white text-xs font-bold px-2 py-0.5 rounded-full"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-            Premium
-          </div>
-        )}
-        {item.rating && (
-          <div className="absolute top-2 right-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold"
-            style={{ background: 'rgba(0,0,0,0.55)', color: '#FACC15' }}>
-            <Star size={9} fill="currentColor" />
+        {item.rating != null && (
+          <div className="absolute top-2 right-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold text-white"
+            style={{ background: 'rgba(10,8,18,0.65)' }}>
+            <Star size={9} fill="var(--lp-amber)" style={{ color: 'var(--lp-amber)' }} />
             {Number(item.rating).toFixed(1)}
           </div>
         )}
       </div>
-      <div className="mt-2.5 px-1">
-        <p className="text-sm font-semibold truncate transition-colors"
-          style={{ color: 'var(--text-primary)' }}
-          onMouseEnter={e => (e.target as HTMLElement).style.color = 'var(--primary)'}
-          onMouseLeave={e => (e.target as HTMLElement).style.color = 'var(--text-primary)'}
-        >{item.title}</p>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{item.year}</p>
-      </div>
+      <p className="mt-2.5 text-sm font-semibold truncate" style={{ color: 'var(--lp-ink-text)' }}>{item.title}</p>
+      <p className="text-xs mt-0.5" style={{ color: 'var(--lp-ink-text-3)' }}>{item.year}</p>
     </div>
   );
 }
 
-// ── Concert card ──────────────────────────────────────────────────────────────
+// ── Concert card — ticket-stub ────────────────────────────────────────────────
 function ConcertCard({ concert, onClick }: { concert: Concert; onClick: () => void }) {
   const [imgErr, setImgErr] = useState(false);
-  const isLive     = concert.status === 'live';
+  const isLive = concert.status === 'live';
   const artistName = concert.artist?.display_name ?? concert.artist?.username;
 
   return (
-    <div className="poster-card shrink-0 glass-card rounded-2xl overflow-hidden group" style={{ width: 280 }} onClick={onClick}>
-      <div className="relative h-44 overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
+    <div className="lp-stub shrink-0 cursor-pointer group transition-transform duration-500 hover:-translate-y-2"
+      style={{ width: 300, background: 'var(--lp-surface)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}
+      onClick={onClick}>
+      <div className="relative h-44 overflow-hidden">
         {concert.thumbnail_url && !imgErr ? (
           <img src={concert.thumbnail_url} alt={concert.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             onError={() => setImgErr(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.3),rgba(123,63,242,0.2))' }}>
-            <Music2 size={36} className="text-white/50" />
+          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7B3FF2,#3C1F80)' }}>
+            <Music2 size={34} className="text-white/50" />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 40%, transparent)' }} />
-
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,8,18,0.8) 30%, transparent)' }} />
         {isLive && (
-          <div className="absolute top-3 left-3 badge-live flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wider"
+            style={{ background: 'var(--lp-amber)' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
           </div>
         )}
-        {concert.genre && (
-          <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-xs text-white"
-            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}>
-            {concert.genre}
-          </div>
-        )}
-        <div className="absolute bottom-3 left-3 right-3">
+        <div className="absolute bottom-3 left-4 right-4">
           <p className="font-bold text-white text-base leading-tight truncate">{concert.title}</p>
-          {artistName && <p className="text-white/70 text-xs mt-0.5">{artistName}</p>}
+          {artistName && <p className="text-white/65 text-xs mt-0.5">{artistName}</p>}
         </div>
       </div>
-      <div className="p-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          <Eye size={12} />
-          <span>{(concert.current_viewers ?? 0).toLocaleString()} spectateurs</span>
+      <div className="px-4 py-3 flex items-center justify-between" style={{ borderTop: '1px dashed var(--lp-line)' }}>
+        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--lp-ink-text-3)' }}>
+          <Eye size={12} /> {(concert.current_viewers ?? 0).toLocaleString()} spectateurs
         </div>
         {concert.ticket_price != null && (
-          <span className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
-            {concert.ticket_price === 0 ? 'Gratuit' : `${concert.ticket_price}€`}
+          <span className="flex items-center gap-1 text-sm font-bold" style={{ color: 'var(--lp-violet)' }}>
+            <Ticket size={13} /> {concert.ticket_price === 0 ? 'Gratuit' : `${concert.ticket_price}€`}
           </span>
         )}
       </div>
@@ -594,47 +419,41 @@ function ConcertCard({ concert, onClick }: { concert: Concert; onClick: () => vo
 // ── Event card ────────────────────────────────────────────────────────────────
 function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
   const [imgErr, setImgErr] = useState(false);
-  const date     = new Date(event.starts_at);
-  const dd       = date.getDate().toString().padStart(2, '0');
-  const mo       = date.toLocaleString('fr', { month: 'short' }).toUpperCase();
+  const date = new Date(event.starts_at);
+  const dd = date.getDate().toString().padStart(2, '0');
+  const mo = date.toLocaleString('fr', { month: 'short' }).toUpperCase();
   const location = [event.venue_name, event.venue_city].filter(Boolean).join(', ');
 
   return (
-    <div className="poster-card shrink-0 glass-card rounded-2xl overflow-hidden group flex" style={{ width: 300 }} onClick={onClick}>
-      {/* Date sidebar */}
+    <div className="shrink-0 cursor-pointer group flex rounded-2xl overflow-hidden transition-transform duration-500 hover:-translate-y-2"
+      style={{ width: 320, background: 'var(--lp-surface)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}
+      onClick={onClick}>
       <div className="w-16 shrink-0 flex flex-col items-center justify-center py-4"
-        style={{
-          borderRight: '1px solid var(--border)',
-          background: 'linear-gradient(180deg,rgba(123,63,242,0.15),rgba(123,63,242,0.08))',
-        }}>
-        <span className="text-2xl font-black text-white leading-none">{dd}</span>
-        <span className="text-xs font-bold tracking-widest mt-0.5" style={{ color: 'var(--primary)' }}>{mo}</span>
+        style={{ background: 'var(--lp-violet)' }}>
+        <span className="lp-display text-2xl text-white leading-none">{dd}</span>
+        <span className="text-[10px] font-bold tracking-widest mt-1 text-white/80">{mo}</span>
       </div>
-
-      {/* Content */}
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden" style={{ minHeight: 116 }}>
         {event.thumbnail_url && !imgErr ? (
           <img src={event.thumbnail_url} alt={event.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            style={{ minHeight: 110 }}
             onError={() => setImgErr(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ minHeight: 110, background: 'linear-gradient(135deg,rgba(123,63,242,0.2),rgba(123,63,242,0.15))' }}>
-            <Calendar size={28} className="text-white/40" />
+          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5B2EC4,#0A0812)' }}>
+            <Calendar size={26} className="text-white/40" />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 20%, rgba(0,0,0,0.6))' }} />
-        <div className="absolute inset-0 p-3 flex flex-col justify-end">
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 15%, rgba(10,8,18,0.7))' }} />
+        <div className="absolute inset-0 p-3.5 flex flex-col justify-end">
           <p className="font-bold text-white text-sm leading-tight line-clamp-2">{event.title}</p>
           {location && (
-            <div className="flex items-center gap-1 text-xs mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <div className="flex items-center gap-1 text-xs mt-1 text-white/60">
               <MapPin size={10} /> {location}
             </div>
           )}
           {event.ticket_price != null && (
-            <span className="text-xs font-bold mt-1.5" style={{ color: '#7B3FF2' }}>
-              {event.ticket_price === 0 ? '— Gratuit —' : `${event.ticket_price}€`}
+            <span className="lp-amber-text text-xs font-bold mt-1.5">
+              {event.ticket_price === 0 ? 'Gratuit' : `${event.ticket_price}€`}
             </span>
           )}
         </div>
@@ -643,93 +462,26 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
   );
 }
 
-// ── Bandeau défilant en continu (boucle infinie), scrollable manuellement ─────
-// Piloté via scrollLeft (pas transform) pour que le scroll natif (glisser,
-// molette, trackpad) reste toujours possible par-dessus l'auto-défilement.
-function AutoScrollRow<T extends { id: string }>({
-  items, renderItem, reverse = false, speed = 5,
-}: {
-  items: T[]; renderItem: (item: T, key: string) => React.ReactNode;
-  reverse?: boolean; speed?: number;
-}) {
-  const trackRef  = useRef<HTMLDivElement>(null);
-  const pausedRef = useRef(false);
-  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  if (items.length === 0) return null;
-
-  // Répété 3x pour une boucle fluide dans les deux sens de scroll manuel
-  const loopItems = [...items, ...items, ...items];
-  const pxPerSecond = 100 / speed * 4;
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    // Point de départ au milieu du bloc dupliqué pour pouvoir scroller manuellement
-    // vers la gauche ou la droite sans jamais atteindre un bord.
-    const setLength = track.scrollWidth / 3;
-    track.scrollLeft = reverse ? setLength * 2 - track.clientWidth : setLength;
-
-    let raf: number;
-    let last = performance.now();
-    function tick(now: number) {
-      const dt = (now - last) / 1000;
-      last = now;
-      if (!pausedRef.current && track) {
-        track.scrollLeft += (reverse ? -1 : 1) * pxPerSecond * dt;
-        // Repositionne discrètement au centre si on approche un bord (boucle infinie)
-        if (track.scrollLeft <= 4) track.scrollLeft += setLength;
-        else if (track.scrollLeft >= setLength * 2 - track.clientWidth - 4) track.scrollLeft -= setLength;
-      }
-      raf = requestAnimationFrame(tick);
-    }
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.length, reverse, speed]);
-
-  function pause() {
-    pausedRef.current = true;
-    if (resumeTimer.current) clearTimeout(resumeTimer.current);
-  }
-  function resumeSoon() {
-    if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    resumeTimer.current = setTimeout(() => { pausedRef.current = false; }, 2500);
-  }
-
+// ── Rangée scrollable manuellement (sans auto-scroll — plus lisible, plus pro) ─
+function ScrollRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative"
-      style={{ WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)' }}>
-      <div ref={trackRef}
-        className="flex gap-4 pb-4 px-6 overflow-x-auto"
-        style={{ scrollbarWidth: 'none' }}
-        onMouseEnter={pause} onMouseLeave={resumeSoon}
-        onTouchStart={pause} onTouchEnd={resumeSoon}
-        onWheel={pause}>
-        {loopItems.map((item, i) => renderItem(item, `${item.id}-${i}`))}
-      </div>
+    <div className="flex gap-5 overflow-x-auto px-6 pb-4" style={{ scrollbarWidth: 'none' }}>
+      {children}
     </div>
   );
 }
 
-// ── Marquee banner ────────────────────────────────────────────────────────────
+// ── Marquee — bandeau plein, fond violet, sur une ligne ───────────────────────
 function MarqueeBanner() {
-  const tags = ['Action','Drame','Comédie','Concert Live','Sport','Horreur','Sci-Fi','R&B','Documentaire','Festival','Jazz','Rock','Thriller','Pop','Animation'];
+  const tags = ['Reels', 'Concerts live', 'Films', 'Séries', 'Communautés', 'Cadeaux virtuels', 'Billetterie', 'Monétisation créateur', 'Trésorerie', 'Événements'];
   const doubled = [...tags, ...tags];
 
   return (
-    <div className="relative py-5 overflow-hidden my-16"
-      style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
-      <div className="absolute inset-y-0 left-0 w-20 z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to right, var(--bg-secondary), transparent)' }} />
-      <div className="absolute inset-y-0 right-0 w-20 z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to left, var(--bg-secondary), transparent)' }} />
-      <div className="flex animate-marquee whitespace-nowrap select-none">
+    <div className="relative py-4 overflow-hidden my-16" style={{ background: 'var(--lp-violet)' }}>
+      <div className="lp-marquee-track">
         {doubled.map((tag, i) => (
-          <span key={i} className="inline-flex items-center mx-6 text-sm font-medium transition-colors cursor-default"
-            style={{ color: 'var(--text-tertiary)' }}>
-            {tag}
+          <span key={i} className="inline-flex items-center mx-5 lp-display text-sm text-white/90">
+            {tag} <span className="mx-5 text-white/40">·</span>
           </span>
         ))}
       </div>
@@ -737,49 +489,40 @@ function MarqueeBanner() {
   );
 }
 
-// ── Features section ──────────────────────────────────────────────────────────
+// ── Features — liste numérotée, pas de grille de cartes iconées ──────────────
 function FeaturesSection() {
   const features = [
-    { icon: Radio,  title: 'Concerts en direct',  desc: 'Vis les concerts de tes artistes préférés en live streaming HD avec chat en temps réel.', gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
-    { icon: Play,   title: 'Films & Séries',       desc: 'Un catalogue immense en streaming HD, sous-titres multi-langues, sans interruption.',    gradient: 'linear-gradient(135deg,#7B3FF2,#A67CF7)' },
-    { icon: Zap,    title: 'Reels & Stories',      desc: 'Partage des courts-métrages, découvre les créations des artistes du monde entier.',      gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
-    { icon: Users,  title: 'Communautés',          desc: 'Rejoins des groupes de passionnés, crée des liens autour de ta culture favorite.',       gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
-    { icon: Globe,  title: 'Événements',           desc: 'Festivals, conférences, expos — près de chez toi ou en ligne depuis partout.',           gradient: 'linear-gradient(135deg,#7B3FF2,#9B65F5)' },
-    { icon: Shield, title: 'Contenu exclusif',     desc: 'Avant-premières mondiales, replays et contenu premium unique sur GoFolyX.',                gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' },
+    { n: '01', icon: Radio,  title: 'Concerts en direct', desc: 'Live streaming HD, chat en temps réel, cadeaux virtuels pour soutenir les artistes pendant le show.' },
+    { n: '02', icon: Play,   title: 'Films & séries',     desc: 'Un catalogue en streaming HD, sous-titré, accessible sans interruption publicitaire.' },
+    { n: '03', icon: Zap,    title: 'Reels & stories',    desc: 'Formats courts pour découvrir les créateurs et partager tes propres moments en quelques secondes.' },
+    { n: '04', icon: Users,  title: 'Communautés',        desc: 'Groupes thématiques avec trésorerie partagée, cotisations et gouvernance par les membres.' },
+    { n: '05', icon: Calendar, title: 'Événements & billets', desc: 'Festivals, expos, conférences — billetterie intégrée, du premier accès au dernier rappel.' },
+    { n: '06', icon: Shield, title: 'Monétisation créatrice', desc: 'Abonnements, cadeaux, publicité partagée — les créateurs sont payés directement sur la plateforme.' },
   ];
 
   return (
     <section id="features" className="py-24 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16 sr">
-          <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Pourquoi GoFolyX</p>
-          <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ color: 'var(--text-primary)' }}>
-            Tout ce dont tu as besoin
-          </h2>
-          <p className="text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-            Une plateforme complète pensée pour vivre la culture à fond.
-          </p>
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-16 lp-rise">
+          <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Pourquoi GoFolyX</span></div>
+          <h2 className="lp-display text-4xl md:text-5xl" style={{ color: 'var(--lp-ink-text)' }}>Une scène, un écran,<br />une seule adresse.</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map(({ icon: Icon, title, desc, gradient }, i) => (
-            <div
-              key={title}
-              className="sr-scale relative group rounded-3xl p-6 overflow-hidden transition-all duration-300 hover:-translate-y-2"
-              style={{
-                animationDelay: `${i * 80}ms`,
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(123,63,242,0.3)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+
+        <div>
+          {features.map(({ n, icon: Icon, title, desc }, i) => (
+            <div key={n}
+              className="lp-rise flex items-start gap-6 py-7 group"
+              style={{ animationDelay: `${i * 60}ms`, borderTop: i === 0 ? '1px solid var(--lp-line)' : undefined, borderBottom: '1px solid var(--lp-line)' }}
             >
-              {/* Icon */}
-              <div className="w-12 h-12 rounded-2xl mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-                style={{ background: gradient }}>
-                <Icon size={22} className="text-white" />
+              <span className="lp-display text-2xl shrink-0 w-14" style={{ color: 'var(--lp-ink-text-3)' }}>{n}</span>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
+                style={{ background: 'rgba(123,63,242,0.1)' }}>
+                <Icon size={19} style={{ color: 'var(--lp-violet)' }} />
               </div>
-              <h3 className="font-bold text-lg mb-2 transition-colors" style={{ color: 'var(--text-primary)' }}>{title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{desc}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--lp-ink-text)' }}>{title}</h3>
+                <p className="text-sm leading-relaxed max-w-md" style={{ color: 'var(--lp-ink-text-2)' }}>{desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -788,59 +531,42 @@ function FeaturesSection() {
   );
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
-function StatsRow() {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto animate-reveal-up"
-      style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
-      <StatCard icon={Play}     value="500+"   label="Films & Séries"  color="#7B3FF2" delay={450} />
-      <StatCard icon={Radio}    value="200+"   label="Concerts live"   color="#7B3FF2" delay={520} />
-      <StatCard icon={Users}    value="1 000+" label="Communautés"     color="#7B3FF2" delay={590} />
-      <StatCard icon={Calendar} value="300+"   label="Événements"      color="#7B3FF2" delay={660} />
-    </div>
-  );
-}
-
-// ── Reviews ───────────────────────────────────────────────────────────────────
+// ── Social proof ───────────────────────────────────────────────────────────────
 function SocialProof() {
   const cards = [
-    { name: 'Kouamé A.',   city: 'Abidjan',       text: 'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment présent !',         color: '#7B3FF2' },
-    { name: 'Fatou D.',    city: 'Dakar',          text: 'Enfin une plateforme qui regroupe tout. Films, concerts, events… Je ne peux plus m\'en passer.', color: '#7B3FF2' },
-    { name: 'Moussa T.',   city: 'Ouagadougou',    text: 'La communauté GoFolyX est top, le contenu de qualité et les reels sont vraiment addictifs.',    color: '#7B3FF2' },
-    { name: 'Aminata B.',  city: 'Bamako',         text: 'Interface fluide, concerts live avec le chat en direct — une expérience vraiment unique.',       color: '#7B3FF2' },
+    { name: 'Kouamé A.',  city: 'Abidjan',     text: 'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment présent.' },
+    { name: 'Fatou D.',   city: 'Dakar',        text: 'Enfin une plateforme qui regroupe tout — films, concerts, events. Je ne peux plus m\'en passer.' },
+    { name: 'Moussa T.',  city: 'Ouagadougou',  text: 'La communauté est top, le contenu de qualité, les reels vraiment addictifs.' },
+    { name: 'Aminata B.', city: 'Bamako',       text: 'Interface fluide, concerts live avec le chat en direct — une expérience unique.' },
   ];
 
   return (
     <section className="py-20 px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12 sr">
-          <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--primary)' }}>Communauté</p>
-          <h2 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--text-primary)' }}>Ils sont déjà sur GoFolyX</h2>
+        <div className="mb-12 lp-rise">
+          <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Communauté</span></div>
+          <h2 className="lp-display text-3xl md:text-4xl" style={{ color: 'var(--lp-ink-text)' }}>Déjà sur GoFolyX</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((r, i) => (
             <div key={r.name}
-              className="sr-scale rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
-              style={{ animationDelay: `${i * 100}ms`, background: 'var(--surface)', border: '1px solid var(--border)' }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(123,63,242,0.3)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              className="lp-rise rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-1"
+              style={{ animationDelay: `${i * 90}ms`, background: 'var(--lp-surface)', border: '1px solid var(--lp-line)' }}
             >
               <div className="flex gap-0.5 mb-3">
                 {Array.from({ length: 5 }).map((_, j) => (
-                  <Star key={j} size={14} style={{ color: '#FACC15' }} fill="#FACC15" />
+                  <Star key={j} size={13} style={{ color: 'var(--lp-amber)' }} fill="var(--lp-amber)" />
                 ))}
               </div>
-              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-                "{r.text}"
-              </p>
-              <div className="flex items-center gap-2">
+              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--lp-ink-text-2)' }}>"{r.text}"</p>
+              <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                  style={{ background: `linear-gradient(135deg,${r.color},${r.color}99)` }}>
+                  style={{ background: 'var(--lp-violet)' }}>
                   {r.name.charAt(0)}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{r.name}</p>
-                  <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{r.city}</p>
+                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--lp-ink-text)' }}>{r.name}</p>
+                  <p className="text-xs truncate" style={{ color: 'var(--lp-ink-text-3)' }}>{r.city}</p>
                 </div>
               </div>
             </div>
@@ -851,64 +577,46 @@ function SocialProof() {
   );
 }
 
-// ── CTA ───────────────────────────────────────────────────────────────────────
+// ── CTA — pleine largeur, fond encre + spot ambre ─────────────────────────────
 function CtaSection() {
   const { isAuthenticated } = useAuthStore();
 
   return (
     <section className="py-24 px-6">
-      <div className="max-w-4xl mx-auto sr">
-        <div className="relative rounded-3xl overflow-hidden">
-          <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
-          <div className="absolute inset-0 hero-grid opacity-20" />
-          <div className="absolute inset-0"
-            style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(255,255,255,0.12), transparent 60%)' }} />
-
-          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full animate-float-slow opacity-20"
-            style={{ background: 'radial-gradient(circle, white, transparent)' }} />
-          <div className="absolute -bottom-10 -left-10 w-28 h-28 rounded-full animate-float-mid opacity-10"
-            style={{ background: 'radial-gradient(circle, white, transparent)' }} />
-
-          <div className="relative z-10 p-12 md:p-16 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-white text-sm font-medium mb-6"
-              style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
-              <Sparkles size={14} /> Rejoins la révolution culturelle
-            </div>
-            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
-              Prêt à vivre<br />la culture ?
+      <div className="max-w-5xl mx-auto lp-rise">
+        <div className="relative rounded-3xl overflow-hidden px-8 py-16 md:px-16 md:py-20 text-center"
+          style={{ background: 'var(--lp-ink)' }}>
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'radial-gradient(circle at 20% 20%, rgba(166,124,247,0.18), transparent 55%), radial-gradient(circle at 85% 80%, rgba(123,63,242,0.28), transparent 55%)',
+          }} />
+          <div className="relative z-10">
+            <p className="lp-eyebrow mb-5" style={{ color: 'var(--lp-amber)' }}>Rejoins la scène</p>
+            <h2 className="lp-display text-4xl md:text-5xl text-white leading-tight mb-5">
+              Prêt à vivre<br />la culture en direct ?
             </h2>
-            <p className="text-lg mb-10 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            <p className="text-lg mb-10 max-w-lg mx-auto" style={{ color: 'rgba(245,243,250,0.7)' }}>
               Rejoins des milliers d'utilisateurs qui vivent la musique, le cinéma et les événements en direct.
             </p>
-
             {isAuthenticated ? (
               <Link to="/feed"
-                className="inline-flex items-center gap-2 bg-white font-bold px-10 py-4 rounded-2xl text-lg transition-all hover:scale-105 hover:shadow-2xl"
-                style={{ color: '#7B3FF2' }}>
-                Accéder à mon espace <ArrowRight size={20} />
+                className="inline-flex items-center gap-2 font-bold px-9 py-4 rounded-full text-base transition-transform hover:scale-105"
+                style={{ background: 'var(--lp-amber)', color: 'var(--lp-ink)' }}>
+                Accéder à mon espace <ArrowRight size={18} />
               </Link>
             ) : (
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link to="/auth/register"
-                  className="inline-flex items-center gap-2 bg-white font-bold px-10 py-4 rounded-2xl text-lg transition-all hover:scale-105 hover:shadow-2xl"
-                  style={{ color: '#7B3FF2' }}>
-                  Commencer gratuitement <ArrowRight size={20} />
+                  className="inline-flex items-center gap-2 font-bold px-9 py-4 rounded-full text-base transition-transform hover:scale-105"
+                  style={{ background: 'var(--lp-amber)', color: 'var(--lp-ink)' }}>
+                  Commencer gratuitement <ArrowRight size={18} />
                 </Link>
                 <Link to="/auth/login"
-                  className="font-medium px-6 py-4 rounded-2xl transition-all hover:bg-white/10"
-                  style={{ color: 'rgba(255,255,255,0.8)' }}>
+                  className="font-medium px-6 py-4 rounded-full transition-colors hover:bg-white/10"
+                  style={{ color: 'rgba(245,243,250,0.75)' }}>
                   Déjà un compte ? →
                 </Link>
               </div>
             )}
-
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm"
-              style={{ color: 'rgba(255,255,255,0.6)' }}>
-              <span className="flex items-center gap-1.5"><Shield size={14} /> Gratuit pour commencer</span>
-              <span className="flex items-center gap-1.5"><Zap    size={14} /> Accès instantané</span>
-              <span className="flex items-center gap-1.5"><Star   size={14} /> Sans carte bancaire</span>
-            </div>
           </div>
         </div>
       </div>
@@ -918,50 +626,46 @@ function CtaSection() {
 
 // ── Footer ────────────────────────────────────────────────────────────────────
 function Footer() {
-  const { isDark } = useThemeStore();
   const cols = [
     { title: 'Explorer', links: [
-      { label: 'Films',       href: '/explore/films'    },
-      { label: 'Séries',      href: '/explore/series'   },
-      { label: 'Concerts',    href: '/explore/concerts' },
-      { label: 'Événements',  href: '/explore/events'   },
+      { label: 'Films',      href: '/explore/films'    },
+      { label: 'Séries',     href: '/explore/series'   },
+      { label: 'Concerts',   href: '/explore/concerts' },
+      { label: 'Événements', href: '/explore/events'   },
     ]},
     { title: 'Compte', links: [
       { label: 'Se connecter', href: '/auth/login'    },
       { label: "S'inscrire",   href: '/auth/register' },
     ]},
     { title: 'GoFolyX', links: [
-      { label: 'À propos',  href: '/a-propos'   },
-      { label: 'Blog',      href: '/blog'        },
+      { label: 'À propos', href: '/a-propos' },
+      { label: 'Blog',     href: '/blog'     },
     ]},
   ];
 
   return (
-    <footer className="pt-16 pb-8 px-6" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+    <footer className="pt-16 pb-8 px-6" style={{ borderTop: '1px solid var(--lp-line)' }}>
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
-          {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <RoundLogo size={36} />
+            <div className="flex items-center gap-2.5 mb-4">
+              <RoundLogo size={34} />
+              <span className="lp-display text-base" style={{ color: 'var(--lp-ink-text)' }}>GoFolyX</span>
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-              La plateforme de streaming culturel qui réunit films, concerts, événements et communauté.
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--lp-ink-text-3)' }}>
+              La scène, l'écran et le direct — réunis en un seul endroit.
             </p>
           </div>
-
           {cols.map(col => (
             <div key={col.title}>
-              <h4 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text-tertiary)' }}>
-                {col.title}
-              </h4>
+              <h4 className="lp-eyebrow mb-4" style={{ color: 'var(--lp-ink-text-3)' }}>{col.title}</h4>
               <ul className="space-y-2.5">
                 {col.links.map(({ label, href }) => (
                   <li key={label}>
                     <Link to={href} className="text-sm transition-colors"
-                      style={{ color: 'var(--text-secondary)' }}
-                      onMouseEnter={e => (e.target as HTMLElement).style.color = 'var(--text-primary)'}
-                      onMouseLeave={e => (e.target as HTMLElement).style.color = 'var(--text-secondary)'}
+                      style={{ color: 'var(--lp-ink-text-2)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-2)')}
                     >{label}</Link>
                   </li>
                 ))}
@@ -969,10 +673,9 @@ function Footer() {
             </div>
           ))}
         </div>
-
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs"
-          style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-          <p>© 2025 GoFolyX. Tous droits réservés.</p>
+          style={{ borderTop: '1px solid var(--lp-line)', color: 'var(--lp-ink-text-3)' }}>
+          <p>© 2026 GoFolyX. Tous droits réservés.</p>
           <div className="flex gap-6">
             {[
               { label: 'Confidentialité', href: '/politique-confidentialite' },
@@ -980,8 +683,8 @@ function Footer() {
               { label: 'Cookies',         href: '/cookies'                   },
             ].map(({ label, href }) => (
               <Link key={label} to={href} className="transition-colors"
-                onMouseEnter={e => (e.target as HTMLElement).style.color = 'var(--text-primary)'}
-                onMouseLeave={e => (e.target as HTMLElement).style.color = 'var(--text-tertiary)'}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-3)')}
               >{label}</Link>
             ))}
           </div>
@@ -994,10 +697,10 @@ function Footer() {
 // ── Skeleton placeholders ─────────────────────────────────────────────────────
 function PlaceholderRow({ count, aspect, width }: { count: number; aspect: string; width: number }) {
   return (
-    <div className="flex gap-4 overflow-x-hidden px-6">
+    <div className="flex gap-5 overflow-x-hidden px-6">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="shrink-0 rounded-2xl animate-pulse"
-          style={{ width, aspectRatio: aspect, background: 'var(--bg-secondary)' }} />
+          style={{ width, aspectRatio: aspect, background: 'var(--lp-surface)' }} />
       ))}
     </div>
   );
@@ -1005,7 +708,7 @@ function PlaceholderRow({ count, aspect, width }: { count: number; aspect: strin
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const navigate            = useNavigate();
+  const navigate = useNavigate();
   const [films,    setFilms]    = useState<Content[]>([]);
   const [series,   setSeries]   = useState<Content[]>([]);
   const [concerts, setConcerts] = useState<Concert[]>([]);
@@ -1028,58 +731,49 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)' }}>
-      <OrbsBg />
-      <ParticleCanvas />
+    <div className="landing-v2 relative min-h-screen overflow-x-hidden" style={{ background: 'var(--lp-bg)' }}>
+      <div className="lp-grain" />
       <Navbar />
-      <HeroSection />
+      <HeroSection films={films} concerts={concerts} />
 
       <div id="discover" className="relative z-10 space-y-16 pb-8">
         <section id="films">
-          <SectionHeader eyebrow="Cinéma" title="Films en vedette"
-            sub="Découvrez notre sélection sans inscription" seeAllHref="/explore/films" />
+          <SectionHeader index="01 · Cinéma" title="Films en vedette" sub="Sans inscription requise" seeAllHref="/explore/films" />
           {loading
-            ? <PlaceholderRow count={8} aspect="2/3" width={160} />
+            ? <PlaceholderRow count={8} aspect="2/3" width={168} />
             : films.length === 0
-              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <AutoScrollRow items={films} speed={6}
-                  renderItem={(f, key) => <PosterCard key={key} item={f} onClick={() => navigate(`/explore/films/${encodeId(f.id)}`)} />} />
+              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--lp-ink-text-3)' }}>Aucun contenu disponible pour le moment</div>
+              : <ScrollRow>{films.map(f => <PosterCard key={f.id} item={f} onClick={() => navigate(`/explore/films/${encodeId(f.id)}`)} />)}</ScrollRow>
           }
         </section>
 
         <section>
-          <SectionHeader eyebrow="Séries" title="Séries populaires"
-            sub="Des saisons entières à explorer librement" seeAllHref="/explore/series" />
+          <SectionHeader index="02 · Séries" title="Séries populaires" sub="Des saisons entières à explorer" seeAllHref="/explore/series" />
           {loading
-            ? <PlaceholderRow count={8} aspect="2/3" width={160} />
+            ? <PlaceholderRow count={8} aspect="2/3" width={168} />
             : series.length === 0
-              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <AutoScrollRow items={series} speed={6} reverse
-                  renderItem={(s, key) => <PosterCard key={key} item={s} onClick={() => navigate(`/explore/series/${encodeId(s.id)}`)} />} />
+              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--lp-ink-text-3)' }}>Aucun contenu disponible pour le moment</div>
+              : <ScrollRow>{series.map(s => <PosterCard key={s.id} item={s} onClick={() => navigate(`/explore/series/${encodeId(s.id)}`)} />)}</ScrollRow>
           }
         </section>
 
         <section id="concerts">
-          <SectionHeader eyebrow="Live" title="Concerts & Lives"
-            sub="Vivez la musique en temps réel" seeAllHref="/explore/concerts" />
+          <SectionHeader index="03 · Live" title="Concerts & lives" sub="La musique en temps réel" seeAllHref="/explore/concerts" />
           {loading
-            ? <PlaceholderRow count={5} aspect="16/9" width={280} />
+            ? <PlaceholderRow count={5} aspect="16/9" width={300} />
             : concerts.length === 0
-              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <AutoScrollRow items={concerts} speed={7}
-                  renderItem={(c, key) => <ConcertCard key={key} concert={c} onClick={() => navigate(`/explore/concerts/${encodeId(c.id)}`)} />} />
+              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--lp-ink-text-3)' }}>Aucun contenu disponible pour le moment</div>
+              : <ScrollRow>{concerts.map(c => <ConcertCard key={c.id} concert={c} onClick={() => navigate(`/explore/concerts/${encodeId(c.id)}`)} />)}</ScrollRow>
           }
         </section>
 
         <section id="events">
-          <SectionHeader eyebrow="Événements" title="À ne pas manquer"
-            sub="Festivals, conférences, expositions" seeAllHref="/explore/events" />
+          <SectionHeader index="04 · Événements" title="À ne pas manquer" sub="Festivals, conférences, expositions" seeAllHref="/explore/events" />
           {loading
-            ? <PlaceholderRow count={5} aspect="16/9" width={300} />
+            ? <PlaceholderRow count={5} aspect="16/9" width={320} />
             : events.length === 0
-              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>Aucun contenu disponible pour le moment</div>
-              : <AutoScrollRow items={events} speed={7} reverse
-                  renderItem={(e, key) => <EventCard key={key} event={e} onClick={() => navigate(`/explore/events/${encodeId(e.id)}`)} />} />
+              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--lp-ink-text-3)' }}>Aucun contenu disponible pour le moment</div>
+              : <ScrollRow>{events.map(e => <EventCard key={e.id} event={e} onClick={() => navigate(`/explore/events/${encodeId(e.id)}`)} />)}</ScrollRow>
           }
         </section>
       </div>

@@ -21,10 +21,12 @@ const LandingPage        = lazyWithRetry(() => import('./pages/LandingPage'));
 const ExploreFilmsPage         = lazyWithRetry(() => import('./pages/explore/ExploreFilmsPage'));
 const ExploreFilmDetailPage    = lazyWithRetry(() => import('./pages/explore/ExploreFilmDetailPage'));
 const ExploreConcertsPage      = lazyWithRetry(() => import('./pages/explore/ExploreConcertsPage'));
+const ExploreLivePage          = lazyWithRetry(() => import('./pages/explore/ExploreLivePage'));
 const ExploreConcertDetailPage = lazyWithRetry(() => import('./pages/explore/ExploreConcertDetailPage'));
 const ExploreEventsPage        = lazyWithRetry(() => import('./pages/explore/ExploreEventsPage'));
 const ExploreEventDetailPage   = lazyWithRetry(() => import('./pages/explore/ExploreEventDetailPage'));
 const ExploreReelsPage         = lazyWithRetry(() => import('./pages/explore/ExploreReelsPage'));
+const ExploreReelDetailPage    = lazyWithRetry(() => import('./pages/explore/ExploreReelDetailPage'));
 
 const FeedPage          = lazyWithRetry(() => import('./pages/FeedPage'));
 const ReelsPage         = lazyWithRetry(() => import('./pages/ReelsPage'));
@@ -164,11 +166,13 @@ function AppShell() {
           <Route path="/explore/films/:id"       element={<ExploreFilmDetailPage type="film" />} />
           <Route path="/explore/series"          element={<ExploreFilmsPage type="serie" />} />
           <Route path="/explore/series/:id"      element={<ExploreFilmDetailPage type="serie" />} />
+          <Route path="/explore/live"            element={<ExploreLivePage />} />
           <Route path="/explore/concerts"        element={<ExploreConcertsPage />} />
           <Route path="/explore/concerts/:id"    element={<ExploreConcertDetailPage />} />
           <Route path="/explore/events"          element={<ExploreEventsPage />} />
           <Route path="/explore/events/:id"      element={<ExploreEventDetailPage />} />
           <Route path="/explore/reels"           element={<ExploreReelsPage />} />
+          <Route path="/explore/reels/:id"       element={<ExploreReelDetailPage />} />
         </Route>
 
         {/* Contenu partageable — layout conditionnel selon auth */}

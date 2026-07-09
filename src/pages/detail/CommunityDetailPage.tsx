@@ -678,12 +678,11 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
           ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
           : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}dd, ${g2}dd)` }} />
         }
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg) 0%, transparent 55%)' }} />
       </div>
 
-      <div className="px-5 pb-8" style={{ marginTop: -56 }}>
+      <div className="px-5 pb-8">
         {/* Avatar + nom */}
-        <div className="flex items-end gap-4 mb-4">
+        <div className="flex items-end gap-4 mb-4" style={{ marginTop: -40 }}>
           {community.avatar_url
             ? <img src={community.avatar_url} className="w-20 h-20 rounded-2xl object-cover shrink-0"
                 style={{ border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} alt="" />

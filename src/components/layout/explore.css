@@ -1,0 +1,84 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   EXPLORE — même système de tokens que la landing (landing.css), réutilisé
+   pour le layout public d'exploration (films/séries/reels/concerts/events).
+   Scopé sous .explore-v2, n'affecte jamais le thème global de l'app.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.explore-v2 {
+  --ex-ink:      #0A0812;
+  --ex-paper:    #F5F3FA;
+  --ex-violet:   #7B3FF2;
+  --ex-violet-2: #5B2EC4;
+  --ex-amber:    #A67CF7;
+  --ex-surface-dark: #15111F;
+  --ex-line-dark:    rgba(255,255,255,0.08);
+  --ex-line-light:   rgba(10,8,18,0.08);
+
+  --ex-bg:      var(--ex-paper);
+  --ex-surface: #FFFFFF;
+  --ex-text:    #0A0812;
+  --ex-text-2:  #4A4560;
+  --ex-text-3:  #918C9F;
+  --ex-line:    var(--ex-line-light);
+
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--ex-bg);
+  min-height: 100vh;
+}
+
+.dark .explore-v2 {
+  --ex-bg:      var(--ex-ink);
+  --ex-surface: var(--ex-surface-dark);
+  --ex-text:    #F5F3FA;
+  --ex-text-2:  #B8B2CC;
+  --ex-text-3:  #6E6786;
+  --ex-line:    var(--ex-line-dark);
+  --ex-amber:   #9B65F5;
+}
+
+.ex-display {
+  font-family: 'Anton', 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.ex-eyebrow {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.ex-amber { color: var(--ex-amber); }
+
+/* Rule with label — replaces boxed section headers */
+.ex-rule { display: flex; align-items: center; gap: 1rem; }
+.ex-rule::after { content: ''; flex: 1; height: 1px; background: var(--ex-line); }
+
+/* Ticket-stub card — notched corners, evokes a concert ticket */
+.ex-stub {
+  clip-path: polygon(
+    0% 4%, 4% 0%, 96% 0%, 100% 4%,
+    100% 96%, 96% 100%, 4% 100%, 0% 96%
+  );
+}
+
+/* Poster tile hover lift */
+.ex-tile { transition: transform 0.45s cubic-bezier(.16,1,.3,1); }
+.ex-tile:hover { transform: translateY(-6px); }
+
+/* Reveal on scroll */
+.ex-rise {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s cubic-bezier(.16,1,.3,1), transform 0.8s cubic-bezier(.16,1,.3,1);
+}
+.ex-rise.visible { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ex-rise { transition: none; opacity: 1; transform: none; }
+  .ex-tile { transition: none; }
+}
