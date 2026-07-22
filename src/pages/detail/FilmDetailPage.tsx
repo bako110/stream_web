@@ -12,6 +12,8 @@ import { useApi } from '../../hooks/useApi';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { VideoPlayer } from '../../components/ui/VideoPlayer';
 import { GuestPreview } from '../../components/ui/GuestPreview';
+import { DetailBackHeader } from '../../components/ui/DetailBackHeader';
+import { useSmartBack } from '../../hooks/useSmartBack';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
@@ -203,6 +205,7 @@ export default function FilmDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id            = decodeId(slug!);
   const navigate      = useNavigate();
+  const goBack        = useSmartBack('/films');
   const { user }      = useAuthStore();
 
   const [playingVideo,    setPlayingVideo]    = useState<VideoMeta | null>(null);
@@ -312,6 +315,8 @@ export default function FilmDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+
+      <DetailBackHeader onBack={goBack} />
 
       {/* ── Player ou bannière ── */}
       {playingVideo ? (

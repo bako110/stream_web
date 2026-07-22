@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
 import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Edit3, Play, X, ChevronDown } from 'lucide-react';
 import { GuestPreview } from '../../components/ui/GuestPreview';
+import { DetailBackHeader } from '../../components/ui/DetailBackHeader';
+import { useSmartBack } from '../../hooks/useSmartBack';
 import type { Post } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -256,6 +258,7 @@ export default function PostDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id           = decodeId(slug!);
   const navigate     = useNavigate();
+  const goBack       = useSmartBack('/feed');
   const { user: me } = useAuthStore();
 
   const [post,            setPost]            = useState<Post | null>(null);
@@ -397,11 +400,7 @@ export default function PostDetailPage() {
       <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
         Ce post est introuvable ou indisponible.
       </p>
-      <button onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-        <ArrowLeft size={14} /> Retour
-      </button>
+      <DetailBackHeader onBack={goBack} />
     </div>
   );
 
@@ -430,14 +429,7 @@ export default function PostDetailPage() {
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* Back */}
-        <button onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 mb-6 text-sm font-semibold transition-colors"
-          style={{ color: 'var(--text-tertiary)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-          <ArrowLeft size={16} /> Retour
-        </button>
+        <DetailBackHeader onBack={goBack} />
 
         {/* Grid 2 colonnes : gauche 3/5, droite 2/5 */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">

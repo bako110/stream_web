@@ -6,6 +6,8 @@ import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { GuestPreview } from '../../components/ui/GuestPreview';
+import { DetailBackHeader } from '../../components/ui/DetailBackHeader';
+import { useSmartBack } from '../../hooks/useSmartBack';
 import { useApi } from '../../hooks/useApi';
 import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
@@ -125,6 +127,7 @@ export default function ConcertDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id            = decodeId(slug!);
   const navigate      = useNavigate();
+  const goBack        = useSmartBack('/concerts');
   const { user } = useAuthStore();
 
   const { data: concert, loading, refetch } = useApi<Concert>(
@@ -244,14 +247,7 @@ export default function ConcertDetailPage() {
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* ── Bouton retour ── */}
-        <button onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 mb-6 text-sm font-semibold transition-colors"
-          style={{ color: 'var(--text-tertiary)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-          <ArrowLeft size={16} /> Retour
-        </button>
+        <DetailBackHeader onBack={goBack} />
 
         {/* ── Banner ── */}
         <div className="relative rounded-2xl overflow-hidden mb-6"

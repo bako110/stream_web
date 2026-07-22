@@ -104,14 +104,20 @@ const TYPE_CONFIG: Record<GuestPreviewType, { label: string; cta: string; icon: 
 
 const isMedia = (type: GuestPreviewType) => type === 'reel' || type === 'concert' || type === 'film' || type === 'serie';
 
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace('.0', '')}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace('.0', '')}k`;
+  return String(n);
+}
+
 export function GuestPreview({
   type, thumbnail, thumbnails, title, body, author, date,
-  location, attendees, ticketPrice, isLive,
+  location, attendees, ticketPrice, likeCount, commentCount, viewCount, isLive,
 }: GuestPreviewProps) {
   const cfg = TYPE_CONFIG[type];
   const redirectParam = encodeURIComponent(window.location.pathname + window.location.search);
   const [showPlayPrompt, setShowPlayPrompt] = useState(false);
-  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const [showBodyOverlay, setShowBodyOverlay] = useState(false);
   const authorName = author?.display_name ?? author?.username ?? null;
   const initials   = authorName ? authorName[0].toUpperCase() : '?';
 
@@ -165,6 +171,16 @@ export function GuestPreview({
     return () => clearInterval(iv);
   }, [images.length, autoPaused]);
 
+  // Ferme l'overlay de description avec Échap
+  useEffect(() => {
+    if (!showBodyOverlay) return;
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setShowBodyOverlay(false); }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showBodyOverlay]);
+
+  const hasStats = likeCount != null || commentCount != null || viewCount != null;
+
   return (
     <>
       <style>{`
@@ -172,7 +188,7 @@ export function GuestPreview({
           position: fixed;
           inset: 0;
           z-index: 1000;
-          background: #0A0010;
+          background: #05000a;
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -188,50 +204,77 @@ export function GuestPreview({
           display: flex;
           width: 100%;
           height: 100%;
-          transition: transform .3s cubic-bezier(0.22,1,0.36,1);
+          transition: transform .35s cubic-bezier(0.22,1,0.36,1);
         }
         .gp-hero-slide {
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          object-fit: cover;
           object-position: center center;
           display: block;
           flex-shrink: 0;
+          filter: saturate(1.08);
+        }
+        .gp-hero-glow {
+          position: absolute;
+          inset: -10%;
+          z-index: -1;
+          background: inherit;
+          filter: blur(60px) saturate(1.4) brightness(0.7);
+          transform: scale(1.15);
+          opacity: 0.6;
         }
         .gp-hero-dots {
           position: absolute;
-          top: 12px;
+          top: 14px;
           left: 50%;
           transform: translateX(-50%);
           z-index: 6;
           display: flex;
-          gap: 5px;
+          gap: 6px;
         }
         .gp-hero-dot {
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.35);
+          width: 22px; height: 3px;
+          border-radius: 3px;
+          background: rgba(255,255,255,0.3);
           border: none;
           padding: 0;
           cursor: pointer;
           transition: background .18s, transform .18s;
+          overflow: hidden;
+          position: relative;
         }
         .gp-hero-dot.active {
-          background: #fff;
-          transform: scale(1.2);
+          background: rgba(255,255,255,0.3);
+        }
+        .gp-hero-dot.active::after {
+          content: '';
+          position: absolute; inset: 0;
+          background: linear-gradient(90deg, #A855F7, #F0365A);
+          animation: gp-dot-fill 4s linear forwards;
+        }
+        @keyframes gp-dot-fill {
+          from { transform: scaleX(0); transform-origin: left; }
+          to   { transform: scaleX(1); transform-origin: left; }
         }
         .gp-gradient {
           position: absolute;
           inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(10,0,16,0.55) 0%,
-            rgba(10,0,16,0.08) 22%,
-            rgba(10,0,16,0.04) 42%,
-            rgba(10,0,16,0.60) 64%,
-            rgba(10,0,16,0.97) 82%,
-            rgba(10,0,16,1.00) 100%
+            rgba(5,0,10,0.65) 0%,
+            rgba(5,0,10,0.05) 20%,
+            rgba(5,0,10,0.02) 40%,
+            rgba(5,0,10,0.55) 62%,
+            rgba(5,0,10,0.96) 80%,
+            rgba(5,0,10,1.00) 100%
           );
+        }
+        .gp-vignette {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.35) 100%);
+          pointer-events: none;
         }
         .gp-topbar {
           position: relative;
@@ -253,16 +296,24 @@ export function GuestPreview({
           font-weight: 800;
           letter-spacing: -0.4px;
           color: #fff;
+          background: linear-gradient(135deg, #fff, #E8D5FF);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
         .gp-topbar-login {
           font-size: 13px;
-          font-weight: 600;
-          color: rgba(255,255,255,0.6);
+          font-weight: 700;
+          color: rgba(255,255,255,0.85);
           text-decoration: none;
-          padding: 6px 0;
-          transition: color .18s;
+          padding: 7px 14px;
+          border-radius: 20px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.14);
+          backdrop-filter: blur(8px);
+          transition: background .18s, border-color .18s;
         }
-        .gp-topbar-login:hover { color: #fff; }
+        .gp-topbar-login:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.28); }
 
         /* Scrollable content zone */
         .gp-scroll {
@@ -274,33 +325,32 @@ export function GuestPreview({
           -webkit-overflow-scrolling: touch;
           display: flex;
           flex-direction: column;
-          /* padding-bottom = CTA bar height */
-          padding-bottom: 180px;
+          padding-bottom: 190px;
         }
-        /* Spacer to push content down toward the gradient */
-        .gp-spacer { flex: 1; min-height: 200px; }
+        .gp-spacer { flex: 1; min-height: 180px; }
 
         .gp-badges {
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 0 20px;
-          margin-bottom: 12px;
+          margin-bottom: 14px;
           flex-wrap: wrap;
         }
         .gp-badge {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          padding: 4px 10px;
+          padding: 5px 12px;
           border-radius: 20px;
           font-size: 10px;
           font-weight: 800;
           letter-spacing: .08em;
           text-transform: uppercase;
+          box-shadow: 0 4px 14px rgba(123,63,242,0.35);
         }
-        .gp-badge-type { background: #7B3FF2; color: #fff; }
-        .gp-badge-live { background: #EF4444; color: #fff; }
+        .gp-badge-type { background: linear-gradient(135deg, #7B3FF2, #A855F7); color: #fff; }
+        .gp-badge-live { background: linear-gradient(135deg, #EF4444, #DC2626); color: #fff; box-shadow: 0 4px 14px rgba(239,68,68,0.4); }
         .gp-dot {
           width: 5px; height: 5px;
           border-radius: 50%;
@@ -319,93 +369,116 @@ export function GuestPreview({
           top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           z-index: 5;
-          width: 76px; height: 76px;
+          width: 80px; height: 80px;
           border-radius: 50%;
-          background: rgba(0,0,0,0.35);
-          border: 2px solid rgba(255,255,255,0.55);
-          backdrop-filter: blur(4px);
+          background: rgba(255,255,255,0.12);
+          border: 2px solid rgba(255,255,255,0.65);
+          backdrop-filter: blur(8px);
           display: flex; align-items: center; justify-content: center;
           cursor: pointer;
-          transition: transform .18s, background .18s;
+          transition: transform .2s, background .2s, box-shadow .2s;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 0 rgba(255,255,255,0.4);
+          animation: gp-play-breathe 2.4s ease-in-out infinite;
+        }
+        @keyframes gp-play-breathe {
+          0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 0 rgba(255,255,255,0.25); }
+          50%      { box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 14px rgba(255,255,255,0); }
         }
         .gp-hero-play:hover {
-          transform: translate(-50%, -50%) scale(1.06);
-          background: rgba(0,0,0,0.5);
+          transform: translate(-50%, -50%) scale(1.08);
+          background: rgba(255,255,255,0.2);
         }
         @media (min-width: 640px) {
-          .gp-hero-play { width: 92px; height: 92px; }
+          .gp-hero-play { width: 96px; height: 96px; }
         }
 
         .gp-title {
-          font-size: clamp(18px, 4vw, 30px);
+          font-size: clamp(20px, 4.2vw, 32px);
           font-weight: 900;
           line-height: 1.15;
-          letter-spacing: -0.4px;
+          letter-spacing: -0.5px;
           color: #fff;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
           word-break: break-word;
+          text-shadow: 0 2px 20px rgba(0,0,0,0.5);
         }
 
         .gp-author {
           display: flex;
           align-items: center;
-          gap: 8px;
-          margin-bottom: 10px;
+          gap: 9px;
+          margin-bottom: 12px;
           flex-wrap: wrap;
         }
         .gp-avatar {
-          width: 28px; height: 28px;
+          width: 32px; height: 32px;
           border-radius: 50%;
-          background: rgba(255,255,255,0.12);
-          border: 1.5px solid rgba(255,255,255,0.3);
+          background: linear-gradient(135deg, #7B3FF2, #A855F7);
+          border: 1.5px solid rgba(255,255,255,0.4);
           overflow: hidden;
           flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
-          font-size: 11px; font-weight: 700;
-          color: rgba(255,255,255,0.6);
+          font-size: 12px; font-weight: 800;
+          color: #fff;
+          box-shadow: 0 2px 10px rgba(123,63,242,0.4);
         }
         .gp-avatar img { width:100%; height:100%; object-fit:cover; }
-        .gp-author-name { font-size: 13px; font-weight: 700; color: #fff; }
+        .gp-author-name { font-size: 14px; font-weight: 800; color: #fff; }
         .gp-verified {
-          width: 14px; height: 14px;
+          width: 15px; height: 15px;
           border-radius: 50%;
           background: #1D9BF0;
           display: inline-flex; align-items: center; justify-content: center;
           flex-shrink: 0;
+          box-shadow: 0 0 0 2px rgba(5,0,10,0.8);
         }
-        .gp-date { font-size: 12px; color: rgba(255,255,255,0.35); }
+        .gp-date { font-size: 12px; color: rgba(255,255,255,0.4); font-weight: 500; }
+        .gp-date-sep { color: rgba(255,255,255,0.25); }
+
+        .gp-stats {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+          margin-bottom: 14px;
+        }
+        .gp-stat {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 13px; font-weight: 700;
+          color: rgba(255,255,255,0.75);
+        }
+        .gp-stat svg { flex-shrink: 0; }
 
         .gp-pills {
           display: flex;
           flex-wrap: wrap;
-          gap: 7px;
-          margin-bottom: 12px;
+          gap: 8px;
+          margin-bottom: 14px;
         }
         .gp-pill {
-          display: inline-flex; align-items: center; gap: 5px;
-          padding: 5px 10px; border-radius: 20px;
-          font-size: 11px; font-weight: 600;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.12);
-          color: rgba(255,255,255,0.6);
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 12px; border-radius: 20px;
+          font-size: 12px; font-weight: 700;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.14);
+          color: rgba(255,255,255,0.75);
           white-space: nowrap;
+          backdrop-filter: blur(8px);
         }
         .gp-pill-accent {
-          background: rgba(123,63,242,0.10);
-          border-color: rgba(123,63,242,0.30);
-          color: #A78BFA;
+          background: rgba(123,63,242,0.16);
+          border-color: rgba(168,85,247,0.4);
+          color: #D4B8FF;
         }
 
-        .gp-body {
+        .gp-body-trigger {
           font-size: 14px;
-          line-height: 1.55;
-          color: rgba(255,255,255,0.6);
-          margin-bottom: 14px;
+          line-height: 1.6;
+          color: rgba(255,255,255,0.7);
+          margin-bottom: 16px;
           word-break: break-word;
           white-space: pre-line;
           cursor: pointer;
-        }
-        .gp-body-clamped {
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
@@ -413,20 +486,58 @@ export function GuestPreview({
         }
         .gp-body-more {
           font-size: 13px;
-          font-weight: 700;
-          color: rgba(255,255,255,0.45);
+          font-weight: 800;
+          color: #D4B8FF;
         }
 
-        .gp-stats {
+        /* Overlay description plein écran — fond noir, texte lisible, clic pour fermer */
+        .gp-body-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 40;
+          background: rgba(2,0,6,0.96);
+          backdrop-filter: blur(4px);
+          display: flex;
+          flex-direction: column;
+          cursor: pointer;
+          animation: gp-fade-in 0.2s ease-out;
+        }
+        @keyframes gp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .gp-body-overlay-inner {
+          flex: 1;
+          overflow-y: auto;
+          padding: 28px 22px 40px;
+          max-width: 720px;
+          width: 100%;
+          margin: 0 auto;
+        }
+        .gp-body-overlay-hint {
+          position: sticky;
+          top: 0;
           display: flex;
           align-items: center;
-          gap: 14px;
-          flex-wrap: wrap;
+          justify-content: space-between;
+          padding: 16px 22px;
+          font-size: 12px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.45);
+          letter-spacing: 0.02em;
         }
-        .gp-stat {
-          display: flex; align-items: center; gap: 5px;
-          font-size: 12px; font-weight: 600;
-          color: rgba(255,255,255,0.35);
+        .gp-body-overlay-close {
+          width: 32px; height: 32px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.14);
+          display: flex; align-items: center; justify-content: center;
+          color: #fff;
+          flex-shrink: 0;
+        }
+        .gp-body-full {
+          font-size: 16px;
+          line-height: 1.75;
+          color: rgba(255,255,255,0.92);
+          white-space: pre-line;
+          word-break: break-word;
         }
 
         /* CTA bar */
@@ -434,15 +545,15 @@ export function GuestPreview({
           position: fixed;
           bottom: 0; left: 0; right: 0;
           z-index: 20;
-          background: rgba(10,0,16,0.88);
-          backdrop-filter: blur(24px) saturate(160%);
-          -webkit-backdrop-filter: blur(24px) saturate(160%);
+          background: linear-gradient(180deg, rgba(5,0,10,0.4), rgba(5,0,10,0.94) 30%, rgba(5,0,10,0.98));
+          backdrop-filter: blur(28px) saturate(160%);
+          -webkit-backdrop-filter: blur(28px) saturate(160%);
           border-top: 1px solid rgba(255,255,255,0.10);
-          padding: 16px 20px;
-          padding-bottom: max(16px, env(safe-area-inset-bottom));
+          padding: 18px 20px;
+          padding-bottom: max(18px, env(safe-area-inset-bottom));
         }
         .gp-cta-headline {
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 800;
           color: #fff;
           margin-bottom: 3px;
@@ -450,9 +561,9 @@ export function GuestPreview({
           line-height: 1.3;
         }
         .gp-cta-sub {
-          font-size: 11px;
-          color: rgba(255,255,255,0.35);
-          margin-bottom: 14px;
+          font-size: 11.5px;
+          color: rgba(255,255,255,0.4);
+          margin-bottom: 15px;
           line-height: 1.4;
         }
         .gp-btns {
@@ -462,19 +573,23 @@ export function GuestPreview({
         .gp-btn {
           flex: 1;
           display: flex; align-items: center; justify-content: center; gap: 6px;
-          padding: 12px 14px;
-          border-radius: 12px;
+          padding: 13px 14px;
+          border-radius: 14px;
           font-size: 14px; font-weight: 800;
           text-decoration: none;
           letter-spacing: -0.1px;
-          transition: opacity .15s, transform .15s;
+          transition: opacity .15s, transform .15s, box-shadow .15s;
           white-space: nowrap;
         }
-        .gp-btn:hover { opacity: .88; transform: scale(.985); }
-        .gp-btn-primary { background: #7B3FF2; color: #fff; }
+        .gp-btn:hover { opacity: .92; transform: scale(.985); }
+        .gp-btn-primary {
+          background: linear-gradient(135deg, #7B3FF2, #A855F7);
+          color: #fff;
+          box-shadow: 0 6px 20px rgba(123,63,242,0.45);
+        }
         .gp-btn-ghost {
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(255,255,255,0.12);
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.16);
           color: #fff;
         }
 
@@ -484,19 +599,19 @@ export function GuestPreview({
           .gp-logo-text { font-size: 18px; }
           .gp-badges { padding: 0 32px; }
           .gp-meta { padding: 0 32px; }
-          .gp-cta { padding: 20px 32px; padding-bottom: max(20px, env(safe-area-inset-bottom)); }
-          .gp-cta-headline { font-size: 15px; }
+          .gp-cta { padding: 22px 32px; padding-bottom: max(22px, env(safe-area-inset-bottom)); }
+          .gp-cta-headline { font-size: 16px; }
           .gp-cta-sub { font-size: 12px; }
-          .gp-btn { font-size: 15px; padding: 13px 16px; border-radius: 14px; }
-          .gp-scroll { padding-bottom: 190px; }
+          .gp-btn { font-size: 15px; padding: 14px 16px; border-radius: 16px; }
+          .gp-scroll { padding-bottom: 200px; }
         }
         @media (min-width: 1024px) {
-          .gp-topbar { padding: 24px 48px 0; }
-          .gp-badges { padding: 0 48px; margin-bottom: 16px; }
+          .gp-topbar { padding: 26px 48px 0; }
+          .gp-badges { padding: 0 48px; margin-bottom: 18px; }
           .gp-meta { padding: 0 48px; }
-          .gp-cta { padding: 22px 48px; padding-bottom: max(22px, env(safe-area-inset-bottom)); max-width: 640px; left: 50%; transform: translateX(-50%); border-radius: 24px 24px 0 0; }
-          .gp-title { font-size: clamp(24px, 3vw, 38px); }
-          .gp-scroll { padding-bottom: 200px; }
+          .gp-cta { padding: 24px 48px; padding-bottom: max(24px, env(safe-area-inset-bottom)); max-width: 640px; left: 50%; transform: translateX(-50%); border-radius: 28px 28px 0 0; box-shadow: 0 -20px 60px rgba(0,0,0,0.5); }
+          .gp-title { font-size: clamp(26px, 3.2vw, 40px); }
+          .gp-scroll { padding-bottom: 210px; }
         }
       `}</style>
 
@@ -516,15 +631,16 @@ export function GuestPreview({
               ))}
             </div>
           ) : (
-            <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1a0533 0%,#2d0f5e 50%,#0A0010 100%)' }} />
+            <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1a0533 0%,#3d1478 45%,#7B3FF2 70%,#0A0010 100%)' }} />
           )}
+          <div className="gp-vignette" />
           <div className="gp-gradient" />
 
-          {/* Indicateurs de position — visibles seulement s'il y a plusieurs images */}
+          {/* Indicateurs de position — barres façon stories, se remplissent avec l'auto-défilement */}
           {images.length > 1 && (
             <div className="gp-hero-dots">
               {images.map((_, i) => (
-                <button key={i} className={`gp-hero-dot${i === slide ? ' active' : ''}`}
+                <button key={`${i}-${slide === i}`} className={`gp-hero-dot${i === slide ? ' active' : i < slide ? ' active' : ''}`}
                   onClick={() => goToSlide(i)} aria-label={`Image ${i + 1}`} />
               ))}
             </div>
@@ -533,7 +649,7 @@ export function GuestPreview({
           {/* Bouton play centré — signale visuellement qu'il s'agit d'une vidéo */}
           {isMedia(type) && (
             <button className="gp-hero-play" onClick={() => setShowPlayPrompt(true)} aria-label="Lire la vidéo">
-              <svg width="28" height="28" viewBox="0 0 20 20" fill="white">
+              <svg width="30" height="30" viewBox="0 0 20 20" fill="white">
                 <path d="M5 3l12 7-12 7V3z"/>
               </svg>
             </button>
@@ -590,8 +706,42 @@ export function GuestPreview({
                   </span>
                 )}
                 {date && (
-                  <span className="gp-date">
-                    {isLive ? 'En direct' : format(new Date(date), 'd MMM yyyy', { locale: fr })}
+                  <>
+                    <span className="gp-date-sep">·</span>
+                    <span className="gp-date">
+                      {isLive ? 'En direct' : format(new Date(date), 'd MMM yyyy', { locale: fr })}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Stats — likes / commentaires / vues */}
+            {hasStats && (
+              <div className="gp-stats">
+                {likeCount != null && (
+                  <span className="gp-stat">
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="#F0365A">
+                      <path d="M10 17.5s-6.5-4-8.5-8A4.5 4.5 0 0 1 10 5.5a4.5 4.5 0 0 1 8.5 4c-2 4-8.5 8-8.5 8z"/>
+                    </svg>
+                    {formatCount(likeCount)}
+                  </span>
+                )}
+                {commentCount != null && (
+                  <span className="gp-stat">
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+                      <path d="M17 10a7 7 0 1 1-3-5.75L17 3l-1 3.5A6.98 6.98 0 0 1 17 10z" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5" fill="none" strokeLinejoin="round"/>
+                    </svg>
+                    {formatCount(commentCount)}
+                  </span>
+                )}
+                {viewCount != null && (
+                  <span className="gp-stat">
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+                      <path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5" fill="none"/>
+                      <circle cx="10" cy="10" r="2.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5" fill="none"/>
+                    </svg>
+                    {formatCount(viewCount)}
                   </span>
                 )}
               </div>
@@ -602,7 +752,7 @@ export function GuestPreview({
               <div className="gp-pills">
                 {location && (
                   <span className="gp-pill">
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
                       <path d="M6 1a3.5 3.5 0 0 1 3.5 3.5C9.5 8 6 11 6 11S2.5 8 2.5 4.5A3.5 3.5 0 0 1 6 1z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
                       <circle cx="6" cy="4.5" r="1" fill="currentColor"/>
                     </svg>
@@ -611,7 +761,7 @@ export function GuestPreview({
                 )}
                 {attendees != null && (
                   <span className="gp-pill">
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
                       <circle cx="4.5" cy="4" r="2" stroke="currentColor" strokeWidth="1.2" fill="none"/>
                       <path d="M1 10c0-1.9 1.6-3 3.5-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
                       <circle cx="8.5" cy="4" r="2" stroke="currentColor" strokeWidth="1.2" fill="none"/>
@@ -622,7 +772,7 @@ export function GuestPreview({
                 )}
                 {ticketPrice != null && (
                   <span className="gp-pill gp-pill-accent">
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
                       <rect x="1" y="3" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" fill="none"/>
                       <path d="M4 3V2M8 3V2" stroke="currentColor" strokeWidth="1.2"/>
                     </svg>
@@ -632,17 +782,36 @@ export function GuestPreview({
               </div>
             )}
 
-            {/* Body — clic pour afficher/masquer le texte complet */}
+            {/* Body — clic pour ouvrir l'overlay plein écran (fond noir, texte lisible) */}
             {body && (
-              <p className={`gp-body${bodyExpanded ? '' : ' gp-body-clamped'}`}
-                onClick={() => setBodyExpanded(v => !v)}>
-                {renderTextWithLinks(body, 'underline font-semibold', { color: '#fff' })}
+              <p className="gp-body-trigger" onClick={() => setShowBodyOverlay(true)}>
+                {body}
                 {' '}
-                <span className="gp-body-more">{bodyExpanded ? 'Voir moins' : 'Voir plus'}</span>
+                <span className="gp-body-more">Voir plus</span>
               </p>
             )}
           </div>
         </div>
+
+        {/* Overlay description — fond noir plein écran, clic n'importe où pour refermer */}
+        {showBodyOverlay && (
+          <div className="gp-body-overlay" onClick={() => setShowBodyOverlay(false)}>
+            <div className="gp-body-overlay-hint">
+              <span>Touche l'écran pour fermer</span>
+              <button className="gp-body-overlay-close" onClick={() => setShowBodyOverlay(false)} aria-label="Fermer">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M1 1l12 12M13 1L1 13" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <div className="gp-body-overlay-inner" onClick={e => e.stopPropagation()}>
+              {title && <h2 style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 14, letterSpacing: '-0.3px' }}>{title}</h2>}
+              <p className="gp-body-full">
+                {renderTextWithLinks(body ?? '', 'underline font-semibold', { color: '#fff' })}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Modal play prompt */}
         {showPlayPrompt && (
