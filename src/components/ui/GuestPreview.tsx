@@ -206,23 +206,30 @@ export function GuestPreview({
           height: 100%;
           transition: transform .35s cubic-bezier(0.22,1,0.36,1);
         }
-        .gp-hero-slide {
+        .gp-hero-slide-wrap {
+          position: relative;
           width: 100%;
           height: 100%;
+          flex-shrink: 0;
+          overflow: hidden;
+        }
+        .gp-hero-slide-bg {
+          position: absolute;
+          inset: -6%;
+          width: 112%;
+          height: 112%;
           object-fit: cover;
+          filter: blur(40px) saturate(1.3) brightness(0.55);
+          transform: scale(1.1);
+        }
+        .gp-hero-slide {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
           object-position: center center;
           display: block;
-          flex-shrink: 0;
           filter: saturate(1.08);
-        }
-        .gp-hero-glow {
-          position: absolute;
-          inset: -10%;
-          z-index: -1;
-          background: inherit;
-          filter: blur(60px) saturate(1.4) brightness(0.7);
-          transform: scale(1.15);
-          opacity: 0.6;
         }
         .gp-hero-dots {
           position: absolute;
@@ -627,7 +634,10 @@ export function GuestPreview({
             <div className="gp-hero-track"
               style={{ transform: `translateX(-${slide * 100}%)` }}>
               {images.map((src, i) => (
-                <img key={i} src={src} alt="" className="gp-hero-slide" draggable={false} />
+                <div key={i} className="gp-hero-slide-wrap">
+                  <img src={src} alt="" className="gp-hero-slide-bg" draggable={false} aria-hidden="true" />
+                  <img src={src} alt="" className="gp-hero-slide" draggable={false} />
+                </div>
               ))}
             </div>
           ) : (
@@ -793,7 +803,8 @@ export function GuestPreview({
           </div>
         </div>
 
-        {/* Overlay description — fond noir plein écran, clic n'importe où pour refermer */}
+        {/* Overlay description — fond noir plein écran, clic n'importe où pour refermer
+            (y compris dans le texte : seul un vrai lien à l'intérieur intercepte le clic) */}
         {showBodyOverlay && (
           <div className="gp-body-overlay" onClick={() => setShowBodyOverlay(false)}>
             <div className="gp-body-overlay-hint">
@@ -804,7 +815,7 @@ export function GuestPreview({
                 </svg>
               </button>
             </div>
-            <div className="gp-body-overlay-inner" onClick={e => e.stopPropagation()}>
+            <div className="gp-body-overlay-inner" onClick={e => { if ((e.target as HTMLElement).closest('a')) e.stopPropagation(); }}>
               {title && <h2 style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 14, letterSpacing: '-0.3px' }}>{title}</h2>}
               <p className="gp-body-full">
                 {renderTextWithLinks(body ?? '', 'underline font-semibold', { color: '#fff' })}
