@@ -24,7 +24,7 @@ import { ExpandableText } from '../components/ui/ExpandableText';
 import { RichText, renderTextWithLinks } from '../components/ui/RichText';
 import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
 import { CardMoreMenu, type CardMenuAction } from '../components/ui/CardMoreMenu';
-import { ReportModal } from '../components/ui/ReportModal';
+import { ReportModal, type ReportContentType } from '../components/ui/ReportModal';
 import { useWs } from '../context/WebSocketContext';
 import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
 import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
@@ -1674,11 +1674,13 @@ function LiveHero({ concert }: { concert: Concert }) {
 // ── Concert card ──────────────────────────────────────────────────────────────
 type OpenCommentsFn = (id: string, kind: 'event'|'concert'|'post'|'reel', count: number) => void;
 
-function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide }: {
+function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport }: {
   concert: Concert; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
   onHide?: () => void;
+  openMore: (title: string, actions: CardMenuAction[]) => void;
+  openReport: (contentType: ReportContentType, contentId: string) => void;
 }) {
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
@@ -1686,9 +1688,6 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
   const authorId   = concert.artist?.id;
   const isFollowed = authorId ? followedIds.has(authorId) : false;
   const isOwn      = !!me && me.id === concert.artist_id;
-
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
   const [reminder, setReminder] = useState(false);
 
   async function toggleReminder() {
@@ -1696,11 +1695,14 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
     catch { toast.error("Impossible de modifier le rappel."); }
   }
 
-  const moreActions: CardMenuAction[] = isOwn ? [] : [
-    { icon: reminder ? BellOff : Bell, label: reminder ? 'Annuler le rappel' : 'Me rappeler', sub: reminder ? 'Rappel actif' : '1h avant le début', onClick: toggleReminder },
-    { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer ce concert du fil', onClick: () => onHide?.() },
-    { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => setReportOpen(true) },
-  ];
+  function handleMoreClick() {
+    if (isOwn) return;
+    openMore('Options du concert', [
+      { icon: reminder ? BellOff : Bell, label: reminder ? 'Annuler le rappel' : 'Me rappeler', sub: reminder ? 'Rappel actif' : '1h avant le début', onClick: toggleReminder },
+      { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer ce concert du fil', onClick: () => onHide?.() },
+      { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => openReport('concert', concert.id) },
+    ]);
+  }
 
   return (
     <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
@@ -1714,11 +1716,8 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="concert"
-        onMoreClick={moreActions.length > 0 ? e => { e.stopPropagation(); setMoreOpen(true); } : undefined}
+        onMoreClick={isOwn ? undefined : e => { e.stopPropagation(); handleMoreClick(); }}
       />
-
-      <CardMoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} title="Options du concert" actions={moreActions} />
-      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} contentType="concert" contentId={concert.id} />
 
       <div onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
         className="relative overflow-hidden cursor-pointer group"
@@ -1771,11 +1770,13 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
 }
 
 // ── Event card ────────────────────────────────────────────────────────────────
-function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide }: {
+function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport }: {
   event: Event; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
   onHide?: () => void;
+  openMore: (title: string, actions: CardMenuAction[]) => void;
+  openReport: (contentType: ReportContentType, contentId: string) => void;
 }) {
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
@@ -1783,9 +1784,6 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
   const authorId   = event.organizer?.id;
   const isFollowed = authorId ? followedIds.has(authorId) : false;
   const isOwn      = !!me && me.id === event.organizer_id;
-
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
   const [reminder, setReminder] = useState(false);
 
   async function toggleReminder() {
@@ -1793,11 +1791,14 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
     catch { toast.error("Impossible de modifier le rappel."); }
   }
 
-  const moreActions: CardMenuAction[] = isOwn ? [] : [
-    { icon: reminder ? BellOff : Bell, label: reminder ? 'Annuler le rappel' : 'Me rappeler', sub: reminder ? 'Rappel actif' : '1h avant le début', onClick: toggleReminder },
-    { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer cet événement du fil', onClick: () => onHide?.() },
-    { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => setReportOpen(true) },
-  ];
+  function handleMoreClick() {
+    if (isOwn) return;
+    openMore("Options de l'événement", [
+      { icon: reminder ? BellOff : Bell, label: reminder ? 'Annuler le rappel' : 'Me rappeler', sub: reminder ? 'Rappel actif' : '1h avant le début', onClick: toggleReminder },
+      { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer cet événement du fil', onClick: () => onHide?.() },
+      { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => openReport('event', event.id) },
+    ]);
+  }
 
   return (
     <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
@@ -1811,11 +1812,8 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="event"
-        onMoreClick={moreActions.length > 0 ? e => { e.stopPropagation(); setMoreOpen(true); } : undefined}
+        onMoreClick={isOwn ? undefined : e => { e.stopPropagation(); handleMoreClick(); }}
       />
-
-      <CardMoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} title="Options de l'événement" actions={moreActions} />
-      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} contentType="event" contentId={event.id} />
 
       <div onClick={() => navigate(`/events/${encodeId(event.id)}`)}
         className="relative overflow-hidden cursor-pointer group"
@@ -1919,11 +1917,13 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
 }
 
 // ── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide }: {
+function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport }: {
   post: Post; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
   onHide?: () => void;
+  openMore: (title: string, actions: CardMenuAction[]) => void;
+  openReport: (contentType: ReportContentType, contentId: string) => void;
 }) {
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
@@ -1932,24 +1932,24 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
   const isOwn      = !!me && me.id === post.user_id;
   const body = post.body ?? '';
 
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
-
   async function handleDelete() {
     if (!window.confirm('Supprimer ce post ? Cette action est irréversible.')) return;
     try { await apiClient.delete(Endpoints.posts.byId(post.id)); onHide?.(); toast.success('Post supprimé.'); }
     catch { toast.error('Impossible de supprimer ce post.'); }
   }
 
-  const moreActions: CardMenuAction[] = isOwn
-    ? [
-        { icon: Edit3, label: 'Modifier', sub: 'Éditer le contenu', onClick: () => navigate(`/posts/${encodeId(post.id)}`) },
-        { icon: Trash2, label: 'Supprimer', sub: 'Action irréversible', color: '#EF4444', onClick: handleDelete },
-      ]
-    : [
-        { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer ce post du fil', onClick: () => onHide?.() },
-        { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => setReportOpen(true) },
-      ];
+  function handleMoreClick() {
+    const actions: CardMenuAction[] = isOwn
+      ? [
+          { icon: Edit3, label: 'Modifier', sub: 'Éditer le contenu', onClick: () => navigate(`/posts/${encodeId(post.id)}`) },
+          { icon: Trash2, label: 'Supprimer', sub: 'Action irréversible', color: '#EF4444', onClick: handleDelete },
+        ]
+      : [
+          { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer ce post du fil', onClick: () => onHide?.() },
+          { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => openReport('post', post.id) },
+        ];
+    openMore('Options du post', actions);
+  }
 
   return (
     <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
@@ -1963,11 +1963,8 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="post"
-        onMoreClick={e => { e.stopPropagation(); setMoreOpen(true); }}
+        onMoreClick={e => { e.stopPropagation(); handleMoreClick(); }}
       />
-
-      <CardMoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} title="Options du post" actions={moreActions} />
-      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} contentType="post" contentId={post.id} />
 
       {/* Body */}
       {body && (
@@ -2737,6 +2734,13 @@ export default function FeedPage() {
   const [commentCounts,   setCommentCounts]   = useState<Record<string, number>>({});
   const [feedAd,          setFeedAd]          = useState<FeedAd | null>(null);
 
+  // ── Menu "..." et signalement — un seul modal partagé par toutes les cards,
+  // pas une instance par card (le feed n'est pas virtualisé côté web). ──────────
+  const [moreMenu, setMoreMenu] = useState<{ title: string; actions: CardMenuAction[] } | null>(null);
+  const [reportTarget, setReportTarget] = useState<{ type: ReportContentType; id: string } | null>(null);
+  const openMore   = useCallback((title: string, actions: CardMenuAction[]) => setMoreMenu({ title, actions }), []);
+  const openReport = useCallback((type: ReportContentType, id: string) => setReportTarget({ type, id }), []);
+
   // ── Pagination infinie (tab "all") ──────────────────────────────────────────
   const seenIdsRef       = useRef<Set<string>>(new Set());
   const feedPageRef      = useRef(1);
@@ -3177,15 +3181,18 @@ export default function FeedPage() {
                 }
                 if (item.kind === 'concert') {
                   return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
-                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'concert' && x.id === item.id)))} />;
+                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'concert' && x.id === item.id)))}
+                    openMore={openMore} openReport={openReport} />;
                 }
                 if (item.kind === 'event') {
                   return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
-                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'event' && x.id === item.id)))} />;
+                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'event' && x.id === item.id)))}
+                    openMore={openMore} openReport={openReport} />;
                 }
                 if (item.kind === 'post') {
                   return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
-                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'post' && x.id === item.id)))} />;
+                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'post' && x.id === item.id)))}
+                    openMore={openMore} openReport={openReport} />;
                 }
                 if (item.kind === 'reel') {
                   return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;
@@ -3231,6 +3238,20 @@ export default function FeedPage() {
           setCommentTarget(prev => prev ? { ...prev, count: n } : null);
           if (commentTarget) setCommentCounts(prev => ({ ...prev, [commentTarget.id]: n }));
         }}
+      />
+
+      {/* ── Single global menu "..." et modal de signalement — partagés par toutes les cards ── */}
+      <CardMoreMenu
+        open={!!moreMenu}
+        onClose={() => setMoreMenu(null)}
+        title={moreMenu?.title}
+        actions={moreMenu?.actions ?? []}
+      />
+      <ReportModal
+        open={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        contentType={reportTarget?.type ?? 'post'}
+        contentId={reportTarget?.id ?? ''}
       />
     </div>
   );
