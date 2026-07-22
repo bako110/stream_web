@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, Bell, Radio, Sun, Moon, MessageCircle, Download } from 'lucide-react';
+import { Menu, Search, Bell, MessageCircle, Download } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { RoundLogo } from '../ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
 import { useWs } from '../../context/WebSocketContext';
 import { MessagesPopover } from './MessagesPopover';
 import { publicClient } from '../../api';
@@ -14,7 +13,6 @@ interface Props { onMenuClick: () => void; }
 
 export function Topbar({ onMenuClick }: Props) {
   const { user }  = useAuthStore();
-  const { isDark, toggle } = useThemeStore();
   const { unreadMessages } = useWs();
   const navigate  = useNavigate();
   const location  = useLocation();
@@ -65,7 +63,7 @@ export function Topbar({ onMenuClick }: Props) {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 h-14 overflow-hidden"
+      className="sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3 pl-2 pr-3 sm:px-4 h-14 overflow-hidden"
       style={{
         background:          'var(--glass-strong-bg)',
         backdropFilter:      'blur(20px) saturate(180%)',
@@ -139,31 +137,6 @@ export function Topbar({ onMenuClick }: Props) {
           </a>
         )}
 
-        {/* Go Live */}
-        <button
-          onClick={() => navigate('/go-live')}
-          className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0"
-          style={{ background: 'linear-gradient(135deg,#EF4444,#DC2626)', color: '#fff', boxShadow: '0 2px 10px rgba(239,68,68,0.35)' }}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 18px rgba(239,68,68,0.55)')}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 10px rgba(239,68,68,0.35)')}
-        >
-          <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          <span className="hidden sm:inline">Go Live</span>
-          <Radio size={16} className="sm:hidden" />
-        </button>
-
-        {/* Dark / Light toggle */}
-        <button
-          onClick={toggle}
-          title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
-          className="hidden sm:flex p-2 rounded-xl transition-all shrink-0"
-          style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
-          onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
-        >
-          {isDark ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-
         {/* Messages */}
         <button
           onClick={() => setMsgPopover(v => !v)}
@@ -217,7 +190,7 @@ export function Topbar({ onMenuClick }: Props) {
         {user && (
           <button
             onClick={() => navigate('/profile')}
-            className="lg:hidden shrink-0 pl-0.5"
+            className="lg:hidden shrink-0 pl-1 pr-0.5"
           >
             <Avatar src={user.avatar_url} name={user.display_name ?? user.username} size="sm" verified={user.is_verified} />
           </button>

@@ -2,7 +2,7 @@ import { PageLoader } from '../components/ui/Spinner';
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { decodeId } from '../utils/slugId';
+import { decodeId, encodeId } from '../utils/slugId';
 import {
   Radio, Eye, Send, X, StopCircle, ChevronLeft,
   Mic, MicOff, VideoIcon, VideoOff, Gift, Hand, FlipHorizontal,
@@ -42,6 +42,8 @@ import {
   type GiftNotif,
 } from '../components/live/LiveGiftModal';
 import { LiveSettingsSheet } from '../components/live/LiveSettingsSheet';
+import { BattleChallengeSheet } from '../components/live/BattleChallengeSheet';
+import { battlesApi } from '../api/battles';
 import { LiveAccessGate } from '../components/live/LiveAccessGate';
 import { StageAccessGate } from '../components/live/StageAccessGate';
 import { useLiveSuggestions, LiveSuggestionsBar, LiveBoostedRail } from '../components/live/LiveSuggestions';
@@ -1193,6 +1195,7 @@ export default function LiveSimplePage() {
   const [showSettings,     setShowSettings]     = useState(false);
   const [showDesktopMore,  setShowDesktopMore]  = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [showChallenge,    setShowChallenge]    = useState(false);
 
   // Données live localement mutable (monétisation)
   const [liveOverride, setLiveOverride] = useState<Partial<LiveStream>>({});
@@ -1211,6 +1214,19 @@ export default function LiveSimplePage() {
   const live     = liveApi.data ? { ...liveApi.data, ...liveOverride } as LiveStream : null;
   const isHost   = !!(live && user && live.user_id === user.id);
   const isActive = live?.status === 'active';
+
+  // Le host de ce live est peut-être déjà en plein battle (rejoint après le début
+  // du match, donc après l'émission de l'event WS "battle_started") — sans ce
+  // check, ce viewer resterait bloqué sur le live simple sans jamais voir le match.
+  useEffect(() => {
+    if (!live || !id || isHost) return;
+    let cancelled = false;
+    battlesApi.getActiveForLive(id).then(activeBattle => {
+      if (cancelled || !activeBattle || activeBattle.status !== 'active') return;
+      navigate(`/battles/${encodeId(activeBattle.id)}`, { replace: true });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [live, id, isHost, navigate]);
 
   // Charge le vrai statut d'abonnement au host — sinon le bouton "Suivre"
   // repart toujours à zéro visuellement même si on le suit déjà.
@@ -1354,6 +1370,14 @@ export default function LiveSimplePage() {
       case 'live_user_globally_banned': {
         const kickedId = d.identity ?? d.user_id;
         if (kickedId && user && kickedId === user.id) navigate(-1);
+        break;
+      }
+      case 'battle_started': {
+        // Le host de ce live vient d'accepter/démarrer un battle — les viewers
+        // basculent aussi vers l'écran de battle en split-screen (comme les deux
+        // hosts). replace (pas navigate) : sinon ce live reste monté en dessous
+        // avec son propre LiveKitRoom connecté en parallèle de celui du battle.
+        if (d.battle_id) navigate(`/battles/${encodeId(d.battle_id)}`, { replace: true });
         break;
       }
       case 'like_added': {
@@ -1894,6 +1918,15 @@ export default function LiveSimplePage() {
                   onStopLive={() => { setShowSettings(false); handleStop(); }}
                   onMonetizationUpdated={patch => setLiveOverride(prev => ({ ...prev, ...patch }))}
                   onClose={() => setShowSettings(false)}
+                  onChallenge={() => { setShowSettings(false); setShowChallenge(true); }}
+                />
+              )}
+
+              {isHost && (
+                <BattleChallengeSheet
+                  open={showChallenge}
+                  onClose={() => setShowChallenge(false)}
+                  liveId={id!}
                 />
               )}
             </div>

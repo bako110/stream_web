@@ -38,6 +38,13 @@ const LivePage            = lazyWithRetry(() => import('./pages/LivePage'));
 const LiveSimpleListPage  = lazyWithRetry(() => import('./pages/LiveSimpleListPage'));
 const LiveSimplePage      = lazyWithRetry(() => import('./pages/LiveSimplePage'));
 const GoLivePage          = lazyWithRetry(() => import('./pages/GoLivePage'));
+const LiveOneVsOnePage      = lazyWithRetry(() => import('./pages/LiveOneVsOnePage'));
+const BattlePage             = lazyWithRetry(() => import('./pages/BattlePage'));
+const TournamentListPage     = lazyWithRetry(() => import('./pages/TournamentListPage'));
+const TournamentBracketPage  = lazyWithRetry(() => import('./pages/TournamentBracketPage'));
+const LiveTournamentsPage    = lazyWithRetry(() => import('./pages/LiveTournamentsPage'));
+const TournamentFinancePage  = lazyWithRetry(() => import('./pages/TournamentFinancePage'));
+const MorePage               = lazyWithRetry(() => import('./pages/MorePage'));
 const SearchPage        = lazyWithRetry(() => import('./pages/SearchPage'));
 const MessagesPage      = lazyWithRetry(() => import('./pages/MessagesPage'));
 const CommunitiesPage   = lazyWithRetry(() => import('./pages/CommunitiesPage'));
@@ -202,12 +209,19 @@ function AppShell() {
             <Route path="/lives"             element={<LiveSimpleListPage />} />
             <Route path="/lives/:id"         element={<LiveSimplePage />} />
             <Route path="/go-live"           element={<GoLivePage />} />
+            <Route path="/battles"           element={<LiveOneVsOnePage />} />
+            <Route path="/battles/:id"       element={<BattlePage />} />
+            <Route path="/tournaments"             element={<TournamentListPage />} />
+            <Route path="/tournaments/active"      element={<LiveTournamentsPage />} />
+            <Route path="/tournaments/:id"         element={<TournamentBracketPage />} />
+            <Route path="/tournaments/:id/finance" element={<TournamentFinancePage />} />
             <Route path="/search"            element={<SearchPage />} />
             <Route path="/messages"          element={<MessagesPage />} />
             <Route path="/messages/:userId"  element={<MessagesPage />} />
             <Route path="/communities"       element={<CommunitiesPage />} />
             <Route path="/communities/:id"   element={<CommunityDetailPage />} />
             <Route path="/notifications"     element={<NotificationsPage />} />
+            <Route path="/more"              element={<MorePage />} />
             <Route path="/profile"           element={<ProfilePage />} />
             <Route path="/user/:id"          element={<UserProfilePage />} />
             <Route path="/settings"                    element={<SettingsPage />} />

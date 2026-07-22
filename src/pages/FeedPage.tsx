@@ -6,7 +6,7 @@ import { encodeId } from '../utils/slugId';
 import {
   Music, MapPin, Clock, Users, Play, Calendar,
   Flame, ChevronRight, UserPlus, UserCheck, Sparkles, Radio,
-  Heart, MessageCircle, Share2, Bookmark, Film, RefreshCw,
+  Heart, MessageCircle, Share2, Bookmark, Film,
   X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3, Copy,
   Image as ImageIcon, Video, Type, MoreHorizontal, Lock,
   Megaphone, ExternalLink, Zap } from 'lucide-react';
@@ -2644,7 +2644,7 @@ function SectionHead({ icon, title, onMore }: {
 export default function FeedPage() {
   const { user }   = useAuthStore();
   const navigate   = useNavigate();
-  const [tab, setTab]       = useState<'all' | 'concerts' | 'events'>('all');
+  const [tab, setTab]       = useState<'all' | 'concerts' | 'events' | 'friends'>('all');
   const [items, setItems]   = useState<FeedItem[]>([]);
   const [live,  setLive]    = useState<Concert[]>([]);
   const [loading, setLoading]  = useState(true);
@@ -2810,6 +2810,25 @@ export default function FeedPage() {
         nonReelCountRef.current = merged.length;
         setItems(result);
         setHasMoreFeed(postsHasMoreRef.current || reelsHasMoreRef.current || feedItems.length >= 40);
+      } else if (filter === 'friends') {
+        // Uniquement le contenu des comptes suivis — posts + events/concerts + reels,
+        // triés chronologiquement, sans pub/suggestions/communautés (même pattern mobile).
+        const [feedRes, reelsRes, postsRes] = await Promise.all([
+          apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=30&following_only=true`).catch(() => null),
+          apiClient.get<any>(`${Endpoints.reels.feed}?limit=20&following_only=true`).catch(() => null),
+          apiClient.get<any>(`${Endpoints.posts.feed}?limit=30&following=true`).catch(() => null),
+        ]);
+        const results: FeedItem[] = [];
+        toArray<any>(feedRes?.data)
+          .filter(d => d.id && (d.kind === 'event' || d.kind === 'concert'))
+          .forEach(d => results.push({ kind: d.kind, id: String(d.id), data: d }));
+        toArray<Reel>(reelsRes?.data).forEach(r => results.push({ kind: 'reel', id: String(r.id), data: r }));
+        toArray<any>(postsRes?.data).forEach(p => results.push({ kind: 'post', id: String(p.id), data: p }));
+        results.sort((a, b) => {
+          const dateOf = (it: FeedItem) => (it.data as any).created_at ?? (it.data as any).starts_at ?? (it.data as any).scheduled_at ?? 0;
+          return new Date(dateOf(b)).getTime() - new Date(dateOf(a)).getTime();
+        });
+        setItems(results);
       } else {
         // Filter-specific — sorted by date, no shuffle
         const results: FeedItem[] = [];
@@ -2972,8 +2991,6 @@ export default function FeedPage() {
     return () => obs.disconnect();
   }, [loadMoreFeed]);
 
-  function handleRefresh() { loadFeed(tab); }
-
   return (
     <div className="px-2 sm:px-4 py-6 max-w-[1400px] mx-auto">
       <div className="flex gap-4 items-start">
@@ -2987,31 +3004,19 @@ export default function FeedPage() {
         {/* ── Feed column ── */}
         <div className="flex-1 min-w-0 space-y-5">
 
-          {/* Greeting */}
-          <div className="flex items-start justify-between animate-reveal-up">
-            <div>
-              <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
-                {(() => { const h = new Date().getHours(); return h < 12 ? 'Bonjour,' : h < 18 ? 'Bon après-midi,' : 'Bonsoir,'; })()}{' '}
-                <span className="gradient-text">
-                  {user?.display_name ?? user?.first_name ?? user?.username}
-                </span>
-              </h1>
-              <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                {items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length > 0
-                  ? `${items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length} éléments dans ton fil`
-                  : 'Concerts, événements, reels et posts mélangés'}
-              </p>
-            </div>
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="p-2 rounded-xl transition-all mt-1 shrink-0"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-              title="Mélanger à nouveau">
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
+          {/* Greeting — desktop uniquement, superflu sur mobile */}
+          <div className="hidden lg:block animate-reveal-up">
+            <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
+              {(() => { const h = new Date().getHours(); return h < 12 ? 'Bonjour,' : h < 18 ? 'Bon après-midi,' : 'Bonsoir,'; })()}{' '}
+              <span className="gradient-text">
+                {user?.display_name ?? user?.first_name ?? user?.username}
+              </span>
+            </h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+              {items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length > 0
+                ? `${items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length} éléments dans ton fil`
+                : 'Concerts, événements, reels et posts mélangés'}
+            </p>
           </div>
 
           {/* ── Stories ── */}
@@ -3036,15 +3041,15 @@ export default function FeedPage() {
 
           {/* ── Tabs ── */}
           <div className="flex items-center gap-2 animate-reveal-up delay-200">
-            {(['all', 'concerts', 'events'] as const).map(t => (
+            {(['all', 'friends', 'concerts', 'events'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className="text-sm font-bold px-4 py-2 rounded-xl transition-all"
+                className="flex-1 lg:flex-none text-sm font-bold px-3 lg:px-4 py-2 rounded-xl transition-all text-center whitespace-nowrap overflow-hidden"
                 style={{
                   background: tab === t ? 'var(--primary)' : 'var(--surface)',
                   color:      tab === t ? '#fff' : 'var(--text-secondary)',
                   border:     `1px solid ${tab === t ? 'var(--primary)' : 'var(--border)'}`,
                   boxShadow:  tab === t ? '0 4px 16px rgba(123,63,242,0.35)' : 'none' }}>
-                {t === 'all' ? 'Tout' : t === 'concerts' ? 'Concerts' : 'Événements'}
+                {t === 'all' ? 'Tout' : t === 'friends' ? 'Mes amis' : t === 'concerts' ? 'Concerts' : 'Événements'}
               </button>
             ))}
           </div>
@@ -3053,6 +3058,17 @@ export default function FeedPage() {
           {loading ? (
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map(i => <CardSkeleton key={i} />)}
+            </div>
+          ) : items.length === 0 && tab === 'friends' ? (
+            <div className="rounded-2xl p-12 text-center animate-scale-in"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.08))', border: '1px solid rgba(123,63,242,0.15)' }}>
+                <Users size={28} style={{ color: 'var(--primary)' }} />
+              </div>
+              <p className="font-black text-lg" style={{ color: 'var(--text-primary)' }}>Aucun post de tes suivis</p>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Suis d'autres comptes pour voir leurs publications ici.</p>
+              <button onClick={() => setTab('all')} className="btn-primary mt-5 text-sm px-6">Découvrir du contenu</button>
             </div>
           ) : items.length === 0 ? (
             <div className="rounded-2xl p-12 text-center animate-scale-in"

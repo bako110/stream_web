@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Play, Film, MessageCircle } from 'lucide-react';
+import { Home, Play, Film, MessageCircle, MoreHorizontal } from 'lucide-react';
 
 const tabs = [
   { to: '/feed',     icon: Home,          label: 'Accueil'  },
   { to: '/reels',    icon: Play,          label: 'Reels'    },
   { to: '/films',    icon: Film,          label: 'Films'    },
   { to: '/messages', icon: MessageCircle, label: 'Messages' },
+  { to: '/more',     icon: MoreHorizontal, label: 'Plus'     },
 ];
 
 export function BottomNav() {

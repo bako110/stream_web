@@ -7,6 +7,7 @@ import { MobileDrawer } from './MobileDrawer';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { CreateFAB } from './CreateFAB';
+import { BattleInviteModal } from '../live/BattleInviteModal';
 
 // Pages avec leur propre bouton flottant dédié — évite le doublon visuel avec le FAB global
 const CREATE_FAB_HIDDEN_PREFIXES = ['/my-stories'];
@@ -15,7 +16,7 @@ const CREATE_FAB_HIDDEN_PREFIXES = ['/my-stories'];
 const IMMERSIVE_PREFIXES = ['/reels'];
 // Immersives seulement sur mobile/tablette — sur desktop (lg+) la sidebar/topbar de l'app
 // reste visible, le live s'affiche dans le contenu principal comme une page normale.
-const IMMERSIVE_MOBILE_ONLY_PREFIXES = ['/lives/', '/live/'];
+const IMMERSIVE_MOBILE_ONLY_PREFIXES = ['/lives/', '/live/', '/battles/'];
 
 export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -72,6 +73,9 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
 
       {/* ── FAB création ── */}
       {!hideCreateFab && <CreateFAB />}
+
+      {/* ── Invitation de battle reçue — écoute globale, quel que soit l'écran affiché ── */}
+      <BattleInviteModal />
     </div>
   );
 }

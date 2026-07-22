@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   X, VideoIcon, VideoOff, Mic, MicOff, UserCheck,
-  Lock, Unlock, Edit2, Coins as GoGold, Gift, ChevronLeft, Check, Radio, ShieldOff,
+  Lock, Unlock, Edit2, Coins as GoGold, Gift, ChevronLeft, Check, Radio, ShieldOff, Zap,
 } from 'lucide-react';
 import { useConfirm } from '../ui/Dialog';
 import { useLocalParticipant } from '@livekit/components-react';
@@ -36,6 +36,8 @@ interface Props {
   onStopLive: () => void;
   onMonetizationUpdated: (updated: Partial<LiveData>) => void;
   onClose: () => void;
+  /** Ouvre le sheet "Défier un créateur" pour lancer une invitation de battle 1v1. */
+  onChallenge?: () => void;
 }
 
 // ── MonetForm compact ─────────────────────────────────────────────────────────
@@ -343,7 +345,7 @@ function BannedUsersSection() {
 export function LiveSettingsSheet({
   liveId, live,
   handRequests, onInvite, onDismissHand,
-  onStopLive, onMonetizationUpdated, onClose,
+  onStopLive, onMonetizationUpdated, onClose, onChallenge,
 }: Props) {
   const { confirm, ConfirmDialog } = useConfirm();
 
@@ -572,6 +574,20 @@ export function LiveSettingsSheet({
               onRemove={removeStageMonet}
             />
           </div>
+
+          {/* ── Battle 1v1 ── */}
+          {onChallenge && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+                style={{ color: 'var(--text-tertiary)' }}>Battle 1v1</p>
+              <button onClick={onChallenge}
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all"
+                style={{ borderColor: 'rgba(123,63,242,0.4)', background: 'rgba(123,63,242,0.08)' }}>
+                <Zap size={16} style={{ color: '#7B3FF2', flexShrink: 0 }} />
+                <span className="text-xs font-bold" style={{ color: '#7B3FF2' }}>Défier un créateur en direct</span>
+              </button>
+            </div>
+          )}
 
           {/* ── Utilisateurs éjectés/bannis ── */}
           <BannedUsersSection />

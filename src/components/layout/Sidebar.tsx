@@ -1,82 +1,29 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { useConfirm } from '../ui/Dialog';
-import {
-  Home, Play, Film, Radio, Music2, Video,
-  Users, MessageCircle, Bell, Activity, UserPlus,
-  Calendar, CalendarDays, Heart, Clock,
-  Wallet, TrendingUp, HelpCircle, Settings, LogOut,
-  Sun, Moon, ChevronLeft, Download,
-} from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
-import { Avatar } from '../ui/Avatar';
+import { Home, Play, Film, Radio, Video, ChevronLeft, Zap, Award, MoreHorizontal, X } from 'lucide-react';
 import { RoundLogo } from '../ui/RoundLogo';
+import { MoreMenuContent } from './MoreMenuContent';
 
-const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.0.0.4.apk';
-const APK_VERSION = '1.0.0.4';
-
-const SECTIONS = [
-  {
-    label: 'DÉCOUVRIR',
-    items: [
-      { to: '/feed',    label: 'Accueil',       icon: Home,   color: '#7B3FF2', end: true },
-      { to: '/reels',   label: 'Reels',         icon: Play,   color: '#7B3FF2' },
-      { to: '/films',   label: 'Films',         icon: Film,   color: '#7B3FF2' },
-      { to: '/series',  label: 'Séries',        icon: Film,   color: '#9B65F5' },
-      { to: '/live',    label: 'Live concerts', icon: Radio,  color: '#7B3FF2' },
-      { to: '/lives',   label: 'Lives',         icon: Video,  color: '#7B3FF2' },
-    ],
-  },
-  {
-    label: 'SOCIAL',
-    items: [
-      { to: '/communities',    label: 'Communautés',   icon: Users,         color: '#7B3FF2' },
-      { to: '/messages',       label: 'Messages',      icon: MessageCircle, color: '#7B3FF2' },
-      { to: '/notifications',  label: 'Notifications', icon: Bell,          color: '#7B3FF2' },
-      { to: '/activity',       label: 'Activité',      icon: Activity,      color: '#7B3FF2' },
-      { to: '/following',      label: 'Abonnements',   icon: UserPlus,      color: '#7B3FF2' },
-    ],
-  },
-  {
-    label: 'MES CONTENUS',
-    items: [
-      { to: '/my-concerts',   label: 'Mes Concerts',   icon: Music2,       color: '#7B3FF2' },
-      { to: '/my-events',     label: 'Mes Événements', icon: Calendar,     color: '#7B3FF2' },
-      { to: '/planning',      label: 'Mon Planning',   icon: CalendarDays,  color: '#7B3FF2' },
-      { to: '/favorites',     label: 'Favoris',        icon: Heart,         color: '#EF4444' },
-      { to: '/watch-history', label: 'Historique',     icon: Clock,         color: '#06B6D4' },
-    ],
-  },
-  {
-    label: 'FINANCE',
-    items: [
-      { to: '/wallet',           label: 'Portefeuille', icon: Wallet,     color: '#22C55E' },
-      { to: '/wallet/referral',  label: 'Parrainage',   icon: UserPlus,   color: '#10B981' },
-      { to: '/trending',         label: 'Tendances',    icon: TrendingUp,  color: '#7B3FF2' },
-    ],
-  },
-];
+// Section principale — toujours visible dans la nav
+const MAIN_SECTION = {
+  label: 'DÉCOUVRIR',
+  items: [
+    { to: '/feed',    label: 'Accueil',       icon: Home,   color: '#7B3FF2', end: true },
+    { to: '/reels',   label: 'Reels',         icon: Play,   color: '#7B3FF2' },
+    { to: '/films',   label: 'Films',         icon: Film,   color: '#7B3FF2' },
+    { to: '/series',  label: 'Séries',        icon: Film,   color: '#9B65F5' },
+    { to: '/live',    label: 'Live concerts', icon: Radio,  color: '#7B3FF2' },
+    { to: '/lives',   label: 'Lives',         icon: Video,  color: '#7B3FF2' },
+    { to: '/battles', label: '1 vs 1',        icon: Zap,    color: '#9B65F5' },
+    { to: '/tournaments', label: 'Tournois',  icon: Award,  color: '#FFD700' },
+  ],
+};
 
 interface Props { collapsed?: boolean; onClose?: () => void; onCollapseToggle?: () => void; }
 
 export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
-  const { user, logout } = useAuthStore();
-  const { isDark, toggle } = useThemeStore();
-  const navigate = useNavigate();
-  const { confirm, ConfirmDialog } = useConfirm();
-
-  async function handleLogout() {
-    const ok = await confirm({
-      title: 'Se déconnecter ?',
-      message: 'Tu seras redirigé vers la page d\'accueil.',
-      confirmLabel: 'Déconnexion',
-      danger: true,
-    });
-    if (!ok) return;
-    try { await logout(); } catch {}
-    navigate('/', { replace: true });
-  }
+  const [showMore, setShowMore] = useState(false);
 
   // Helper — un lien de nav réutilisable
   function NavItem({ to, label, icon: Icon, color, end }: { to: string; label: string; icon: any; color: string; end?: boolean }) {
@@ -154,129 +101,63 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         )}
       </div>
 
-      {/* ── Nav avec sections ── */}
+      {/* ── Nav — uniquement la section Découvrir ── */}
       <nav className="flex-1 overflow-y-auto px-2 py-1">
-        {SECTIONS.map((section, si) => (
-          <div key={section.label} className={si > 0 ? 'mt-1' : ''}>
-            {/* Label section — caché si collapsed */}
-            {!collapsed && (
-              <p className="px-3 pt-2 pb-0.5 text-[9px] font-black tracking-widest"
-                style={{ color: 'var(--text-tertiary)' }}>
-                {section.label}
-              </p>
-            )}
-            {collapsed && si > 0 && (
-              <div className="mx-2 my-2" style={{ height: '1px', background: 'var(--border)' }} />
-            )}
-            <div className="space-y-0.5">
-              {section.items.map(item => (
-                <NavItem key={item.to} {...item} />
-              ))}
-            </div>
+        <div>
+          {!collapsed && (
+            <p className="px-3 pt-2 pb-0.5 text-[9px] font-black tracking-widest"
+              style={{ color: 'var(--text-tertiary)' }}>
+              {MAIN_SECTION.label}
+            </p>
+          )}
+          <div className="space-y-0.5">
+            {MAIN_SECTION.items.map(item => (
+              <NavItem key={item.to} {...item} />
+            ))}
           </div>
-        ))}
+        </div>
       </nav>
 
-      {/* ── Footer ── */}
-      <div className="px-2 pb-3 pt-2 space-y-0.5 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
-
-        {/* Télécharger l'app */}
-        {APK_URL && (
-          <a
-            href={APK_URL}
-            download
-            title={collapsed ? `Télécharger l'app v${APK_VERSION}` : undefined}
-            className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150 group no-underline"
-            style={{ color: 'var(--primary)', background: 'rgba(123,63,242,0.08)' }}
-            onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.16)'); }}
-            onMouseLeave={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.08)'); }}
-          >
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
-              style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>
-              <Download size={16} />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="text-sm font-semibold leading-tight">Télécharger l'app</p>
-                {APK_VERSION && <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>v{APK_VERSION} · Android APK</p>}
-              </div>
-            )}
-          </a>
-        )}
-
-        {/* Thème */}
-        <button onClick={toggle} title={collapsed ? (isDark ? 'Mode clair' : 'Mode sombre') : undefined}
-          className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150 group"
+      {/* ── Footer — juste le bouton Plus ── */}
+      <div className="px-2 pb-3 pt-2 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
+        <button onClick={() => setShowMore(true)} title={collapsed ? 'Plus' : undefined}
+          className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = 'var(--text-secondary)'); }}>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:rotate-12"
-            style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-          </div>
-          {!collapsed && <span className="text-sm">{isDark ? 'Mode clair' : 'Mode sombre'}</span>}
-        </button>
-
-        {/* Aide */}
-        <NavLink to="/support" onClick={onClose} title={collapsed ? 'Aide' : undefined}
-          className="flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-150"
-          style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-secondary)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
           <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-            <HelpCircle size={16} />
+            <MoreHorizontal size={16} />
           </div>
-          {!collapsed && <span className="text-sm">Aide & Support</span>}
-        </NavLink>
-
-        {/* Paramètres */}
-        <NavLink to="/settings" onClick={onClose} title={collapsed ? 'Paramètres' : undefined}
-          className={({ isActive }) => clsx('flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-150', isActive ? 'font-semibold' : '')}
-          style={({ isActive }) => ({ background: isActive ? 'rgba(123,63,242,0.1)' : 'transparent', color: isActive ? 'var(--primary)' : 'var(--text-secondary)' })}
-          onMouseEnter={e => { const el = e.currentTarget as HTMLElement; if (!el.getAttribute('aria-current')) { el.style.background = 'var(--bg-secondary)'; } }}
-          onMouseLeave={e => { const el = e.currentTarget as HTMLElement; if (!el.getAttribute('aria-current')) { el.style.background = 'transparent'; } }}>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-            <Settings size={16} />
-          </div>
-          {!collapsed && <span className="text-sm">Paramètres</span>}
-        </NavLink>
-
-        {/* Profil */}
-        {user && (
-          <NavLink to="/profile" onClick={onClose} title={collapsed ? (user.display_name ?? user.username ?? undefined) : undefined}
-            className={({ isActive }) => clsx('flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-150', isActive ? 'font-semibold' : '')}
-            style={({ isActive }) => ({ background: isActive ? 'rgba(123,63,242,0.1)' : 'transparent', color: isActive ? 'var(--primary)' : 'var(--text-secondary)' })}
-            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; if (!el.getAttribute('aria-current')) { el.style.background = 'var(--bg-secondary)'; } }}
-            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; if (!el.getAttribute('aria-current')) { el.style.background = 'transparent'; } }}>
-            <Avatar src={user.avatar_url} name={user.display_name ?? user.username ?? user.first_name} size="xs" verified={user.is_verified} className="shrink-0" />
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
-                  {user.display_name ?? user.username ?? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()}
-                </p>
-                <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>@{user.username}</p>
-              </div>
-            )}
-          </NavLink>
-        )}
-
-        {/* Déconnexion */}
-        <button onClick={handleLogout} title={collapsed ? 'Déconnexion' : undefined}
-          className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150 group"
-          style={{ color: '#EF4444' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5"
-            style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444' }}>
-            <LogOut size={16} />
-          </div>
-          {!collapsed && <span className="text-sm font-semibold">Déconnexion</span>}
+          {!collapsed && <span className="text-sm">Plus</span>}
         </button>
       </div>
     </aside>
-    {ConfirmDialog}
+
+    {/* ── Panneau "Plus" — occupe la zone de contenu, juste à droite de la sidebar ── */}
+    {showMore && (
+      <div className="fixed inset-y-0 right-0 z-[70] flex"
+        style={{ left: collapsed ? 68 : 220 }}
+        onClick={() => setShowMore(false)}>
+        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.35)' }} />
+        <div className="relative w-full max-w-md h-full flex flex-col overflow-hidden animate-reveal-left"
+          style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', animationDuration: '0.2s' }}
+          onClick={e => e.stopPropagation()}>
+
+          <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+            <p className="text-lg font-extrabold" style={{ color: 'var(--text-primary)' }}>Plus</p>
+            <button onClick={() => setShowMore(false)} className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <MoreMenuContent onNavigate={() => setShowMore(false)} />
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
