@@ -9,7 +9,7 @@ import {
   Heart, MessageCircle, Share2, Bookmark, Film,
   X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3, Copy,
   Image as ImageIcon, Video, Type, MoreHorizontal, Lock,
-  Megaphone, ExternalLink, Zap } from 'lucide-react';
+  Megaphone, ExternalLink, Zap, EyeOff, Flag, Bell, BellOff } from 'lucide-react';
 import Hls from 'hls.js';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -23,6 +23,8 @@ import { Spinner } from '../components/ui/Spinner';
 import { ExpandableText } from '../components/ui/ExpandableText';
 import { RichText, renderTextWithLinks } from '../components/ui/RichText';
 import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
+import { CardMoreMenu, type CardMenuAction } from '../components/ui/CardMoreMenu';
+import { ReportModal } from '../components/ui/ReportModal';
 import { useWs } from '../context/WebSocketContext';
 import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
 import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
@@ -872,7 +874,7 @@ const KIND_BADGE: Record<string, { label: string; bg: string; color: string }> =
   reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' } };
 
 function AuthorRow({
-  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind }: {
+  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind, onMoreClick }: {
   author: { display_name?: string | null; username?: string | null; avatar_url?: string | null; is_verified?: boolean; is_live?: boolean | null } | undefined;
   authorId: string | undefined;
   publishedAt?: string | null;
@@ -880,6 +882,8 @@ function AuthorRow({
   onAuthorClick: (e: React.MouseEvent) => void;
   onFollowClick: (e: React.MouseEvent) => void;
   kind?: string;
+  /** Ouvre le menu "..." (favoris, partage, signaler, etc.) — masqué si absent. */
+  onMoreClick?: (e: React.MouseEvent) => void;
 }) {
   const { liveUserIds } = useWs();
   if (!author && !authorId) return null;
@@ -915,6 +919,14 @@ function AuthorRow({
         onMouseLeave={e => { if (!isFollowed) { e.currentTarget.style.background = 'rgba(123,63,242,0.1)'; e.currentTarget.style.color = 'var(--primary)'; } }}>
         {isFollowed ? <><UserCheck size={11} /> Suivi</> : <><UserPlus size={11} /> Suivre</>}
       </button>
+      {onMoreClick && (
+        <button onClick={onMoreClick} className="p-1.5 rounded-lg shrink-0 transition-colors"
+          style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)'; }}>
+          <MoreHorizontal size={16} />
+        </button>
+      )}
     </div>
   );
 }
@@ -1662,15 +1674,33 @@ function LiveHero({ concert }: { concert: Concert }) {
 // ── Concert card ──────────────────────────────────────────────────────────────
 type OpenCommentsFn = (id: string, kind: 'event'|'concert'|'post'|'reel', count: number) => void;
 
-function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride }: {
+function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide }: {
   concert: Concert; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
+  onHide?: () => void;
 }) {
   const navigate   = useNavigate();
+  const { user: me } = useAuthStore();
   const isLive     = concert.status === 'live';
   const authorId   = concert.artist?.id;
   const isFollowed = authorId ? followedIds.has(authorId) : false;
+  const isOwn      = !!me && me.id === concert.artist_id;
+
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reminder, setReminder] = useState(false);
+
+  async function toggleReminder() {
+    try { await apiClient.post(Endpoints.concerts.remind(concert.id)); setReminder(v => !v); toast.success(reminder ? 'Rappel annulé.' : 'Rappel activé !'); }
+    catch { toast.error("Impossible de modifier le rappel."); }
+  }
+
+  const moreActions: CardMenuAction[] = isOwn ? [] : [
+    { icon: reminder ? BellOff : Bell, label: reminder ? 'Annuler le rappel' : 'Me rappeler', sub: reminder ? 'Rappel actif' : '1h avant le début', onClick: toggleReminder },
+    { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer ce concert du fil', onClick: () => onHide?.() },
+    { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => setReportOpen(true) },
+  ];
 
   return (
     <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
@@ -1684,7 +1714,11 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="concert"
+        onMoreClick={moreActions.length > 0 ? e => { e.stopPropagation(); setMoreOpen(true); } : undefined}
       />
+
+      <CardMoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} title="Options du concert" actions={moreActions} />
+      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} contentType="concert" contentId={concert.id} />
 
       <div onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
         className="relative overflow-hidden cursor-pointer group"
@@ -1737,15 +1771,33 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
 }
 
 // ── Event card ────────────────────────────────────────────────────────────────
-function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride }: {
+function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide }: {
   event: Event; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
+  onHide?: () => void;
 }) {
   const navigate   = useNavigate();
+  const { user: me } = useAuthStore();
   const color      = EVENT_COLORS[event.event_type ?? 'other'] ?? EVENT_COLORS.other;
   const authorId   = event.organizer?.id;
   const isFollowed = authorId ? followedIds.has(authorId) : false;
+  const isOwn      = !!me && me.id === event.organizer_id;
+
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reminder, setReminder] = useState(false);
+
+  async function toggleReminder() {
+    try { await apiClient.post(Endpoints.events.remind(event.id)); setReminder(v => !v); toast.success(reminder ? 'Rappel annulé.' : 'Rappel activé !'); }
+    catch { toast.error("Impossible de modifier le rappel."); }
+  }
+
+  const moreActions: CardMenuAction[] = isOwn ? [] : [
+    { icon: reminder ? BellOff : Bell, label: reminder ? 'Annuler le rappel' : 'Me rappeler', sub: reminder ? 'Rappel actif' : '1h avant le début', onClick: toggleReminder },
+    { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer cet événement du fil', onClick: () => onHide?.() },
+    { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => setReportOpen(true) },
+  ];
 
   return (
     <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
@@ -1759,7 +1811,11 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="event"
+        onMoreClick={moreActions.length > 0 ? e => { e.stopPropagation(); setMoreOpen(true); } : undefined}
       />
+
+      <CardMoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} title="Options de l'événement" actions={moreActions} />
+      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} contentType="event" contentId={event.id} />
 
       <div onClick={() => navigate(`/events/${encodeId(event.id)}`)}
         className="relative overflow-hidden cursor-pointer group"
@@ -1863,15 +1919,37 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
 }
 
 // ── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride }: {
+function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide }: {
   post: Post; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
+  onHide?: () => void;
 }) {
   const navigate   = useNavigate();
+  const { user: me } = useAuthStore();
   const authorId   = post.author?.id;
   const isFollowed = authorId ? followedIds.has(authorId) : false;
+  const isOwn      = !!me && me.id === post.user_id;
   const body = post.body ?? '';
+
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  async function handleDelete() {
+    if (!window.confirm('Supprimer ce post ? Cette action est irréversible.')) return;
+    try { await apiClient.delete(Endpoints.posts.byId(post.id)); onHide?.(); toast.success('Post supprimé.'); }
+    catch { toast.error('Impossible de supprimer ce post.'); }
+  }
+
+  const moreActions: CardMenuAction[] = isOwn
+    ? [
+        { icon: Edit3, label: 'Modifier', sub: 'Éditer le contenu', onClick: () => navigate(`/posts/${encodeId(post.id)}`) },
+        { icon: Trash2, label: 'Supprimer', sub: 'Action irréversible', color: '#EF4444', onClick: handleDelete },
+      ]
+    : [
+        { icon: EyeOff, label: 'Pas intéressé', sub: 'Masquer ce post du fil', onClick: () => onHide?.() },
+        { icon: Flag, label: 'Signaler', sub: 'Contenu inapproprié', color: '#EF4444', onClick: () => setReportOpen(true) },
+      ];
 
   return (
     <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
@@ -1885,7 +1963,11 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="post"
+        onMoreClick={e => { e.stopPropagation(); setMoreOpen(true); }}
       />
+
+      <CardMoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} title="Options du post" actions={moreActions} />
+      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} contentType="post" contentId={post.id} />
 
       {/* Body */}
       {body && (
@@ -3094,13 +3176,16 @@ export default function FeedPage() {
                   return <ReelRowCard key={item.id} reels={item.data} />;
                 }
                 if (item.kind === 'concert') {
-                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]} />;
+                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
+                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'concert' && x.id === item.id)))} />;
                 }
                 if (item.kind === 'event') {
-                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]} />;
+                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
+                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'event' && x.id === item.id)))} />;
                 }
                 if (item.kind === 'post') {
-                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]} />;
+                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
+                    onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'post' && x.id === item.id)))} />;
                 }
                 if (item.kind === 'reel') {
                   return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;

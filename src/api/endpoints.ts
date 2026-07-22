@@ -338,6 +338,9 @@ export const Endpoints = {
     add:    `${V1}/favorites`,
     remove: (id: string) => `${V1}/favorites/${id}`,
   },
+  reports: {
+    create: `${V1}/reports`,
+  },
   planning: {
     feed:    `${V1}/planning`,
     entries: `${V1}/planning/entries`,
