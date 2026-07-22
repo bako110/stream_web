@@ -1525,7 +1525,13 @@ export default function ReelsPage() {
 
   const [reels,         setReels]       = useState<Reel[]>([]);
   const [myReels,       setMyReels]     = useState<Reel[]>([]);
-  const [reelAd,        setReelAd]      = useState<ReelAd | null>(null);
+  // Rotation des ads par slot — chaque emplacement pub (index 0, 1, 2…) charge sa
+  // propre ad indépendamment, avec exclusion des dernières servies (identique mobile).
+  const [adSlots,       setAdSlots]     = useState<Map<number, ReelAd>>(new Map());
+  const adSlotsRef        = useRef(adSlots);
+  adSlotsRef.current = adSlots;
+  const loadingAdSlotsRef = useRef<Set<number>>(new Set());
+  const servedAdIdsRef    = useRef<Set<string>>(new Set());
   const [tab,           setTab]         = useState<'feed'|'mine'>('feed');
   const [loading,       setLoading]     = useState(true);
   const [loadingMore,   setLoadingMore] = useState(false);
@@ -1645,13 +1651,33 @@ export default function ReelsPage() {
       .finally(() => { setLoadingMore(false); loadingMoreRef.current = false; });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Charge une ad pour un slot donné — exclut les dernières servies dans la session
+  // pour éviter de répéter toujours la même, retombe sans exclusion si le stock de
+  // campagnes actives est épuisé (mieux vaut revoir une pub que ne plus jamais en voir).
+  const loadAdForSlot = useCallback((slotIdx: number, allowRepeat = false) => {
+    if (loadingAdSlotsRef.current.has(slotIdx) || adSlotsRef.current.has(slotIdx)) return;
+    loadingAdSlotsRef.current.add(slotIdx);
+    const recentExcluded = allowRepeat ? [] : Array.from(servedAdIdsRef.current).slice(-20);
+    const excludeIds = recentExcluded.join(',');
+    const qs = excludeIds ? `&exclude_ids=${encodeURIComponent(excludeIds)}` : '';
+    apiClient.get<ReelAd | null>(`${Endpoints.ads.feedNext('reels')}${qs}`)
+      .then(r => {
+        loadingAdSlotsRef.current.delete(slotIdx);
+        if (!r.data?.id) {
+          if (excludeIds) loadAdForSlot(slotIdx, true);
+          return;
+        }
+        servedAdIdsRef.current.add(r.data.id);
+        setAdSlots(prev => new Map(prev).set(slotIdx, r.data as ReelAd));
+      })
+      .catch(() => { loadingAdSlotsRef.current.delete(slotIdx); });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!me) return;
     fetchReels();
     if (userMode) return; // mode profil : pas de pub, pas besoin de "mes reels"
-    apiClient.get<ReelAd>(Endpoints.ads.feedNext('reels'))
-      .then(r => { if (r.data?.id) setReelAd(r.data); })
-      .catch(() => {});
+    loadAdForSlot(0);
     // Charger mes reels en parallèle
     if (me?.id) {
       apiClient.get<any>(Endpoints.reels.byUser(String(me.id)))
@@ -1877,19 +1903,30 @@ export default function ReelsPage() {
     return () => observer.disconnect();
   }, [reels, loadMore]);
 
-  // Injection pub toutes les 5 reels (identique mobile)
+  // Injection pub toutes les 5 reels — chaque slot a sa propre ad, rechargée
+  // indépendamment (rotation, pas la même pub partout comme avant).
+  const AD_INTERVAL = 5;
   const feedWithAds = useMemo(() => {
-    const AD_INTERVAL = 5;
-    if (userMode || !reelAd) return reels.map(r => ({ _isAd: false as const, reel: r }));
-    const result: ({ _isAd: false; reel: Reel } | { _isAd: true; ad: ReelAd; id: string })[] = [];
+    if (userMode) return reels.map(r => ({ _isAd: false as const, reel: r }));
+    const result: ({ _isAd: false; reel: Reel } | { _isAd: true; ad: ReelAd; id: string; slotIdx: number })[] = [];
     reels.forEach((r, i) => {
       result.push({ _isAd: false, reel: r });
       if ((i + 1) % AD_INTERVAL === 0) {
-        result.push({ _isAd: true, ad: reelAd, id: `ad-${reelAd.id}-${i}` });
+        const slotIdx = Math.floor((i + 1) / AD_INTERVAL) - 1;
+        const ad = adSlots.get(slotIdx);
+        if (ad) result.push({ _isAd: true, ad, id: `ad-${ad.id}-${i}`, slotIdx });
       }
     });
     return result;
-  }, [reels, reelAd]);
+  }, [reels, adSlots, userMode]);
+
+  // Précharge le slot pub suivant dès que le dernier slot rempli est visible
+  useEffect(() => {
+    if (userMode) return;
+    const filledSlots = adSlots.size;
+    const slotsNeeded = Math.floor(reels.length / AD_INTERVAL);
+    if (slotsNeeded > filledSlots) loadAdForSlot(filledSlots);
+  }, [reels.length, adSlots, userMode, loadAdForSlot]);
 
   const activeReel = reels[activeIndex] ?? null;
 

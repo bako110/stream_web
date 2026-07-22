@@ -4,7 +4,9 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 
 // ── Pluie de cœurs — se déclenche une fois à l'arrivée sur un contenu très aimé ──
-export const HEART_RAIN_THRESHOLD = 1;
+export const HEART_RAIN_THRESHOLD = 1000;
+// Avatars/noms qui aiment (RecentLikersAvatars, LikeNamesFeed) — pas de seuil, dès le premier like.
+const SOCIAL_INDICATOR_THRESHOLD = 1;
 const HEART_RAIN_COUNT  = 100;
 const HEART_RAIN_COLORS = ['#7B3FF2', '#E0389A', '#F0365A', '#A855F7'];
 
@@ -71,7 +73,7 @@ export function RecentLikersAvatars({ active, likeCount, contentId, kind }: {
   const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!active || likeCount < HEART_RAIN_THRESHOLD || fetchedRef.current) return;
+    if (!active || likeCount < SOCIAL_INDICATOR_THRESHOLD || fetchedRef.current) return;
     fetchedRef.current = true;
     // Les likes de reels passent par le système de réactions générique, ceux des
     // stories par leur propre table (StoryLike) — endpoints distincts côté backend.
@@ -126,7 +128,7 @@ export function LikeNamesFeed({ active, likeCount, contentId, kind }: {
   const seqRef = useRef(0);
 
   useEffect(() => {
-    if (!active || likeCount < HEART_RAIN_THRESHOLD || fetchedRef.current) return;
+    if (!active || likeCount < SOCIAL_INDICATOR_THRESHOLD || fetchedRef.current) return;
     fetchedRef.current = true;
     const url = kind === 'reel'
       ? `${Endpoints.social.reactionUsers}?reel_id=${contentId}&limit=10`
