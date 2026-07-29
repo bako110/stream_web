@@ -90,8 +90,8 @@ export const revenueService = {
     return res.data;
   },
 
-  async getByContent(page = 1, limit = 20): Promise<PaginatedResult<RevenueContentItem>> {
-    const q = new URLSearchParams({ page: String(page), limit: String(limit) }).toString();
+  async getByContent(page = 1, limit = 20, period: 'all' | 'month' | 'year' = 'all'): Promise<PaginatedResult<RevenueContentItem>> {
+    const q = new URLSearchParams({ page: String(page), limit: String(limit), period }).toString();
     const res = await apiClient.get<PaginatedResult<RevenueContentItem>>(`${Endpoints.wallet.revenueByContent}?${q}`);
     return res.data;
   },

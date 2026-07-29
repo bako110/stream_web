@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, TrendingUp, TrendingDown, Minus, Wallet, Video,
-  Eye, ChevronRight, Calendar, List,
+  ChevronRight, List,
 } from 'lucide-react';
 import { Spinner } from '../../components/ui/Spinner';
 import { revenueService } from '../../api/revenueService';
@@ -13,49 +13,52 @@ import { RevenueBarChart } from '../../components/analytics/RevenueBarChart';
 import { RevenueSourceList } from '../../components/analytics/RevenueSourceList';
 
 type Granularity = 'month' | 'year';
-type BreakdownPeriod = 'all' | 'month' | 'year';
+type ContentPeriod = 'all' | 'month' | 'year';
 
 function fmtEur(n: number): string {
   return n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: n >= 100 ? 0 : 2 });
 }
 
-const BREAKDOWN_PERIODS: { key: BreakdownPeriod; label: string }[] = [
+const PERIODS: { key: ContentPeriod; label: string }[] = [
   { key: 'all', label: 'Tout' },
   { key: 'year', label: 'Cette année' },
   { key: 'month', label: 'Ce mois' },
 ];
 
+const CONTENT_PAGE_SIZE = 8;
+
 export default function WalletRevenuePage() {
   const navigate = useNavigate();
 
   const [granularity, setGranularity] = useState<Granularity>('month');
-  const [breakdownPeriod, setBreakdownPeriod] = useState<BreakdownPeriod>('all');
+  // Filtre temporel partagé — s'applique à la répartition par source ET au détail par contenu,
+  // pour répondre à "voir ce qui est généré par contenu aussi par année/par mois".
+  const [period, setPeriod] = useState<ContentPeriod>('all');
 
   const [summary, setSummary] = useState<RevenueSummary | null>(null);
   const [timeseries, setTimeseries] = useState<RevenueTimeseriesPoint[]>([]);
   const [sources, setSources] = useState<RevenueSourceBreakdown[]>([]);
   const [contentItems, setContentItems] = useState<RevenueContentItem[]>([]);
   const [contentTotal, setContentTotal] = useState(0);
+  const [contentLoading, setContentLoading] = useState(true);
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const loadSeq = useRef(0);
+  const contentSeq = useRef(0);
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current;
     setLoading(true);
     setLoadError(false);
     try {
-      const [sum, ts, content] = await Promise.all([
+      const [sum, ts] = await Promise.all([
         revenueService.getSummary(),
         revenueService.getTimeseries(granularity, granularity === 'year' ? 5 : 12),
-        revenueService.getByContent(1, 6),
       ]);
       if (seq !== loadSeq.current) return;
       setSummary(sum);
       setTimeseries(ts);
-      setContentItems(content.items);
-      setContentTotal(content.total);
     } catch {
       if (seq === loadSeq.current) setLoadError(true);
     } finally {
@@ -65,9 +68,25 @@ export default function WalletRevenuePage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Répartition par source ET revenus par contenu suivent le même filtre période.
   useEffect(() => {
-    revenueService.getBreakdown(breakdownPeriod).then(setSources).catch(() => setSources([]));
-  }, [breakdownPeriod]);
+    revenueService.getBreakdown(period).then(setSources).catch(() => setSources([]));
+
+    const seq = ++contentSeq.current;
+    setContentLoading(true);
+    revenueService.getByContent(1, CONTENT_PAGE_SIZE, period)
+      .then(res => {
+        if (seq !== contentSeq.current) return;
+        setContentItems(res.items);
+        setContentTotal(res.total);
+      })
+      .catch(() => {
+        if (seq !== contentSeq.current) return;
+        setContentItems([]);
+        setContentTotal(0);
+      })
+      .finally(() => { if (seq === contentSeq.current) setContentLoading(false); });
+  }, [period]);
 
   const evolutionColor = summary?.evolution_pct == null
     ? 'var(--text-tertiary)'
@@ -75,7 +94,7 @@ export default function WalletRevenuePage() {
   const EvolutionIcon = summary?.evolution_pct == null ? Minus : summary.evolution_pct >= 0 ? TrendingUp : TrendingDown;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
@@ -95,9 +114,9 @@ export default function WalletRevenuePage() {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center gap-3 py-20"><Spinner /></div>
+        <div className="flex flex-col items-center gap-3 py-24"><Spinner /></div>
       ) : loadError || !summary ? (
-        <div className="flex flex-col items-center gap-3 py-16">
+        <div className="flex flex-col items-center gap-3 py-20">
           <Wallet size={32} style={{ color: 'var(--text-tertiary)' }} />
           <p className="text-sm font-semibold text-center px-8" style={{ color: 'var(--text-secondary)' }}>
             Impossible de charger tes revenus pour le moment
@@ -105,137 +124,149 @@ export default function WalletRevenuePage() {
         </div>
       ) : (
         <>
-          {/* ── KPI principal : total tout-temps ─────────────────────────────── */}
-          <div
-            className="rounded-2xl p-5 flex flex-col items-center gap-1"
-            style={{
-              background: 'linear-gradient(135deg, var(--primary)18, var(--primary)06)',
-              border: '1px solid var(--primary)30',
-            }}
-          >
-            <p className="text-3xl font-black" style={{ color: 'var(--text-primary)' }}>{fmtEur(summary.total_eur)}</p>
-            <p className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
-              Revenus totaux · {summary.total_gogold.toLocaleString('fr-FR')} GoGold
-            </p>
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-              {summary.transaction_count} opération{summary.transaction_count > 1 ? 's' : ''} au total
-            </p>
+          {/* ── Filtre période global ──────────────────────────────────────────── */}
+          <div className="flex gap-1.5">
+            {PERIODS.map(p => {
+              const active = period === p.key;
+              return (
+                <button key={p.key} onClick={() => setPeriod(p.key)}
+                  className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all"
+                  style={{
+                    background: active ? 'var(--primary)' : 'var(--surface)',
+                    border: `1px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+                    color: active ? '#fff' : 'var(--text-secondary)',
+                  }}>
+                  {p.label}
+                </button>
+              );
+            })}
           </div>
 
-          {/* ── KPI secondaires : mois courant + évolution ───────────────────── */}
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-2xl p-3.5 flex flex-col gap-1" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <p className="text-[11px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>Ce mois-ci</p>
-              <p className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>{fmtEur(summary.current_month_eur)}</p>
+          {/* ── KPI row — pleine largeur ──────────────────────────────────────── */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div
+              className="sm:col-span-1 rounded-2xl p-5 flex flex-col items-center justify-center gap-1 text-center"
+              style={{
+                background: 'linear-gradient(135deg, var(--primary)18, var(--primary)06)',
+                border: '1px solid var(--primary)30',
+              }}
+            >
+              <p className="text-3xl font-black" style={{ color: 'var(--text-primary)' }}>{fmtEur(summary.total_eur)}</p>
+              <p className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                Revenus totaux · {summary.total_gogold.toLocaleString('fr-FR')} GoGold
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                {summary.transaction_count} opération{summary.transaction_count > 1 ? 's' : ''} au total
+              </p>
             </div>
-            <div className="rounded-2xl p-3.5 flex flex-col gap-1" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+
+            <div className="rounded-2xl p-4 flex flex-col justify-center gap-1" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p className="text-[11px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>Ce mois-ci</p>
+              <p className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>{fmtEur(summary.current_month_eur)}</p>
+            </div>
+
+            <div className="rounded-2xl p-4 flex flex-col justify-center gap-1" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <p className="text-[11px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>Vs mois précédent</p>
               <div className="flex items-center gap-1.5">
-                <EvolutionIcon size={14} color={evolutionColor} />
-                <p className="text-lg font-black" style={{ color: evolutionColor }}>
+                <EvolutionIcon size={16} color={evolutionColor} />
+                <p className="text-2xl font-black" style={{ color: evolutionColor }}>
                   {summary.evolution_pct == null ? '—' : `${summary.evolution_pct >= 0 ? '+' : ''}${summary.evolution_pct}%`}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* ── Graphique historique ──────────────────────────────────────────── */}
-          <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[15px] font-black" style={{ color: 'var(--text-primary)' }}>Évolution des revenus</p>
-              <div className="flex gap-1.5">
-                {(['month', 'year'] as Granularity[]).map(g => {
-                  const active = granularity === g;
-                  return (
-                    <button key={g} onClick={() => setGranularity(g)}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all"
-                      style={{
-                        background: active ? 'var(--primary)' : 'var(--bg-secondary)',
-                        color: active ? '#fff' : 'var(--text-secondary)',
-                      }}>
-                      {g === 'month' ? 'Par mois' : 'Par année'}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <RevenueBarChart data={timeseries} color="var(--primary)" width={560} />
-          </div>
+          {/* ── Grille principale 2 colonnes sur desktop ─────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
 
-          {/* ── Répartition par source ────────────────────────────────────────── */}
-          <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[15px] font-black" style={{ color: 'var(--text-primary)' }}>Répartition par source</p>
-              <div className="flex gap-1">
-                {BREAKDOWN_PERIODS.map(p => {
-                  const active = breakdownPeriod === p.key;
-                  return (
-                    <button key={p.key} onClick={() => setBreakdownPeriod(p.key)}
-                      className="px-2 py-1 rounded-lg text-[10.5px] font-bold transition-all"
-                      style={{
-                        background: active ? 'var(--primary)18' : 'transparent',
-                        color: active ? 'var(--primary)' : 'var(--text-tertiary)',
-                      }}>
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <RevenueSourceList sources={sources} accent="var(--primary)" />
-          </div>
-
-          {/* ── Revenus par contenu (reels) ───────────────────────────────────── */}
-          <div className="flex items-center justify-between pt-1">
-            <p className="text-[15px] font-black" style={{ color: 'var(--text-primary)' }}>Revenus par reel</p>
-            {contentTotal > contentItems.length && (
-              <button onClick={() => navigate('/wallet/revenue/content')} className="text-xs font-bold flex items-center gap-0.5" style={{ color: 'var(--primary)' }}>
-                Voir tout ({contentTotal}) <ChevronRight size={13} />
-              </button>
-            )}
-          </div>
-
-          {contentItems.length === 0 ? (
-            <div className="rounded-2xl p-6 flex flex-col items-center gap-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <Video size={26} style={{ color: 'var(--text-tertiary)' }} />
-              <p className="text-[13px] text-center" style={{ color: 'var(--text-tertiary)' }}>
-                Aucun revenu rattaché à un reel pour l'instant
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-2xl px-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              {contentItems.map((item, i) => (
-                <div key={item.content_id} className="flex items-center gap-2.5 py-2.5"
-                  style={{ borderBottom: i < contentItems.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  {item.thumbnail_url ? (
-                    <img src={item.thumbnail_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--bg)' }}>
-                      <Video size={16} style={{ color: 'var(--text-tertiary)' }} />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold truncate" style={{ color: 'var(--text-primary)' }}>
-                      {item.title ?? 'Reel'}
-                    </p>
-                    <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-                      <Eye size={10} /> {item.transaction_count} opération{item.transaction_count > 1 ? 's' : ''}
-                    </p>
+            {/* Colonne gauche (large) : graphique + répartition par source */}
+            <div className="lg:col-span-3 flex flex-col gap-5">
+              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-base font-black" style={{ color: 'var(--text-primary)' }}>Évolution des revenus</p>
+                  <div className="flex gap-1.5">
+                    {(['month', 'year'] as Granularity[]).map(g => {
+                      const active = granularity === g;
+                      return (
+                        <button key={g} onClick={() => setGranularity(g)}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all"
+                          style={{
+                            background: active ? 'var(--primary)' : 'var(--bg-secondary)',
+                            color: active ? '#fff' : 'var(--text-secondary)',
+                          }}>
+                          {g === 'month' ? 'Par mois' : 'Par année'}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <p className="text-[13px] font-black flex-shrink-0" style={{ color: 'var(--text-primary)' }}>{fmtEur(item.eur)}</p>
                 </div>
-              ))}
-            </div>
-          )}
+                <RevenueBarChart data={timeseries} color="var(--primary)" width={720} />
+              </div>
 
-          {/* ── Lien historique détaillé ──────────────────────────────────────── */}
-          <button
-            onClick={() => navigate('/wallet/revenue/transactions')}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--primary)' }}
-          >
-            <List size={15} /> Voir l'historique détaillé des transactions
-          </button>
+              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <p className="text-base font-black mb-4" style={{ color: 'var(--text-primary)' }}>Répartition par source</p>
+                <RevenueSourceList sources={sources} accent="var(--primary)" />
+              </div>
+            </div>
+
+            {/* Colonne droite : revenus par contenu, suit le même filtre période */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <p className="text-base font-black" style={{ color: 'var(--text-primary)' }}>Revenus par reel</p>
+                {contentTotal > contentItems.length && (
+                  <button onClick={() => navigate(`/wallet/revenue/content?period=${period}`)}
+                    className="text-xs font-bold flex items-center gap-0.5" style={{ color: 'var(--primary)' }}>
+                    Voir tout ({contentTotal}) <ChevronRight size={13} />
+                  </button>
+                )}
+              </div>
+
+              {contentLoading ? (
+                <div className="rounded-2xl p-8 flex items-center justify-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <Spinner size="sm" />
+                </div>
+              ) : contentItems.length === 0 ? (
+                <div className="rounded-2xl p-6 flex flex-col items-center gap-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <Video size={26} style={{ color: 'var(--text-tertiary)' }} />
+                  <p className="text-[13px] text-center" style={{ color: 'var(--text-tertiary)' }}>
+                    Aucun revenu rattaché à un reel {period === 'all' ? "pour l'instant" : 'sur cette période'}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-2xl px-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  {contentItems.map((item, i) => (
+                    <div key={item.content_id} className="flex items-center gap-2.5 py-2.5"
+                      style={{ borderBottom: i < contentItems.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      {item.thumbnail_url ? (
+                        <img src={item.thumbnail_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--bg)' }}>
+                          <Video size={16} style={{ color: 'var(--text-tertiary)' }} />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+                          {item.title ?? 'Reel'}
+                        </p>
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                          {item.transaction_count} opération{item.transaction_count > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <p className="text-[13px] font-black flex-shrink-0" style={{ color: 'var(--text-primary)' }}>{fmtEur(item.eur)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => navigate('/wallet/revenue/transactions')}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--primary)' }}
+              >
+                <List size={15} /> Historique détaillé des transactions
+              </button>
+            </div>
+          </div>
         </>
       )}
 
