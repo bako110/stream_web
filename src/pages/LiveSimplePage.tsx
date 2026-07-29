@@ -35,6 +35,7 @@ import {
   LiveTimer,
   LIVE_ANIMATIONS_CSS,
 } from '../components/live/LiveInteractions';
+import type { LiveLikeButtonRef } from '../components/live/LiveInteractions';
 import {
   LiveGiftModal,
   GiftTicker,
@@ -1168,6 +1169,7 @@ export default function LiveSimplePage() {
   const [following, setFollowing] = useState(false);
 
   const [emojiFloats, setEmojiFloats] = useState<EmojiFloat[]>([]);
+  const likeRef = useRef<LiveLikeButtonRef | null>(null);
 
   // Cadeaux
   const [giftNotifs,  setGiftNotifs]  = useState<GiftNotif[]>([]);
@@ -1763,6 +1765,14 @@ export default function LiveSimplePage() {
                   streamerName={live.user?.display_name ?? live.user?.username}
                 />
 
+                {/* Zone tap coeur — comme sur mobile, un tap n'importe où sur la vidéo
+                    déclenche une pluie de coeurs (throttlée côté LiveLikeButton). */}
+                <div
+                  className="absolute inset-0 z-10"
+                  onDoubleClick={() => likeRef.current?.trigger()}
+                  onClick={() => likeRef.current?.trigger()}
+                />
+
                 {/* Badge "Tu es sur scène" */}
                 {!isHost && isOnStage && (
                   <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-full text-white text-xs font-bold"
@@ -1857,7 +1867,7 @@ export default function LiveSimplePage() {
                   onToggleSettings={() => setShowSettings(v => !v)}
                   onStageDetected={() => setIsOnStage(true)}
                 />
-                <LiveLikeButton liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
+                <LiveLikeButton ref={likeRef} liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
                 {!isHost && (
                   <button
                     onClick={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}

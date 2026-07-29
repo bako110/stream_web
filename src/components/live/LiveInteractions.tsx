@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Heart, Smile } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -43,22 +43,25 @@ function FloatingHearts({ hearts, isHost }: { hearts: HeartItem[]; isHost?: bool
 const HOST_HEART_COLOR = '#FBBF24';
 const HOST_HEART_EMOJI = '💛';
 
-export function LiveLikeButton({
-  liveId,
-  initialCount = 0,
-  isHost = false,
-}: {
+export interface LiveLikeButtonRef {
+  /** Déclenche un like — appelable depuis le bouton ou un tap ailleurs sur l'écran (zone vidéo). */
+  trigger: () => void;
+}
+
+const LIKE_BATCH_DELAY_MS = 500;
+
+export const LiveLikeButton = forwardRef<LiveLikeButtonRef, {
   liveId: string;
   initialCount?: number;
   isHost?: boolean;
-}) {
+}>(function LiveLikeButton({ liveId, initialCount = 0, isHost = false }, ref) {
   const [count,   setCount]   = useState(initialCount);
-  const [liked,   setLiked]   = useState(false);
   const [hearts,  setHearts]  = useState<HeartItem[]>([]);
   const [bumping, setBumping] = useState(false);
-  const heartId  = useRef(0);
-  const colorIdx = useRef(0);
-  const inFlight = useRef(false);
+  const heartId       = useRef(0);
+  const colorIdx      = useRef(0);
+  const pendingLikes  = useRef(0);
+  const likeThrottle  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setCount(initialCount); }, [initialCount]);
 
@@ -74,39 +77,39 @@ export function LiveLikeButton({
     setTimeout(() => setHearts(prev => prev.filter(h => h.id !== id)), 1300);
   }
 
-  async function handleLike() {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    const wasLiked = liked;
-    setLiked(!wasLiked);
-    setCount(c => c + (wasLiked ? -1 : 1));
+  // Comme sur mobile : chaque tap est instantané visuellement (coeur + compteur), mais
+  // les appels API sont groupés — un seul POST toutes les 500ms avec le total accumulé,
+  // plutôt qu'une requête par tap (permet de tapoter très vite sans spammer le serveur).
+  const trigger = useCallback(() => {
+    pendingLikes.current += 1;
+    setCount(c => c + 1);
     setBumping(true);
-    setTimeout(() => setBumping(false), 300);
-    if (!wasLiked) spawnHeart();
-    try {
-      await apiClient.post(Endpoints.lives.like(liveId));
-    } catch {
-      // Rollback
-      setLiked(wasLiked);
-      setCount(c => c + (wasLiked ? 1 : -1));
-    } finally {
-      inFlight.current = false;
-    }
-  }
+    setTimeout(() => setBumping(false), 200);
+    spawnHeart();
+    if (likeThrottle.current) return;
+    likeThrottle.current = setTimeout(async () => {
+      const batch = pendingLikes.current;
+      pendingLikes.current = 0;
+      likeThrottle.current = null;
+      try { await apiClient.post(Endpoints.lives.like(liveId), { count: batch }); } catch {}
+    }, LIKE_BATCH_DELAY_MS);
+  }, [liveId, isHost]);
+
+  useImperativeHandle(ref, () => ({ trigger }), [trigger]);
 
   return (
     <div className="relative flex flex-col items-center gap-1">
       <FloatingHearts hearts={hearts} isHost={isHost} />
-      <button onClick={handleLike}
+      <button onClick={trigger}
         className="flex flex-col items-center gap-1 transition-all"
         style={{ transform: bumping ? (isHost ? 'scale(1.55)' : 'scale(1.4)') : 'scale(1)', transition: 'transform 0.15s' }}>
         <div className={isHost ? 'w-12 h-12 rounded-full flex items-center justify-center transition-all' : 'w-10 h-10 rounded-full flex items-center justify-center transition-all'}
           style={{
-            background: isHost ? 'rgba(251,191,36,0.22)' : liked ? 'rgba(123,63,242,0.25)' : 'rgba(239,68,68,0.15)',
-            border: `1.5px solid ${isHost ? '#FBBF24' : liked ? '#7B3FF2' : 'rgba(239,68,68,0.3)'}`,
-            boxShadow: isHost ? '0 0 14px rgba(251,191,36,0.5)' : liked ? '0 0 12px rgba(123,63,242,0.4)' : 'none',
+            background: isHost ? 'rgba(251,191,36,0.22)' : 'rgba(239,68,68,0.15)',
+            border: `1.5px solid ${isHost ? '#FBBF24' : 'rgba(239,68,68,0.3)'}`,
+            boxShadow: isHost ? '0 0 14px rgba(251,191,36,0.5)' : 'none',
           }}>
-          <Heart size={isHost ? 22 : 18} style={{ color: isHost ? '#FBBF24' : liked ? '#7B3FF2' : '#EF4444' }} fill={isHost ? '#FBBF24' : liked ? '#7B3FF2' : 'none'} />
+          <Heart size={isHost ? 22 : 18} style={{ color: isHost ? '#FBBF24' : '#EF4444' }} fill="none" />
         </div>
         <span className="text-white text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
           {count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count}
@@ -114,7 +117,7 @@ export function LiveLikeButton({
       </button>
     </div>
   );
-}
+});
 
 // ── Floating Emoji ────────────────────────────────────────────────────────────
 

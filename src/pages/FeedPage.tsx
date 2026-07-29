@@ -1991,8 +1991,9 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
       {/* Image */}
       {post.image_url && !post.video_url && (
         <div onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
-          className="relative overflow-hidden cursor-pointer group">
-          <img src={post.image_url} alt="" className="w-full object-contain transition-transform duration-500 group-hover:scale-105" style={{ maxHeight: '600px' }} />
+          className="relative overflow-hidden cursor-pointer group flex items-center justify-center"
+          style={{ background: 'var(--bg-secondary)', maxHeight: '600px' }}>
+          <img src={post.image_url} alt="" className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" style={{ maxHeight: '600px' }} />
         </div>
       )}
 
@@ -3079,7 +3080,7 @@ export default function FeedPage() {
 
   return (
     <div className="px-2 sm:px-4 py-6 w-full mx-auto">
-      <div className="flex gap-4 items-start">
+      <div className="flex gap-4 items-start justify-center">
 
         {/* ── Left panel (lg+) ── */}
         <div className="w-56 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4">
@@ -3087,8 +3088,10 @@ export default function FeedPage() {
           <TrendingPanel />
         </div>
 
-        {/* ── Feed column ── */}
-        <div className="flex-1 min-w-0 space-y-5">
+        {/* ── Feed column — largeur de lecture confortable, comme Facebook, pour que
+             les images de post (souvent portrait) ne flottent pas dans un vide immense
+             maintenant que la page occupe toute la largeur d'écran. ── */}
+        <div className="flex-1 min-w-0 max-w-2xl space-y-5">
 
           {/* Greeting — desktop uniquement, superflu sur mobile */}
           <div className="hidden lg:block animate-reveal-up">

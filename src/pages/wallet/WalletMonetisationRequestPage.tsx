@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Send } from 'lucide-react';
 import { apiClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 
 const CONTENT_TYPES = [
@@ -51,10 +52,13 @@ export default function WalletMonetisationRequestPage() {
     setErrors({});
     setSubmitting(true);
     try {
-      await apiClient.post('/api/v1/wallet/monetization/request', {
-        content_types:  selectedTypes,
-        description:    description.trim(),
-        payment_email:  paymentEmail.trim(),
+      // Le backend (MonetizationRequestIn) attend creator_type/display_name/description/
+      // accepts_terms — mêmes champs que le formulaire mobile équivalent.
+      await apiClient.post(Endpoints.monetization.request, {
+        creator_type:  selectedTypes[0],
+        display_name:  description.trim().slice(0, 60),
+        description:   description.trim(),
+        accepts_terms: true,
       });
       setSuccess(true);
     } catch (err: any) {

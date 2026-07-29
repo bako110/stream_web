@@ -277,7 +277,7 @@ export default function UserProfilePage() {
   const id             = decodeId(slug!);
   const navigate       = useNavigate();
   const { user: me }   = useAuthStore();
-  const { liveUserIds } = useWs();
+  const { liveUserIds, liveIdByUserId } = useWs();
   const [tab,            setTab]            = useState<Tab>('publications');
   const [followed,       setFollowed]       = useState<boolean | null>(null);
   const [blocked,        setBlocked]        = useState<boolean | null>(null);
@@ -353,7 +353,17 @@ export default function UserProfilePage() {
       {/* ── Avatar + actions ── */}
       <div className="px-5">
         <div className="flex items-end justify-between -mt-14 mb-4 relative z-10">
-          <div className="rounded-full" style={{ boxShadow: '0 0 0 4px var(--bg)', background: 'var(--bg)' }}>
+          <div
+            className="rounded-full"
+            style={{
+              boxShadow: '0 0 0 4px var(--bg)', background: 'var(--bg)',
+              cursor: liveIdByUserId.has(profile.id) ? 'pointer' : undefined,
+            }}
+            onClick={() => {
+              const liveId = liveIdByUserId.get(profile.id);
+              if (liveId) navigate(`/lives/${encodeId(liveId)}`);
+            }}
+          >
             <Avatar
               src={profile.avatar_url}
               name={name}

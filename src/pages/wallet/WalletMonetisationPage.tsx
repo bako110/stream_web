@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Users, FileText, CalendarDays, ShieldCheck, ChevronRight, AlertCircle } from 'lucide-react';
 import { apiClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 
 type MonetizationStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
 interface MonetizationStatusResponse {
   status: MonetizationStatus;
-  rejection_reason?: string;
+  admin_note?: string | null;
 }
 
 const CONDITIONS = [
@@ -24,7 +25,7 @@ export default function WalletMonetisationPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiClient.get<MonetizationStatusResponse>('/api/v1/wallet/monetization/status')
+    apiClient.get<MonetizationStatusResponse>(Endpoints.monetization.status)
       .then(r => setStatus(r.data))
       .catch(() => setStatus({ status: 'none' }))
       .finally(() => setLoading(false));
@@ -110,14 +111,14 @@ export default function WalletMonetisationPage() {
         <div className="space-y-4">
 
           {/* Rejection reason */}
-          {s === 'rejected' && status?.rejection_reason && (
+          {s === 'rejected' && status?.admin_note && (
             <div className="rounded-xl px-4 py-3.5 flex items-start gap-3"
               style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.25)' }}>
               <AlertCircle size={16} style={{ color: '#7B3FF2', flexShrink: 0, marginTop: 1 }} />
               <div>
                 <p className="text-xs font-black mb-0.5" style={{ color: '#7B3FF2' }}>Demande refusee</p>
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  {status.rejection_reason}
+                  {status.admin_note}
                 </p>
               </div>
             </div>

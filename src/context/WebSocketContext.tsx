@@ -59,6 +59,8 @@ interface WsContextValue {
   lastLiveStarted:      LiveStartedPayload | null;
   lastLiveEnded:        string | null;
   liveUserIds:          Set<string>;
+  /** user_id → live_id — permet de naviguer directement vers le live d'un utilisateur en direct. */
+  liveIdByUserId:       Map<string, string>;
   lastLiveViewersUpdated: LiveViewersPayload | null;
   lastConcertLive:      ConcertLivePayload | null;
   lastConcertEnded:     string | null;
@@ -85,6 +87,7 @@ const Ctx = createContext<WsContextValue>({
   lastLiveStarted: null,
   lastLiveEnded: null,
   liveUserIds: new Set(),
+  liveIdByUserId: new Map(),
   lastLiveViewersUpdated: null,
   lastConcertLive: null,
   lastConcertEnded: null,
@@ -140,6 +143,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // IDs des utilisateurs actuellement en live — alimente l'anneau "Live" sur les avatars
   // partout dans l'app, mis à jour en temps réel sans recharger la page.
   const [liveUserIds,          setLiveUserIds]          = useState<Set<string>>(new Set());
+  const [liveIdByUserId,       setLiveIdByUserId]       = useState<Map<string, string>>(new Map());
   const [lastLiveViewersUpdated, setLastLiveViewersUpdated] = useState<LiveViewersPayload | null>(null);
   const [lastConcertLive,      setLastConcertLive]      = useState<ConcertLivePayload | null>(null);
   const [lastConcertEnded,     setLastConcertEnded]     = useState<string | null>(null);
@@ -168,7 +172,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const started = payload as unknown as LiveStartedPayload;
         setLastLiveStarted(started);
         const uid = started.live?.user_id;
+        const lid = started.live?.id;
         if (uid) setLiveUserIds(prev => { const next = new Set(prev); next.add(uid); return next; });
+        if (uid && lid) setLiveIdByUserId(prev => { const next = new Map(prev); next.set(uid, lid); return next; });
         break;
       }
       case 'live_ended': {
@@ -176,6 +182,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const endedUid = (payload as any).user_id as string | undefined;
         setLastLiveEnded(liveId);
         if (endedUid) setLiveUserIds(prev => { const next = new Set(prev); next.delete(endedUid); return next; });
+        if (endedUid) setLiveIdByUserId(prev => { const next = new Map(prev); next.delete(endedUid); return next; });
         break;
       }
       case 'live_viewers_updated':
@@ -236,7 +243,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Lives déjà actifs au moment de la connexion — sinon liveUserIds resterait vide
     // jusqu'au prochain live_started reçu en direct pendant la session.
     apiClient.get<LiveStream[]>(Endpoints.lives.list)
-      .then(r => { if (isMounted.current) setLiveUserIds(new Set((r.data ?? []).map(l => l.user_id))); })
+      .then(r => {
+        if (!isMounted.current) return;
+        const lives = r.data ?? [];
+        setLiveUserIds(new Set(lives.map(l => l.user_id)));
+        setLiveIdByUserId(new Map(lives.map(l => [l.user_id, l.id])));
+      })
       .catch(() => {});
   }, []);
   const refreshUnreadRef = useRef(refreshUnread);
@@ -337,6 +349,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     lastLiveStarted,
     lastLiveEnded,
     liveUserIds,
+    liveIdByUserId,
     lastLiveViewersUpdated,
     lastConcertLive,
     lastConcertEnded,
@@ -355,7 +368,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     clearUnreadNotifications: () => setUnreadNotifications(0),
   }), [
     isConnected, sendMessage, addListener, removeListener,
-    lastLiveStarted, lastLiveEnded, liveUserIds, lastLiveViewersUpdated,
+    lastLiveStarted, lastLiveEnded, liveUserIds, liveIdByUserId, lastLiveViewersUpdated,
     lastConcertLive, lastConcertEnded,
     lastNewFollower, lastStoryAdded,
     lastReactionOnContent, lastCommentOnContent,
