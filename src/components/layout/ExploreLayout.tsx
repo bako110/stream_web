@@ -35,7 +35,7 @@ export function ExploreLayout() {
           background: scrolled ? 'var(--ex-bg)' : 'transparent',
           borderBottom: scrolled ? '1px solid var(--ex-line)' : '1px solid transparent',
         }}>
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-3">
+        <div className="w-full mx-auto px-4 h-16 flex items-center gap-3">
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
             <span className="ex-display text-base hidden sm:block" style={{ color: 'var(--ex-text)' }}>GoFolyX</span>
@@ -117,7 +117,7 @@ export function ExploreLayout() {
       </main>
 
       <footer className="mt-20 pt-10 pb-8 px-4" style={{ borderTop: '1px solid var(--ex-line)' }}>
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
             <span className="text-sm" style={{ color: 'var(--ex-text-3)' }}>© 2026 Tous droits réservés</span>

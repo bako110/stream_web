@@ -35,7 +35,7 @@ export default function ExploreLivePage() {
   }, [refetch]);
 
   return (
-    <div className="max-w-6xl mx-auto px-5 py-16">
+    <div className="w-full mx-auto px-5 py-16">
       <div className="mb-10 ex-rise">
         <div className="ex-rule mb-4">
           <span className="ex-eyebrow shrink-0 flex items-center gap-2" style={{ color: 'var(--ex-violet)' }}>

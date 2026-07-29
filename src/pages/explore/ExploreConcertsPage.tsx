@@ -49,7 +49,7 @@ export default function ExploreConcertsPage() {
   const upNext  = filtered.filter(c => c.status !== 'live');
 
   return (
-    <div className="max-w-7xl mx-auto px-5 py-16">
+    <div className="w-full mx-auto px-5 py-16">
       <div className="mb-10 ex-rise">
         <div className="ex-rule mb-4"><span className="ex-eyebrow shrink-0" style={{ color: 'var(--ex-violet)' }}>Live</span></div>
         <div className="flex flex-wrap items-end justify-between gap-6">

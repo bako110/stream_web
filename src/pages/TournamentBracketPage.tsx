@@ -308,7 +308,7 @@ export default function TournamentBracketPage() {
         ) : <div style={{ width: 36 }} />}
       </div>
 
-      <div className="max-w-3xl mx-auto p-4 flex flex-col gap-4">
+      <div className="w-full mx-auto p-4 flex flex-col gap-4">
 
         {tournament.image_url ? (
           <img src={tournament.image_url} alt="" className="w-full h-40 sm:h-52 rounded-2xl object-cover" />

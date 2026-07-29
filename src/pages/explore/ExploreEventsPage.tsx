@@ -44,7 +44,7 @@ export default function ExploreEventsPage() {
   const past     = filtered.filter(ev => new Date(ev.starts_at) < now);
 
   return (
-    <div className="max-w-7xl mx-auto px-5 py-16">
+    <div className="w-full mx-auto px-5 py-16">
       <div className="mb-10 ex-rise">
         <div className="ex-rule mb-4"><span className="ex-eyebrow shrink-0" style={{ color: 'var(--ex-violet)' }}>Agenda</span></div>
         <div className="flex flex-wrap items-end justify-between gap-6">

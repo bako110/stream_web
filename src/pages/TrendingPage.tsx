@@ -244,7 +244,7 @@ export default function TrendingPage() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto pb-10">
+    <div className="w-full mx-auto pb-10">
 
       {/* Hero banner */}
       <div

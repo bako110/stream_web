@@ -278,7 +278,7 @@ export default function CreateConcertPage() {
   if (loadingEdit) return <PageLoader />;
 
   return (
-    <div className="max-w-2xl mx-auto" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="w-full mx-auto" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
 
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3"
@@ -602,7 +602,7 @@ export default function CreateConcertPage() {
       </div>
 
       {/* Bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 flex gap-3 px-4 py-4 max-w-2xl mx-auto"
+      <div className="fixed bottom-0 left-0 right-0 flex gap-3 px-4 py-4 w-full mx-auto"
         style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
         {step < STEPS.length - 1 ? (
           <button onClick={goNext}

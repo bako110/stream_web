@@ -334,7 +334,7 @@ export default function UserProfilePage() {
   const name = profile.display_name ?? profile.username ?? 'Utilisateur';
 
   return (
-    <div className="max-w-2xl mx-auto pb-10">
+    <div className="w-full mx-auto pb-10">
 
       {/* ── Banner ── */}
       <div className="relative h-48 overflow-hidden">

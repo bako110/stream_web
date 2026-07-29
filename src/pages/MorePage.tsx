@@ -14,7 +14,7 @@ export default function MorePage() {
         <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Plus</h1>
       </div>
 
-      <div className="px-3 py-3 max-w-lg mx-auto">
+      <div className="px-3 py-3 w-full mx-auto">
         <MoreMenuContent />
       </div>
     </div>

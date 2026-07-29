@@ -627,7 +627,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto pb-10">
+    <div className="w-full mx-auto pb-10">
 
       {/* ── Banner ── */}
       <div className="relative h-44 overflow-hidden group"

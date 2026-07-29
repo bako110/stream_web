@@ -81,7 +81,7 @@ export default function SubscriptionsPage() {
   const colors = PLAN_COLORS[plan] ?? PLAN_COLORS.basic;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="w-full mx-auto px-4 py-6 space-y-5">
 
       <div>
         <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Abonnements</h1>

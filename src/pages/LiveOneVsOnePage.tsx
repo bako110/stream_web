@@ -136,7 +136,7 @@ export default function LiveOneVsOnePage() {
         <h1 className="text-lg font-extrabold" style={{ color: '#F0EFF8' }}>1 vs 1</h1>
       </div>
 
-      <div className="max-w-5xl mx-auto p-4">
+      <div className="w-full mx-auto p-4">
         {battles.length > 0 && (
           <div className="flex items-center gap-3 rounded-2xl p-4 mb-4"
             style={{ background: 'linear-gradient(135deg,#9B65F522,#7B3FF210)', border: '1px solid rgba(155,101,245,0.3)' }}>

@@ -39,7 +39,7 @@ export default function ExploreFilmsPage({ type = 'film' }: Props) {
   const eyebrow  = type === 'film' ? 'Cinéma' : 'Séries';
 
   return (
-    <div className="max-w-7xl mx-auto px-5 py-16">
+    <div className="w-full mx-auto px-5 py-16">
       {/* ── Header ── */}
       <div className="mb-10 ex-rise">
         <div className="ex-rule mb-4"><span className="ex-eyebrow shrink-0" style={{ color: 'var(--ex-violet)' }}>{eyebrow}</span></div>

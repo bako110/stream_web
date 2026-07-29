@@ -212,7 +212,7 @@ export default function WalletBuyPage() {
   // ── Écran succès ──────────────────────────────────────────────
   if (step === 'success') {
     return (
-      <div className="max-w-md mx-auto px-4 py-12 flex flex-col items-center gap-6 text-center">
+      <div className="w-full mx-auto px-4 py-12 flex flex-col items-center gap-6 text-center">
         <div className="w-20 h-20 rounded-full flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg,rgba(34,197,94,0.15),rgba(34,197,94,0.08))' }}>
           <CheckCircle size={44} style={{ color: '#22C55E' }} />
@@ -241,7 +241,7 @@ export default function WalletBuyPage() {
   // ── Écran échec ───────────────────────────────────────────────
   if (step === 'failed') {
     return (
-      <div className="max-w-md mx-auto px-4 py-12 flex flex-col items-center gap-6 text-center">
+      <div className="w-full mx-auto px-4 py-12 flex flex-col items-center gap-6 text-center">
         <div className="w-20 h-20 rounded-full flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.08))' }}>
           <XCircle size={44} style={{ color: '#EF4444' }} />
@@ -266,7 +266,7 @@ export default function WalletBuyPage() {
   // ── Écran attente de paiement ─────────────────────────────────
   if (step === 'waiting') {
     return (
-      <div className="max-w-md mx-auto px-4 py-12 flex flex-col items-center gap-6 text-center">
+      <div className="w-full mx-auto px-4 py-12 flex flex-col items-center gap-6 text-center">
         <div className="w-20 h-20 rounded-full flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(123,63,242,0.08))' }}>
           <Clock size={44} style={{ color: 'var(--primary)' }} />
@@ -316,7 +316,7 @@ export default function WalletBuyPage() {
 
   // ── Écran de sélection ────────────────────────────────────────
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="w-full mx-auto px-4 py-6 space-y-5">
 
       {/* Header */}
       <div className="flex items-center gap-3">

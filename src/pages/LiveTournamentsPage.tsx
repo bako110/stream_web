@@ -109,7 +109,7 @@ export default function LiveTournamentsPage() {
         <button onClick={() => setShowCreate(true)} className="text-[#F59E0B]"><Plus size={22} /></button>
       </div>
 
-      <div className="max-w-5xl mx-auto p-4">
+      <div className="w-full mx-auto p-4">
         {tournaments.length > 0 && (
           <div className="flex items-center gap-3 rounded-2xl p-4 mb-4"
             style={{ background: 'linear-gradient(135deg,#F59E0B22,#F59E0B10)', border: '1px solid rgba(245,158,11,0.3)' }}>

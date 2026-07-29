@@ -108,7 +108,7 @@ export default function WalletPage() {
 
   if (error && !balance) {
     return (
-      <div className="max-w-2xl mx-auto p-6 flex flex-col items-center gap-4 py-20">
+      <div className="w-full mx-auto p-6 flex flex-col items-center gap-4 py-20">
         <WifiOff size={48} style={{ color: 'var(--text-tertiary)' }} />
         <p className="font-bold" style={{ color: 'var(--text-primary)' }}>{error}</p>
         <button onClick={() => { setLoading(true); fetchData().finally(() => setLoading(false)); }}
@@ -118,7 +118,7 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-5 space-y-4">
+    <div className="w-full mx-auto px-4 py-5 space-y-4">
 
       {/* Header */}
       <div className="flex items-center justify-between">

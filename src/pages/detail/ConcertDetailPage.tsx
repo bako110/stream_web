@@ -245,7 +245,7 @@ export default function ConcertDetailPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="w-full mx-auto px-4 py-8">
 
         <DetailBackHeader onBack={goBack} />
 

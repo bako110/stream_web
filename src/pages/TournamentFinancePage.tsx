@@ -78,7 +78,7 @@ export default function TournamentFinancePage() {
         <div style={{ width: 22 }} />
       </div>
 
-      <div className="max-w-2xl mx-auto p-4 flex flex-col gap-5">
+      <div className="w-full mx-auto p-4 flex flex-col gap-5">
         {rewardMsg && (
           <div className="rounded-xl px-3.5 py-2.5 text-sm font-semibold flex items-center justify-between" style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981' }}>
             {rewardMsg}

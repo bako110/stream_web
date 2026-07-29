@@ -3078,7 +3078,7 @@ export default function FeedPage() {
   }, [loadMoreFeed]);
 
   return (
-    <div className="px-2 sm:px-4 py-6 max-w-[1400px] mx-auto">
+    <div className="px-2 sm:px-4 py-6 w-full mx-auto">
       <div className="flex gap-4 items-start">
 
         {/* ── Left panel (lg+) ── */}

@@ -71,7 +71,7 @@ export default function WalletRevenueContentPage() {
   }, [loadMore, items.length]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <div className="w-full mx-auto px-4 sm:px-6 py-6 space-y-5">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="p-2.5 rounded-xl transition-all"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}

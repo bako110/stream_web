@@ -26,7 +26,7 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
 
   if (!content) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+      <div className="w-full mx-auto px-4 py-16 text-center">
         <p className="text-[var(--text-tertiary)]">Contenu introuvable</p>
         <Link to={`/explore/${type === 'film' ? 'films' : 'series'}`} className="btn-primary mt-4 inline-block">
           Retour
@@ -63,7 +63,7 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 -mt-24 relative z-10 pb-16">
+      <div className="w-full mx-auto px-4 -mt-24 relative z-10 pb-16">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Thumbnail as poster */}
           {content.thumbnail_url && (

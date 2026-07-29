@@ -22,7 +22,7 @@ export default function ExploreConcertDetailPage() {
 
   if (!concert) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+      <div className="w-full mx-auto px-4 py-16 text-center">
         <p className="text-[var(--text-tertiary)]">Concert introuvable</p>
         <Link to="/explore/concerts" className="btn-primary mt-4 inline-block">Retour</Link>
       </div>
@@ -68,7 +68,7 @@ export default function ExploreConcertDetailPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 -mt-20 relative z-10 pb-16">
+      <div className="w-full mx-auto px-4 -mt-20 relative z-10 pb-16">
         <div className="card p-6 md:p-8">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-12 h-12 rounded-xl bg-[var(--primary)]/20 flex items-center justify-center shrink-0">

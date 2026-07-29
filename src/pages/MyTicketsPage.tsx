@@ -597,7 +597,7 @@ export default function MyTicketsPage() {
   // ── Error ──
   if (error && eventTickets.length === 0 && concertTickets.length === 0) {
     return (
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 80 }}>
+      <div style={{ width: '100%', margin: '0 auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 80 }}>
         <WifiOff size={48} style={{ color: 'var(--text-tertiary)', opacity: 0.5 }} />
         <p style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{error}</p>
         <button
@@ -617,7 +617,7 @@ export default function MyTicketsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: '1.5rem 1rem' }}>
+    <div style={{ width: '100%', margin: '0 auto', padding: '1.5rem 1rem' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>

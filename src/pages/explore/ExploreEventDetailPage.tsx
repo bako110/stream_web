@@ -23,7 +23,7 @@ export default function ExploreEventDetailPage() {
 
   if (!event) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+      <div className="w-full mx-auto px-4 py-16 text-center">
         <p className="text-[var(--text-tertiary)]">Événement introuvable</p>
         <Link to="/explore/events" className="btn-primary mt-4 inline-block">Retour</Link>
       </div>
@@ -66,7 +66,7 @@ export default function ExploreEventDetailPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 -mt-16 relative z-10 pb-16">
+      <div className="w-full mx-auto px-4 -mt-16 relative z-10 pb-16">
         <div className="card p-6 md:p-8">
           <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">{event.title}</h1>
 

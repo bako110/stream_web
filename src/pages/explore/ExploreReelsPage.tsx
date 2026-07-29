@@ -77,7 +77,7 @@ export default function ExploreReelsPage() {
   }, [loadMore]);
 
   return (
-    <div className="max-w-6xl mx-auto px-5 py-16">
+    <div className="w-full mx-auto px-5 py-16">
       <div className="mb-10 ex-rise">
         <div className="ex-rule mb-4"><span className="ex-eyebrow shrink-0" style={{ color: 'var(--ex-violet)' }}>Format court</span></div>
         <h1 className="ex-display text-5xl md:text-6xl mb-2" style={{ color: 'var(--ex-text)' }}>Reels</h1>

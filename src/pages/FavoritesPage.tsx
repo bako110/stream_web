@@ -238,7 +238,7 @@ export default function FavoritesPage() {
   const isLoading   = loading[tab];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <div className="w-full mx-auto px-4 sm:px-6 py-6 space-y-5">
 
       {/* Header */}
       <div className="flex items-center gap-2">

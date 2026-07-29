@@ -98,7 +98,7 @@ export default function AttendeesPage() {
   const revenue     = attendees.reduce((s, a) => s + (Number(a.price_paid) || 0), 0);
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full mx-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 px-4 py-4 flex items-center gap-3"
         style={{ background: 'linear-gradient(135deg,var(--primary),#5B2EC4)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>

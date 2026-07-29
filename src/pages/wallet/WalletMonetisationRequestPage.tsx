@@ -67,7 +67,7 @@ export default function WalletMonetisationRequestPage() {
   /* ── Success state ─────────────────────────────────────────────────── */
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="w-full mx-auto px-4 py-6">
         <div className="flex flex-col items-center gap-5 py-20 text-center">
           <div className="w-20 h-20 rounded-full flex items-center justify-center"
             style={{ background: 'rgba(34,197,94,0.15)', border: '2px solid rgba(34,197,94,0.4)' }}>
@@ -92,7 +92,7 @@ export default function WalletMonetisationRequestPage() {
 
   /* ── Form ──────────────────────────────────────────────────────────── */
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="w-full mx-auto px-4 py-6 space-y-5">
 
       {/* Header */}
       <div className="flex items-center gap-3">

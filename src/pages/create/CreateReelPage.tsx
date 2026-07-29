@@ -78,7 +78,7 @@ export default function CreateReelPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="w-full mx-auto" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
 
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3"

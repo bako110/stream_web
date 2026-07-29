@@ -58,7 +58,7 @@ export default function TournamentListPage() {
         </button>
       </div>
 
-      <div className="max-w-3xl mx-auto p-4">
+      <div className="w-full mx-auto p-4">
         <button onClick={() => navigate('/tournaments/active')}
           className="w-full flex items-center gap-2.5 rounded-2xl px-4 py-3 mb-4 border"
           style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)' }}>

@@ -400,7 +400,7 @@ export default function SettingsVerificationPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-5">
+    <div className="w-full mx-auto p-4 sm:p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/settings')}

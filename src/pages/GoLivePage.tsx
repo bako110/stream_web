@@ -234,7 +234,7 @@ export default function GoLivePage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto p-4 sm:p-6 space-y-4">
+    <div className="w-full mx-auto p-4 sm:p-6 space-y-4">
 
       {/* ── Carte Live spontané ─────────────────────────────────────────── */}
       <div className="rounded-3xl overflow-hidden border"

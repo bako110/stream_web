@@ -159,7 +159,7 @@ export default function LiveSimpleListPage() {
   const active = lives;
 
   return (
-    <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-5 sm:space-y-8">
+    <div className="w-full mx-auto p-3 sm:p-6 space-y-5 sm:space-y-8">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
