@@ -103,7 +103,11 @@ export default function LoginPage() {
       if (token?.access_token) {
         // Réutilise loginWithQR — même logique : setAuthToken + saveTokens + fetchMe
         await useAuthStore.getState().loginWithQR(token.access_token, token.refresh_token);
-        navigate(redirectTo, { replace: true });
+        if (token.profile_incomplete) {
+          navigate(`/auth/complete-profile?redirect=${encodeURIComponent(redirectTo)}`, { replace: true });
+        } else {
+          navigate(redirectTo, { replace: true });
+        }
       }
     } catch (e: any) {
       const msg = String(e?.message ?? '');

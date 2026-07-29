@@ -15,6 +15,7 @@ import { lazyWithRetry } from './utils/lazyWithRetry';
 // ── Lazy pages ────────────────────────────────────────────────────────────────
 const LoginPage          = lazyWithRetry(() => import('./pages/auth/LoginPage'));
 const RegisterPage       = lazyWithRetry(() => import('./pages/auth/RegisterPage'));
+const CompleteProfilePage = lazyWithRetry(() => import('./pages/auth/CompleteProfilePage'));
 const ForgotPasswordPage = lazyWithRetry(() => import('./pages/auth/ForgotPasswordPage'));
 const LandingPage        = lazyWithRetry(() => import('./pages/LandingPage'));
 
@@ -203,6 +204,7 @@ function AppShell() {
         {/* Routes protégées */}
         <Route element={<ProtectedRoute />}>
 
+          <Route path="/auth/complete-profile" element={<CompleteProfilePage />} />
 
           <Route element={<AppLayout />}>
             <Route path="/feed"              element={<FeedPage />} />

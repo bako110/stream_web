@@ -105,12 +105,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     set({ isLoading: true, error: null });
     // Même logique que le mobile : ne jamais envoyer email/phone/username vides
     const payload: typeof data = {
-      first_name: data.first_name,
-      last_name:  data.last_name,
-      password:   data.password,
+      first_name:    data.first_name,
+      last_name:     data.last_name,
+      password:      data.password,
+      date_of_birth: data.date_of_birth,
+      gender:        data.gender,
       ...(data.email    ? { email:    data.email }    : {}),
       ...(data.phone    ? { phone:    data.phone }    : {}),
       ...(data.username ? { username: data.username } : {}),
+      ...(data.referral_code ? { referral_code: data.referral_code } : {}),
     };
     try {
       // register retourne UserResponse (pas de tokens) — même comportement que mobile

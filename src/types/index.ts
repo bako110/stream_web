@@ -61,6 +61,7 @@ export interface RegisterRequest {
   first_name: string; last_name: string; email?: string;
   phone?: string; password: string; username?: string;
   referral_code?: string;
+  date_of_birth: string; gender: Gender;
 }
 export interface AuthToken { access_token: string; refresh_token: string; token_type: string; }
 export interface UserUpdate {

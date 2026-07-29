@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown, ArrowLeft, ArrowRight, Gift, Check } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown, ArrowLeft, ArrowRight, Gift, Check, Calendar } from 'lucide-react';
+import type { Gender } from '../../types';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { RoundLogo } from '../../components/ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
@@ -39,10 +40,18 @@ const COUNTRIES = [
 const STEPS = 3;
 const STEP_LABELS = ['Identité', 'Compte', 'Sécurité'];
 
+const GENDERS: { value: Gender; label: string }[] = [
+  { value: 'female',             label: 'Femme' },
+  { value: 'male',               label: 'Homme' },
+  { value: 'other',              label: 'Autre' },
+  { value: 'prefer_not_to_say',  label: 'Ne pas préciser' },
+];
+
 interface FormState {
   first_name: string; last_name: string;
   email: string; phone: string; username: string;
   password: string; confirm: string; referral_code: string;
+  date_of_birth: string; gender: Gender | '';
 }
 
 export default function RegisterPage() {
@@ -56,6 +65,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState<FormState>({
     first_name: '', last_name: '', email: '', phone: '', username: '',
     password: '', confirm: '', referral_code: '',
+    date_of_birth: '', gender: '',
   });
   const [authMethod, setAuthMethod]   = useState<AuthMethod>('email');
   const [country,     setCountry]     = useState(COUNTRIES[0]);
@@ -88,7 +98,11 @@ export default function RegisterPage() {
       const token = res.data;
       if (token?.access_token) {
         await useAuthStore.getState().loginWithQR(token.access_token, token.refresh_token);
-        navigate(redirectTo, { replace: true });
+        if (token.profile_incomplete) {
+          navigate(`/auth/complete-profile?redirect=${encodeURIComponent(redirectTo)}`, { replace: true });
+        } else {
+          navigate(redirectTo, { replace: true });
+        }
       }
     } catch (e: any) {
       const msg = String(e?.message ?? '');
@@ -116,6 +130,15 @@ export default function RegisterPage() {
   function validateStep1(): string | null {
     if (form.first_name.trim().length < 2) return 'Le prénom doit faire au moins 2 caractères';
     if (form.last_name.trim().length < 2)  return 'Le nom doit faire au moins 2 caractères';
+    if (!form.date_of_birth) return 'La date de naissance est requise';
+    const dob = new Date(form.date_of_birth);
+    if (Number.isNaN(dob.getTime()) || dob > new Date()) return 'Date de naissance invalide';
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+    if (age < 13) return 'Tu dois avoir au moins 13 ans pour t\'inscrire';
+    if (!form.gender) return 'Le sexe est requis';
     return null;
   }
 
@@ -163,6 +186,8 @@ export default function RegisterPage() {
         password:   form.password,
         username:   form.username,
         referral_code: form.referral_code.trim() || undefined,
+        date_of_birth: form.date_of_birth,
+        gender: form.gender as Gender,
         ...(authMethod === 'email' ? { email: form.email } : { phone }),
       });
       navigate(redirectTo, { replace: true });
@@ -326,8 +351,39 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Nom</label>
                   <input className="input" type="text" placeholder="Nom"
                     value={form.last_name} onChange={field('last_name')}
-                    onFocus={() => setFocused('ln')} onBlur={() => setFocused(null)} style={inp('ln')}
-                    onKeyDown={e => e.key === 'Enter' && goNext()} />
+                    onFocus={() => setFocused('ln')} onBlur={() => setFocused(null)} style={inp('ln')} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Date de naissance</label>
+                <div className="relative">
+                  <Calendar size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
+                  <input className="input pl-10" type="date"
+                    value={form.date_of_birth}
+                    max={new Date().toISOString().slice(0, 10)}
+                    onChange={e => { setForm(f => ({ ...f, date_of_birth: e.target.value })); setFormError(''); }}
+                    onFocus={() => setFocused('dob')} onBlur={() => setFocused(null)} style={inp('dob')} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Sexe</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {GENDERS.map(g => (
+                    <button
+                      key={g.value}
+                      type="button"
+                      onClick={() => { setForm(f => ({ ...f, gender: g.value })); setFormError(''); }}
+                      className="py-2.5 rounded-xl text-sm font-semibold transition-all text-center"
+                      style={{
+                        background: form.gender === g.value ? 'rgba(123,63,242,0.12)' : 'var(--surface)',
+                        border: `1.5px solid ${form.gender === g.value ? 'var(--primary)' : 'var(--border)'}`,
+                        color: form.gender === g.value ? 'var(--primary)' : 'var(--text-primary)',
+                      }}>
+                      {g.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
