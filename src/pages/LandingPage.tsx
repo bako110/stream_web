@@ -83,7 +83,7 @@ function Navbar() {
           borderBottom: scrolled ? '1px solid var(--lp-line)' : '1px solid transparent',
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="w-full mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 shrink-0">
             <RoundLogo size={38} />
             <span className="lp-display text-lg" style={{ color: 'var(--lp-ink-text)' }}>GoFolyX</span>
@@ -202,7 +202,7 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
 
   return (
     <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-      <div className="max-w-7xl mx-auto lp-hero-grid">
+      <div className="w-full mx-auto lp-hero-grid">
         {/* ── Colonne texte ── */}
         <div>
           <div className="lp-rise flex items-center gap-2 mb-7">
@@ -215,10 +215,9 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
             </span>
           </div>
 
-          <h1 className="lp-display text-[3.6rem] sm:text-[4.6rem] lg:text-[5.2rem] leading-[0.94] mb-7 lp-rise"
+          <h1 className="text-[2.6rem] sm:text-[3.4rem] lg:text-[3.8rem] font-semibold leading-[1.08] tracking-tight mb-7 lp-rise"
             style={{ color: 'var(--lp-ink-text)', animationDelay: '80ms' }}>
-            Tout se passe,<br />
-            en <span className="lp-amber-text lp-amber-underline">direct</span>.
+            Tout se passe, en <span style={{ color: 'var(--lp-violet)' }}>direct</span>.
           </h1>
 
           <p className="text-lg leading-relaxed max-w-md mb-9 lp-rise" style={{ color: 'var(--lp-ink-text-2)', animationDelay: '160ms' }}>
@@ -313,7 +312,7 @@ function SectionHeader({ index, title, sub, seeAllHref }: {
   index: string; title: string; sub?: string; seeAllHref?: string;
 }) {
   return (
-    <div className="max-w-7xl mx-auto px-6 mb-7 lp-rise">
+    <div className="w-full mx-auto px-6 mb-7 lp-rise">
       <div className="lp-rule mb-3">
         <span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>{index}</span>
       </div>
@@ -502,7 +501,7 @@ function FeaturesSection() {
 
   return (
     <section id="features" className="py-24 px-6">
-      <div className="max-w-5xl mx-auto">
+      <div className="w-full mx-auto">
         <div className="mb-16 lp-rise">
           <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Pourquoi GoFolyX</span></div>
           <h2 className="lp-display text-4xl md:text-5xl" style={{ color: 'var(--lp-ink-text)' }}>Une scène, un écran,<br />une seule adresse.</h2>
@@ -542,7 +541,7 @@ function SocialProof() {
 
   return (
     <section className="py-20 px-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full mx-auto">
         <div className="mb-12 lp-rise">
           <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Communauté</span></div>
           <h2 className="lp-display text-3xl md:text-4xl" style={{ color: 'var(--lp-ink-text)' }}>Déjà sur GoFolyX</h2>
@@ -583,7 +582,7 @@ function CtaSection() {
 
   return (
     <section className="py-24 px-6">
-      <div className="max-w-5xl mx-auto lp-rise">
+      <div className="w-full mx-auto lp-rise">
         <div className="relative rounded-3xl overflow-hidden px-8 py-16 md:px-16 md:py-20 text-center"
           style={{ background: 'var(--lp-ink)' }}>
           <div className="absolute inset-0 pointer-events-none" style={{
@@ -645,7 +644,7 @@ function Footer() {
 
   return (
     <footer className="pt-16 pb-8 px-6" style={{ borderTop: '1px solid var(--lp-line)' }}>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
           <div>
             <div className="flex items-center gap-2.5 mb-4">
