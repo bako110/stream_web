@@ -5,7 +5,7 @@ import { RoundLogo } from '../../components/ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import type { Gender } from '../../types';
+import type { Gender, User } from '../../types';
 
 const GENDERS: { value: Gender; label: string }[] = [
   { value: 'female',            label: 'Femme' },
@@ -50,7 +50,7 @@ export default function CompleteProfilePage() {
     setError('');
     setLoading(true);
     try {
-      const res = await apiClient.patch(Endpoints.users.updateMe, {
+      const res = await apiClient.patch<User>(Endpoints.users.updateMe, {
         date_of_birth: dateOfBirth,
         gender,
       });
