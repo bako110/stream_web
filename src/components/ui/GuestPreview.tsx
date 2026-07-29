@@ -470,7 +470,7 @@ export function GuestPreview({
 
         .gp-volume-btn {
           position: absolute;
-          top: 16px; right: 16px;
+          top: 72px; right: 16px;
           z-index: 6;
           width: 38px; height: 38px;
           border-radius: 50%;
@@ -483,7 +483,7 @@ export function GuestPreview({
         }
         .gp-volume-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.06); }
         @media (min-width: 640px) {
-          .gp-volume-btn { top: 20px; right: 20px; }
+          .gp-volume-btn { top: 84px; right: 20px; }
         }
 
         .gp-preview-progress {
