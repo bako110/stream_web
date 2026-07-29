@@ -89,7 +89,6 @@ const CreatePostPage     = lazyWithRetry(() => import('./pages/create/CreatePost
 const CreateReelPage     = lazyWithRetry(() => import('./pages/create/CreateReelPage'));
 const CreateConcertPage  = lazyWithRetry(() => import('./pages/create/CreateConcertPage'));
 const CreateEventPage    = lazyWithRetry(() => import('./pages/create/CreateEventPage'));
-const SubscriptionsPage              = lazyWithRetry(() => import('./pages/SubscriptionsPage'));
 const PrivacyPage                    = lazyWithRetry(() => import('./pages/PrivacyPage'));
 const CGUPage                        = lazyWithRetry(() => import('./pages/CGUPage'));
 const AboutPage                      = lazyWithRetry(() => import('./pages/AboutPage'));
@@ -278,7 +277,10 @@ function AppShell() {
             <Route path="/create/reel"                      element={<CreateReelPage />} />
             <Route path="/create/concert"                   element={<CreateConcertPage />} />
             <Route path="/create/event"                     element={<CreateEventPage />} />
-            <Route path="/subscriptions"     element={<SubscriptionsPage />} />
+            {/* Route legacy — SubscriptionsPage.tsx appelait POST /subscriptions (paiement
+                carte jamais vérifié côté serveur, désactivé). Sert désormais la page
+                d'abonnement sécurisée (débit GoGold vérifié côté serveur). */}
+            <Route path="/subscriptions"     element={<WalletSubscriptionPlansPage />} />
             <Route path="/privacy"                        element={<PrivacyPage />} />
             <Route path="/my-events"                      element={<MyEventsPage />} />
             <Route path="/my-concerts"                    element={<MyConcertsPage />} />
