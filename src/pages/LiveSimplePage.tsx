@@ -32,10 +32,11 @@ import {
   LiveLikeButton,
   LiveReactionPicker,
   FloatingEmojiOverlay,
+  LiveHeartsOverlay,
   LiveTimer,
   LIVE_ANIMATIONS_CSS,
 } from '../components/live/LiveInteractions';
-import type { LiveLikeButtonRef } from '../components/live/LiveInteractions';
+import type { LiveLikeButtonRef, LiveHeartsOverlayRef } from '../components/live/LiveInteractions';
 import {
   LiveGiftModal,
   GiftTicker,
@@ -1170,6 +1171,7 @@ export default function LiveSimplePage() {
 
   const [emojiFloats, setEmojiFloats] = useState<EmojiFloat[]>([]);
   const likeRef = useRef<LiveLikeButtonRef | null>(null);
+  const heartsOverlayRef = useRef<LiveHeartsOverlayRef | null>(null);
 
   // Cadeaux
   const [giftNotifs,  setGiftNotifs]  = useState<GiftNotif[]>([]);
@@ -1383,15 +1385,15 @@ export default function LiveSimplePage() {
         break;
       }
       case 'like_added': {
-        const floatId = Date.now();
-        const items: EmojiFloat[] = Array.from({ length: 3 }, (_, i) => ({
-          id: floatId + i, emoji: '❤️',
-          x: (Math.random() - 0.5) * 30, size: Math.random() * 8 + 22,
-        }));
-        setEmojiFloats(prev => [...prev.slice(-30), ...items]);
-        items.forEach(f => {
-          setTimeout(() => setEmojiFloats(prev => prev.filter(x => x.id !== f.id)), 1800);
-        });
+        // total = source de vérité serveur — toujours s'aligner dessus plutôt que
+        // d'accumuler des deltas locaux (sinon chaque client dérive selon les
+        // messages WS qu'il reçoit ou rate). Même logique que côté mobile.
+        if (typeof d.total === 'number') likeRef.current?.setRemoteTotal(d.total);
+        const isOwnEcho = !!d.from_user_id && !!user?.id && d.from_user_id === user.id;
+        if (!isOwnEcho) {
+          likeRef.current?.triggerRemote();
+          heartsOverlayRef.current?.spawn(d.count ?? 1);
+        }
         break;
       }
     }
@@ -1835,6 +1837,7 @@ export default function LiveSimplePage() {
                 )}
 
                 <FloatingEmojiOverlay floats={emojiFloats} />
+                <LiveHeartsOverlay ref={heartsOverlayRef} />
 
                 {/* Gift toast host */}
                 {isHost && activeToast && (

@@ -46,6 +46,10 @@ const HOST_HEART_EMOJI = '💛';
 export interface LiveLikeButtonRef {
   /** Déclenche un like — appelable depuis le bouton ou un tap ailleurs sur l'écran (zone vidéo). */
   trigger: () => void;
+  /** Anime un coeur venant d'un autre utilisateur, sans appeler l'API (pas de trigger). */
+  triggerRemote: () => void;
+  /** Aligne le compteur sur le total envoyé par le serveur (source de vérité, évite toute dérive). */
+  setRemoteTotal: (total: number) => void;
 }
 
 const LIKE_BATCH_DELAY_MS = 500;
@@ -95,7 +99,19 @@ export const LiveLikeButton = forwardRef<LiveLikeButtonRef, {
     }, LIKE_BATCH_DELAY_MS);
   }, [liveId, isHost]);
 
-  useImperativeHandle(ref, () => ({ trigger }), [trigger]);
+  // Like reçu d'un autre viewer via WebSocket — anime le bouton sans re-déclencher
+  // d'appel API (sinon on rejouerait un like à chaque écho reçu).
+  const triggerRemote = useCallback(() => {
+    setBumping(true);
+    setTimeout(() => setBumping(false), 200);
+    spawnHeart();
+  }, [isHost]);
+
+  const setRemoteTotal = useCallback((total: number) => {
+    setCount(total);
+  }, []);
+
+  useImperativeHandle(ref, () => ({ trigger, triggerRemote, setRemoteTotal }), [trigger, triggerRemote, setRemoteTotal]);
 
   return (
     <div className="relative flex flex-col items-center gap-1">
@@ -242,6 +258,64 @@ export function FloatingEmojiOverlay({ floats }: { floats: EmojiFloat[] }) {
   );
 }
 
+// ── LiveHeartsOverlay — coeurs des likes reçus, même trajectoire que le mobile ──
+
+export interface LiveHeartsOverlayRef {
+  spawn: (count?: number) => void;
+}
+
+interface RisingHeart { id: number; size: number; duration: number; driftX: number; }
+
+/**
+ * Coeurs qui montent depuis le bas-droite de l'écran vers le haut, façon TikTok
+ * Live, avec une dérive latérale vers la gauche — reproduit fidèlement l'animation
+ * mobile (LiveHeartsOverlay.tsx côté RN) plutôt que le zigzag symétrique utilisé
+ * pour les réactions emoji (FloatingEmojiOverlay), pour que le rendu soit identique
+ * entre web et mobile quand un like est reçu d'un autre viewer.
+ */
+export const LiveHeartsOverlay = forwardRef<LiveHeartsOverlayRef>((_props, ref) => {
+  const [hearts, setHearts] = useState<RisingHeart[]>([]);
+  const nextId = useRef(0);
+
+  const spawnOne = useCallback((delayMs: number) => {
+    setTimeout(() => {
+      const id = nextId.current++;
+      const heart: RisingHeart = {
+        id,
+        size: 22 + Math.random() * 12,
+        duration: 1700 + Math.random() * 400,
+        driftX: -(30 + Math.random() * 90),
+      };
+      setHearts(prev => [...prev.slice(-8), heart]);
+      setTimeout(() => setHearts(prev => prev.filter(h => h.id !== id)), heart.duration + 100);
+    }, delayMs);
+  }, []);
+
+  const spawn = useCallback((count: number = 1) => {
+    const n = Math.min(count, 3);
+    for (let i = 0; i < n; i++) spawnOne(i * 90);
+  }, [spawnOne]);
+
+  useImperativeHandle(ref, () => ({ spawn }), [spawn]);
+
+  return (
+    <div className="pointer-events-none absolute" style={{ bottom: 90, right: 24, width: 10, height: 10, overflow: 'visible' }}>
+      {hearts.map(h => (
+        <span key={h.id}
+          style={{
+            position: 'absolute', left: -18, top: -18, width: 36, height: 36,
+            fontSize: h.size, textAlign: 'center', lineHeight: '36px',
+            animation: `liveHeartRise ${h.duration}ms cubic-bezier(0.22,1,0.36,1) forwards`,
+            // @ts-expect-error custom property lue par le keyframe via var()
+            '--drift-x': `${h.driftX}px`,
+          }}>
+          💗
+        </span>
+      ))}
+    </div>
+  );
+});
+
 // ── CSS globale (à injecter une fois) ────────────────────────────────────────
 
 export const LIVE_ANIMATIONS_CSS = `
@@ -252,6 +326,13 @@ export const LIVE_ANIMATIONS_CSS = `
 @keyframes floatHeart {
   0%   { transform: translateY(0) scale(0.8); opacity: 1; }
   100% { transform: translateY(-200px) scale(1.2); opacity: 0; }
+}
+/* Coeurs des likes reçus (LiveHeartsOverlay) — montée depuis le bas-droite avec
+   dérive continue vers la gauche, sans zigzag, comme sur mobile. */
+@keyframes liveHeartRise {
+  0%   { transform: translate(0, 0) scale(0);   opacity: 1; }
+  15%  { transform: translate(calc(var(--drift-x) * 0.2), -18%) scale(1); }
+  100% { transform: translate(var(--drift-x), -70%) scale(1); opacity: 0; }
 }
 /* Trajectoire avec léger zigzag latéral façon TikTok — au lieu d'une ligne
    droite, le cœur/emoji "serpente" légèrement en montant pour un rendu
