@@ -1969,6 +1969,7 @@ export default function ReelsPage() {
       <GuestPreview
         type="reel"
         thumbnail={guestReel?.thumbnail_url ?? null}
+        videoUrl={guestReel?.hls_url ?? null}
         body={guestReel?.caption ?? null}
         author={guestReel?.author ?? null}
         date={guestReel?.created_at ?? null}

@@ -2,14 +2,22 @@ import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import Hls from 'hls.js';
 import { RoundLogo } from './RoundLogo';
 import { renderTextWithLinks } from './RichText';
+import { toProxiedUrl } from '../../utils/constants';
+
+// Portion de la vidéo lue avant coupure — au-delà, l'overlay de connexion
+// s'affiche automatiquement pour inciter à créer un compte.
+const PREVIEW_WATCH_RATIO = 0.3;
 
 export type GuestPreviewType = 'post' | 'reel' | 'event' | 'concert' | 'film' | 'serie'| 'communauty';
 
 interface GuestPreviewProps {
   type: GuestPreviewType;
   thumbnail?: string | null;
+  /** URL HLS — si fournie pour un reel, la vidéo est lue jusqu'à 30% puis coupée avec l'invite de connexion. */
+  videoUrl?: string | null;
   /** Plusieurs images (post multi-photos, galerie d'event) — glisser pour naviguer. */
   thumbnails?: (string | null | undefined)[] | null;
   title?: string | null;
@@ -111,13 +119,64 @@ function formatCount(n: number): string {
 }
 
 export function GuestPreview({
-  type, thumbnail, thumbnails, title, body, author, date,
+  type, thumbnail, videoUrl, thumbnails, title, body, author, date,
   location, attendees, ticketPrice, likeCount, commentCount, viewCount, isLive,
 }: GuestPreviewProps) {
   const cfg = TYPE_CONFIG[type];
   const redirectParam = encodeURIComponent(window.location.pathname + window.location.search);
   const [showPlayPrompt, setShowPlayPrompt] = useState(false);
   const [showBodyOverlay, setShowBodyOverlay] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [previewEnded, setPreviewEnded] = useState(false);
+
+  // Lecture HLS jusqu'à PREVIEW_WATCH_RATIO de la durée, en boucle sur cette portion,
+  // puis coupure définitive avec ouverture de l'invite de connexion.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !videoUrl || type !== 'reel') return;
+
+    const src = toProxiedUrl(videoUrl);
+    let cutoff = 0;
+
+    const onTimeUpdate = () => {
+      if (cutoff > 0 && v.currentTime >= cutoff) {
+        v.pause();
+        setPreviewEnded(true);
+        setShowPlayPrompt(true);
+      }
+    };
+    const onLoadedMetadata = () => {
+      cutoff = v.duration * PREVIEW_WATCH_RATIO;
+    };
+    const playMuted = () => {
+      setVideoReady(true);
+      v.muted = true;
+      v.play().catch(() => {});
+    };
+
+    v.addEventListener('loadedmetadata', onLoadedMetadata);
+    v.addEventListener('timeupdate', onTimeUpdate);
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ autoStartLoad: true, maxBufferLength: 15 });
+      hlsRef.current = hls;
+      hls.loadSource(src);
+      hls.attachMedia(v);
+      hls.once(Hls.Events.MANIFEST_PARSED, playMuted);
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src;
+      v.addEventListener('loadedmetadata', playMuted, { once: true });
+    }
+
+    return () => {
+      v.removeEventListener('loadedmetadata', onLoadedMetadata);
+      v.removeEventListener('timeupdate', onTimeUpdate);
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+    };
+  }, [videoUrl, type]);
   const authorName = author?.display_name ?? author?.username ?? null;
   const initials   = authorName ? authorName[0].toUpperCase() : '?';
 
@@ -643,6 +702,24 @@ export function GuestPreview({
           ) : (
             <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1a0533 0%,#3d1478 45%,#7B3FF2 70%,#0A0010 100%)' }} />
           )}
+
+          {/* Vidéo — lue en muet dès que prête, superposée au thumbnail qui reste
+              en fallback pendant le chargement HLS. */}
+          {type === 'reel' && videoUrl && (
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              style={{
+                position: 'absolute', inset: 0,
+                width: '100%', height: '100%',
+                objectFit: 'contain',
+                opacity: videoReady ? 1 : 0,
+                transition: 'opacity .25s ease',
+              }}
+            />
+          )}
+
           <div className="gp-vignette" />
           <div className="gp-gradient" />
 
@@ -656,8 +733,8 @@ export function GuestPreview({
             </div>
           )}
 
-          {/* Bouton play centré — signale visuellement qu'il s'agit d'une vidéo */}
-          {isMedia(type) && (
+          {/* Bouton play centré — masqué une fois la lecture auto démarrée (reel + vidéo prête) */}
+          {isMedia(type) && !(type === 'reel' && videoReady && !previewEnded) && (
             <button className="gp-hero-play" onClick={() => setShowPlayPrompt(true)} aria-label="Lire la vidéo">
               <svg width="30" height="30" viewBox="0 0 20 20" fill="white">
                 <path d="M5 3l12 7-12 7V3z"/>
