@@ -1652,8 +1652,11 @@ export default function LiveSimplePage() {
               }} />
 
             <div className="shrink-0 flex flex-col min-w-0 lg:flex-1 lg:h-full lg:min-h-0 lg:justify-between lg:overflow-y-auto">
-              {/* Header mobile — remplacé par le header desktop au-dessus de la carte sur lg+ */}
-              <div className="flex lg:hidden items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-b shrink-0 flex-nowrap overflow-hidden"
+              {/* Header mobile — remplacé par le header desktop au-dessus de la carte sur lg+.
+                  Pas de overflow-hidden ici : le menu "..." (Sur scène/Cadeaux/Paramètres)
+                  s'ouvre en absolute et dépasse la hauteur de ce bandeau — il serait
+                  tronqué/invisible sinon. */}
+              <div className="flex lg:hidden items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-b shrink-0 flex-nowrap"
                 style={{ background: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <button onClick={handleLeave} style={{ color: 'rgba(255,255,255,0.6)' }}
                   className="hover:text-white transition-colors shrink-0">
@@ -1765,11 +1768,13 @@ export default function LiveSimplePage() {
                   streamerName={live.user?.display_name ?? live.user?.username}
                 />
 
-                {/* Zone tap coeur — comme sur mobile, un tap n'importe où sur la vidéo
-                    déclenche une pluie de coeurs (throttlée côté LiveLikeButton). */}
+                {/* Zone tap coeur — comme sur mobile, chaque tap n'importe où sur la
+                    vidéo déclenche un coeur (throttlée côté LiveLikeButton pour l'API).
+                    Pas de onDoubleClick ici : sa présence forcerait le navigateur à
+                    retarder chaque clic de ~300ms en attendant de savoir si un second
+                    clic arrive, ce qui empêchait de tapoter vite plusieurs fois. */}
                 <div
                   className="absolute inset-0 z-10"
-                  onDoubleClick={() => likeRef.current?.trigger()}
                   onClick={() => likeRef.current?.trigger()}
                 />
 
