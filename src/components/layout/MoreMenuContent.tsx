@@ -102,6 +102,7 @@ export function MoreMenuContent({ onNavigate }: Props) {
     });
     if (!ok) return;
     try { await logout(); } catch {}
+    onNavigate?.();
     navigate('/', { replace: true });
   }
 
@@ -167,7 +168,7 @@ export function MoreMenuContent({ onNavigate }: Props) {
 
       {/* Déconnexion */}
       <MoreRow label="Déconnexion" desc="Se déconnecter de ce compte" icon={LogOut} color="#EF4444" danger
-        onClick={() => { onNavigate?.(); handleLogout(); }} />
+        onClick={handleLogout} />
 
       {ConfirmDialog}
     </>

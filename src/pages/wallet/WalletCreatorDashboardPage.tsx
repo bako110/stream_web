@@ -15,6 +15,7 @@ import {
   Check,
   Coins as GoGold,
   BarChart2,
+  Lock,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -132,17 +133,20 @@ export default function WalletCreatorDashboardPage() {
   const [savingMethod, setSavingMethod] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
-    const [profRes, statsRes, reelsRes, giftsRes] = await Promise.allSettled([
-      apiClient.get<CreatorProfile>(Endpoints.wallet.creatorProfile),
+    const profRes = await apiClient.get<CreatorProfile>(Endpoints.wallet.creatorProfile).catch(() => null);
+    if (!profRes) return;
+
+    setProfile(profRes.data);
+    setSubPrice(String(profRes.data.monthly_subscription_price ?? ''));
+
+    if (!profRes.data.is_monetized) return; // pas encore monétisé : pas la peine d'appeler les endpoints réservés
+
+    const [statsRes, reelsRes, giftsRes] = await Promise.allSettled([
       apiClient.get<CreatorStats>(Endpoints.wallet.creatorStats),
       apiClient.get<TopReel[]>(Endpoints.wallet.creatorReels),
       apiClient.get<GiftReceived[]>(Endpoints.wallet.creatorGifts),
     ]);
 
-    if (profRes.status === 'fulfilled') {
-      setProfile(profRes.value.data);
-      setSubPrice(String(profRes.value.data.monthly_subscription_price ?? ''));
-    }
     if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
     if (reelsRes.status === 'fulfilled') setTopReels(reelsRes.value.data ?? []);
     if (giftsRes.status === 'fulfilled') setRecentGifts(giftsRes.value.data ?? []);
@@ -230,6 +234,37 @@ export default function WalletCreatorDashboardPage() {
         </div>
       </div>
 
+      {/* ── Overlay : compte pas encore monétisé ─────────────────────────────── */}
+      {profile && !profile.is_monetized && (
+        <div
+          className="rounded-2xl p-8 flex flex-col items-center text-center gap-3"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#9B65F5,#E85DAD)' }}
+          >
+            <Lock size={24} color="#FFF" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-black" style={{ color: 'var(--text-primary)' }}>
+              Compte non monétisé
+            </p>
+            <p className="text-sm max-w-md" style={{ color: 'var(--text-secondary)' }}>
+              Activez la monétisation pour accéder à vos statistiques, vos revenus et vos cadeaux reçus.
+            </p>
+          </div>
+          <button
+            onClick={toggleMonetization}
+            disabled={toggling}
+            className="mt-2 flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm text-white disabled:opacity-60 transition-all"
+            style={{ background: 'linear-gradient(135deg,#9B65F5,#E85DAD)', boxShadow: '0 8px 24px rgba(155,101,245,0.35)' }}
+          >
+            {toggling ? <Spinner size="sm" /> : <><Euro size={16} /> Activer la monétisation</>}
+          </button>
+        </div>
+      )}
+
       {/* ── Toggle monétisation ────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-4 rounded-2xl p-4"
@@ -271,6 +306,7 @@ export default function WalletCreatorDashboardPage() {
       </div>
 
       {/* ── Raccourcis vers les dashboards détaillés ─────────────────────────── */}
+      {profile?.is_monetized && (
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => navigate('/wallet/analytics')}
@@ -303,8 +339,10 @@ export default function WalletCreatorDashboardPage() {
           </div>
         </button>
       </div>
+      )}
 
       {/* ── Grille principale 2 colonnes sur desktop ─────────────────────────── */}
+      {profile?.is_monetized && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
         {/* Colonne gauche : stats + top reels */}
@@ -651,6 +689,7 @@ export default function WalletCreatorDashboardPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Bottom padding */}
       <div className="h-4" />

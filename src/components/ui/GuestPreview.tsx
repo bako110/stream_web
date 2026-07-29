@@ -130,6 +130,8 @@ export function GuestPreview({
   const hlsRef = useRef<Hls | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [previewEnded, setPreviewEnded] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [previewProgress, setPreviewProgress] = useState(0); // 0→1 sur la portion visionnable (30%)
 
   // Lecture HLS jusqu'à PREVIEW_WATCH_RATIO de la durée, en boucle sur cette portion,
   // puis coupure définitive avec ouverture de l'invite de connexion.
@@ -141,6 +143,7 @@ export function GuestPreview({
     let cutoff = 0;
 
     const onTimeUpdate = () => {
+      if (cutoff > 0) setPreviewProgress(Math.min(1, v.currentTime / cutoff));
       if (cutoff > 0 && v.currentTime >= cutoff) {
         v.pause();
         setPreviewEnded(true);
@@ -177,6 +180,13 @@ export function GuestPreview({
       hlsRef.current = null;
     };
   }, [videoUrl, type]);
+
+  const toggleMute = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  };
   const authorName = author?.display_name ?? author?.username ?? null;
   const initials   = authorName ? authorName[0].toUpperCase() : '?';
 
@@ -458,6 +468,40 @@ export function GuestPreview({
           .gp-hero-play { width: 96px; height: 96px; }
         }
 
+        .gp-volume-btn {
+          position: absolute;
+          top: 16px; right: 16px;
+          z-index: 6;
+          width: 38px; height: 38px;
+          border-radius: 50%;
+          background: rgba(0,0,0,0.4);
+          border: 1px solid rgba(255,255,255,0.2);
+          backdrop-filter: blur(8px);
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          transition: background .15s, transform .15s;
+        }
+        .gp-volume-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.06); }
+        @media (min-width: 640px) {
+          .gp-volume-btn { top: 20px; right: 20px; }
+        }
+
+        .gp-preview-progress {
+          position: absolute;
+          left: 14px; right: 14px; bottom: 14px;
+          z-index: 6;
+          height: 3px;
+          border-radius: 3px;
+          background: rgba(255,255,255,0.22);
+          overflow: hidden;
+        }
+        .gp-preview-progress-fill {
+          height: 100%;
+          border-radius: 3px;
+          background: linear-gradient(90deg, #A855F7, #F0365A);
+          transition: width .12s linear;
+        }
+
         .gp-title {
           font-size: clamp(20px, 4.2vw, 32px);
           font-weight: 900;
@@ -659,6 +703,122 @@ export function GuestPreview({
           color: #fff;
         }
 
+        /* Overlay plein écran "premium" incitant à se connecter — remplace le
+           bottom-sheet simple pour un rendu plus haut de gamme et immersif. */
+        .gp-lock-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 32px 24px;
+          background: radial-gradient(ellipse at center, rgba(30,6,58,0.88) 0%, rgba(4,0,10,0.97) 70%);
+          backdrop-filter: blur(22px) saturate(140%);
+          -webkit-backdrop-filter: blur(22px) saturate(140%);
+          animation: gp-fade-in 0.3s ease-out;
+        }
+        .gp-lock-glow {
+          position: absolute;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          width: 480px; height: 480px;
+          background: radial-gradient(circle, rgba(168,85,247,0.25) 0%, transparent 65%);
+          pointer-events: none;
+        }
+        .gp-lock-icon {
+          position: relative;
+          width: 76px; height: 76px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #7B3FF2, #F0365A);
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 22px;
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.15), 0 12px 40px rgba(123,63,242,0.55);
+          animation: gp-lock-pop 0.45s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes gp-lock-pop {
+          from { transform: scale(0.6); opacity: 0; }
+          to   { transform: scale(1); opacity: 1; }
+        }
+        .gp-lock-badge {
+          position: relative;
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 14px;
+          border-radius: 20px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.16);
+          color: #D4B8FF;
+          font-size: 11px; font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          margin-bottom: 18px;
+        }
+        .gp-lock-title {
+          position: relative;
+          font-size: clamp(22px, 5vw, 30px);
+          font-weight: 900;
+          color: #fff;
+          letter-spacing: -0.5px;
+          line-height: 1.2;
+          margin-bottom: 10px;
+          max-width: 380px;
+        }
+        .gp-lock-sub {
+          position: relative;
+          font-size: 14.5px;
+          color: rgba(255,255,255,0.55);
+          line-height: 1.5;
+          max-width: 340px;
+          margin-bottom: 30px;
+        }
+        .gp-lock-btns {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          width: 100%;
+          max-width: 320px;
+        }
+        .gp-lock-btn-primary {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          padding: 16px 20px;
+          border-radius: 16px;
+          font-size: 15.5px; font-weight: 800;
+          color: #fff;
+          text-decoration: none;
+          background: linear-gradient(135deg, #7B3FF2, #F0365A);
+          box-shadow: 0 10px 30px rgba(123,63,242,0.5);
+          transition: transform .15s, box-shadow .15s;
+        }
+        .gp-lock-btn-primary:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 14px 36px rgba(123,63,242,0.6); }
+        .gp-lock-btn-ghost {
+          display: flex; align-items: center; justify-content: center;
+          padding: 15px 20px;
+          border-radius: 16px;
+          font-size: 15px; font-weight: 700;
+          color: rgba(255,255,255,0.85);
+          text-decoration: none;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.16);
+          transition: background .15s, border-color .15s;
+        }
+        .gp-lock-btn-ghost:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
+        .gp-lock-perks {
+          position: relative;
+          display: flex;
+          gap: 18px;
+          margin-top: 26px;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .gp-lock-perk {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 12px; font-weight: 600;
+          color: rgba(255,255,255,0.45);
+        }
+
         /* Tablet / desktop */
         @media (min-width: 640px) {
           .gp-topbar { padding: 20px 32px 0; }
@@ -706,18 +866,48 @@ export function GuestPreview({
           {/* Vidéo — lue en muet dès que prête, superposée au thumbnail qui reste
               en fallback pendant le chargement HLS. */}
           {type === 'reel' && videoUrl && (
-            <video
-              ref={videoRef}
-              playsInline
-              muted
-              style={{
-                position: 'absolute', inset: 0,
-                width: '100%', height: '100%',
-                objectFit: 'contain',
-                opacity: videoReady ? 1 : 0,
-                transition: 'opacity .25s ease',
-              }}
-            />
+            <>
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                style={{
+                  position: 'absolute', inset: 0,
+                  width: '100%', height: '100%',
+                  objectFit: 'contain',
+                  opacity: videoReady ? 1 : 0,
+                  transition: 'opacity .25s ease',
+                }}
+              />
+
+              {videoReady && !previewEnded && (
+                <>
+                  {/* Bouton volume */}
+                  <button
+                    className="gp-volume-btn"
+                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                    aria-label={muted ? 'Activer le son' : 'Couper le son'}
+                  >
+                    {muted ? (
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="white">
+                        <path d="M3 7h3l4-3.5v13L6 13H3V7z"/>
+                        <path d="M13.5 6.5l4 4m0-4l-4 4" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="white">
+                        <path d="M3 7h3l4-3.5v13L6 13H3V7z"/>
+                        <path d="M13.5 6a4.5 4.5 0 0 1 0 7M15.8 4a7.5 7.5 0 0 1 0 11" stroke="white" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Barre de progression de l'aperçu */}
+                  <div className="gp-preview-progress">
+                    <div className="gp-preview-progress-fill" style={{ width: `${previewProgress * 100}%` }} />
+                  </div>
+                </>
+              )}
+            </>
           )}
 
           <div className="gp-vignette" />
@@ -901,72 +1091,59 @@ export function GuestPreview({
           </div>
         )}
 
-        {/* Modal play prompt */}
+        {/* Overlay premium incitant à se connecter — s'affiche à 30% de lecture pour un
+            reel, ou au clic sur le bouton play pour les autres types de contenu. */}
         {showPlayPrompt && (
-          <>
-            <div
-              style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
-              onClick={() => setShowPlayPrompt(false)}
-            />
-            <div style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 31,
-              background: 'var(--surface, #1a1a2e)',
-              borderRadius: '24px 24px 0 0',
-              padding: '12px 24px',
-              paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-              border: '1px solid rgba(255,255,255,0.10)',
-              animation: 'dialogIn 0.25s cubic-bezier(0.32,0.72,0,1)',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
-              </div>
-              {/* Icone play */}
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #7B3FF2, #A855F7)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 8px 24px rgba(123,63,242,0.45)',
-                }}>
-                  <svg width="22" height="22" viewBox="0 0 20 20" fill="white">
-                    <path d="M5 3l12 7-12 7V3z"/>
-                  </svg>
-                </div>
-              </div>
-              <p style={{ fontSize: 17, fontWeight: 800, color: '#fff', textAlign: 'center', marginBottom: 6, letterSpacing: '-0.3px' }}>
-                Connecte-toi pour regarder
-              </p>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginBottom: 20, lineHeight: 1.4 }}>
-                Rejoins GoFolyX gratuitement pour accéder aux vidéos, concerts et events.
-              </p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <Link
-                  to={`/auth/login?redirect=${redirectParam}`}
-                  style={{
-                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    padding: '13px', borderRadius: 14,
-                    fontSize: 14, fontWeight: 800, color: '#fff',
-                    background: '#7B3FF2', textDecoration: 'none',
-                  }}
-                >
-                  Se connecter
-                </Link>
-                <Link
-                  to={`/auth/register?redirect=${redirectParam}`}
-                  style={{
-                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '13px', borderRadius: 14,
-                    fontSize: 14, fontWeight: 800, color: '#fff',
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    textDecoration: 'none',
-                  }}
-                >
-                  S'inscrire
-                </Link>
-              </div>
+          <div className="gp-lock-overlay">
+            <div className="gp-lock-glow" />
+
+            <span className="gp-lock-badge">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 4.5V3a3 3 0 0 1 6 0v1.5M1.5 4.5h7v4.5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V4.5z" stroke="currentColor" strokeWidth="1" fill="none"/>
+              </svg>
+              Contenu réservé aux membres
+            </span>
+
+            <div className="gp-lock-icon">
+              <svg width="30" height="30" viewBox="0 0 20 20" fill="white">
+                <path d="M5 3l12 7-12 7V3z"/>
+              </svg>
             </div>
-          </>
+
+            <h2 className="gp-lock-title">
+              {previewEnded && type === 'reel' ? 'La suite t\'attend' : cfg.cta}
+            </h2>
+            <p className="gp-lock-sub">
+              Rejoins GoFolyX gratuitement pour regarder la vidéo en entier, avec le son, et profiter de tout le reste.
+            </p>
+
+            <div className="gp-lock-btns">
+              <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-lock-btn-primary">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 1a4 4 0 1 1 0 8A4 4 0 0 1 8 1zm-6 13c0-2.8 2.7-5 6-5s6 2.2 6 5" stroke="white" strokeWidth="1.5"/>
+                </svg>
+                Se connecter et regarder
+              </Link>
+              <Link to={`/auth/register?redirect=${redirectParam}`} className="gp-lock-btn-ghost">
+                Créer un compte gratuit
+              </Link>
+            </div>
+
+            <div className="gp-lock-perks">
+              <span className="gp-lock-perk">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#3FEDB6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                100% gratuit
+              </span>
+              <span className="gp-lock-perk">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#3FEDB6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Vidéos, concerts, events
+              </span>
+              <span className="gp-lock-perk">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#3FEDB6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Sans engagement
+              </span>
+            </div>
+          </div>
         )}
 
         {/* CTA bar fixe */}
