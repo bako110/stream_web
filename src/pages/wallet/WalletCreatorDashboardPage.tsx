@@ -14,6 +14,7 @@ import {
   Euro,
   Check,
   Coins as GoGold,
+  BarChart2,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -266,6 +267,40 @@ export default function WalletCreatorDashboardPage() {
           ) : (
             <ToggleLeft size={34} />
           )}
+        </button>
+      </div>
+
+      {/* ── Raccourcis vers les dashboards détaillés ─────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate('/wallet/analytics')}
+          className="rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#7B3FF222', color: '#7B3FF2' }}>
+            <BarChart2 size={17} />
+          </div>
+          <div>
+            <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Statistiques</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Vues, portée, géographie</p>
+          </div>
+        </button>
+        <button
+          onClick={() => navigate('/wallet/revenue')}
+          className="rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#22C55E22', color: '#22C55E' }}>
+            <TrendingUp size={17} />
+          </div>
+          <div>
+            <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Revenus détaillés</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Historique, par mois, par reel</p>
+          </div>
         </button>
       </div>
 

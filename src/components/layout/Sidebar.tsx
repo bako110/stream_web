@@ -9,14 +9,14 @@ import { MoreMenuContent } from './MoreMenuContent';
 const MAIN_SECTION = {
   label: 'DÉCOUVRIR',
   items: [
-    { to: '/feed',    label: 'Accueil',       icon: Home,   color: '#7B3FF2', end: true },
-    { to: '/reels',   label: 'Reels',         icon: Play,   color: '#7B3FF2' },
-    { to: '/films',   label: 'Films',         icon: Film,   color: '#7B3FF2' },
-    { to: '/series',  label: 'Séries',        icon: Film,   color: '#9B65F5' },
-    { to: '/live',    label: 'Live concerts', icon: Radio,  color: '#7B3FF2' },
-    { to: '/lives',   label: 'Lives',         icon: Video,  color: '#7B3FF2' },
-    { to: '/battles', label: '1 vs 1',        icon: Zap,    color: '#9B65F5' },
-    { to: '/tournaments', label: 'Tournois',  icon: Award,  color: '#FFD700' },
+    { to: '/feed',    label: 'Accueil',       desc: 'Ton fil d\'actualité',              icon: Home,   color: '#7B3FF2', end: true },
+    { to: '/reels',   label: 'Reels',         desc: 'Vidéos courtes à la une',           icon: Play,   color: '#7B3FF2' },
+    { to: '/films',   label: 'Films',         desc: 'Le catalogue de films',             icon: Film,   color: '#7B3FF2' },
+    { to: '/series',  label: 'Séries',        desc: 'Le catalogue de séries',            icon: Film,   color: '#9B65F5' },
+    { to: '/live',    label: 'Live concerts', desc: 'Concerts diffusés en direct',       icon: Radio,  color: '#7B3FF2' },
+    { to: '/lives',   label: 'Lives',         desc: 'Diffusions en direct des créateurs',icon: Video,  color: '#7B3FF2' },
+    { to: '/battles', label: '1 vs 1',        desc: 'Défis en direct entre créateurs',   icon: Zap,    color: '#9B65F5' },
+    { to: '/tournaments', label: 'Tournois',  desc: 'Compétitions et classements',       icon: Award,  color: '#FFD700' },
   ],
 };
 
@@ -26,7 +26,7 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
   const [showMore, setShowMore] = useState(false);
 
   // Helper — un lien de nav réutilisable
-  function NavItem({ to, label, icon: Icon, color, end }: { to: string; label: string; icon: any; color: string; end?: boolean }) {
+  function NavItem({ to, label, desc, icon: Icon, color, end }: { to: string; label: string; desc?: string; icon: any; color: string; end?: boolean }) {
     return (
       <NavLink
         to={to} end={end} onClick={onClose}
@@ -57,13 +57,22 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         {({ isActive }) => (
           <>
             <div className={clsx(
-              'w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-150',
+              'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-150',
               isActive ? 'scale-100' : 'scale-90 group-hover:scale-100',
             )}
               style={{ background: isActive ? `${color}20` : 'transparent', color }}>
-              <Icon size={17} />
+              <Icon size={22} />
             </div>
-            {!collapsed && <span className="text-sm truncate flex-1">{label}</span>}
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <span className="text-sm truncate block">{label}</span>
+                {desc && (
+                  <span className="text-[11px] truncate block mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    {desc}
+                  </span>
+                )}
+              </div>
+            )}
             {isActive && !collapsed && (
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
             )}

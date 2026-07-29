@@ -65,6 +65,12 @@ const WalletReferralPage            = lazyWithRetry(() => import('./pages/wallet
 const WalletCreatorDashboardPage    = lazyWithRetry(() => import('./pages/wallet/WalletCreatorDashboardPage'));
 const WalletMonetisationPage        = lazyWithRetry(() => import('./pages/wallet/WalletMonetisationPage'));
 const WalletMonetisationRequestPage = lazyWithRetry(() => import('./pages/wallet/WalletMonetisationRequestPage'));
+const CreatorAnalyticsPage          = lazyWithRetry(() => import('./pages/wallet/CreatorAnalyticsPage'));
+const WalletRevenuePage             = lazyWithRetry(() => import('./pages/wallet/WalletRevenuePage'));
+const WalletRevenueContentPage      = lazyWithRetry(() => import('./pages/wallet/WalletRevenueContentPage'));
+const WalletRevenueTransactionsPage = lazyWithRetry(() => import('./pages/wallet/WalletRevenueTransactionsPage'));
+const ContentAnalyticsListPage      = lazyWithRetry(() => import('./pages/wallet/ContentAnalyticsListPage'));
+const ContentAnalyticsDetailPage    = lazyWithRetry(() => import('./pages/wallet/ContentAnalyticsDetailPage'));
 const WalletSubscriptionPlansPage   = lazyWithRetry(() => import('./pages/wallet/WalletSubscriptionPlansPage'));
 const WalletSubscriptionPaymentPage = lazyWithRetry(() => import('./pages/wallet/WalletSubscriptionPaymentPage'));
 const WalletMySubscriptionPage      = lazyWithRetry(() => import('./pages/wallet/WalletMySubscriptionPage'));
@@ -244,6 +250,12 @@ function AppShell() {
             <Route path="/wallet/ads/create"                element={<WalletCreateAdPage />} />
             <Route path="/wallet/referral"                  element={<WalletReferralPage />} />
             <Route path="/wallet/creator"                   element={<WalletCreatorDashboardPage />} />
+            <Route path="/wallet/analytics"                 element={<CreatorAnalyticsPage />} />
+            <Route path="/wallet/analytics/content"         element={<ContentAnalyticsListPage />} />
+            <Route path="/wallet/analytics/content/:type/:id" element={<ContentAnalyticsDetailPage />} />
+            <Route path="/wallet/revenue"                   element={<WalletRevenuePage />} />
+            <Route path="/wallet/revenue/content"           element={<WalletRevenueContentPage />} />
+            <Route path="/wallet/revenue/transactions"      element={<WalletRevenueTransactionsPage />} />
             <Route path="/wallet/monetisation"              element={<WalletMonetisationPage />} />
             <Route path="/wallet/monetisation/request"      element={<WalletMonetisationRequestPage />} />
             <Route path="/wallet/subscription/plans"        element={<WalletSubscriptionPlansPage />} />

@@ -406,7 +406,7 @@ export default function GoLivePage() {
 
       {/* ── Carte Concert live ──────────────────────────────────────────── */}
       <button type="button"
-        onClick={() => navigate('/concerts/new')}
+        onClick={() => navigate('/create/concert')}
         className="w-full rounded-3xl overflow-hidden border text-left transition-all group"
         style={{ background: 'var(--surface)', borderColor: 'rgba(123,63,242,0.25)' }}
         onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(123,63,242,0.6)'}

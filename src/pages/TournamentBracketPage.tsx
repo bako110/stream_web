@@ -310,6 +310,15 @@ export default function TournamentBracketPage() {
 
       <div className="max-w-3xl mx-auto p-4 flex flex-col gap-4">
 
+        {tournament.image_url ? (
+          <img src={tournament.image_url} alt="" className="w-full h-40 sm:h-52 rounded-2xl object-cover" />
+        ) : (
+          <div className="w-full h-32 sm:h-40 rounded-2xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#7B3FF230,#FFD70015)' }}>
+            <Award size={40} style={{ color: '#7B3FF2', opacity: 0.5 }} />
+          </div>
+        )}
+
         {status && (
           <div className="flex items-center gap-3 rounded-2xl border p-3.5" style={{ borderColor: `${status.color}45`, background: `linear-gradient(135deg,${status.color}22,${status.color}08)` }}>
             <div className="w-10 h-10 rounded-[13px] flex items-center justify-center shrink-0" style={{ background: `${status.color}25`, color: status.color }}>
@@ -365,7 +374,7 @@ export default function TournamentBracketPage() {
 
         <div className="card p-4 flex flex-col gap-2.5">
           <p className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>À propos de ce tournoi</p>
-          {tournament.description && <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tournament.description}</p>}
+          {tournament.description && <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{tournament.description}</p>}
 
           <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
             <Users size={14} className="text-[var(--text-tertiary)] shrink-0" /> {REGISTRATION_MODE_LABELS[tournament.registration_mode]}
@@ -399,9 +408,9 @@ export default function TournamentBracketPage() {
             </div>
           ) : null}
           {tournament.rules && (
-            <div className="rounded-xl p-3 mt-1" style={{ background: 'var(--bg-secondary)' }}>
-              <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Règlement</p>
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{tournament.rules}</p>
+            <div className="rounded-xl p-3.5 mt-1" style={{ background: 'var(--bg-secondary)' }}>
+              <p className="text-xs font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Règlement</p>
+              <p className="text-xs whitespace-pre-line leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{tournament.rules}</p>
             </div>
           )}
         </div>

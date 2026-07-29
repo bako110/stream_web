@@ -497,8 +497,9 @@ function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
 const MAX_RETRIES   = 3;
 const STALL_TIMEOUT = 8000; // 8s identique mobile
 
-function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMoreOpen }: {
+function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMoreOpen, onRatioChange }: {
   reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void; onMoreOpen: () => void;
+  onRatioChange?: (ratio: number | null) => void;
 }) {
   const navigate      = useNavigate();
   const { user: me }  = useAuthStore();
@@ -525,7 +526,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
   const [playing,         setPlaying]        = useState(false);
   const [buffering,       setBuffering]       = useState(false);
   const [videoError,      setVideoError]      = useState(false);
-  const [isPortrait,      setIsPortrait]      = useState(true); // 9:16 par défaut (reels)
+  // Ratio réel (width/height), détecté dès que la vidéo charge ses métadonnées
+  // (le backend ne stocke pas les dimensions des reels). null = pas encore connu.
+  const [ratio, setRatio] = useState<number | null>(null);
+  const isPortrait = ratio == null || ratio < 1;
   const [progress,        setProgress]       = useState(0);
   const [liked,           setLiked]          = useState(reel.user_reaction === 'like');
   const [likeCount,       setLikeCount]      = useState(reel.like_count ?? 0);
@@ -565,9 +569,15 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
     viewSentRef.current = false;
     retryCount.current = 0;
     setVideoError(false);
+    // Reset à null en attendant la détection du nouveau reel — évite d'hériter
+    // du ratio de l'ancien reel pendant le chargement du nouveau.
+    setRatio(null);
     followFetched.current = false;
     if (authorId) setFollowed(_followCache.get(String(authorId)) ?? false);
   }, [reel.id]); // eslint-disable-line
+
+  // Fait remonter le ratio au parent (pour dimensionner la colonne du player)
+  useEffect(() => { onRatioChange?.(active ? ratio : null); }, [active, ratio]); // eslint-disable-line
 
   // Badge référence concert/event/film (identique mobile)
   useEffect(() => {
@@ -677,10 +687,11 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
     retryCount.current = 0;
     setVideoError(false);
 
-    // Détecter orientation (portrait 9:16 vs landscape 16:9) dès les métadonnées
+    // Détecter le ratio réel (portrait, paysage ou autre) dès les métadonnées —
+    // ne recalcule que si pas déjà connu via reel.video_width/height (évite un resize visible).
     const onMeta = () => {
       if (v.videoWidth && v.videoHeight) {
-        setIsPortrait(v.videoHeight >= v.videoWidth);
+        setRatio(prev => prev ?? v.videoWidth / v.videoHeight);
       }
     };
     v.addEventListener('loadedmetadata', onMeta);
@@ -930,10 +941,16 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
     <div className="relative w-full h-full bg-black overflow-hidden select-none" data-reel-zone>
 
       {/* Video */}
-      <div className="absolute inset-0 flex items-center justify-center bg-black">
+      <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
+        {/* Fond flou — comble les bandes noires quand la vidéo est en paysage (16:9)
+            dans le cadre portrait du player, comme le blur de fond mobile. */}
+        {videoSrc && !isPortrait && (
+          <img src={reel.thumbnail_url ?? undefined} aria-hidden className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: 'blur(40px) brightness(0.5)', transform: 'scale(1.15)' }} />
+        )}
         {videoSrc ? (
           <video ref={videoRef}
-            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }}
+            className={isPortrait ? 'w-full h-full object-cover' : 'relative w-full h-full object-contain'}
             playsInline poster={reel.thumbnail_url ?? undefined}
             onTimeUpdate={() => {
               const v = videoRef.current;
@@ -1534,6 +1551,9 @@ export default function ReelsPage() {
   const servedAdIdsRef    = useRef<Set<string>>(new Set());
   const [tab,           setTab]         = useState<'feed'|'mine'>('feed');
   const [loading,       setLoading]     = useState(true);
+  // Ratio (width/height) du reel actif — pilote la largeur de la colonne player sur
+  // desktop : élargie pour un contenu paysage (16:9), étroite pour un portrait (9:16).
+  const [activeRatio,   setActiveRatio] = useState<number | null>(null);
   const [loadingMore,   setLoadingMore] = useState(false);
   const [hasMore,       setHasMore]     = useState(true);
   const [error,         setError]       = useState<string | null>(null);
@@ -2274,11 +2294,19 @@ export default function ReelsPage() {
   const suggestions = reels.slice(activeIndex + 1);
 
   return (
-    <div className="h-full bg-black overflow-hidden flex" style={{ zIndex: 0 }}>
+    <div className="h-full overflow-hidden flex" style={{ zIndex: 0, background: 'var(--bg)' }}>
 
-      {/* ── Zone player : pleine largeur mobile, colonne portrait centrée sur desktop ── */}
+      {/* ── Zone player : pleine largeur mobile, colonne centrée sur desktop qui s'élargit
+          pour un contenu paysage (16:9) au lieu de le rétrécir dans un cadre 9:16 ──
+          La variable CSS n'est appliquée qu'à partir de md: (voir classe ci-dessous),
+          donc sans effet sur le layout plein écran mobile. */}
       <div className="relative h-full flex-1 min-w-0 flex items-center justify-center">
-        <div className="relative h-full w-full md:max-w-[460px] md:my-4 md:rounded-2xl md:overflow-hidden">
+        <div className="relative h-full w-full bg-black md:my-4 md:rounded-2xl md:overflow-hidden md:[max-width:var(--reel-col-w)]"
+          style={{
+            ['--reel-col-w' as string]: activeRatio != null && activeRatio >= 1
+              ? `min(calc((100dvh - 32px) * ${activeRatio}), calc(100% - 32px))`
+              : '460px',
+          }}>
 
           {/* Header flottant (identique mobile) */}
           <div className="absolute top-3 inset-x-0 z-40 flex items-center justify-between px-3 pointer-events-none">
@@ -2338,6 +2366,7 @@ export default function ReelsPage() {
                     onUnmute={() => setGlobalMuted(v => !v)}
                     onCommentOpen={() => setDrawerOpen(true)}
                     onMoreOpen={() => setMoreSheetOpen(true)}
+                    onRatioChange={setActiveRatio}
                   />
                 )}
               </div>

@@ -4,7 +4,7 @@ import {
   Radio, Users, MessageCircle, Bell, Activity, UserPlus,
   Music2, Calendar, CalendarDays, Heart, Clock,
   Wallet, TrendingUp, HelpCircle, Settings, LogOut,
-  Sun, Moon, Download,
+  Sun, Moon, Download, BarChart2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -27,11 +27,12 @@ export const MORE_SECTIONS = [
   {
     label: 'MES CONTENUS',
     items: [
-      { to: '/my-concerts',   label: 'Mes Concerts',   desc: 'Gère les concerts que tu organises',        icon: Music2,       color: '#7B3FF2' },
-      { to: '/my-events',     label: 'Mes Événements', desc: 'Gère les événements que tu organises',      icon: Calendar,     color: '#7B3FF2' },
-      { to: '/planning',      label: 'Mon Planning',   desc: 'Ton calendrier de sorties et lives',        icon: CalendarDays,  color: '#7B3FF2' },
-      { to: '/favorites',     label: 'Favoris',        desc: 'Films, séries et contenus enregistrés',     icon: Heart,         color: '#EF4444' },
-      { to: '/watch-history', label: 'Historique',     desc: 'Ce que tu as regardé récemment',            icon: Clock,         color: '#06B6D4' },
+      { to: '/my-concerts',      label: 'Mes Concerts',   desc: 'Gère les concerts que tu organises',        icon: Music2,       color: '#7B3FF2' },
+      { to: '/my-events',        label: 'Mes Événements', desc: 'Gère les événements que tu organises',      icon: Calendar,     color: '#7B3FF2' },
+      { to: '/planning',         label: 'Mon Planning',   desc: 'Ton calendrier de sorties et lives',        icon: CalendarDays,  color: '#7B3FF2' },
+      { to: '/wallet/analytics', label: 'Statistiques',   desc: 'Vues, portée et performance de tes contenus', icon: BarChart2,  color: '#E85DAD' },
+      { to: '/favorites',        label: 'Favoris',        desc: 'Films, séries et contenus enregistrés',     icon: Heart,         color: '#EF4444' },
+      { to: '/watch-history',    label: 'Historique',     desc: 'Ce que tu as regardé récemment',            icon: Clock,         color: '#06B6D4' },
     ],
   },
   {

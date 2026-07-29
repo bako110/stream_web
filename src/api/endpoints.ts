@@ -322,6 +322,11 @@ export const Endpoints = {
     creatorStats:   `${V1}/wallet/creator/stats`,
     creatorReels:   `${V1}/wallet/creator/top-reels`,
     creatorGifts:   `${V1}/wallet/creator/recent-gifts`,
+    revenueSummary:      `${V1}/wallet/creator/revenue/summary`,
+    revenueTimeseries:   `${V1}/wallet/creator/revenue/timeseries`,
+    revenueBreakdown:    `${V1}/wallet/creator/revenue/breakdown`,
+    revenueByContent:    `${V1}/wallet/creator/revenue/by-content`,
+    revenueTransactions: `${V1}/wallet/creator/revenue/transactions`,
     boostsPurchase: `${V1}/wallet/boosts/purchase`,
     gifts:          `${V1}/wallet/gifts`,
     sendGift:       `${V1}/wallet/gifts/send`,
@@ -372,5 +377,14 @@ export const Endpoints = {
     upload:  `${V1}/sounds/upload`,
     get:     (id: string) => `${V1}/sounds/${id}`,
     use:     (id: string) => `${V1}/sounds/${id}/use`,
+  },
+
+  analytics: {
+    overview:      `${V1}/analytics/overview`,
+    timeseries:    `${V1}/analytics/timeseries`,
+    geo:           `${V1}/analytics/geo`,
+    reach:         `${V1}/analytics/reach`,
+    content:       `${V1}/analytics/content`,
+    contentDetail: (contentType: string, contentId: string) => `${V1}/analytics/content/${contentType}/${contentId}`,
   },
 } as const;

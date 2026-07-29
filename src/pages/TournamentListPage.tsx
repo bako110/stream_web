@@ -79,14 +79,18 @@ export default function TournamentListPage() {
                 <div key={t.id}
                   className="card flex items-center gap-3 p-3.5 cursor-pointer hover:border-brand-primary transition-colors"
                   onClick={() => handleOpenBracket(t)}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-sm"
-                    style={{ background: 'rgba(123,63,242,0.13)', color: '#7B3FF2' }}>
-                    {t.format}
-                  </div>
+                  {t.image_url ? (
+                    <img src={t.image_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-sm"
+                      style={{ background: 'rgba(123,63,242,0.13)', color: '#7B3FF2' }}>
+                      {t.format}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{t.name}</p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                      {t.participants_count} / {t.max_participants} inscrits
+                      {t.format} joueurs · {t.participants_count} / {t.max_participants} inscrits
                     </p>
                   </div>
                   <button
