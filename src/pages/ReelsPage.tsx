@@ -1558,6 +1558,13 @@ export default function ReelsPage() {
   const [hasMore,       setHasMore]     = useState(true);
   const [error,         setError]       = useState<string | null>(null);
   const [activeIndex,   setActiveIndex] = useState(0);
+  // Verrou pendant un saut programmatique (jumpToReel) — l'IntersectionObserver
+  // peut capturer un état transitoire pendant le scroll instantané (plusieurs
+  // éléments partiellement visibles au même frame) et réécrire activeIndex sur
+  // le mauvais index, laissant deux ReelPlayer "active" en même temps (double son,
+  // ou le reel visé qui semble ne jamais s'afficher). Le verrou fait ignorer
+  // l'observer le temps que le scroll se stabilise.
+  const isJumpingRef = useRef(false);
   const [globalMuted,   setGlobalMuted] = useState(true);
   const [sidebarOpen,   setSidebarOpen] = useState(true);
   const [drawerOpen,    setDrawerOpen]  = useState(false);
@@ -1567,6 +1574,50 @@ export default function ReelsPage() {
   const [searchResults, setSearchResults] = useState<Reel[]>([]);
   const [searching,     setSearching]   = useState(false);
   const searchInputRef                  = useRef<HTMLInputElement>(null);
+  // Tendances affichées par défaut à l'ouverture (avant frappe) + pagination
+  // infinie sur scroll, symétrique à ReelsScreen.tsx côté mobile.
+  const [trendingReels,   setTrendingReels]   = useState<Reel[]>([]);
+  const [loadingTrending, setLoadingTrending] = useState(false);
+  const [trendingHasMore, setTrendingHasMore] = useState(true);
+  const [searchHasMore,   setSearchHasMore]   = useState(true);
+  const [loadingMoreSearch, setLoadingMoreSearch] = useState(false);
+  const trendingPageRef = useRef(1);
+  const searchPageRef   = useRef(1);
+  const SEARCH_PAGE_LIMIT = 20;
+  const SEARCH_AD_INTERVAL = 4;
+  // Pubs de la grille recherche (placement="search") — Map slot -> ad, séparée
+  // de adSlots (feed principal, placement="reels").
+  const [searchAdSlots, setSearchAdSlots] = useState<Map<number, ReelAd>>(new Map());
+  // Ref stable (pas le state directement) — sinon loadSearchAdForSlot capture une
+  // closure obsolète de searchAdSlots : le tout premier appel dans openSearch()
+  // (juste après setSearchAdSlots(new Map())) lisait encore l'ancien Map de la
+  // session de recherche précédente dans la même passe synchrone, avant que React
+  // ne re-render, ce qui faisait échouer silencieusement le chargement du slot 0
+  // via le guard `searchAdSlots.has(slotIdx)` — jamais aucune pub visible.
+  const searchAdSlotsRef = useRef(searchAdSlots);
+  searchAdSlotsRef.current = searchAdSlots;
+  const loadingSearchAdSlotsRef = useRef<Set<number>>(new Set());
+  const servedSearchAdIdsRef    = useRef<Set<string>>(new Set());
+  const [fullscreenSearchAd, setFullscreenSearchAd] = useState<ReelAd | null>(null);
+
+  const loadSearchAdForSlot = useCallback((slotIdx: number, allowRepeat = false) => {
+    if (loadingSearchAdSlotsRef.current.has(slotIdx) || searchAdSlotsRef.current.has(slotIdx)) return;
+    loadingSearchAdSlotsRef.current.add(slotIdx);
+    const recentExcluded = allowRepeat ? [] : Array.from(servedSearchAdIdsRef.current).slice(-20);
+    const excludeIds = recentExcluded.join(',');
+    const qs = excludeIds ? `&exclude_ids=${encodeURIComponent(excludeIds)}` : '';
+    apiClient.get<ReelAd | null>(`${Endpoints.ads.feedNext('search')}${qs}`)
+      .then(r => {
+        loadingSearchAdSlotsRef.current.delete(slotIdx);
+        if (!r.data?.id) {
+          if (excludeIds) loadSearchAdForSlot(slotIdx, true);
+          return;
+        }
+        servedSearchAdIdsRef.current.add(r.data.id);
+        setSearchAdSlots(prev => new Map(prev).set(slotIdx, r.data as ReelAd));
+      })
+      .catch(() => { loadingSearchAdSlotsRef.current.delete(slotIdx); });
+  }, []);
   const searchTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Menu 3 points (mes reels — grille)
   const [menuReel,      setMenuReel]    = useState<Reel | null>(null);
@@ -1710,7 +1761,33 @@ export default function ReelsPage() {
   const openSearch = useCallback(() => {
     setSearchOpen(true);
     setTimeout(() => searchInputRef.current?.focus(), 100);
-  }, []);
+
+    // Tendances affichées par défaut avant toute frappe (persistent pendant la
+    // frappe tant qu'aucun vrai résultat n'est arrivé, cf. gridData plus bas).
+    trendingPageRef.current = 1;
+    setTrendingHasMore(true);
+    setSearchHasMore(true);
+    // Reset synchrone de la ref en plus du state — sinon loadSearchAdForSlot(0)
+    // ci-dessous lit encore l'ancien Map (React n'a pas encore re-rendu entre
+    // les deux appels dans ce même handler).
+    searchAdSlotsRef.current = new Map();
+    setSearchAdSlots(new Map());
+    loadingSearchAdSlotsRef.current.clear();
+    setLoadingTrending(true);
+    apiClient.get<any>(`${Endpoints.search.trendingReels}?page=1&limit=${SEARCH_PAGE_LIMIT}`)
+      .then(r => {
+        const data = r.data;
+        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        const more  = Array.isArray(data) ? items.length >= SEARCH_PAGE_LIMIT : (data?.has_more ?? items.length >= SEARCH_PAGE_LIMIT);
+        setTrendingReels(items);
+        setTrendingHasMore(more);
+      })
+      .catch(() => { setTrendingReels([]); setTrendingHasMore(false); })
+      .finally(() => setLoadingTrending(false));
+
+    // Première pub visible dès l'ouverture, sans attendre le moindre scroll.
+    loadSearchAdForSlot(0);
+  }, [loadSearchAdForSlot]);
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
     setSearchQuery('');
@@ -1722,13 +1799,71 @@ export default function ReelsPage() {
   const runSearch = useCallback((q: string) => {
     const term = q.trim();
     searchReqRef.current = term;
-    if (!term) { setSearchResults([]); setSearching(false); return; }
+    searchPageRef.current = 1;
+    if (!term) { setSearchResults([]); setSearchHasMore(true); setSearching(false); return; }
     setSearching(true);
-    apiClient.get<any>(`${Endpoints.reels.feed}?search=${encodeURIComponent(term)}&limit=20`)
-      .then(r => { if (searchReqRef.current === term) setSearchResults(toArray<Reel>(r.data)); })
-      .catch(() => { if (searchReqRef.current === term) setSearchResults([]); })
+    apiClient.get<any>(`${Endpoints.reels.feed}?search=${encodeURIComponent(term)}&page=1&limit=${SEARCH_PAGE_LIMIT}`)
+      .then(r => {
+        if (searchReqRef.current !== term) return;
+        const data = r.data;
+        const items = toArray<Reel>(data);
+        setSearchResults(items);
+        setSearchHasMore(data?.has_more ?? items.length >= SEARCH_PAGE_LIMIT);
+      })
+      .catch(() => { if (searchReqRef.current === term) { setSearchResults([]); setSearchHasMore(false); } })
       .finally(() => { if (searchReqRef.current === term) setSearching(false); });
   }, []);
+
+  // Pagination — grille recherche (tendances ou résultats texte selon le contexte
+  // actuel), appelée au scroll du dropdown (onScroll, équivalent web du
+  // onEndReached mobile).
+  const loadMoreSearchGrid = useCallback(() => {
+    if (loadingMoreSearch) return;
+    const term = searchQuery.trim();
+    if (term) {
+      if (!searchHasMore || searching) return;
+      setLoadingMoreSearch(true);
+      const nextPage = searchPageRef.current + 1;
+      apiClient.get<any>(`${Endpoints.reels.feed}?search=${encodeURIComponent(term)}&page=${nextPage}&limit=${SEARCH_PAGE_LIMIT}`)
+        .then(r => {
+          if (searchReqRef.current !== term) return;
+          searchPageRef.current = nextPage;
+          const data = r.data;
+          const items = toArray<Reel>(data);
+          setSearchResults(prev => {
+            const ids = new Set(prev.map(x => x.id));
+            const merged = [...prev, ...items.filter(x => !ids.has(x.id))];
+            const totalSlots = Math.floor(merged.length / SEARCH_AD_INTERVAL);
+            for (let s = 0; s < totalSlots; s++) loadSearchAdForSlot(s);
+            return merged;
+          });
+          setSearchHasMore(data?.has_more ?? items.length >= SEARCH_PAGE_LIMIT);
+        })
+        .catch(() => setSearchHasMore(false))
+        .finally(() => setLoadingMoreSearch(false));
+    } else {
+      if (!trendingHasMore || loadingTrending) return;
+      setLoadingMoreSearch(true);
+      const nextPage = trendingPageRef.current + 1;
+      apiClient.get<any>(`${Endpoints.search.trendingReels}?page=${nextPage}&limit=${SEARCH_PAGE_LIMIT}`)
+        .then(r => {
+          const data = r.data;
+          const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+          const more  = Array.isArray(data) ? items.length >= SEARCH_PAGE_LIMIT : (data?.has_more ?? items.length >= SEARCH_PAGE_LIMIT);
+          trendingPageRef.current = nextPage;
+          setTrendingReels(prev => {
+            const ids = new Set(prev.map((x: any) => x.id));
+            const merged = [...prev, ...items.filter((x: any) => !ids.has(x.id))];
+            const totalSlots = Math.floor(merged.length / SEARCH_AD_INTERVAL);
+            for (let s = 0; s < totalSlots; s++) loadSearchAdForSlot(s);
+            return merged;
+          });
+          setTrendingHasMore(more);
+        })
+        .catch(() => setTrendingHasMore(false))
+        .finally(() => setLoadingMoreSearch(false));
+    }
+  }, [loadingMoreSearch, searchQuery, searchHasMore, searching, trendingHasMore, loadingTrending, loadSearchAdForSlot]);
   const onSearchChange = useCallback((v: string) => {
     setSearchQuery(v);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -1737,6 +1872,13 @@ export default function ReelsPage() {
   // Place un reel donné en tête de liste et scrolle jusqu'à lui — réutilisé par la
   // recherche ET par la navigation directe (clic sur un reel depuis le Feed).
   const jumpToReel = useCallback((r: Reel) => {
+    // Verrouille l'IntersectionObserver pendant le saut — sinon il peut capturer
+    // un état transitoire (scroll pas encore stabilisé, ancien ET nouveau reel
+    // partiellement visibles) et réécrire activeIndex sur le mauvais index,
+    // laissant deux ReelPlayer actifs en même temps (double son, reel visé qui
+    // semble ne jamais s'afficher).
+    isJumpingRef.current = true;
+
     // S'il existe déjà dans la liste, le déplace en tête au lieu de la laisser
     // inchangée (sinon le scroll vers 0 pointe vers le mauvais reel).
     setReels(prev => {
@@ -1749,13 +1891,27 @@ export default function ReelsPage() {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (containerRef.current) containerRef.current.scrollTop = 0;
+        // Relâche le verrou après que le scroll instantané ait eu le temps de se
+        // stabiliser (l'observer utilise threshold: 0.6, un frame supplémentaire
+        // suffit une fois le scrollTop appliqué).
+        setTimeout(() => { isJumpingRef.current = false; }, 150);
       });
     });
   }, []);
 
-  const pickSearchResult = useCallback((r: Reel) => {
+  // Les reels tendance/résultats de recherche n'ont pas toujours tous les champs
+  // nécessaires à la lecture (hls_url notamment, cf. get_trending_reels côté
+  // backend) — on refetch l'objet complet avant de jouer, comme côté mobile,
+  // pour ne jamais lancer une lecture avec un flux vidéo manquant.
+  const pickSearchResult = useCallback(async (r: Reel) => {
     closeSearch();
-    jumpToReel(r);
+    if (r.hls_url) { jumpToReel(r); return; }
+    try {
+      const full = await apiClient.get<Reel>(Endpoints.reels.byId(r.id));
+      jumpToReel(full.data ?? r);
+    } catch {
+      jumpToReel(r);
+    }
   }, [closeSearch, jumpToReel]);
 
   // Détecte un changement de ?id= dans l'URL SANS démontage du composant — cas
@@ -1899,6 +2055,7 @@ export default function ReelsPage() {
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => {
         if (e.isIntersecting) {
+          if (isJumpingRef.current) return;
           const idx = Number((e.target as HTMLElement).dataset.index);
           setActiveIndex(idx);
           savedIndexRef.current = idx;
@@ -2382,60 +2539,155 @@ export default function ReelsPage() {
             )}
           </div>
 
-          {/* Dropdown résultats — sous la barre de recherche, borné au player (pas d'overlay plein écran) */}
-          {searchOpen && (
-            <div className="absolute top-16 left-3 right-3 z-50 rounded-2xl overflow-hidden"
-              style={{ background: 'rgba(20,20,20,0.97)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', maxHeight: 'calc(100% - 80px)' }}>
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100% - 80px)' }}>
-                {searching ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-16">
-                    <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-                    <p className="text-white/60 text-sm">Recherche…</p>
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-0.5 p-0.5">
-                    {searchResults.map(r => (
-                      <button key={r.id} onClick={() => pickSearchResult(r)}
-                        className="relative" style={{ aspectRatio: '9/16' }}>
-                        {r.thumbnail_url
-                          ? <img src={r.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                          : <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
-                              <Film size={20} className="text-white/20" />
-                            </div>
-                        }
-                        <div className="absolute inset-0 flex flex-col justify-end p-1.5"
-                          style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%)' }}>
-                          {r.author?.avatar_url && (
-                            <img src={r.author.avatar_url} alt="" className="w-5 h-5 rounded-full mb-1 border border-white/30" />
-                          )}
-                          <p className="text-white text-[9px] font-bold truncate">
-                            {r.author?.display_name ?? r.author?.username ?? ''}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-white/70 text-[8px]">
-                            <span className="flex items-center gap-0.5"><Eye size={7} />{r.view_count ?? 0}</span>
-                            <span className="flex items-center gap-0.5"><Heart size={7} />{r.like_count ?? 0}</span>
-                          </div>
-                        </div>
+          {/* Overlay recherche plein écran (fixed, couvre toute la fenêtre — pas juste
+              le cadre du player) : sans ça, sur desktop le dropdown était borné à la
+              largeur/hauteur étroite du player (max ~460px), impossible à faire défiler
+              correctement. Tendances par défaut, grille avec pubs mélangées, pagination
+              infinie sur scroll. */}
+          {searchOpen && (() => {
+            const hasRealResults = searchResults.length > 0;
+            const showTrending = !hasRealResults && !searchQuery.trim() && trendingReels.length > 0;
+            const gridData: Reel[] | null = hasRealResults ? searchResults : showTrending ? trendingReels : null;
+            const adSlotMap = searchAdSlots;
+
+            return (
+              <div className="fixed inset-0 z-[250] flex flex-col" style={{ background: 'rgba(10,10,10,0.98)' }}>
+                {/* Barre de recherche — dupliquée ici en plein écran (le header flottant
+                    reste dédié au player en dessous, masqué visuellement par cet overlay).
+                    Largeur limitée + centrée, cohérente avec la grille en dessous. */}
+                <div className="shrink-0 flex items-center gap-2 p-3 pt-4 max-w-3xl w-full mx-auto">
+                  <button onClick={closeSearch} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+                    <ArrowLeft size={18} />
+                  </button>
+                  <div className="flex-1 flex items-center gap-2"
+                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 999, padding: '8px 12px' }}>
+                    <Search size={14} className="text-white/50 shrink-0" />
+                    <input ref={searchInputRef} value={searchQuery} onChange={e => onSearchChange(e.target.value)}
+                      placeholder="Rechercher des reels, auteurs…"
+                      className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/40"
+                      onKeyDown={e => { if (e.key === 'Enter') runSearch(searchQuery); if (e.key === 'Escape') closeSearch(); }} />
+                    {searchQuery.length > 0 && (
+                      <button onClick={() => onSearchChange('')} className="shrink-0 text-white/70">
+                        <X size={16} />
                       </button>
-                    ))}
+                    )}
                   </div>
-                ) : searchQuery ? (
-                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center px-6">
-                    <Search size={28} className="text-white/20" />
-                    <p className="text-white text-sm font-bold">Aucun résultat</p>
-                    <p className="text-white/50 text-xs">Essaie un autre mot-clé</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center px-6">
-                    <TrendingUp size={28} className="text-white/20" />
-                    <p className="text-white text-sm font-bold">Découvre des reels</p>
-                    <p className="text-white/50 text-xs">Tape un mot-clé ou un nom d'auteur</p>
-                  </div>
-                )}
+                </div>
+
+                <div
+                  className="flex-1 overflow-y-auto min-h-0"
+                  onScroll={e => {
+                    const el = e.currentTarget;
+                    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 300) loadMoreSearchGrid();
+                  }}
+                >
+                  {searching && !showTrending ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-16">
+                      <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                      <p className="text-white/60 text-sm">Recherche…</p>
+                    </div>
+                  ) : gridData ? (
+                    <>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1 p-2 max-w-3xl mx-auto">
+                        {(() => {
+                          const cells: React.ReactNode[] = [];
+                          let adSlotCounter = 0;
+                          gridData.forEach((r, i) => {
+                            cells.push(
+                              <button key={r.id} onClick={() => pickSearchResult(r)}
+                                className="relative rounded-lg overflow-hidden" style={{ aspectRatio: '9/16' }}>
+                                {r.thumbnail_url
+                                  ? <img src={r.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                                  : <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
+                                      <Film size={20} className="text-white/20" />
+                                    </div>
+                                }
+                                <div className="absolute inset-0 flex flex-col justify-end p-1.5"
+                                  style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%)' }}>
+                                  {r.author?.avatar_url && (
+                                    <img src={r.author.avatar_url} alt="" className="w-5 h-5 rounded-full mb-1 border border-white/30" />
+                                  )}
+                                  <p className="text-white text-[9px] font-bold truncate">
+                                    {r.author?.display_name ?? r.author?.username ?? ''}
+                                  </p>
+                                  <div className="flex items-center gap-1.5 mt-0.5 text-white/70 text-[8px]">
+                                    <span className="flex items-center gap-0.5"><Eye size={7} />{r.view_count ?? 0}</span>
+                                    <span className="flex items-center gap-0.5"><Heart size={7} />{r.like_count ?? 0}</span>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                            if ((i + 1) % SEARCH_AD_INTERVAL === 0) {
+                              const slot = adSlotCounter++;
+                              const ad = adSlotMap.get(slot);
+                              if (ad) {
+                                cells.push(
+                                  <button key={`ad-${slot}`} onClick={() => setFullscreenSearchAd(ad)}
+                                    className="relative overflow-hidden" style={{ aspectRatio: '9/16' }}>
+                                    {ad.thumbnail_url || ad.creative_url
+                                      ? <img src={ad.thumbnail_url ?? ad.creative_url!} alt="" className="w-full h-full object-cover" />
+                                      : <div className="w-full h-full flex items-center justify-center" style={{ background: '#2A2340' }}>
+                                          <Zap size={22} className="text-white/35" />
+                                        </div>
+                                    }
+                                    <div className="absolute inset-0 flex flex-col justify-end p-1.5"
+                                      style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 55%)' }}>
+                                      <span className="self-start px-1.5 py-0.5 rounded text-[8px] font-bold text-white mb-1"
+                                        style={{ background: 'rgba(224,56,154,0.85)' }}>Sponsorisé</span>
+                                      <p className="text-white text-[9px] font-bold truncate">{ad.title}</p>
+                                    </div>
+                                  </button>
+                                );
+                              }
+                            }
+                          });
+                          return cells;
+                        })()}
+                      </div>
+                      {loadingMoreSearch && (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="w-6 h-6 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                        </div>
+                      )}
+                    </>
+                  ) : searchQuery.trim() ? (
+                    <div className="flex flex-col items-center justify-center gap-2 py-12 text-center px-6">
+                      <Search size={28} className="text-white/20" />
+                      <p className="text-white text-sm font-bold">Aucun résultat</p>
+                      <p className="text-white/50 text-xs">Essaie un autre mot-clé</p>
+                    </div>
+                  ) : loadingTrending ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-16">
+                      <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 py-12 text-center px-6">
+                      <TrendingUp size={28} className="text-white/20" />
+                      <p className="text-white text-sm font-bold">Découvre des reels</p>
+                      <p className="text-white/50 text-xs">Tape un mot-clé ou un nom d'auteur</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
+
+        {/* Pub vidéo de la grille recherche ouverte en plein écran avec son —
+            réutilise ReelAdSlide (même composant que le feed principal). */}
+        {fullscreenSearchAd && (
+          <div className="fixed inset-0 z-[300] bg-black flex items-center justify-center">
+            <button onClick={() => setFullscreenSearchAd(null)}
+              className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(255,255,255,0.12)' }}>
+              <X size={20} color="#fff" />
+            </button>
+            <div className="relative w-full h-full flex items-center justify-center" style={{ maxWidth: 480 }}>
+              <ReelAdSlide ad={fullscreenSearchAd} active globalMuted={false} />
+            </div>
+          </div>
+        )}
 
         {/* Toggle sidebar — desktop seulement */}
         <button

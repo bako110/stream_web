@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown, ArrowLeft, ArrowRight, Gift, Check, Calendar } from 'lucide-react';
 import type { Gender } from '../../types';
@@ -9,6 +9,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
+import { getDeviceFingerprint } from '../../utils/deviceFingerprint';
 
 const PERKS = [
   { icon: Zap,         label: 'Films, séries & reels en streaming',  color: '#7B3FF2' },
@@ -60,6 +61,12 @@ export default function RegisterPage() {
   const redirectTo = searchParams.get('redirect') ?? '/feed';
   const { register: signup, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
+
+  // Anti-bot : timestamp de montage du formulaire (détecte un remplissage
+  // anormalement rapide côté serveur) + honeypot (champ invisible pour un
+  // humain, ci-dessous dans le JSX, que les bots remplissent aveuglément).
+  const formStartedAtRef = useRef(Date.now());
+  const [websiteUrl, setWebsiteUrl] = useState('');
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>({
@@ -188,6 +195,9 @@ export default function RegisterPage() {
         referral_code: form.referral_code.trim() || undefined,
         date_of_birth: form.date_of_birth,
         gender: form.gender as Gender,
+        form_started_at: formStartedAtRef.current,
+        website_url: websiteUrl || undefined,
+        device_fingerprint: getDeviceFingerprint(),
         ...(authMethod === 'email' ? { email: form.email } : { phone }),
       });
       navigate(redirectTo, { replace: true });
@@ -295,6 +305,22 @@ export default function RegisterPage() {
                 Étape {step} sur {STEPS} — {STEP_LABELS[step - 1]}
               </p>
             </div>
+          </div>
+
+          {/* Honeypot anti-bot — invisible pour un humain (hors-écran + aria-hidden),
+              mais présent dans le DOM : les bots qui auto-complètent tous les champs
+              d'un formulaire le remplissent aveuglément, révélant leur nature. */}
+          <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+            <label htmlFor="website_url">Site web</label>
+            <input
+              id="website_url"
+              name="website_url"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={websiteUrl}
+              onChange={e => setWebsiteUrl(e.target.value)}
+            />
           </div>
 
           {/* Barre de progression */}

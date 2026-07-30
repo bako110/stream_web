@@ -209,9 +209,10 @@ export const Endpoints = {
     withdrawalRequestReject:  (id: string, reqId: string)           => `${V1}/communities/${id}/withdrawal-requests/${reqId}/reject`,
   },
   search: {
-    query:    `${V1}/search`,
-    trending: `${V1}/search/trending`,
-    feed:     `${V1}/search/feed`,
+    query:         `${V1}/search`,
+    trending:      `${V1}/search/trending`,
+    trendingReels: `${V1}/search/trending/reels`,
+    feed:          `${V1}/search/feed`,
   },
   subscriptions: {
     plans:          `${V1}/plans`,

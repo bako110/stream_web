@@ -42,7 +42,7 @@ interface SearchAd {
   advertiser_name?: string | null; format?: string | null;
 }
 
-function SearchAdCard({ ad }: { ad: SearchAd }) {
+function SearchAdCard({ ad, onOpenFullscreen }: { ad: SearchAd; onOpenFullscreen: (ad: SearchAd) => void }) {
   const impressionSent = useRef(false);
   const videoRef       = useRef<HTMLVideoElement>(null);
   const hlsRef         = useRef<Hls | null>(null);
@@ -80,7 +80,12 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
     }
   }, [ad.creative_url, isVideo]); // eslint-disable-line
 
+  // Une pub vidéo s'ouvre d'abord en plein écran avec son (comme un reel) —
+  // le CTA reste accessible depuis cet écran, jamais ouvert automatiquement
+  // au premier clic. Une pub image garde le comportement direct (lien immédiat),
+  // cohérent avec ce qui vient d'être fait côté mobile.
   function handleClick() {
+    if (isVideo) { onOpenFullscreen(ad); return; }
     if (!ad.cta_url) return;
     apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
     window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
@@ -117,9 +122,13 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
         </p>
       )}
 
-      {/* Visuel bord-à-bord */}
+      {/* Visuel bord-à-bord — cliquable pour une vidéo (ouvre le plein écran avec son) */}
       {(ad.thumbnail_url || ad.creative_url) && (
-        <div className="overflow-hidden" style={{ aspectRatio: '1.91/1' }}>
+        <div
+          className="overflow-hidden"
+          style={{ aspectRatio: '1.91/1', cursor: isVideo ? 'pointer' : 'default' }}
+          onClick={isVideo ? () => onOpenFullscreen(ad) : undefined}
+        >
           {isVideo && ad.creative_url ? (
             <video
               ref={setupVideo}
@@ -157,6 +166,79 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
   );
 }
 
+// ── AdFullscreenModal — pub vidéo ouverte en plein écran avec son ────────────
+// Équivalent web du lecteur plein écran ajouté côté mobile (AdSlide/
+// AdFullscreenPlayer) : le clic sur une pub-vidéo ouvrait jusqu'ici directement
+// le lien externe sans jamais laisser entendre le son de la vidéo (autoplay
+// muet uniquement dans la carte inline).
+
+function AdFullscreenModal({ ad, onClose }: { ad: SearchAd; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef   = useRef<Hls | null>(null);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !ad.creative_url) return;
+    const src = toProxiedUrl(ad.creative_url);
+    if (Hls.isSupported()) {
+      const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30 });
+      hlsRef.current = hls;
+      hls.loadSource(src);
+      hls.attachMedia(v);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
+      hls.on(Hls.Events.ERROR, (_e, data) => { if (data.fatal) hls.destroy(); });
+    } else {
+      v.src = src;
+      v.play().catch(() => {});
+    }
+    return () => { hlsRef.current?.destroy(); hlsRef.current = null; };
+  }, [ad.creative_url]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  function handleCta() {
+    if (!ad.cta_url) return;
+    apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
+    window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.92)' }}>
+      <button onClick={onClose}
+        className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center z-10"
+        style={{ background: 'rgba(255,255,255,0.12)' }}>
+        <X size={20} color="#fff" />
+      </button>
+
+      <div className="relative w-full h-full flex items-center justify-center" style={{ maxWidth: 480 }}>
+        <video ref={videoRef} className="max-w-full max-h-full" playsInline controls autoPlay />
+
+        <div className="absolute bottom-0 left-0 right-0 p-5 pt-16"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92), transparent)' }}>
+          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            Sponsorisé
+          </p>
+          <p className="text-white font-bold text-base mb-1">{ad.advertiser_name ?? ad.title}</p>
+          {ad.description && (
+            <p className="text-white/85 text-sm leading-relaxed mb-3 line-clamp-3">{ad.description}</p>
+          )}
+          {ad.cta_url && (
+            <button onClick={handleCta}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold"
+              style={{ background: 'var(--primary)', color: '#fff' }}>
+              {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface SearchResult {
   users?:    any[];
   films?:    any[];
@@ -188,6 +270,7 @@ export default function SearchPage() {
   const [loading,  setLoading]  = useState(false);
   const [trending, setTrending] = useState<{ id: string; title: string; thumbnail_url?: string | null }[]>([]);
   const [searchAd, setSearchAd] = useState<SearchAd | null>(null);
+  const [fullscreenAd, setFullscreenAd] = useState<SearchAd | null>(null);
   const [history,  setHistory]  = useState<HistoryItem[]>([]);
   // Champ mobile contrôlé — séparé de l'URL pour ne pas remonter l'input à chaque frappe
   // (l'ancienne version utilisait key={q}+defaultValue, qui remonte le DOM à chaque navigate
@@ -374,7 +457,7 @@ export default function SearchPage() {
 
           {/* Ad search — affichée en haut si pas de résultats utilisateurs, sinon après */}
           {searchAd && (results.users?.length ?? 0) === 0 && (
-            <SearchAdCard ad={searchAd} />
+            <SearchAdCard ad={searchAd} onOpenFullscreen={setFullscreenAd} />
           )}
 
           {/* Utilisateurs */}
@@ -406,7 +489,7 @@ export default function SearchPage() {
 
           {/* Ad search — après les utilisateurs (toutes les 5 items, identique mobile) */}
           {searchAd && (results.users?.length ?? 0) > 0 && (
-            <SearchAdCard ad={searchAd} />
+            <SearchAdCard ad={searchAd} onOpenFullscreen={setFullscreenAd} />
           )}
 
           {/* Films */}
@@ -557,6 +640,10 @@ export default function SearchPage() {
             </section>
           )}
         </div>
+      )}
+
+      {fullscreenAd && (
+        <AdFullscreenModal ad={fullscreenAd} onClose={() => setFullscreenAd(null)} />
       )}
     </div>
   );
