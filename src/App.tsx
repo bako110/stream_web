@@ -31,6 +31,7 @@ const ExploreReelDetailPage    = lazyWithRetry(() => import('./pages/explore/Exp
 
 const FeedPage          = lazyWithRetry(() => import('./pages/FeedPage'));
 const ReelsPage         = lazyWithRetry(() => import('./pages/ReelsPage'));
+const AdFullscreenPage  = lazyWithRetry(() => import('./pages/AdFullscreenPage'));
 const FilmsPage         = lazyWithRetry(() => import('./pages/FilmsPage'));
 const ConcertsPage      = lazyWithRetry(() => import('./pages/ConcertsPage'));
 const EventsPage        = lazyWithRetry(() => import('./pages/EventsPage'));
@@ -199,6 +200,9 @@ function AppShell() {
         <Route element={<AppLayout />}>
           <Route path="/reels" element={<ReelsPage />} />
         </Route>
+
+        {/* Pub plein écran (ouverte depuis la recherche) — page dédiée, pas de sidebar */}
+        <Route path="/ads/:id" element={<AdFullscreenPage />} />
 
         {/* Routes protégées */}
         <Route element={<ProtectedRoute />}>

@@ -42,7 +42,8 @@ interface SearchAd {
   advertiser_name?: string | null; format?: string | null;
 }
 
-function SearchAdCard({ ad, onOpenFullscreen }: { ad: SearchAd; onOpenFullscreen: (ad: SearchAd) => void }) {
+function SearchAdCard({ ad }: { ad: SearchAd }) {
+  const navigate = useNavigate();
   const impressionSent = useRef(false);
   const videoRef       = useRef<HTMLVideoElement>(null);
   const hlsRef         = useRef<Hls | null>(null);
@@ -85,7 +86,7 @@ function SearchAdCard({ ad, onOpenFullscreen }: { ad: SearchAd; onOpenFullscreen
   // au premier clic. Une pub image garde le comportement direct (lien immédiat),
   // cohérent avec ce qui vient d'être fait côté mobile.
   function handleClick() {
-    if (isVideo) { onOpenFullscreen(ad); return; }
+    if (isVideo) { navigate(`/ads/${ad.id}`, { state: { ad } }); return; }
     if (!ad.cta_url) return;
     apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
     window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
@@ -127,7 +128,7 @@ function SearchAdCard({ ad, onOpenFullscreen }: { ad: SearchAd; onOpenFullscreen
         <div
           className="overflow-hidden"
           style={{ aspectRatio: '1.91/1', cursor: isVideo ? 'pointer' : 'default' }}
-          onClick={isVideo ? () => onOpenFullscreen(ad) : undefined}
+          onClick={isVideo ? () => navigate(`/ads/${ad.id}`, { state: { ad } }) : undefined}
         >
           {isVideo && ad.creative_url ? (
             <video
@@ -166,117 +167,6 @@ function SearchAdCard({ ad, onOpenFullscreen }: { ad: SearchAd; onOpenFullscreen
   );
 }
 
-// ── AdFullscreenModal — pub vidéo ouverte en plein écran avec son ────────────
-// Équivalent web du lecteur plein écran ajouté côté mobile (AdSlide/
-// AdFullscreenPlayer) : le clic sur une pub-vidéo ouvrait jusqu'ici directement
-// le lien externe sans jamais laisser entendre le son de la vidéo (autoplay
-// muet uniquement dans la carte inline).
-
-function AdFullscreenModal({ ad, onClose }: { ad: SearchAd; onClose: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef   = useRef<Hls | null>(null);
-  const isVideo = ad.format === 'video' || !!(ad.creative_url && (
-    ad.creative_url.includes('.m3u8') ||
-    ad.creative_url.includes('/hls/') ||
-    ad.creative_url.toLowerCase().includes('.mp4')
-  ));
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !isVideo || !ad.creative_url) return;
-    const src = toProxiedUrl(ad.creative_url);
-    if (Hls.isSupported()) {
-      const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30 });
-      hlsRef.current = hls;
-      hls.loadSource(src);
-      hls.attachMedia(v);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
-      hls.on(Hls.Events.ERROR, (_e, data) => { if (data.fatal) hls.destroy(); });
-    } else {
-      v.src = src;
-      v.play().catch(() => {});
-    }
-    return () => { hlsRef.current?.destroy(); hlsRef.current = null; };
-  }, [ad.creative_url, isVideo]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  useEffect(() => {
-    apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
-  }, [ad.id]);
-
-  function handleCta() {
-    if (!ad.cta_url) return;
-    apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
-    window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
-  }
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black">
-      <button onClick={onClose}
-        className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center z-30"
-        style={{ background: 'rgba(255,255,255,0.12)' }}>
-        <X size={20} color="#fff" />
-      </button>
-
-      <div className="relative w-full h-full overflow-hidden" style={{ maxWidth: 480, background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-
-        {/* Fond flou — comble les bandes vides sans jamais rogner le visuel, comme les reels. */}
-        {(ad.creative_url || ad.thumbnail_url) && (
-          <img src={ad.thumbnail_url ?? ad.creative_url!} aria-hidden
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ filter: 'blur(40px) brightness(0.5)', transform: 'scale(1.15)' }} />
-        )}
-
-        {/* Visuel : VIDEO (HLS/MP4) ou IMAGE fallback, jamais rogné */}
-        {isVideo ? (
-          <video ref={videoRef}
-            className="absolute inset-0 w-full h-full object-contain"
-            playsInline muted={false} loop
-            poster={ad.thumbnail_url ?? undefined} />
-        ) : (ad.creative_url || ad.thumbnail_url) ? (
-          <img src={ad.creative_url ?? ad.thumbnail_url!} alt={ad.title}
-            className="absolute inset-0 w-full h-full object-contain" />
-        ) : null}
-
-        {/* Gradient sombre bas */}
-        <div className="absolute inset-0" style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 35%, transparent 70%)'
-        }} />
-
-        {/* Badge sponsorisé */}
-        <div className="absolute top-12 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-bold"
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
-          <Zap size={10} style={{ color: '#7B3FF2' }} /> Sponsorisé
-        </div>
-
-        {/* CTA style TikTok : pastille compacte flottante, fixe en bas, pulsation douce */}
-        <div className="absolute bottom-12 left-4 right-4 z-20 flex items-center gap-2.5 px-3 py-2 rounded-full"
-          style={{
-            background: 'rgba(0,0,0,0.55)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            animation: 'ad-cta-pulse 2.2s ease-in-out infinite',
-          }}>
-          <p className="text-white font-bold text-sm leading-tight truncate flex-1 min-w-0">{ad.advertiser_name ?? ad.title}</p>
-          {ad.cta_url && (
-            <button onClick={handleCta}
-              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full font-black text-xs"
-              style={{ background: 'white', color: '#7B3FF2' }}>
-              <ExternalLink size={12} />
-              {ad.cta_text ?? 'En savoir plus'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface SearchResult {
   users?:    any[];
   films?:    any[];
@@ -308,7 +198,6 @@ export default function SearchPage() {
   const [loading,  setLoading]  = useState(false);
   const [trending, setTrending] = useState<{ id: string; title: string; thumbnail_url?: string | null }[]>([]);
   const [searchAd, setSearchAd] = useState<SearchAd | null>(null);
-  const [fullscreenAd, setFullscreenAd] = useState<SearchAd | null>(null);
   const [history,  setHistory]  = useState<HistoryItem[]>([]);
   // Champ mobile contrôlé — séparé de l'URL pour ne pas remonter l'input à chaque frappe
   // (l'ancienne version utilisait key={q}+defaultValue, qui remonte le DOM à chaque navigate
@@ -495,7 +384,7 @@ export default function SearchPage() {
 
           {/* Ad search — affichée en haut si pas de résultats utilisateurs, sinon après */}
           {searchAd && (results.users?.length ?? 0) === 0 && (
-            <SearchAdCard ad={searchAd} onOpenFullscreen={setFullscreenAd} />
+            <SearchAdCard ad={searchAd} />
           )}
 
           {/* Utilisateurs */}
@@ -527,7 +416,7 @@ export default function SearchPage() {
 
           {/* Ad search — après les utilisateurs (toutes les 5 items, identique mobile) */}
           {searchAd && (results.users?.length ?? 0) > 0 && (
-            <SearchAdCard ad={searchAd} onOpenFullscreen={setFullscreenAd} />
+            <SearchAdCard ad={searchAd} />
           )}
 
           {/* Films */}
@@ -678,10 +567,6 @@ export default function SearchPage() {
             </section>
           )}
         </div>
-      )}
-
-      {fullscreenAd && (
-        <AdFullscreenModal ad={fullscreenAd} onClose={() => setFullscreenAd(null)} />
       )}
     </div>
   );
