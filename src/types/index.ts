@@ -264,7 +264,7 @@ export interface Story {
   thumbnail_url: string | null; caption: string | null; duration_sec: number;
   view_count: number; like_count?: number; liked_by_me?: boolean;
   is_active: boolean; expires_at: string; created_at: string;
-  background_color: string | null; audio_url: string | null; font_style: string | null;
+  background_color: string | null; audio_url: string | null; audio_name?: string | null; font_style: string | null;
   overlays_json: string | null;
   filter_key?: string | null; filter_overlay_color?: string | null; filter_overlay_opacity?: number | null;
   audience_type?: StoryAudienceType;

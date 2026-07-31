@@ -97,8 +97,16 @@ export default function StoryPage() {
 
 // ── MusicWidget — vinyle tournant + barres d'onde (identique mobile) ─────────
 
-function MusicWidget({ audioUrl, playing, isVoice }: { audioUrl: string; playing: boolean; isVoice?: boolean }) {
+function MusicWidget({
+  audioUrl, audioName, playing, isVoice, blocked, onRetry,
+}: { audioUrl: string; audioName?: string | null; playing: boolean; isVoice?: boolean; blocked?: boolean; onRetry?: () => void }) {
+  // Vrai titre (audio_name, résolu depuis le catalogue Sound côté backend) —
+  // fallback sur le nom de fichier de l'URL seulement pour les anciennes
+  // stories publiées avant l'ajout de ce champ.
   const trackName = (() => {
+    if (audioName && audioName.trim()) {
+      return audioName.length > 30 ? audioName.slice(0, 30) + '…' : audioName;
+    }
     try {
       const seg = audioUrl.split('/').pop()?.split('?')[0] ?? '';
       const clean = decodeURIComponent(seg).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
@@ -109,8 +117,11 @@ function MusicWidget({ audioUrl, playing, isVoice }: { audioUrl: string; playing
   const accent = isVoice ? '#FF9800' : '#a78bfa';
 
   return (
-    <div className="absolute pointer-events-none"
-      style={{ bottom: 80, left: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 10,
+    <div
+      className={blocked ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}
+      onClick={blocked ? onRetry : undefined}
+      title={blocked ? 'Le navigateur a bloqué la lecture automatique — clique pour écouter' : undefined}
+      style={{ position: 'absolute', bottom: 80, left: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 10,
         background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
         border: `1px solid ${accent}40`, borderRadius: 16, padding: '8px 12px 8px 8px',
         maxWidth: 220 }}>
@@ -120,8 +131,8 @@ function MusicWidget({ audioUrl, playing, isVoice }: { audioUrl: string; playing
         width: 44, height: 44, borderRadius: '50%', flexShrink: 0, position: 'relative',
         background: 'conic-gradient(#1a1a2e 0deg, #16213E 120deg, #0F3460 240deg, #1a1a2e 360deg)',
         border: '2px solid rgba(255,255,255,0.2)',
-        animation: playing ? 'spin-slow 5s linear infinite' : 'none',
-        boxShadow: playing ? `0 0 12px ${accent}80` : 'none',
+        animation: playing && !blocked ? 'spin-slow 5s linear infinite' : 'none',
+        boxShadow: playing && !blocked ? `0 0 12px ${accent}80` : 'none',
       }}>
         {/* Rainures */}
         {[13, 10, 7].map(r => (
@@ -148,7 +159,10 @@ function MusicWidget({ audioUrl, playing, isVoice }: { audioUrl: string; playing
           <span style={{ fontSize: 9, color: accent, fontWeight: 700 }}>
             {isVoice ? 'VOCAL' : 'MUSIQUE'}
           </span>
-          {playing && (
+          {blocked ? (
+            <span style={{ fontSize: 9, color: '#fff', background: '#EF444490',
+              borderRadius: 4, padding: '1px 4px', fontWeight: 700 }}>TAPER POUR ÉCOUTER</span>
+          ) : playing && (
             <span style={{ fontSize: 9, color: accent, background: accent + '25',
               borderRadius: 4, padding: '1px 4px', fontWeight: 700 }}>EN COURS</span>
           )}
@@ -162,10 +176,10 @@ function MusicWidget({ audioUrl, playing, isVoice }: { audioUrl: string; playing
           {Array.from({ length: 12 }, (_, i) => (
             <div key={i} style={{
               width: 2.5, borderRadius: 2, backgroundColor: accent,
-              height: playing ? undefined : 3,
-              animation: playing ? `wave-bar ${0.6 + (i % 4) * 0.15}s ease-in-out infinite alternate` : 'none',
+              height: playing && !blocked ? undefined : 3,
+              animation: playing && !blocked ? `wave-bar ${0.6 + (i % 4) * 0.15}s ease-in-out infinite alternate` : 'none',
               minHeight: 3, maxHeight: 12,
-              ...(playing ? { animationDelay: `${(i * 0.07).toFixed(2)}s` } : {}),
+              ...(playing && !blocked ? { animationDelay: `${(i * 0.07).toFixed(2)}s` } : {}),
             }} />
           ))}
         </div>
@@ -199,6 +213,7 @@ function StoryViewer({
   const [viewersOpen,    setViewersOpen]    = useState(false);
   const [viewersLoading, setViewersLoading] = useState(false);
   const [showAd,       setShowAd]       = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const [adProgress,   setAdProgress]   = useState(0);
   const [containerSize, setContainerSize] = useState({ w: 500, h: window.innerHeight });
   const containerRef   = useRef<HTMLDivElement>(null);
@@ -290,10 +305,21 @@ function StoryViewer({
     };
     if (!url || paused) { stop(); return; }
     const a = new Audio(url);
+    a.volume = 1;
+    a.muted = false;
     storyAudioRef.current = a;
-    a.play().catch(() => {});
+    // Certains navigateurs bloquent l'autoplay avec son hors interaction directe —
+    // le widget musique devient alors cliquable (voir onClick) pour relancer
+    // manuellement, plutôt que d'échouer silencieusement sans aucun retour.
+    a.play().then(() => setAudioBlocked(false)).catch(() => setAudioBlocked(true));
     return () => stop();
   }, [story?.id, paused]); // eslint-disable-line
+
+  const retryStoryAudio = useCallback(() => {
+    const a = storyAudioRef.current;
+    if (!a) return;
+    a.play().then(() => setAudioBlocked(false)).catch(() => setAudioBlocked(true));
+  }, []);
 
   // Mark viewed
   useEffect(() => {
@@ -543,14 +569,25 @@ function StoryViewer({
           onMouseDown={() => setPaused(true)} onMouseUp={() => setPaused(false)}
           onTouchStart={() => setPaused(true)} onTouchEnd={() => setPaused(false)}>
           {story.media_type === 'video' && story.media_url ? (
-            <video
-              key={story.id}
-              src={story.media_url}
-              className="w-full h-full object-cover"
-              autoPlay loop={false} playsInline muted={false}
-            />
+            <>
+              {/* Fond flouté agrandi — comble l'espace autour d'une vidéo dont le
+                  ratio ne correspond pas au cadre, sans jamais recadrer l'original
+                  (voir <video> ci-dessous, en object-contain). */}
+              <video src={story.media_url} className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'blur(24px)' }} muted autoPlay loop playsInline aria-hidden />
+              <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.35)' }} />
+              <video
+                key={story.id}
+                src={story.media_url}
+                className="absolute inset-0 w-full h-full object-contain"
+                autoPlay loop={false} playsInline muted={false}
+              />
+            </>
           ) : story.media_type === 'image' && story.media_url ? (
-            <img key={story.id} src={story.media_url} alt="" className="w-full h-full object-cover" />
+            <>
+              <img src={story.media_url} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'blur(24px)' }} />
+              <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.35)' }} />
+              <img key={story.id} src={story.media_url} alt="" className="absolute inset-0 w-full h-full object-contain" />
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center px-8"
               style={{ background: story.background_color ?? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
@@ -596,8 +633,11 @@ function StoryViewer({
         {story.audio_url && (
           <MusicWidget
             audioUrl={story.audio_url}
+            audioName={story.audio_name}
             playing={!paused}
             isVoice={story.media_type === 'voice'}
+            blocked={audioBlocked}
+            onRetry={retryStoryAudio}
           />
         )}
 

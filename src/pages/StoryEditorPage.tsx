@@ -668,6 +668,7 @@ export default function StoryEditorPage() {
           duration_sec: 5,
           background_color: typeof bgGrad === 'string' && bgGrad.startsWith('#') ? bgGrad : '#7B3FF2',
           audio_url: sound?.file_url,
+          audio_name: sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
           overlays_json,
           audience_type: audience,
         });
@@ -698,6 +699,7 @@ export default function StoryEditorPage() {
           caption: caption.trim() || undefined,
           duration_sec: 5,
           audio_url: sound?.file_url,
+          audio_name: sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
           overlays_json,
           audience_type: audience,
         });
@@ -713,6 +715,7 @@ export default function StoryEditorPage() {
           caption: caption.trim() || undefined,
           duration_sec,
           audio_url: sound?.file_url,
+          audio_name: sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
           overlays_json,
           audience_type: audience,
         });
