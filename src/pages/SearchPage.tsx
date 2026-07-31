@@ -175,10 +175,15 @@ function SearchAdCard({ ad, onOpenFullscreen }: { ad: SearchAd; onOpenFullscreen
 function AdFullscreenModal({ ad, onClose }: { ad: SearchAd; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef   = useRef<Hls | null>(null);
+  const isVideo = ad.format === 'video' || !!(ad.creative_url && (
+    ad.creative_url.includes('.m3u8') ||
+    ad.creative_url.includes('/hls/') ||
+    ad.creative_url.toLowerCase().includes('.mp4')
+  ));
 
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !ad.creative_url) return;
+    if (!v || !isVideo || !ad.creative_url) return;
     const src = toProxiedUrl(ad.creative_url);
     if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30 });
@@ -192,13 +197,17 @@ function AdFullscreenModal({ ad, onClose }: { ad: SearchAd; onClose: () => void 
       v.play().catch(() => {});
     }
     return () => { hlsRef.current?.destroy(); hlsRef.current = null; };
-  }, [ad.creative_url]);
+  }, [ad.creative_url, isVideo]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+  }, [ad.id]);
 
   function handleCta() {
     if (!ad.cta_url) return;
@@ -207,30 +216,59 @@ function AdFullscreenModal({ ad, onClose }: { ad: SearchAd; onClose: () => void 
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.92)' }}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black">
       <button onClick={onClose}
-        className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center z-10"
+        className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center z-30"
         style={{ background: 'rgba(255,255,255,0.12)' }}>
         <X size={20} color="#fff" />
       </button>
 
-      <div className="relative w-full h-full flex items-center justify-center" style={{ maxWidth: 480 }}>
-        <video ref={videoRef} className="max-w-full max-h-full" playsInline controls autoPlay />
+      <div className="relative w-full h-full overflow-hidden" style={{ maxWidth: 480, background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
 
-        <div className="absolute bottom-0 left-0 right-0 p-5 pt-16"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92), transparent)' }}>
-          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            Sponsorisé
-          </p>
-          <p className="text-white font-bold text-base mb-1">{ad.advertiser_name ?? ad.title}</p>
-          {ad.description && (
-            <p className="text-white/85 text-sm leading-relaxed mb-3 line-clamp-3">{ad.description}</p>
-          )}
+        {/* Fond flou — comble les bandes vides sans jamais rogner le visuel, comme les reels. */}
+        {(ad.creative_url || ad.thumbnail_url) && (
+          <img src={ad.thumbnail_url ?? ad.creative_url!} aria-hidden
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: 'blur(40px) brightness(0.5)', transform: 'scale(1.15)' }} />
+        )}
+
+        {/* Visuel : VIDEO (HLS/MP4) ou IMAGE fallback, jamais rogné */}
+        {isVideo ? (
+          <video ref={videoRef}
+            className="absolute inset-0 w-full h-full object-contain"
+            playsInline muted={false} loop
+            poster={ad.thumbnail_url ?? undefined} />
+        ) : (ad.creative_url || ad.thumbnail_url) ? (
+          <img src={ad.creative_url ?? ad.thumbnail_url!} alt={ad.title}
+            className="absolute inset-0 w-full h-full object-contain" />
+        ) : null}
+
+        {/* Gradient sombre bas */}
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 35%, transparent 70%)'
+        }} />
+
+        {/* Badge sponsorisé */}
+        <div className="absolute top-12 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-bold"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+          <Zap size={10} style={{ color: '#7B3FF2' }} /> Sponsorisé
+        </div>
+
+        {/* CTA style TikTok : pastille compacte flottante, fixe en bas, pulsation douce */}
+        <div className="absolute bottom-12 left-4 right-4 z-20 flex items-center gap-2.5 px-3 py-2 rounded-full"
+          style={{
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            animation: 'ad-cta-pulse 2.2s ease-in-out infinite',
+          }}>
+          <p className="text-white font-bold text-sm leading-tight truncate flex-1 min-w-0">{ad.advertiser_name ?? ad.title}</p>
           {ad.cta_url && (
             <button onClick={handleCta}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold"
-              style={{ background: 'var(--primary)', color: '#fff' }}>
-              {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={14} />
+              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full font-black text-xs"
+              style={{ background: 'white', color: '#7B3FF2' }}>
+              <ExternalLink size={12} />
+              {ad.cta_text ?? 'En savoir plus'}
             </button>
           )}
         </div>
