@@ -11,7 +11,7 @@ import {
   Volume2, VolumeX, Play, X, Send, Bookmark, ArrowLeft,
   Gift, Zap, ExternalLink, Eye, Search, User, Film,
   Calendar, Music, MoreVertical, Edit3, Trash2, TrendingUp,
-  ChevronRight, ChevronLeft, Repeat2, GitMerge, Link2, Flag,
+  ChevronRight, ChevronLeft, ChevronUp, ChevronDown, Repeat2, GitMerge, Link2, Flag,
   MessageSquareOff, MessageSquare, BarChart2,
 } from 'lucide-react';
 import Hls from 'hls.js';
@@ -178,9 +178,10 @@ function GiftPickerModal({ reelId, receiverId, receiverName, onClose }: {
 // ── Comments sidebar ──────────────────────────────────────────────────────────
 function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: number; onClose?: () => void }) {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string; authorId?: string } | null>(null);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [localLikes, setLocalLikes] = useState<Record<string, number>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -188,6 +189,29 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading]   = useState(true);
+
+  // Fils de réponses — chargés à la demande (dépliage) par commentaire racine,
+  // pas systématiquement : list_comments ne retourne que les commentaires sans
+  // parent, GET /comments/{id}/replies est le seul moyen de récupérer le reste.
+  const [openReplies,    setOpenReplies]    = useState<Set<string>>(new Set());
+  const [replies,        setReplies]        = useState<Record<string, Comment[]>>({});
+  const [loadingReplies, setLoadingReplies] = useState<Set<string>>(new Set());
+
+  function toggleReplies(commentId: string) {
+    setOpenReplies(prev => {
+      const next = new Set(prev);
+      if (next.has(commentId)) { next.delete(commentId); return next; }
+      next.add(commentId);
+      if (!replies[commentId]) {
+        setLoadingReplies(l => new Set(l).add(commentId));
+        apiClient.get<Comment[]>(Endpoints.social.commentReplies(commentId))
+          .then(r => setReplies(prev2 => ({ ...prev2, [commentId]: Array.isArray(r.data) ? r.data : [] })))
+          .catch(() => setReplies(prev2 => ({ ...prev2, [commentId]: [] })))
+          .finally(() => setLoadingReplies(l => { const n = new Set(l); n.delete(commentId); return n; }));
+      }
+      return next;
+    });
+  }
 
   const load = useCallback(() => {
     setLoading(true);
@@ -212,19 +236,28 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
   const [editBody,   setEditBody]   = useState('');
   const [editSaving, setEditSaving] = useState(false);
 
-  async function deleteComment(id: string) {
+  async function deleteComment(id: string, parentId?: string) {
     try {
       await apiClient.delete(`${Endpoints.social.comments}/${id}`);
-      setComments(prev => prev.filter(c => c.id !== id));
+      if (parentId) {
+        setReplies(prev => ({ ...prev, [parentId]: (prev[parentId] ?? []).filter(c => c.id !== id) }));
+        setComments(prev => prev.map(c => c.id === parentId ? { ...c, reply_count: Math.max(0, (c.reply_count ?? 1) - 1) } : c));
+      } else {
+        setComments(prev => prev.filter(c => c.id !== id));
+      }
     } catch {}
   }
 
-  async function saveEdit(id: string) {
+  async function saveEdit(id: string, parentId?: string) {
     if (!editBody.trim() || editSaving) return;
     setEditSaving(true);
     try {
       await apiClient.put(`${Endpoints.social.comments}/${id}`, { body: editBody.trim() });
-      setComments(prev => prev.map(c => c.id === id ? { ...c, body: editBody.trim() } : c));
+      if (parentId) {
+        setReplies(prev => ({ ...prev, [parentId]: (prev[parentId] ?? []).map(c => c.id === id ? { ...c, body: editBody.trim() } : c) }));
+      } else {
+        setComments(prev => prev.map(c => c.id === id ? { ...c, body: editBody.trim() } : c));
+      }
       setEditingId(null);
     } catch {}
     finally { setEditSaving(false); }
@@ -232,24 +265,35 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
 
   function handleReply(c: Comment) {
     const name = c.author?.display_name ?? c.author?.username ?? 'Utilisateur';
-    setReplyTo({ id: c.id, name });
-    setText(`@${name} `);
+    setReplyTo({ id: c.id, name, authorId: c.author?.id });
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
   async function send() {
     if (!text.trim()) return;
     setSending(true);
+    const parentId = replyTo?.id ?? null;
     try {
       await apiClient.post(Endpoints.social.comments, {
         reel_id: reelId,
         body: text.trim(),
-        ...(replyTo ? { parent_id: replyTo.id } : {}),
+        ...(parentId ? { parent_id: parentId } : {}),
       });
       setText('');
       setReplyTo(null);
-      load();
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 200);
+      if (parentId) {
+        // Réponse : le commentaire racine n'est pas ré-affiché par load() (qui ne
+        // retourne que les commentaires sans parent) — on rafraîchit juste son
+        // fil de réponses, en s'assurant qu'il reste déplié pour montrer le résultat.
+        apiClient.get<Comment[]>(Endpoints.social.commentReplies(parentId))
+          .then(r => setReplies(prev => ({ ...prev, [parentId]: Array.isArray(r.data) ? r.data : [] })))
+          .catch(() => {});
+        setOpenReplies(prev => new Set(prev).add(parentId));
+        setComments(prev => prev.map(c => c.id === parentId ? { ...c, reply_count: (c.reply_count ?? 0) + 1 } : c));
+      } else {
+        load();
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 200);
+      }
     } finally { setSending(false); }
   }
 
@@ -347,13 +391,87 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                   <p className="text-sm mt-0.5 leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
                 )}
                 {editingId !== c.id && (
-                  <button onClick={() => handleReply(c)}
-                    className="text-[11px] font-semibold mt-1 transition-colors"
-                    style={{ color: 'var(--text-tertiary)' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-                    Répondre
-                  </button>
+                  <div className="flex items-center gap-3 mt-1">
+                    <button onClick={() => handleReply(c)}
+                      className="text-[11px] font-semibold transition-colors"
+                      style={{ color: 'var(--text-tertiary)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                      Répondre
+                    </button>
+                    {(c.reply_count ?? 0) > 0 && (
+                      <button onClick={() => toggleReplies(c.id)}
+                        className="flex items-center gap-1 text-[11px] font-semibold transition-colors"
+                        style={{ color: 'var(--primary)' }}>
+                        {openReplies.has(c.id) ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        {openReplies.has(c.id) ? 'Masquer' : `Voir les ${c.reply_count} réponse${c.reply_count! > 1 ? 's' : ''}`}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Fil de réponses — indenté, chargé à la demande */}
+                {openReplies.has(c.id) && (
+                  <div className="mt-3 space-y-3 pl-3" style={{ borderLeft: '2px solid var(--border)' }}>
+                    {loadingReplies.has(c.id) ? (
+                      <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                        <Spinner size="sm" /> Chargement…
+                      </div>
+                    ) : (replies[c.id] ?? []).map(rc => {
+                      const rname = rc.author?.display_name ?? rc.author?.username ?? 'Utilisateur';
+                      return (
+                        <div key={rc.id} className="flex gap-2 group">
+                          <Avatar src={rc.author?.avatar_url} name={rname} size="xs" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold mr-2" style={{ color: 'var(--primary)' }}>{rname}</span>
+                                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                                  {formatDistanceToNow(new Date(rc.created_at), { locale: fr, addSuffix: true })}
+                                </span>
+                              </div>
+                              {user?.id === rc.author?.id && editingId !== rc.id && (
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 shrink-0">
+                                  <button onClick={() => { setEditingId(rc.id); setEditBody(rc.body); }}
+                                    className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
+                                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
+                                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                                    <Edit3 size={11} />
+                                  </button>
+                                  <button onClick={() => deleteComment(rc.id, c.id)}
+                                    className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
+                                    onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            {editingId === rc.id ? (
+                              <div className="flex flex-col gap-1.5 mt-1">
+                                <input autoFocus value={editBody} onChange={e => setEditBody(e.target.value)}
+                                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(rc.id, c.id); } if (e.key === 'Escape') setEditingId(null); }}
+                                  className="text-sm px-3 py-2 rounded-xl w-full outline-none"
+                                  style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--primary)', color: 'var(--text-primary)' }} />
+                                <div className="flex gap-2">
+                                  <button onClick={() => saveEdit(rc.id, c.id)} disabled={editSaving}
+                                    className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                                    style={{ background: 'var(--primary)', color: '#fff', opacity: editSaving ? 0.6 : 1 }}>
+                                    {editSaving ? '…' : 'Enregistrer'}
+                                  </button>
+                                  <button onClick={() => setEditingId(null)}
+                                    className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                                    style={{ color: 'var(--text-tertiary)' }}>Annuler</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm mt-0.5 leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-primary)' }}>{rc.body}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>
@@ -367,7 +485,15 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
         <div className="flex items-center justify-between px-4 py-2 shrink-0"
           style={{ background: 'rgba(123,63,242,0.06)', borderTop: '1px solid var(--border)' }}>
           <p className="text-xs" style={{ color: 'var(--primary)' }}>
-            Répondre à <span className="font-bold">@{replyTo.name}</span>
+            Répondre à{' '}
+            {replyTo.authorId ? (
+              <button onClick={() => navigate(`/user/${encodeId(replyTo.authorId!)}`)}
+                className="font-bold hover:underline">
+                @{replyTo.name}
+              </button>
+            ) : (
+              <span className="font-bold">@{replyTo.name}</span>
+            )}
           </p>
           <button onClick={() => { setReplyTo(null); setText(''); }} className="p-1" style={{ color: 'var(--text-tertiary)' }}>
             <X size={13} />
@@ -454,7 +580,7 @@ function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick, 
                   <HoverVideoPreview key={r.id}
                     src={r.hls_url} poster={r.thumbnail_url}
                     className="relative overflow-hidden transition-transform hover:scale-[1.02]"
-                    style={{ aspectRatio: '9/16', borderRadius: 12, background: 'var(--bg-secondary)' }}>
+                    style={{ aspectRatio: '2/3.6', borderRadius: 12, background: 'var(--bg-secondary)' }}>
                     <button onClick={() => onSuggestionClick(r.id)} className="absolute inset-0 w-full h-full text-left">
                       {!r.thumbnail_url && !r.hls_url && (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -2498,7 +2624,7 @@ export default function ReelsPage() {
           style={{
             ['--reel-col-w' as string]: activeRatio != null && activeRatio >= 1
               ? `min(calc((100dvh - 32px) * ${activeRatio}), calc(100% - 32px))`
-              : '460px',
+              : '600px',
           }}>
 
           {/* Header flottant (identique mobile) */}
@@ -2737,36 +2863,7 @@ export default function ReelsPage() {
       {/* ── Panneau droit : commentaires + suggestions — desktop uniquement ── */}
       {sidebarOpen && activeReel && (
         <div className="hidden md:flex flex-col shrink-0 h-full"
-          style={{ width: 380, borderLeft: '1px solid var(--border)', background: 'var(--bg)' }}>
-          <div className="flex items-center gap-3 px-4 py-3 shrink-0"
-            style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
-            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0"
-              style={{ border: '1.5px solid var(--border)' }}>
-              {activeReel.author?.avatar_url
-                ? <img src={activeReel.author.avatar_url} alt="" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold"
-                    style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                    {(activeReel.author?.display_name ?? activeReel.author?.username ?? 'A')[0].toUpperCase()}
-                  </div>
-              }
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>
-                {activeReel.author?.display_name ?? activeReel.author?.username ?? 'Artiste'}
-              </p>
-              {activeReel.caption && (
-                <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{activeReel.caption}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                <Heart size={12} /> {activeReel.like_count ?? 0}
-              </span>
-              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                <MessageCircle size={12} /> {activeReel.comment_count ?? 0}
-              </span>
-            </div>
-          </div>
+          style={{ width: 600, borderLeft: '1px solid var(--border)', background: 'var(--bg)' }}>
 
           {/* Onglets Commentaires / Tu pourrais aimer */}
           <RightPanelTabs

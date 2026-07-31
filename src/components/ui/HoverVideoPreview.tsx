@@ -57,14 +57,14 @@ export function HoverVideoPreview({ src, poster, className, style, children }: P
     <div className={className} style={style} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
       {poster && (
         <img src={poster} alt="" className="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
-          style={{ opacity: hovering && src ? 0 : 1 }} />
+          style={{ opacity: hovering && src ? 0 : 1, transform: 'scale(1.18)' }} />
       )}
       {src && (
         <video
           ref={setupVideo}
           muted loop playsInline
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
-          style={{ opacity: hovering ? 1 : 0 }}
+          style={{ opacity: hovering ? 1 : 0, transform: 'scale(1.18)' }}
         />
       )}
       {children}
