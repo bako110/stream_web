@@ -10,7 +10,6 @@ import { Endpoints } from '../api/endpoints';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import toast from 'react-hot-toast';
 
 interface WalletBalance {
   gogold_balance: number;
@@ -90,8 +89,6 @@ export default function WalletPage() {
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
   }, [fetchData]);
 
-  const UNAVAILABLE_MSG = 'Service temporairement indisponible. Nous rencontrons un problème technique, notre équipe travaille dessus.';
-
   const ACTIONS = [
     { icon: <ShoppingCart size={20} />, label: 'Acheter',      color: '#7B3FF2', path: '/wallet/buy' },
     { icon: <Send size={20} />,         label: 'Transférer',   color: '#7B3FF2', path: '/wallet/transfer' },
@@ -170,16 +167,14 @@ export default function WalletPage() {
       <div className="grid grid-cols-3 gap-3">
         {ACTIONS.map(a => (
           <button key={a.label}
-            onClick={() => { if (a.disabled) { toast.error(UNAVAILABLE_MSG); return; } navigate(a.path); }}
-            title={a.disabled ? UNAVAILABLE_MSG : undefined}
+            onClick={() => navigate(a.path)}
             className="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all"
             style={{
               background: 'var(--surface)',
               border: '1px solid var(--border)',
-              opacity: a.disabled ? 0.45 : 1,
-              cursor: a.disabled ? 'not-allowed' : 'pointer',
+              cursor: 'pointer',
             }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = a.disabled ? 'var(--border)' : a.color)}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = a.color)}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center"
               style={{ background: `${a.color}22`, color: a.color }}>
