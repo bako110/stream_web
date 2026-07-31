@@ -2,11 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Zap, Star, Crown, Sparkles, PenLine,
-  ExternalLink, CheckCircle, XCircle, Clock, RefreshCw,
+  ExternalLink, CheckCircle, XCircle, Clock, RefreshCw, CreditCard, Smartphone,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
+import { StripeCardForm } from '../../components/wallet/StripeCardForm';
 import toast from 'react-hot-toast';
 
 const GOGOLD_PER_EUR = 100;
@@ -44,6 +45,19 @@ interface CinetPayStatusResponse {
   new_balance?: number;
 }
 
+interface StripeInitResponse {
+  client_secret: string;
+  payment_intent_id: string;
+  gogold_to_add: number;
+  amount_eur: number;
+}
+
+interface GoGoldPurchaseResponse {
+  transaction: { id: string };
+  new_balance: number;
+  gogold_added: number;
+}
+
 const MOCK_PACKAGES: GoGoldPackage[] = [
   { id: '1', name: 'Starter', gogold: 100,  bonus_gogold: 0,   price_eur: 0.99,  is_popular: false },
   { id: '2', name: 'Popular', gogold: 500,  bonus_gogold: 75,  price_eur: 3.99,  is_popular: true  },
@@ -57,7 +71,8 @@ function bonusOf(pkg: GoGoldPackage): number { return pkg.bonus_gogold ?? pkg.bo
 function priceOf(pkg: GoGoldPackage): number  { return Number(pkg.price_eur); }
 function isPopular(pkg: GoGoldPackage): boolean { return !!(pkg.is_popular ?? pkg.popular); }
 
-type PayStep = 'select' | 'waiting' | 'success' | 'failed';
+type PayStep = 'select' | 'card' | 'waiting' | 'success' | 'failed';
+type PayMethod = 'cinetpay' | 'stripe';
 
 export default function WalletBuyPage() {
   const navigate = useNavigate();
@@ -67,6 +82,7 @@ export default function WalletBuyPage() {
   const [selected, setSelected]   = useState<string | null>(null);
   const [customMode, setCustomMode] = useState(false);
   const [customEur, setCustomEur]   = useState('');
+  const [payMethod, setPayMethod] = useState<PayMethod>('cinetpay');
 
   // CinetPay flow
   const [step, setStep]                 = useState<PayStep>('select');
@@ -75,6 +91,13 @@ export default function WalletBuyPage() {
   const [goGoldToAdd, setGoGoldToAdd]     = useState(0);
   const [statusMsg, setStatusMsg]       = useState('');
   const [finalBalance, setFinalBalance] = useState<number | null>(null);
+
+  // Stripe flow
+  const [stripePublishableKey, setStripePublishableKey] = useState<string | null>(null);
+  const [stripeClientSecret, setStripeClientSecret]     = useState<string | null>(null);
+  const [pendingPurchase, setPendingPurchase] = useState<
+    { packageId: string | null; amountEur: number | null } | null
+  >(null);
 
   const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStart  = useRef<number>(0);
@@ -89,10 +112,13 @@ export default function WalletBuyPage() {
     Math.round(customAmount * 100) === Math.round(customAmount * 100)
   );
 
+  // Clé publique Stripe — récupérée une fois, nécessaire pour initialiser
+  // le SDK avant de pouvoir monter le formulaire de carte.
   useEffect(() => {
-    toast.error('Service temporairement indisponible. Nous rencontrons un problème technique, notre équipe travaille dessus.');
-    navigate('/wallet', { replace: true });
-  }, [navigate]);
+    apiClient.get<{ publishable_key: string }>(Endpoints.wallet.stripeConfig)
+      .then(r => setStripePublishableKey(r.data.publishable_key || null))
+      .catch(() => setStripePublishableKey(null));
+  }, []);
 
   useEffect(() => {
     apiClient.get<GoGoldPackage[]>(Endpoints.wallet.packages)
@@ -190,15 +216,51 @@ export default function WalletBuyPage() {
     }
   }
 
+  async function initStripePayment(packageId: string | null, amountEur: number | null) {
+    setInitiating(true);
+    try {
+      const body = packageId ? { package_id: packageId } : { amount_eur: amountEur };
+      const res = await apiClient.post<StripeInitResponse>(Endpoints.wallet.stripeInit, body);
+      setStripeClientSecret(res.data.client_secret);
+      setGoGoldToAdd(res.data.gogold_to_add);
+      setPendingPurchase({ packageId, amountEur });
+      setStep('card');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail ?? "Impossible d'initier le paiement par carte.");
+    } finally {
+      setInitiating(false);
+    }
+  }
+
+  async function handleStripeConfirmed(paymentIntentId: string) {
+    if (!pendingPurchase) return;
+    try {
+      const body = pendingPurchase.packageId
+        ? { package_id: pendingPurchase.packageId, stripe_payment_intent_id: paymentIntentId }
+        : { amount_eur: pendingPurchase.amountEur, stripe_payment_intent_id: paymentIntentId };
+      const endpoint = pendingPurchase.packageId ? Endpoints.wallet.purchase : Endpoints.wallet.purchaseCustom;
+      const res = await apiClient.post<GoGoldPurchaseResponse>(endpoint, body);
+      setFinalBalance(res.data.new_balance);
+      setGoGoldToAdd(res.data.gogold_added);
+      setStep('success');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail ?? 'Paiement confirmé mais le crédit a échoué — contactez le support.');
+      setStep('failed');
+      setStatusMsg(e?.response?.data?.detail ?? 'Le crédit du wallet a échoué après paiement.');
+    }
+  }
+
   function handleBuyPackage(pkg: GoGoldPackage) {
-    initPayment(pkg.id, null, pkg.gogold + bonusOf(pkg));
+    if (payMethod === 'stripe') initStripePayment(pkg.id, null);
+    else initPayment(pkg.id, null, pkg.gogold + bonusOf(pkg));
   }
 
   function handleBuyCustom() {
     if (!customValid) return;
     // Arrondi à 2 décimales pour éviter les flottants imprévisibles (ex: 1.999999)
     const safeAmount = Math.round(customAmount * 100) / 100;
-    initPayment(null, safeAmount, Math.floor(safeAmount * GOGOLD_PER_EUR));
+    if (payMethod === 'stripe') initStripePayment(null, safeAmount);
+    else initPayment(null, safeAmount, Math.floor(safeAmount * GOGOLD_PER_EUR));
   }
 
   function handleRetry() {
@@ -207,6 +269,8 @@ export default function WalletBuyPage() {
     setMerchantTxId(null);
     setStatusMsg('');
     setFinalBalance(null);
+    setStripeClientSecret(null);
+    setPendingPurchase(null);
   }
 
   // ── Écran succès ──────────────────────────────────────────────
@@ -259,6 +323,33 @@ export default function WalletBuyPage() {
           className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
           Retour au portefeuille
         </button>
+      </div>
+    );
+  }
+
+  // ── Écran formulaire carte Stripe ─────────────────────────────
+  if (step === 'card') {
+    if (!stripePublishableKey || !stripeClientSecret) {
+      return (
+        <div className="w-full mx-auto px-4 py-12 flex flex-col items-center gap-4">
+          <Spinner size="md" />
+        </div>
+      );
+    }
+    return (
+      <div className="w-full mx-auto px-4 py-6 space-y-5">
+        <div>
+          <h2 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Paiement par carte</h2>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+            +{goGoldToAdd.toLocaleString('fr-FR')} GoGold après confirmation
+          </p>
+        </div>
+        <StripeCardForm
+          publishableKey={stripePublishableKey}
+          clientSecret={stripeClientSecret}
+          onConfirmed={handleStripeConfirmed}
+          onCancel={handleRetry}
+        />
       </div>
     );
   }
@@ -329,8 +420,30 @@ export default function WalletBuyPage() {
         </button>
         <div>
           <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Acheter des GoGold</h1>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Paiement sécurisé via CinetPay</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Paiement 100% sécurisé</p>
         </div>
+      </div>
+
+      {/* Sélecteur méthode de paiement */}
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={() => setPayMethod('cinetpay')}
+          className="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all"
+          style={{
+            background: payMethod === 'cinetpay' ? 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(123,63,242,0.1))' : 'var(--surface)',
+            border: payMethod === 'cinetpay' ? '2px solid var(--primary)' : '1px solid var(--border)',
+            color: payMethod === 'cinetpay' ? 'var(--primary)' : 'var(--text-secondary)',
+          }}>
+          <Smartphone size={15} /> Mobile Money
+        </button>
+        <button onClick={() => setPayMethod('stripe')}
+          className="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all"
+          style={{
+            background: payMethod === 'stripe' ? 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(123,63,242,0.1))' : 'var(--surface)',
+            border: payMethod === 'stripe' ? '2px solid var(--primary)' : '1px solid var(--border)',
+            color: payMethod === 'stripe' ? 'var(--primary)' : 'var(--text-secondary)',
+          }}>
+          <CreditCard size={15} /> Carte bancaire
+        </button>
       </div>
 
       {/* Info banner */}
@@ -338,8 +451,9 @@ export default function WalletBuyPage() {
         style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.08))', border: '1px solid rgba(123,63,242,0.2)' }}>
         <ExternalLink size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-          Vous serez redirigé vers CinetPay pour finaliser le paiement (Orange Money, Wave, MTN, Moov, CB…).
-          Votre solde est mis à jour automatiquement.
+          {payMethod === 'cinetpay'
+            ? 'Vous serez redirigé vers CinetPay pour finaliser le paiement (Orange Money, Wave, MTN, Moov). Votre solde est mis à jour automatiquement.'
+            : 'Paiement par carte bancaire sécurisé par Stripe, directement dans la page — aucune redirection.'}
         </p>
       </div>
 
@@ -420,13 +534,16 @@ export default function WalletBuyPage() {
             const pkg   = packages.find(p => p.id === selected)!;
             const total = pkg.gogold + bonusOf(pkg);
             const price = priceOf(pkg);
+            const disabled = initiating || (payMethod === 'stripe' && !stripePublishableKey);
             return (
-              <button onClick={() => handleBuyPackage(pkg)} disabled={initiating}
+              <button onClick={() => handleBuyPackage(pkg)} disabled={disabled}
                 className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
                 style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.35)' }}>
                 {initiating
                   ? <Spinner size="sm" />
-                  : <><ExternalLink size={15} /> Payer {total.toLocaleString('fr-FR')} GoGold — {price.toFixed(2)} €</>}
+                  : payMethod === 'stripe'
+                    ? <><CreditCard size={15} /> Payer {total.toLocaleString('fr-FR')} GoGold — {price.toFixed(2)} €</>
+                    : <><ExternalLink size={15} /> Payer {total.toLocaleString('fr-FR')} GoGold — {price.toFixed(2)} €</>}
               </button>
             );
           })()}
@@ -468,7 +585,7 @@ export default function WalletBuyPage() {
             </p>
           )}
 
-          <button onClick={handleBuyCustom} disabled={!customValid || initiating}
+          <button onClick={handleBuyCustom} disabled={!customValid || initiating || (payMethod === 'stripe' && !stripePublishableKey)}
             className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
             style={{
               background: customValid ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' : 'var(--bg-secondary)',
@@ -477,7 +594,9 @@ export default function WalletBuyPage() {
             {initiating
               ? <Spinner size="sm" />
               : customValid
-                ? <><ExternalLink size={15} /> Payer {customGoGold.toLocaleString('fr-FR')} GoGold — {customAmount.toFixed(2)} €</>
+                ? (payMethod === 'stripe'
+                  ? <><CreditCard size={15} /> Payer {customGoGold.toLocaleString('fr-FR')} GoGold — {customAmount.toFixed(2)} €</>
+                  : <><ExternalLink size={15} /> Payer {customGoGold.toLocaleString('fr-FR')} GoGold — {customAmount.toFixed(2)} €</>)
                 : 'Saisissez un montant valide'}
           </button>
         </div>

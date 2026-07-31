@@ -25,11 +25,6 @@ export default function WalletWithdrawPage() {
   const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => {
-    toast.error('Service temporairement indisponible. Nous rencontrons un problème technique, notre équipe travaille dessus.');
-    navigate('/wallet', { replace: true });
-  }, [navigate]);
-
-  useEffect(() => {
     apiClient.get<WalletBalance>(Endpoints.wallet.balance)
       .then(r => setBalance(r.data))
       .catch(() => {})

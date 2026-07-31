@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.20",
+    "@stripe/react-stripe-js": "^6.8.0",
+    "@stripe/stripe-js": "^9.12.1",
     "axios": "^1.15.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

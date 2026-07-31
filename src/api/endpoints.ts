@@ -336,6 +336,8 @@ export const Endpoints = {
     referralUsers:  `${V1}/wallet/referral/users`,
     cinetpayInit:   `${V1}/wallet/purchase/cinetpay/init`,
     cinetpayStatus: (merchantTxId: string) => `${V1}/wallet/purchase/cinetpay/${merchantTxId}/status`,
+    stripeConfig:   `${V1}/wallet/stripe/config`,
+    stripeInit:     `${V1}/wallet/purchase/stripe/init`,
   },
   monetization: {
     status:  `${V1}/monetization/status`,

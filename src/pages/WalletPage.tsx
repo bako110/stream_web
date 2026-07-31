@@ -93,9 +93,9 @@ export default function WalletPage() {
   const UNAVAILABLE_MSG = 'Service temporairement indisponible. Nous rencontrons un problème technique, notre équipe travaille dessus.';
 
   const ACTIONS = [
-    { icon: <ShoppingCart size={20} />, label: 'Acheter',      color: '#7B3FF2', path: '/wallet/buy',      disabled: true },
+    { icon: <ShoppingCart size={20} />, label: 'Acheter',      color: '#7B3FF2', path: '/wallet/buy' },
     { icon: <Send size={20} />,         label: 'Transférer',   color: '#7B3FF2', path: '/wallet/transfer' },
-    { icon: <ArrowUpRight size={20} />, label: 'Retirer',      color: '#3FEDB6', path: '/wallet/withdraw', disabled: true },
+    { icon: <ArrowUpRight size={20} />, label: 'Retirer',      color: '#3FEDB6', path: '/wallet/withdraw' },
     { icon: <Zap size={20} />,          label: 'Booster',      color: '#7B3FF2', path: '/wallet/boost' },
     { icon: <Megaphone size={20} />,    label: 'Publicités',   color: '#7B3FF2', path: '/wallet/ads' },
     { icon: <BarChart2 size={20} />,    label: 'Créateur',     color: '#E85DAD', path: '/wallet/creator' },
