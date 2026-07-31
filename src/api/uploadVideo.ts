@@ -111,3 +111,50 @@ export async function uploadVideoHls(
   onProgress?.(100);
   return data;
 }
+
+function xhrUploadImage(
+  file: File,
+  durationSec: number,
+  onProgress?: (pct: number) => void,
+): Promise<UploadedVideo> {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const token = getToken();
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/v1/upload/image-to-reel?${new URLSearchParams({ duration: String(durationSec) }).toString()}`);
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 70));
+    };
+    xhr.onload = () => {
+      try {
+        const json = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) resolve((json?.data ?? json) as UploadedVideo);
+        else reject(new Error(json?.detail ?? json?.message ?? 'Conversion image→vidéo échouée'));
+      } catch { reject(new Error('Réponse invalide du serveur')); }
+    };
+    xhr.onerror = () => reject(new Error('Erreur réseau pendant l\'upload'));
+    xhr.send(fd);
+  });
+}
+
+/**
+ * Convertit une image fixe en reel vidéo (POST /upload/image-to-reel) puis
+ * attend le même pipeline HLS que uploadVideoHls (même job_id/polling côté
+ * backend) — portage de uploadImageAsReel côté mobile (uploadService.ts).
+ */
+export async function uploadImageAsReel(
+  file: File,
+  durationSec: number = 5,
+  onProgress?: (pct: number) => void,
+): Promise<UploadedVideo> {
+  const data = await xhrUploadImage(file, durationSec, onProgress);
+  onProgress?.(70);
+  if (data.job_id) return pollHls(data.job_id, data, onProgress);
+  const fallback = data.hls_url;
+  if (!fallback) throw new Error('HLS non disponible — réessaie dans quelques minutes');
+  onProgress?.(100);
+  return data;
+}

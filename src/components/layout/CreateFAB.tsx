@@ -2,20 +2,17 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, X, FileText, Calendar, Music2, Film,
-  Smile, Send, MapPin, Globe, Lock, Tag, Image, Video, UploadCloud, CheckCircle,
+  Smile, Send, MapPin, Globe, Lock, Tag, Image,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../ui/Avatar';
 import { Spinner } from '../ui/Spinner';
-import { uploadVideoHls } from '../../api/uploadVideo';
 
 // ── Upload helpers (browser) ──────────────────────────────────────────────────
 
 interface UploadedImage { url: string; public_id: string; width?: number; height?: number; }
-
-const uploadVideo = uploadVideoHls;
 
 async function uploadImages(files: File[], folder: string): Promise<UploadedImage[]> {
   const results: UploadedImage[] = [];
@@ -268,140 +265,6 @@ function CreatePostModal({ onClose, onDone }: { onClose: () => void; onDone: () 
             Publier
           </button>
         </div>
-      </div>
-    </ModalBox>
-  );
-}
-
-// ── Create Reel Modal ─────────────────────────────────────────────────────────
-
-type ReelStep = 'idle' | 'uploading' | 'creating' | 'done';
-
-function CreateReelModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const [caption,   setCaption]   = useState('');
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoUrl,  setVideoUrl]  = useState('');   // object URL for preview
-  const [step,      setStep]      = useState<ReelStep>('idle');
-  const [pct,       setPct]       = useState(0);
-  const [apiError,  setApiError]  = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    return () => { if (videoUrl) URL.revokeObjectURL(videoUrl); };
-  }, [videoUrl]);
-
-  function pickVideo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (videoUrl) URL.revokeObjectURL(videoUrl);
-    setVideoFile(file);
-    setVideoUrl(URL.createObjectURL(file));
-    setStep('idle');
-    setApiError('');
-  }
-
-  function removeVideo() {
-    if (videoUrl) URL.revokeObjectURL(videoUrl);
-    setVideoFile(null);
-    setVideoUrl('');
-    setStep('idle');
-  }
-
-  async function publish() {
-    if (!videoFile || step !== 'idle') return;
-    setApiError('');
-    try {
-      setStep('uploading');
-      setPct(0);
-
-      const uploaded = await uploadVideo(videoFile, 'reels', setPct);
-
-      setStep('creating');
-      const dur = videoRef.current?.duration;
-
-      await apiClient.post(Endpoints.reels.feed, {
-        hls_url:       uploaded.hls_url,
-        caption:       caption.trim() || undefined,
-        thumbnail_url: uploaded.thumbnail_url,
-        duration_sec:  uploaded.duration ? Math.round(uploaded.duration) : (dur ? Math.round(dur) : undefined),
-      });
-
-      setStep('done');
-      setPct(100);
-      setTimeout(() => onDone(), 1400);
-    } catch (err: any) {
-      setApiError(err?.message ?? 'Impossible de publier le reel.');
-      setStep('idle');
-      setPct(0);
-    }
-  }
-
-  const isPublishing = step === 'uploading' || step === 'creating';
-  const isDone       = step === 'done';
-
-  return (
-    <ModalBox title="Nouveau Reel" onClose={isPublishing ? () => {} : onClose}>
-      <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={pickVideo} />
-      <div className="p-5 space-y-4">
-
-        {/* Progress */}
-        {step !== 'idle' && (
-          <div className="space-y-1.5">
-            <ProgressBar pct={pct} done={isDone} />
-            <p className="text-xs text-center font-medium" style={{ color: isDone ? '#7B3FF2' : 'var(--text-secondary)' }}>
-              {isDone
-                ? '✓ Reel publié !'
-                : step === 'uploading'
-                ? `Envoi de la vidéo… ${pct}%`
-                : 'Finalisation…'}
-            </p>
-          </div>
-        )}
-
-        {/* Video zone */}
-        {videoUrl ? (
-          <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '9/16', maxHeight: 340 }}>
-            <video ref={videoRef} src={videoUrl} controls className="w-full h-full object-contain"
-              style={{ pointerEvents: isPublishing ? 'none' : 'auto' }} />
-            {isDone && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2"
-                style={{ background: 'rgba(0,0,0,0.6)' }}>
-                <CheckCircle size={48} color="#7B3FF2" />
-                <p className="text-white font-bold">Reel publié !</p>
-              </div>
-            )}
-            {!isPublishing && !isDone && (
-              <button onClick={removeVideo}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(0,0,0,0.6)' }}>
-                <X size={14} color="#fff" />
-              </button>
-            )}
-          </div>
-        ) : (
-          <UploadZone
-            accept="video/*" icon={Video}
-            label="Ajouter une vidéo"
-            sub="MP4 · Max 60 s · 1080p recommandé"
-            onPick={() => fileRef.current?.click()}
-          />
-        )}
-
-        <Field label={`Description (${caption.length}/300)`}>
-          <textarea value={caption} onChange={e => setCaption(e.target.value.slice(0, 300))}
-            rows={2} placeholder="Décris ton reel… #hashtag"
-            className="input w-full resize-none text-sm"
-            disabled={isPublishing} />
-        </Field>
-
-        {apiError && <ErrorBanner msg={apiError} />}
-
-        <button onClick={publish} disabled={!videoFile || isPublishing || isDone}
-          className="w-full btn-primary flex items-center justify-center gap-2 py-3 disabled:opacity-40">
-          {isPublishing ? <Spinner size="sm" /> : <UploadCloud size={16} />}
-          {isPublishing ? 'Publication…' : 'Publier le Reel'}
-        </button>
       </div>
     </ModalBox>
   );
@@ -879,11 +742,11 @@ function CreateConcertModal({ onClose, onDone }: { onClose: () => void; onDone: 
 
 // ── FAB principal ─────────────────────────────────────────────────────────────
 
-type Modal = 'post' | 'reel' | null;
+type Modal = 'post' | null;
 
 const FAB_ACTIONS = [
   { id: 'post'    as const, label: 'Post',      icon: FileText, color: '#7B3FF2', route: null           },
-  { id: 'reel'    as const, label: 'Reel',      icon: Film,     color: '#7B3FF2', route: null           },
+  { id: 'reel'    as const, label: 'Reel',      icon: Film,     color: '#7B3FF2', route: '/create/reel'    },
   { id: 'event'   as const, label: 'Événement', icon: Calendar, color: '#7B3FF2', route: '/create/event'   },
   { id: 'concert' as const, label: 'Concert',   icon: Music2,   color: '#7B3FF2', route: '/create/concert' },
 ];
@@ -937,7 +800,6 @@ export function CreateFAB() {
       {open && <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />}
 
       {modal === 'post' && <CreatePostModal onClose={closeModal} onDone={onDone} />}
-      {modal === 'reel' && <CreateReelModal onClose={closeModal} onDone={onDone} />}
     </>
   );
 }
