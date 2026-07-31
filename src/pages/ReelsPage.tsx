@@ -408,8 +408,9 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
 }
 
 // ── Panneau droit : onglets Commentaires / Tu pourrais aimer (style TikTok desktop) ──
-function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick }: {
+function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick, onLoadMore, loadingMore }: {
   reelId: string; commentCount: number; suggestions: Reel[]; onSuggestionClick: (targetReelId: string) => void;
+  onLoadMore?: () => void; loadingMore?: boolean;
 }) {
   const [tab, setTab] = useState<'comments' | 'suggestions'>('comments');
 
@@ -438,7 +439,11 @@ function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick }
         {tab === 'comments' ? (
           <CommentsSidebar reelId={reelId} count={commentCount} />
         ) : (
-          <div className="h-full overflow-y-auto p-3">
+          <div className="h-full overflow-y-auto p-3"
+            onScroll={e => {
+              const el = e.currentTarget;
+              if (el.scrollTop + el.clientHeight >= el.scrollHeight - 300) onLoadMore?.();
+            }}>
             {suggestions.length === 0 ? (
               <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>
                 Pas d'autres suggestions pour l'instant
@@ -469,6 +474,12 @@ function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick }
                 ))}
               </div>
             )}
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <div className="w-6 h-6 rounded-full animate-spin"
+                  style={{ border: '2px solid var(--border)', borderTopColor: 'var(--text-primary)' }} />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -497,9 +508,11 @@ function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
 const MAX_RETRIES   = 3;
 const STALL_TIMEOUT = 8000; // 8s identique mobile
 
-function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMoreOpen, onRatioChange }: {
+function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMuted, onCommentOpen, onMoreOpen, onRatioChange }: {
   reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void; onMoreOpen: () => void;
   onRatioChange?: (ratio: number | null) => void;
+  /** Le navigateur a bloqué l'autoplay avec son — informe le parent pour synchroniser l'icône volume. */
+  onAutoplayFallbackMuted?: () => void;
 }) {
   const navigate      = useNavigate();
   const { user: me }  = useAuthStore();
@@ -529,7 +542,6 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
   // Ratio réel (width/height), détecté dès que la vidéo charge ses métadonnées
   // (le backend ne stocke pas les dimensions des reels). null = pas encore connu.
   const [ratio, setRatio] = useState<number | null>(null);
-  const isPortrait = ratio == null || ratio < 1;
   const [progress,        setProgress]       = useState(0);
   const [liked,           setLiked]          = useState(reel.user_reaction === 'like');
   const [likeCount,       setLikeCount]      = useState(reel.like_count ?? 0);
@@ -700,7 +712,17 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
       if (!active) return;
       v.currentTime = 0;
       v.muted = globalMuted;
-      v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => setPlaying(false));
+      v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => {
+        // Autoplay avec son bloqué par le navigateur — retombe en muet pour
+        // que la video joue quand meme plutot que de rester en pause.
+        if (!v.muted) {
+          v.muted = true;
+          onAutoplayFallbackMuted?.();
+          v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => setPlaying(false));
+        } else {
+          setPlaying(false);
+        }
+      });
     };
 
     if (Hls.isSupported()) {
@@ -746,7 +768,20 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
         setPlaying(true);
         startTimeRef.current = Date.now();
         sessionStartRef.current = Date.now();
-      }).catch(() => setPlaying(false));
+      }).catch(() => {
+        // Autoplay avec son bloqué — retombe en muet pour que la video joue quand meme.
+        if (!v.muted) {
+          v.muted = true;
+          onAutoplayFallbackMuted?.();
+          v.play().then(() => {
+            setPlaying(true);
+            startTimeRef.current = Date.now();
+            sessionStartRef.current = Date.now();
+          }).catch(() => setPlaying(false));
+        } else {
+          setPlaying(false);
+        }
+      });
     }
   }, [active]); // eslint-disable-line
 
@@ -942,15 +977,16 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
 
       {/* Video */}
       <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
-        {/* Fond flou — comble les bandes noires quand la vidéo est en paysage (16:9)
-            dans le cadre portrait du player, comme le blur de fond mobile. */}
-        {videoSrc && !isPortrait && (
+        {/* Fond flou — comble les bandes vides quel que soit le ratio de la
+            vidéo (portrait non 9:16 compris) dans le cadre du player, comme
+            le blur de fond mobile. Toujours contain : ne jamais rogner. */}
+        {videoSrc && (
           <img src={reel.thumbnail_url ?? undefined} aria-hidden className="absolute inset-0 w-full h-full object-cover"
             style={{ filter: 'blur(40px) brightness(0.5)', transform: 'scale(1.15)' }} />
         )}
         {videoSrc ? (
           <video ref={videoRef}
-            className={isPortrait ? 'w-full h-full object-cover' : 'relative w-full h-full object-contain'}
+            className="relative w-full h-full object-contain"
             playsInline poster={reel.thumbnail_url ?? undefined}
             onTimeUpdate={() => {
               const v = videoRef.current;
@@ -1116,7 +1152,8 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
             {/* Avatar cliquable → profil (identique mobile) */}
             <button onClick={goToProfile} className="relative shrink-0">
               <Avatar src={reel.author?.avatar_url} name={authorName} size="sm"
-                verified={reel.author?.is_verified} isLive={authorIsLive} />
+                verified={reel.author?.is_verified} isLive={authorIsLive}
+                style={{ animation: playing ? 'spin-slow 5s linear infinite' : 'none' }} />
             </button>
             {/* Nom cliquable → profil */}
             <button onClick={goToProfile} className="min-w-0 flex-1 text-left">
@@ -1166,19 +1203,6 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
             </div>
           </button>
 
-          {/* Vinyl tournant */}
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden"
-            style={{
-              border: '2px solid rgba(255,255,255,0.4)',
-              animation: playing ? 'spin-slow 5s linear infinite' : 'none',
-              boxShadow: playing ? '0 0 14px rgba(123,63,242,0.7)' : 'none',
-            }}>
-            {reel.author?.avatar_url
-              ? <img src={reel.author.avatar_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
-            }
-          </div>
-
           {/* Like */}
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
@@ -1189,7 +1213,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
                 color: liked ? '#7B3FF2' : '#fff',
                 boxShadow: liked ? '0 0 14px rgba(123,63,242,0.5)' : 'none',
               }}>
-              <Heart size={21} fill={liked ? 'currentColor' : 'none'} />
+              <Heart size={21} fill={liked ? 'currentColor' : '#fff'} />
             </div>
             {likeCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(likeCount)}</span>}
           </button>
@@ -1198,7 +1222,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
           <button onClick={e => { e.stopPropagation(); onCommentOpen(); }} className="flex flex-col items-center gap-0.5">
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <MessageCircle size={21} />
+              <MessageCircle size={21} fill="#fff" />
             </div>
             {commentCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(commentCount)}</span>}
           </button>
@@ -1207,7 +1231,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
           <button onClick={handleShare} className="flex flex-col items-center gap-0.5">
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <Share2 size={21} />
+              <Share2 size={21} fill="#fff" />
             </div>
             {shareCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(shareCount)}</span>}
           </button>
@@ -1216,7 +1240,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
           <div className="flex flex-col items-center gap-0.5">
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <Eye size={21} />
+              <Eye size={21} fill="#fff" />
             </div>
             {viewCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(viewCount)}</span>}
           </div>
@@ -1230,7 +1254,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onCommentOpen, onMore
                 border: `1.5px solid ${saved ? '#7B3FF2' : 'rgba(255,255,255,0.2)'}`,
                 color: saved ? '#7B3FF2' : '#fff',
               }}>
-              <Bookmark size={21} fill={saved ? 'currentColor' : 'none'} />
+              <Bookmark size={21} fill={saved ? 'currentColor' : '#fff'} />
             </div>
           </button>
 
@@ -1356,16 +1380,23 @@ function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean;
     <div className="relative w-full h-full overflow-hidden"
       style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
 
-      {/* Fond : VIDEO (HLS/MP4) identique mobile */}
+      {/* Fond flou — comble les bandes vides sans jamais rogner le visuel, comme les reels. */}
+      {(ad.creative_url || ad.thumbnail_url) && (
+        <img src={ad.thumbnail_url ?? ad.creative_url!} aria-hidden
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ filter: 'blur(40px) brightness(0.5)', transform: 'scale(1.15)' }} />
+      )}
+
+      {/* Visuel : VIDEO (HLS/MP4) identique mobile */}
       {isVideo && ad.creative_url ? (
         <video ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
           playsInline muted={globalMuted} loop
           poster={ad.thumbnail_url ?? undefined} />
       ) : (ad.creative_url || ad.thumbnail_url) ? (
         /* IMAGE fallback */
         <img src={ad.creative_url ?? ad.thumbnail_url!} alt={ad.title}
-          className="absolute inset-0 w-full h-full object-cover" />
+          className="absolute inset-0 w-full h-full object-contain" />
       ) : null /* Gradient seul */}
 
       {/* Gradient sombre bas (identique mobile : transparent → noir 0.55 → noir 0.92) */}
@@ -1379,17 +1410,20 @@ function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean;
         <Zap size={10} style={{ color: '#7B3FF2' }} /> Sponsorisé
       </div>
 
-      {/* Contenu bas */}
-      <div className="absolute bottom-12 left-4 right-20 z-20">
-        <p className="text-white font-black text-lg leading-tight mb-1 line-clamp-2">{ad.title}</p>
-        {ad.description && (
-          <p className="text-white/70 text-sm mb-4 line-clamp-2">{ad.description}</p>
-        )}
+      {/* CTA style TikTok : pastille compacte flottante, fixe en bas, pulsation douce */}
+      <div className="absolute bottom-12 left-4 right-20 z-20 flex items-center gap-2.5 px-3 py-2 rounded-full"
+        style={{
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          animation: 'ad-cta-pulse 2.2s ease-in-out infinite',
+        }}>
+        <p className="text-white font-bold text-sm leading-tight truncate flex-1 min-w-0">{ad.title}</p>
         {ad.cta_url && (
           <button onClick={handleClick}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm"
+            className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full font-black text-xs"
             style={{ background: 'white', color: '#7B3FF2' }}>
-            <ExternalLink size={13} />
+            <ExternalLink size={12} />
             {ad.cta_text ?? 'En savoir plus'}
           </button>
         )}
@@ -1565,7 +1599,7 @@ export default function ReelsPage() {
   // ou le reel visé qui semble ne jamais s'afficher). Le verrou fait ignorer
   // l'observer le temps que le scroll se stabilise.
   const isJumpingRef = useRef(false);
-  const [globalMuted,   setGlobalMuted] = useState(true);
+  const [globalMuted,   setGlobalMuted] = useState(false);
   const [sidebarOpen,   setSidebarOpen] = useState(true);
   const [drawerOpen,    setDrawerOpen]  = useState(false);
   // Recherche
@@ -2427,6 +2461,7 @@ export default function ReelsPage() {
                     active={true}
                     globalMuted={globalMuted}
                     onUnmute={() => setGlobalMuted(v => !v)}
+                    onAutoplayFallbackMuted={() => setGlobalMuted(true)}
                     onCommentOpen={() => {}}
                     onMoreOpen={() => {}}
                   />
@@ -2522,6 +2557,7 @@ export default function ReelsPage() {
                     active={i === activeIndex}
                     globalMuted={globalMuted}
                     onUnmute={() => setGlobalMuted(v => !v)}
+                    onAutoplayFallbackMuted={() => setGlobalMuted(true)}
                     onCommentOpen={() => setDrawerOpen(true)}
                     onMoreOpen={() => setMoreSheetOpen(true)}
                     onRatioChange={setActiveRatio}
@@ -2741,6 +2777,8 @@ export default function ReelsPage() {
               const target = document.querySelector(`[data-reel-id="${targetReelId}"]`);
               target?.scrollIntoView({ behavior: 'smooth' });
             }}
+            onLoadMore={loadMore}
+            loadingMore={loadingMore}
           />
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { clsx } from 'clsx';
 import { displayName, displayHandle } from '../../utils/user';
 
@@ -61,6 +61,7 @@ interface AvatarProps {
   name?: string | null;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  style?: CSSProperties;
   verified?: boolean;
   /** Anneau rouge pulsant — l'utilisateur a un live actif en ce moment. */
   isLive?: boolean | null;
@@ -79,7 +80,7 @@ const LIVE_RING_PADDING = {
   xs: 'p-[2px]', sm: 'p-[2px]', md: 'p-[2.5px]', lg: 'p-[3px]', xl: 'p-1',
 };
 
-export function Avatar({ src, name, size = 'md', className, verified, isLive }: AvatarProps) {
+export function Avatar({ src, name, size = 'md', className, style, verified, isLive }: AvatarProps) {
   const [err, setErr] = useState(false);
   const label = name?.trim() || '?';
   const initials = label.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -99,7 +100,7 @@ export function Avatar({ src, name, size = 'md', className, verified, isLive }: 
 
   if (isLive) {
     return (
-      <div className={clsx('relative inline-flex shrink-0', sizes[size], className)}>
+      <div className={clsx('relative inline-flex shrink-0', sizes[size], className)} style={style}>
         <div
           className={clsx('absolute inset-0 rounded-full animate-live-ring', LIVE_RING_PADDING[size])}
           style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A,#7B3FF2)' }}
@@ -120,7 +121,7 @@ export function Avatar({ src, name, size = 'md', className, verified, isLive }: 
   }
 
   return (
-    <div className={clsx('relative inline-flex shrink-0', sizes[size], className)}>
+    <div className={clsx('relative inline-flex shrink-0', sizes[size], className)} style={style}>
       {image}
       {verified && <VerifiedBadgeOverlay size={size} />}
     </div>

@@ -140,6 +140,10 @@
   from { transform: rotate(0deg);   }
   to   { transform: rotate(360deg); }
 }
+@keyframes ad-cta-pulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(123,63,242,0.35); }
+  50%      { transform: scale(1.02); box-shadow: 0 0 0 6px rgba(123,63,242,0); }
+}
 @keyframes wave-bar {
   from { height: 3px;  }
   to   { height: 12px; }
