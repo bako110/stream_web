@@ -95,7 +95,7 @@ export default function StoryPage() {
   );
 }
 
-// ── MusicWidget — vinyle tournant + barres d'onde (identique mobile) ─────────
+// ── MusicWidget — indicateur minimal : icône + titre, une seule ligne ────────
 
 function MusicWidget({
   audioUrl, audioName, playing, isVoice, blocked, onRetry,
@@ -114,76 +114,33 @@ function MusicWidget({
     } catch { return 'Musique'; }
   })();
 
-  const accent = isVoice ? '#FF9800' : '#a78bfa';
-
   return (
     <div
       className={blocked ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}
       onClick={blocked ? onRetry : undefined}
       title={blocked ? 'Le navigateur a bloqué la lecture automatique — clique pour écouter' : undefined}
-      style={{ position: 'absolute', bottom: 80, left: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 10,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
-        border: `1px solid ${accent}40`, borderRadius: 16, padding: '8px 12px 8px 8px',
-        maxWidth: 220 }}>
-
-      {/* Vinyle tournant */}
-      <div style={{
-        width: 44, height: 44, borderRadius: '50%', flexShrink: 0, position: 'relative',
-        background: 'conic-gradient(#1a1a2e 0deg, #16213E 120deg, #0F3460 240deg, #1a1a2e 360deg)',
-        border: '2px solid rgba(255,255,255,0.2)',
-        animation: playing && !blocked ? 'spin-slow 5s linear infinite' : 'none',
-        boxShadow: playing && !blocked ? `0 0 12px ${accent}80` : 'none',
-      }}>
-        {/* Rainures */}
-        {[13, 10, 7].map(r => (
-          <div key={r} style={{
-            position: 'absolute', borderRadius: '50%',
-            border: '0.5px solid rgba(255,255,255,0.1)',
-            width: r * 2, height: r * 2,
-            left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
-          }} />
-        ))}
-        {/* Centre */}
-        <div style={{
-          position: 'absolute', width: 12, height: 12, borderRadius: '50%',
-          backgroundColor: accent, left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#fff' }} />
-        </div>
-      </div>
-
-      {/* Info + barres */}
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-          <span style={{ fontSize: 9, color: accent, fontWeight: 700 }}>
-            {isVoice ? 'VOCAL' : 'MUSIQUE'}
-          </span>
-          {blocked ? (
-            <span style={{ fontSize: 9, color: '#fff', background: '#EF444490',
-              borderRadius: 4, padding: '1px 4px', fontWeight: 700 }}>TAPER POUR ÉCOUTER</span>
-          ) : playing && (
-            <span style={{ fontSize: 9, color: accent, background: accent + '25',
-              borderRadius: 4, padding: '1px 4px', fontWeight: 700 }}>EN COURS</span>
-          )}
-        </div>
-        <p style={{ color: '#fff', fontSize: 11, fontWeight: 600, overflow: 'hidden',
-          textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
-          {trackName}
-        </p>
-        {/* Barres d'onde animées */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 14 }}>
-          {Array.from({ length: 12 }, (_, i) => (
-            <div key={i} style={{
-              width: 2.5, borderRadius: 2, backgroundColor: accent,
-              height: playing && !blocked ? undefined : 3,
-              animation: playing && !blocked ? `wave-bar ${0.6 + (i % 4) * 0.15}s ease-in-out infinite alternate` : 'none',
-              minHeight: 3, maxHeight: 12,
-              ...(playing && !blocked ? { animationDelay: `${(i * 0.07).toFixed(2)}s` } : {}),
+      style={{ position: 'absolute', bottom: 56, left: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 6,
+        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)',
+        borderRadius: 20, padding: '5px 10px', maxWidth: 200 }}>
+      {blocked ? (
+        <span style={{ fontSize: 12, flexShrink: 0 }}>🔇</span>
+      ) : (
+        <span style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 12, flexShrink: 0 }}>
+          {[0, 1, 2].map(i => (
+            <span key={i} style={{
+              width: 2.5, borderRadius: 2, backgroundColor: isVoice ? '#FF9800' : '#a78bfa',
+              height: 4,
+              animation: playing ? `eq-bar ${0.7 + i * 0.15}s ease-in-out infinite alternate` : 'none',
+              animationDelay: `${i * 0.12}s`,
             }} />
           ))}
-        </div>
-      </div>
+        </span>
+      )}
+      <span style={{ color: '#fff', fontSize: 11, fontWeight: 600, overflow: 'hidden',
+        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {blocked ? 'Taper pour écouter' : trackName}
+      </span>
+      <style>{`@keyframes eq-bar { 0% { height: 3px; } 100% { height: 12px; } }`}</style>
     </div>
   );
 }
@@ -643,7 +600,7 @@ function StoryViewer({
 
         {/* Caption — avec font_style pour media_type text, identique mobile */}
         {story.caption && story.media_type !== 'text' && (
-          <div className="absolute bottom-16 inset-x-0 px-5 z-20 pointer-events-none">
+          <div className="absolute inset-x-0 px-5 z-20 pointer-events-none" style={{ bottom: story.audio_url ? 96 : 56 }}>
             <div className="inline-block rounded-2xl px-4 py-2.5" style={{ background: 'rgba(0,0,0,0.55)' }}>
               <p className="text-white text-sm leading-relaxed whitespace-pre-line">{story.caption}</p>
             </div>

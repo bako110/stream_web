@@ -17,8 +17,14 @@ const APP_STORE_URL  = 'https://apps.apple.com/app/gofolyx/id0000000000';
  */
 const MOBILE_BLOCKED_EXACT = new Set<string>([]);
 
+// /create/reel exclu : l'éditeur (filtres/texte/stickers/dessin/trim/musique)
+// est responsive et testé au toucher (pointer events natifs) — plus de raison
+// de le bloquer. Post/événement/concert restent bloqués tant qu'ils n'ont pas
+// été vérifiés sur mobile web.
 const MOBILE_BLOCKED_PREFIXES = [
-  '/create/',         // CreateReel, CreatePost, CreateEvent, CreateConcert
+  '/create/post',
+  '/create/event',
+  '/create/concert',
 ];
 
 function isBlockedOnMobile(pathname: string): boolean {
