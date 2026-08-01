@@ -130,7 +130,7 @@ export function GuestPreview({
   const hlsRef = useRef<Hls | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [previewEnded, setPreviewEnded] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [previewProgress, setPreviewProgress] = useState(0); // 0→1 sur la portion visionnable (30%)
 
   // Lecture HLS jusqu'à PREVIEW_WATCH_RATIO de la durée, en boucle sur cette portion,
@@ -155,7 +155,7 @@ export function GuestPreview({
     };
     const playMuted = () => {
       setVideoReady(true);
-      v.muted = true;
+      v.muted = false;
       v.play().catch(() => {});
     };
 
@@ -181,12 +181,6 @@ export function GuestPreview({
     };
   }, [videoUrl, type]);
 
-  const toggleMute = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = !v.muted;
-    setMuted(v.muted);
-  };
   const authorName = author?.display_name ?? author?.username ?? null;
   const initials   = authorName ? authorName[0].toUpperCase() : '?';
 
@@ -466,24 +460,6 @@ export function GuestPreview({
         }
         @media (min-width: 640px) {
           .gp-hero-play { width: 96px; height: 96px; }
-        }
-
-        .gp-volume-btn {
-          position: absolute;
-          top: 72px; right: 16px;
-          z-index: 6;
-          width: 38px; height: 38px;
-          border-radius: 50%;
-          background: rgba(0,0,0,0.4);
-          border: 1px solid rgba(255,255,255,0.2);
-          backdrop-filter: blur(8px);
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer;
-          transition: background .15s, transform .15s;
-        }
-        .gp-volume-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.06); }
-        @media (min-width: 640px) {
-          .gp-volume-btn { top: 84px; right: 20px; }
         }
 
         .gp-preview-progress {
@@ -881,31 +857,9 @@ export function GuestPreview({
               />
 
               {videoReady && !previewEnded && (
-                <>
-                  {/* Bouton volume */}
-                  <button
-                    className="gp-volume-btn"
-                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                    aria-label={muted ? 'Activer le son' : 'Couper le son'}
-                  >
-                    {muted ? (
-                      <svg width="16" height="16" viewBox="0 0 20 20" fill="white">
-                        <path d="M3 7h3l4-3.5v13L6 13H3V7z"/>
-                        <path d="M13.5 6.5l4 4m0-4l-4 4" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
-                      </svg>
-                    ) : (
-                      <svg width="16" height="16" viewBox="0 0 20 20" fill="white">
-                        <path d="M3 7h3l4-3.5v13L6 13H3V7z"/>
-                        <path d="M13.5 6a4.5 4.5 0 0 1 0 7M15.8 4a7.5 7.5 0 0 1 0 11" stroke="white" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
-                      </svg>
-                    )}
-                  </button>
-
-                  {/* Barre de progression de l'aperçu */}
-                  <div className="gp-preview-progress">
-                    <div className="gp-preview-progress-fill" style={{ width: `${previewProgress * 100}%` }} />
-                  </div>
-                </>
+                <div className="gp-preview-progress">
+                  <div className="gp-preview-progress-fill" style={{ width: `${previewProgress * 100}%` }} />
+                </div>
               )}
             </>
           )}
