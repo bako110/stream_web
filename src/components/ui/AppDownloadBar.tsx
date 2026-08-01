@@ -1,12 +1,16 @@
-import { Download } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { RoundLogo } from './RoundLogo';
-
-const APK_URL     = 'https://gofolyx.com/uploads/apk/gofolyx-1.0.0.4.apk';
-const APK_VERSION = '1.0.0.4';
+import { apiClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
 
 // Liens stores
 const PLAY_STORE_URL  = 'https://play.google.com/store/apps/details?id=com.gofolyx.mobile';
 const APP_STORE_URL   = null; // à remplir quand l'app iOS sera publiée — ex: 'https://apps.apple.com/app/gofolyx/idXXXXXXXXX'
+
+interface AppVersionResponse {
+  version_name: string;
+  apk_url: string | null;
+}
 
 interface Props {
   /** 'bar' = bandeau horizontal compact | 'card' = carte avec icônes stores */
@@ -15,6 +19,16 @@ interface Props {
 }
 
 export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
+  // Version/lien APK auto-détectés depuis le backend (jamais codés en dur) —
+  // uniquement pour la vitrine Play Store, pas de téléchargement APK brut ici.
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiClient.get<AppVersionResponse>(Endpoints.app.version)
+      .then(r => { if (r.data?.version_name) setVersion(r.data.version_name); })
+      .catch(() => {});
+  }, []);
+
   if (variant === 'card') {
     return (
       <div className={`rounded-2xl p-5 ${className}`}
@@ -23,25 +37,17 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
           <RoundLogo size={40} />
           <div>
             <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Télécharger GoFolyX</p>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Disponible sur Android</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Disponible sur Android{version ? ` · v${version}` : ''}
+            </p>
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          {/* APK direct */}
-          <a href={APK_URL} download
-            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold no-underline transition-all"
-            style={{ background: 'var(--primary)', color: '#fff' }}
-            onMouseEnter={e => { (e.currentTarget.style.opacity = '0.9'); }}
-            onMouseLeave={e => { (e.currentTarget.style.opacity = '1'); }}
-          >
-            <Download size={15} />
-            Télécharger l'APK v{APK_VERSION}
-          </a>
           {/* Play Store */}
           {PLAY_STORE_URL && (
             <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer"
               className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold no-underline transition-all"
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+              style={{ background: 'var(--primary)', color: '#fff' }}>
               Google Play
             </a>
           )}
@@ -72,7 +78,7 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
         {PLAY_STORE_URL && (
           <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer"
             className="text-xs font-semibold px-3 py-1.5 rounded-lg no-underline transition-all"
-            style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+            style={{ background: 'var(--primary)', color: '#fff' }}>
             Play Store
           </a>
         )}
@@ -83,15 +89,6 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
             App Store
           </a>
         )}
-        <a href={APK_URL} download
-          className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg no-underline transition-all"
-          style={{ background: 'var(--primary)', color: '#fff' }}
-          onMouseEnter={e => { (e.currentTarget.style.opacity = '0.88'); }}
-          onMouseLeave={e => { (e.currentTarget.style.opacity = '1'); }}
-        >
-          <Download size={12} />
-          Android APK
-        </a>
       </div>
     </div>
   );

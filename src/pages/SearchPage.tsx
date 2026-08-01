@@ -6,6 +6,7 @@ import Hls from 'hls.js';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
+import { isPhoneNumber } from '../utils/phone';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';

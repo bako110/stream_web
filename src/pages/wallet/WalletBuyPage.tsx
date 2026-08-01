@@ -251,16 +251,16 @@ export default function WalletBuyPage() {
   }
 
   function handleBuyPackage(pkg: GoGoldPackage) {
-    if (payMethod === 'stripe') initStripePayment(pkg.id, null);
-    else initPayment(pkg.id, null, pkg.gogold + bonusOf(pkg));
+    if (payMethod === 'stripe') { toast.error('Le paiement par carte bancaire arrive bientôt.'); return; }
+    initPayment(pkg.id, null, pkg.gogold + bonusOf(pkg));
   }
 
   function handleBuyCustom() {
     if (!customValid) return;
+    if (payMethod === 'stripe') { toast.error('Le paiement par carte bancaire arrive bientôt.'); return; }
     // Arrondi à 2 décimales pour éviter les flottants imprévisibles (ex: 1.999999)
     const safeAmount = Math.round(customAmount * 100) / 100;
-    if (payMethod === 'stripe') initStripePayment(null, safeAmount);
-    else initPayment(null, safeAmount, Math.floor(safeAmount * GOGOLD_PER_EUR));
+    initPayment(null, safeAmount, Math.floor(safeAmount * GOGOLD_PER_EUR));
   }
 
   function handleRetry() {
@@ -453,7 +453,7 @@ export default function WalletBuyPage() {
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
           {payMethod === 'cinetpay'
             ? 'Vous serez redirigé vers CinetPay pour finaliser le paiement (Orange Money, Wave, MTN, Moov). Votre solde est mis à jour automatiquement.'
-            : 'Paiement par carte bancaire sécurisé par Stripe, directement dans la page — aucune redirection.'}
+            : 'Le paiement par carte bancaire arrive bientôt. Utilisez Mobile Money en attendant.'}
         </p>
       </div>
 
@@ -534,7 +534,7 @@ export default function WalletBuyPage() {
             const pkg   = packages.find(p => p.id === selected)!;
             const total = pkg.gogold + bonusOf(pkg);
             const price = priceOf(pkg);
-            const disabled = initiating || (payMethod === 'stripe' && !stripePublishableKey);
+            const disabled = initiating || payMethod === 'stripe';
             return (
               <button onClick={() => handleBuyPackage(pkg)} disabled={disabled}
                 className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
@@ -542,7 +542,7 @@ export default function WalletBuyPage() {
                 {initiating
                   ? <Spinner size="sm" />
                   : payMethod === 'stripe'
-                    ? <><CreditCard size={15} /> Payer {total.toLocaleString('fr-FR')} GoGold — {price.toFixed(2)} €</>
+                    ? <><CreditCard size={15} /> Paiement carte bientôt disponible</>
                     : <><ExternalLink size={15} /> Payer {total.toLocaleString('fr-FR')} GoGold — {price.toFixed(2)} €</>}
               </button>
             );
@@ -585,7 +585,7 @@ export default function WalletBuyPage() {
             </p>
           )}
 
-          <button onClick={handleBuyCustom} disabled={!customValid || initiating || (payMethod === 'stripe' && !stripePublishableKey)}
+          <button onClick={handleBuyCustom} disabled={!customValid || initiating || payMethod === 'stripe'}
             className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
             style={{
               background: customValid ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' : 'var(--bg-secondary)',
@@ -593,11 +593,11 @@ export default function WalletBuyPage() {
             }}>
             {initiating
               ? <Spinner size="sm" />
-              : customValid
-                ? (payMethod === 'stripe'
-                  ? <><CreditCard size={15} /> Payer {customGoGold.toLocaleString('fr-FR')} GoGold — {customAmount.toFixed(2)} €</>
-                  : <><ExternalLink size={15} /> Payer {customGoGold.toLocaleString('fr-FR')} GoGold — {customAmount.toFixed(2)} €</>)
-                : 'Saisissez un montant valide'}
+              : payMethod === 'stripe'
+                ? <><CreditCard size={15} /> Paiement carte bientôt disponible</>
+                : customValid
+                  ? <><ExternalLink size={15} /> Payer {customGoGold.toLocaleString('fr-FR')} GoGold — {customAmount.toFixed(2)} €</>
+                  : 'Saisissez un montant valide'}
           </button>
         </div>
       )}
