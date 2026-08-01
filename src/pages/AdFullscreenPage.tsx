@@ -1,10 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, Zap, ExternalLink } from 'lucide-react';
+import { X, Zap, ExternalLink, Phone, MessageCircle, Copy } from 'lucide-react';
 import Hls from 'hls.js';
+import toast from 'react-hot-toast';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { toProxiedUrl } from '../utils/constants';
+
+// Même détection que côté mobile (utils/phoneMenu.ts) : un cta_url est traité
+// comme un numéro de téléphone (pas un lien web) s'il ne commence pas par
+// http(s):// et ne contient que des chiffres/+()-. courants dans un numéro.
+function isPhoneNumber(raw: string): boolean {
+  return !/^https?:\/\//i.test(raw) && /^[+()\d\s.-]{6,}$/.test(raw.replace(/^tel:/i, ''));
+}
 
 interface Ad {
   id: string; title: string; description?: string | null;
@@ -24,6 +32,7 @@ export default function AdFullscreenPage() {
   const ad = (location.state as { ad?: Ad } | null)?.ad ?? null;
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef   = useRef<Hls | null>(null);
+  const [phoneMenuOpen, setPhoneMenuOpen] = useState(false);
 
   const isVideo = !!ad && (ad.format === 'video' || !!(ad.creative_url && (
     ad.creative_url.includes('.m3u8') ||
@@ -54,10 +63,30 @@ export default function AdFullscreenPage() {
     apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
   }, [ad?.id]); // eslint-disable-line
 
+  const isPhone = !!ad?.cta_url && isPhoneNumber(ad.cta_url);
+  const phoneDigits = isPhone ? ad!.cta_url!.replace(/^tel:/i, '').replace(/[^\d+]/g, '') : null;
+
   function handleCta() {
     if (!ad?.cta_url) return;
     apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
+    if (isPhone) { setPhoneMenuOpen(true); return; }
     window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
+  }
+
+  function openWhatsApp() {
+    if (!phoneDigits) return;
+    window.open(`https://wa.me/${phoneDigits.replace(/^\+/, '')}`, '_blank', 'noopener,noreferrer');
+    setPhoneMenuOpen(false);
+  }
+  function callPhone() {
+    if (!phoneDigits) return;
+    window.location.href = `tel:${phoneDigits}`;
+    setPhoneMenuOpen(false);
+  }
+  function copyPhone() {
+    if (!phoneDigits) return;
+    navigator.clipboard?.writeText(phoneDigits).then(() => toast.success('Numéro copié')).catch(() => {});
+    setPhoneMenuOpen(false);
   }
 
   if (!ad) {
@@ -124,12 +153,49 @@ export default function AdFullscreenPage() {
             <button onClick={handleCta}
               className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full font-black text-xs"
               style={{ background: 'white', color: '#7B3FF2' }}>
-              <ExternalLink size={12} />
-              {ad.cta_text ?? 'En savoir plus'}
+              {isPhone ? <Phone size={12} /> : <ExternalLink size={12} />}
+              {ad.cta_text ?? (isPhone ? 'Contactez-nous' : 'En savoir plus')}
             </button>
           )}
         </div>
       </div>
+
+      {/* Menu de contact — même choix que côté mobile (WhatsApp / Appeler / Copier) */}
+      {phoneMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-[209]" style={{ background: 'rgba(0,0,0,0.55)' }}
+            onClick={() => setPhoneMenuOpen(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-[210] rounded-t-3xl overflow-hidden"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+            </div>
+            <p className="px-5 pt-2 pb-3 text-sm font-bold text-center" style={{ color: 'var(--text-primary)' }}>
+              {phoneDigits}
+            </p>
+            <button onClick={openWhatsApp}
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-semibold"
+              style={{ color: 'var(--text-primary)', borderTop: '1px solid var(--border)' }}>
+              <MessageCircle size={18} style={{ color: '#25D366' }} /> WhatsApp
+            </button>
+            <button onClick={callPhone}
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-semibold"
+              style={{ color: 'var(--text-primary)', borderTop: '1px solid var(--border)' }}>
+              <Phone size={18} style={{ color: 'var(--primary)' }} /> Appeler
+            </button>
+            <button onClick={copyPhone}
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-semibold"
+              style={{ color: 'var(--text-primary)', borderTop: '1px solid var(--border)' }}>
+              <Copy size={18} style={{ color: 'var(--text-tertiary)' }} /> Copier
+            </button>
+            <button onClick={() => setPhoneMenuOpen(false)}
+              className="w-full py-3.5 text-sm font-bold"
+              style={{ color: 'var(--text-tertiary)', borderTop: '1px solid var(--border)' }}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

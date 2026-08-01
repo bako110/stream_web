@@ -86,7 +86,10 @@ function SearchAdCard({ ad }: { ad: SearchAd }) {
   // au premier clic. Une pub image garde le comportement direct (lien immédiat),
   // cohérent avec ce qui vient d'être fait côté mobile.
   function handleClick() {
-    if (isVideo) { navigate(`/ads/${ad.id}`, { state: { ad } }); return; }
+    // Une pub avec CTA téléphone doit toujours passer par le menu de contact
+    // (WhatsApp/Appeler/Copier) de la page plein écran — jamais un window.open
+    // direct sur un numéro, qui ouvrirait un onglet vide.
+    if (isVideo || (ad.cta_url && isPhoneNumber(ad.cta_url))) { navigate(`/ads/${ad.id}`, { state: { ad } }); return; }
     if (!ad.cta_url) return;
     apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
     window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
