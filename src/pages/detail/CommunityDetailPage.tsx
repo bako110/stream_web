@@ -18,6 +18,7 @@ import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import { WS_BASE_URL } from '../../utils/constants';
+import { openAuthenticatedWs } from '../../utils/authenticatedWs';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -1130,7 +1131,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   // WebSocket
   useEffect(() => {
     const token = useAuthStore.getState().accessToken ?? '';
-    const ws = new WebSocket(`${WS_BASE_URL}/api/v1/communities/${id}/ws?token=${encodeURIComponent(token)}`);
+    const ws = openAuthenticatedWs(`${WS_BASE_URL}/api/v1/communities/${id}/ws`, token);
     wsRef.current = ws;
     ws.onmessage = e => {
       try {

@@ -10,6 +10,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
 import QRLoginPanel from '../../components/auth/QRLoginPanel';
+import { getSafeRedirect } from '../../utils/safeRedirect';
 
 declare global { interface Window { google?: any; } }
 
@@ -48,7 +49,7 @@ export default function LoginPage() {
   const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
 
-  const redirectTo = searchParams.get('redirect') ?? '/feed';
+  const redirectTo = getSafeRedirect(searchParams.get('redirect'));
 
   const [method,      setMethod]      = useState<LoginMethod>('email');
   const [identifier,  setIdentifier]  = useState('');

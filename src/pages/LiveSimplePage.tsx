@@ -27,6 +27,7 @@ import { useWs } from '../context/WebSocketContext';
 import { Spinner } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
 import { WS_BASE_URL, API_BASE_URL } from '../utils/constants';
+import { openAuthenticatedWs } from '../utils/authenticatedWs';
 import { useAuthStore } from '../store/authStore';
 import {
   LiveLikeButton,
@@ -116,7 +117,7 @@ const LiveChat = forwardRef<LiveChatHandle, {
     if (!accessToken) return;
     let cancelled = false;
     const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
-    const ws = new WebSocket(`${base}/api/v1/social/comments/ws/live/${liveId}?token=${accessToken}`);
+    const ws = openAuthenticatedWs(`${base}/api/v1/social/comments/ws/live/${liveId}`, accessToken);
     wsRef.current = ws;
     ws.onmessage = (e) => {
       if (cancelled) return;

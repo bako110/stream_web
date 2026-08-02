@@ -256,11 +256,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const connect = useCallback((token: string) => {
     const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
-    const url  = `${base}/api/v1/messages/ws?token=${encodeURIComponent(token)}`;
+    const url  = `${base}/api/v1/messages/ws`;
     const ws   = new WebSocket(url);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'auth', token }));
       if (!isMounted.current) return;
       retryCount.current = 0;
       setIsConnected(true);

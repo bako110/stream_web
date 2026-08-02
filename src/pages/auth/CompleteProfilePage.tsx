@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import type { Gender, User } from '../../types';
+import { getSafeRedirect } from '../../utils/safeRedirect';
 
 const GENDERS: { value: Gender; label: string }[] = [
   { value: 'female',            label: 'Femme' },
@@ -23,7 +24,7 @@ const GENDERS: { value: Gender; label: string }[] = [
 export default function CompleteProfilePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get('redirect') ?? '/feed';
+  const redirectTo = getSafeRedirect(searchParams.get('redirect'));
   const { updateUser } = useAuthStore();
 
   const [dateOfBirth, setDateOfBirth] = useState('');

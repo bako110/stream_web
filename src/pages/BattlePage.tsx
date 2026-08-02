@@ -10,6 +10,7 @@ import { decodeId } from '../utils/slugId';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { WS_BASE_URL } from '../utils/constants';
+import { openAuthenticatedWs } from '../utils/authenticatedWs';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { battlesApi, type Battle, type BattleRanking } from '../api/battles';
@@ -228,7 +229,7 @@ export default function BattlePage() {
     (['a', 'b'] as const).forEach(side => {
       const liveId = side === 'a' ? battle.live_a_id : battle.live_b_id;
       const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
-      const ws = new WebSocket(`${base}/api/v1/social/comments/ws/live/${liveId}?token=${accessToken}`);
+      const ws = openAuthenticatedWs(`${base}/api/v1/social/comments/ws/live/${liveId}`, accessToken);
       ws.onmessage = (e) => {
         if (cancelled) return;
         try {

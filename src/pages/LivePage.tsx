@@ -23,6 +23,7 @@ import { useApi } from '../hooks/useApi';
 import { Spinner } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
 import { WS_BASE_URL } from '../utils/constants';
+import { openAuthenticatedWs } from '../utils/authenticatedWs';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -50,7 +51,7 @@ function LiveChat({ concertId, accessToken }: { concertId: string; accessToken: 
 
   useEffect(() => {
     if (!accessToken) return;
-    const ws = new WebSocket(`${WS_BASE_URL}/api/v1/social/comments/ws/concert/${concertId}?token=${accessToken}`);
+    const ws = openAuthenticatedWs(`${WS_BASE_URL}/api/v1/social/comments/ws/concert/${concertId}`, accessToken);
     wsRef.current = ws;
     ws.onmessage = (e) => {
       try {

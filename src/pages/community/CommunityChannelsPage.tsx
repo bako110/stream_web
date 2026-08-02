@@ -13,6 +13,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import { WS_BASE_URL } from '../../utils/constants';
+import { openAuthenticatedWs } from '../../utils/authenticatedWs';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -132,8 +133,8 @@ function ChannelChat({ communityId, channel, myRole, onBack, onChannelUpdated }:
       .catch(() => {});
 
     const token = useAuthStore.getState().accessToken ?? '';
-    const ws = new WebSocket(
-      `${WS_BASE_URL}/api/v1/communities/${communityId}/channels/${channel.id}/ws?token=${encodeURIComponent(token)}`
+    const ws = openAuthenticatedWs(
+      `${WS_BASE_URL}/api/v1/communities/${communityId}/channels/${channel.id}/ws`, token
     );
     wsRef.current = ws;
     ws.onmessage = e => {

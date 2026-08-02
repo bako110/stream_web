@@ -10,6 +10,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
 import { getDeviceFingerprint } from '../../utils/deviceFingerprint';
+import { getSafeRedirect } from '../../utils/safeRedirect';
 
 const PERKS = [
   { icon: Zap,         label: 'Films, séries & reels en streaming',  color: '#7B3FF2' },
@@ -58,7 +59,7 @@ interface FormState {
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get('redirect') ?? '/feed';
+  const redirectTo = getSafeRedirect(searchParams.get('redirect'));
   const { register: signup, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
 
