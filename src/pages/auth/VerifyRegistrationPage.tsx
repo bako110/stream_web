@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { RoundLogo } from '../../components/ui/RoundLogo';
 import { getSafeRedirect } from '../../utils/safeRedirect';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 const accent = '#7B3FF2';
 const RESEND_DELAY = 60;
@@ -87,7 +88,7 @@ export default function VerifyRegistrationPage() {
         } catch { /* le bouton "Se connecter" reste disponible en secours */ }
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail ?? 'Code invalide ou expiré.');
+      setError(extractApiErrorMessage(err, 'Code invalide ou expiré.'));
     } finally {
       setLoading(false);
     }
@@ -108,7 +109,7 @@ export default function VerifyRegistrationPage() {
       }, 1000);
       setTimeout(() => codeRefs.current[0]?.focus(), 100);
     } catch (err: any) {
-      setError(err.response?.data?.detail ?? 'Erreur lors du renvoi du code.');
+      setError(extractApiErrorMessage(err, 'Erreur lors du renvoi du code.'));
     } finally {
       setLoading(false);
     }

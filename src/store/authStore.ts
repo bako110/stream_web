@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { User, LoginRequest, RegisterRequest, AuthToken } from '../types';
 import { apiClient, setAuthToken, setRefreshTokenFn, setOnUnauthorized } from '../api';
 import { Endpoints } from '../api/endpoints';
+import { extractApiErrorMessage } from '../utils/apiError';
 
 const STORAGE_KEY = 'gofolyx-auth-tokens';
 
@@ -94,8 +95,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({ accessToken: token.access_token, refreshToken: token.refresh_token, isLoading: false });
       await get().fetchMe();
     } catch (e: unknown) {
-      const detail = (e as any)?.response?.data?.detail;
-      const msg = typeof detail === 'string' ? detail : 'Identifiants incorrects';
+      const msg = extractApiErrorMessage(e, 'Identifiants incorrects');
       set({ isLoading: false, error: msg, isAuthenticated: false });
       throw e;
     }
@@ -139,10 +139,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         throw loginErr;
       }
     } catch (e: unknown) {
-      const detail = (e as any)?.response?.data?.detail;
-      const msg = typeof detail === 'string' ? detail
-        : Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ')
-        : "Erreur d'inscription";
+      const msg = extractApiErrorMessage(e, "Erreur d'inscription");
       set({ isLoading: false, error: msg, isAuthenticated: false });
       throw e;
     }

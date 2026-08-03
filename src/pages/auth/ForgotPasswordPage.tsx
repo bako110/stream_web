@@ -5,6 +5,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useThemeStore } from '../../store/themeStore';
 import { RoundLogo } from '../../components/ui/RoundLogo';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 type Step = 'identifier' | 'code' | 'password' | 'done';
 type Method = 'email' | 'phone' | 'username';
@@ -45,7 +46,7 @@ export default function ForgotPasswordPage() {
       await apiClient.post(Endpoints.auth.forgotPassword, payload);
       setStep('code');
     } catch (err: any) {
-      setError(err.response?.data?.detail ?? err.message ?? 'Erreur');
+      setError(extractApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -85,7 +86,7 @@ export default function ForgotPasswordPage() {
       await apiClient.post(Endpoints.auth.verifyResetCode, { token: otp });
       setStep('password');
     } catch (err: any) {
-      setError(err.response?.data?.detail ?? 'Code invalide ou expiré');
+      setError(extractApiErrorMessage(err, 'Code invalide ou expiré'));
     } finally {
       setLoading(false);
     }
@@ -104,13 +105,13 @@ export default function ForgotPasswordPage() {
       });
       setStep('done');
     } catch (err: any) {
-      const detail = err.response?.data?.detail ?? err.message ?? 'Erreur';
-      if (detail.toLowerCase().includes('expiré') || detail.toLowerCase().includes('invalide')) {
+      const msg = extractApiErrorMessage(err);
+      if (msg.toLowerCase().includes('expiré') || msg.toLowerCase().includes('invalide')) {
         setError('Code invalide ou expiré. Recommencez depuis le début.');
         setStep('identifier');
         setCode(['', '', '', '', '', '']);
       } else {
-        setError(detail);
+        setError(msg);
       }
     } finally {
       setLoading(false);
@@ -126,7 +127,7 @@ export default function ForgotPasswordPage() {
       setCode(['', '', '', '', '', '']);
       setTimeout(() => codeRefs.current[0]?.focus(), 100);
     } catch (err: any) {
-      setError(err.response?.data?.detail ?? 'Erreur lors du renvoi');
+      setError(extractApiErrorMessage(err, 'Erreur lors du renvoi'));
     } finally {
       setLoading(false);
     }
