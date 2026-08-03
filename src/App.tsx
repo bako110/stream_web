@@ -17,6 +17,7 @@ const LoginPage          = lazyWithRetry(() => import('./pages/auth/LoginPage'))
 const RegisterPage       = lazyWithRetry(() => import('./pages/auth/RegisterPage'));
 const CompleteProfilePage = lazyWithRetry(() => import('./pages/auth/CompleteProfilePage'));
 const ForgotPasswordPage = lazyWithRetry(() => import('./pages/auth/ForgotPasswordPage'));
+const VerifyRegistrationPage = lazyWithRetry(() => import('./pages/auth/VerifyRegistrationPage'));
 const LandingPage        = lazyWithRetry(() => import('./pages/LandingPage'));
 
 const ExploreFilmsPage         = lazyWithRetry(() => import('./pages/explore/ExploreFilmsPage'));
@@ -172,6 +173,7 @@ function AppShell() {
           <Route path="/auth/login"           element={<LoginPage />} />
           <Route path="/auth/register"        element={<RegisterPage />} />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/auth/verify-registration" element={<VerifyRegistrationPage />} />
         </Route>
 
         {/* Explore public — accessible connecté ou non */}

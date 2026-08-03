@@ -18,7 +18,7 @@ interface AuthState {
 
   login:              (data: LoginRequest)     => Promise<void>;
   loginWithQR:        (accessToken: string, refreshToken?: string) => Promise<void>;
-  register:           (data: RegisterRequest)  => Promise<void>;
+  register:           (data: RegisterRequest)  => Promise<{ needsVerification: boolean; userId?: string }>;
   logout:             ()                       => Promise<void>;
   refreshAccessToken: ()                       => Promise<string>;
   fetchMe:            ()                       => Promise<void>;
@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
   },
 
-  register: async (data) => {
+  register: async (data): Promise<{ needsVerification: boolean; userId?: string }> => {
     set({ isLoading: true, error: null });
     // Même logique que le mobile : ne jamais envoyer email/phone/username vides
     const payload: typeof data = {
@@ -122,10 +122,22 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // register retourne UserResponse (pas de tokens) — même comportement que mobile
       await apiClient.post(Endpoints.auth.register, payload);
       // Auto-login après inscription avec identifier = email ?? phone
-      await get().login({
-        identifier: (payload.email ?? payload.phone)!,
-        password:   payload.password,
-      });
+      try {
+        await get().login({
+          identifier: (payload.email ?? payload.phone)!,
+          password:   payload.password,
+        });
+        return { needsVerification: false };
+      } catch (loginErr: unknown) {
+        // Compte créé mais pas encore vérifié (OTP envoyé par email/SMS à
+        // l'inscription) — ce n'est pas une erreur, juste une étape de plus.
+        const detail = (loginErr as any)?.response?.data?.detail;
+        if (detail && typeof detail === 'object' && detail.code === 'account_unverified') {
+          set({ isLoading: false, error: null });
+          return { needsVerification: true, userId: detail.user_id };
+        }
+        throw loginErr;
+      }
     } catch (e: unknown) {
       const detail = (e as any)?.response?.data?.detail;
       const msg = typeof detail === 'string' ? detail

@@ -188,7 +188,8 @@ export default function RegisterPage() {
       const phone = phoneTrimmed
         ? (hasOwnDialCode ? phoneTrimmed : `${country.dial}${phoneTrimmed}`)
         : '';
-      await signup({
+      const identifier = authMethod === 'email' ? form.email : phone;
+      const result = await signup({
         first_name: form.first_name,
         last_name:  form.last_name,
         password:   form.password,
@@ -201,7 +202,14 @@ export default function RegisterPage() {
         device_fingerprint: getDeviceFingerprint(),
         ...(authMethod === 'email' ? { email: form.email } : { phone }),
       });
-      navigate(redirectTo, { replace: true });
+      if (result.needsVerification) {
+        navigate(`/auth/verify-registration?redirect=${encodeURIComponent(redirectTo)}`, {
+          replace: true,
+          state: { userId: result.userId, identifier, password: form.password },
+        });
+      } else {
+        navigate(redirectTo, { replace: true });
+      }
     } catch { /* error shown via store */ }
   }
 

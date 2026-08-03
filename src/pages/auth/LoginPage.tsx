@@ -92,7 +92,15 @@ export default function LoginPage() {
         : hasOwnDialCode ? phoneTrimmed : `${country.dial}${phoneTrimmed}`;
       await login({ identifier: id, password });
       navigate(redirectTo, { replace: true });
-    } catch { /* error shown via store */ }
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      if (detail && typeof detail === 'object' && detail.code === 'account_unverified') {
+        navigate(`/auth/verify-registration?redirect=${encodeURIComponent(redirectTo)}`, {
+          state: { userId: detail.user_id, identifier: id, password },
+        });
+      }
+      /* sinon : erreur déjà affichée via le store */
+    }
   }
 
   async function handleGoogle() {

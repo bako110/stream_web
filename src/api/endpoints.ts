@@ -12,6 +12,8 @@ export const Endpoints = {
     forgotPassword:   `${V1}/auth/forgot-password`,
     verifyResetCode:  `${V1}/auth/verify-reset-code`,
     resetPassword:    `${V1}/auth/reset-password`,
+    verifyRegistration:     `${V1}/auth/verify-registration`,
+    resendVerificationCode: `${V1}/auth/resend-verification-code`,
     webQrGenerate:  `${V1}/auth/web-qr/generate`,
     webQrScan:      `${V1}/auth/web-qr/scan`,
     webQrStatus:    (token: string) => `${V1}/auth/web-qr/status/${token}`,
