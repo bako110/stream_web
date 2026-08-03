@@ -13,6 +13,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types (champs API exacts) ─────────────────────────────────────────────────
 
@@ -127,8 +128,8 @@ export default function CommunityFundDetailPage() {
       toast.success('Paiement effectué');
       load(true);
     } catch (e: any) {
-      const status = e?.response?.status;
-      const detail = e?.response?.data?.detail ?? '';
+      const status = e?.status;
+      const detail = extractApiErrorMessage(e, '');
       if (status === 402 || detail.toLowerCase().includes('solde') || detail.toLowerCase().includes('insuffi')) {
         toast.error('Solde insuffisant — rechargez vos GoGold');
       } else {
@@ -144,7 +145,7 @@ export default function CommunityFundDetailPage() {
     try {
       await apiClient.post(`/api/v1/communities/${communityId}/cotisations/${cotId}/close`);
       toast.success('Cotisation clôturée'); load(true);
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setActionLoading(null); }
   }
 
@@ -157,7 +158,7 @@ export default function CommunityFundDetailPage() {
       const refunded = (res.data as any)?.refunded_count ?? (res.data as any)?.data?.refunded_count;
       toast.success(refunded != null ? `${refunded} membre${refunded !== 1 ? 's' : ''} remboursé${refunded !== 1 ? 's' : ''}` : 'Cotisation annulée');
       load(true);
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setActionLoading(null); }
   }
 
@@ -167,7 +168,7 @@ export default function CommunityFundDetailPage() {
       await apiClient.patch(`/api/v1/communities/${communityId}/cotisations/${cotId}/contributions/${userId}/exempt`);
       toast.success('Membre exempté');
       setContributions(prev => prev.map(c => c.user_id === userId ? { ...c, status: 'exempt' } : c));
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setExempting(null); }
   }
 

@@ -14,6 +14,7 @@ import { useAuthStore } from '../../store/authStore';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types (champs API exacts du backend) ──────────────────────────────────────
 
@@ -89,7 +90,7 @@ function WithdrawModal({ communityId, balance, hasTreasurer, onClose, onCreated 
       });
       toast.success('Demande soumise');
       onCreated(); onClose();
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setSaving(false); }
   }
 
@@ -368,7 +369,7 @@ export default function CommunityTreasurerPage() {
     try {
       await apiClient.post(`/api/v1/communities/${id}/treasurer-elections`);
       toast.success('Vote lancé'); load(true);
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setLaunching(false); }
   }
 
@@ -387,7 +388,7 @@ export default function CommunityTreasurerPage() {
     try {
       await apiClient.post(`/api/v1/communities/${id}/treasurer-elections/${election.id}/close`);
       toast.success('Trésorier élu'); load(true);
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setClosing(false); }
   }
 
@@ -402,7 +403,7 @@ export default function CommunityTreasurerPage() {
     try {
       await apiClient.post(`/api/v1/communities/${id}/treasurer-elections/${election.id}/vote`, { candidate_id: candidateId });
       toast.success(isChange ? 'Vote modifié' : 'Vote enregistré'); load(true);
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setVoteLoading(null); }
   }
 
@@ -412,7 +413,7 @@ export default function CommunityTreasurerPage() {
     try {
       await apiClient.delete(`/api/v1/communities/${id}/treasurer`);
       toast.success('Trésorier retiré'); setTreasurer(null);
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
   }
 
   async function appointTreasurer(userId: string) {
@@ -425,7 +426,7 @@ export default function CommunityTreasurerPage() {
     try {
       await apiClient.post(`/api/v1/communities/${id}/withdrawal-requests/${reqId}/approve`);
       toast.success('Approuvé'); load(true);
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setActionLoading(null); }
   }
 
@@ -434,7 +435,7 @@ export default function CommunityTreasurerPage() {
     try {
       await apiClient.post(`/api/v1/communities/${id}/withdrawal-requests/${reqId}/reject`, { rejection_note: note || null });
       toast.success('Rejeté'); setRejectTarget(null); load(true);
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setActionLoading(null); }
   }
 

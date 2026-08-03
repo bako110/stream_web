@@ -9,6 +9,7 @@ import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import { StripeCardForm } from '../../components/wallet/StripeCardForm';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 const GOGOLD_PER_EUR = 100;
 const POLL_INTERVAL = 3000;
@@ -210,7 +211,7 @@ export default function WalletBuyPage() {
       setStep('waiting');
       startPolling(data.merchant_transaction_id, data.gogold_to_add);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Impossible d\'initier le paiement.');
+      toast.error(extractApiErrorMessage(e, 'Impossible d\')initier le paiement.');
     } finally {
       setInitiating(false);
     }
@@ -226,7 +227,7 @@ export default function WalletBuyPage() {
       setPendingPurchase({ packageId, amountEur });
       setStep('card');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? "Impossible d'initier le paiement par carte.");
+      toast.error(extractApiErrorMessage(e, "Impossible d'initier le paiement par carte."));
     } finally {
       setInitiating(false);
     }
@@ -244,9 +245,9 @@ export default function WalletBuyPage() {
       setGoGoldToAdd(res.data.gogold_added);
       setStep('success');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Paiement confirmé mais le crédit a échoué — contactez le support.');
+      toast.error(extractApiErrorMessage(e, 'Paiement confirmé mais le crédit a échoué — contactez le support.'));
       setStep('failed');
-      setStatusMsg(e?.response?.data?.detail ?? 'Le crédit du wallet a échoué après paiement.');
+      setStatusMsg(extractApiErrorMessage(e, 'Le crédit du wallet a échoué après paiement.'));
     }
   }
 

@@ -22,6 +22,7 @@ import { openAuthenticatedWs } from '../../utils/authenticatedWs';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -651,7 +652,7 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
         onJoined();
       }
     } catch (e: any) {
-      const detail = e?.response?.data?.detail ?? '';
+      const detail = extractApiErrorMessage(e, '');
       if (detail.toLowerCase().includes('déjà') || detail.toLowerCase().includes('already')) {
         onJoined();
       } else {
@@ -1186,7 +1187,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
     };
     if (replyTo) { payload.reply_to_id = replyTo.id; setReplyTo(null); }
     try { await apiClient.post(Endpoints.communities.messages(id), payload); }
-    catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); setInput(content); }
+    catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); setInput(content); }
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1279,7 +1280,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
         );
         return { ...m, poll: { ...m.poll, total_votes: m.poll.total_votes + 1, my_votes: [optionId], options } };
       }));
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
   }
 
   async function handleClosePoll(msgId: string) {
@@ -1293,7 +1294,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
         m.id === msgId && m.poll ? { ...m, poll: { ...m.poll, is_closed: true } } : m
       ));
       toast.success('Sondage clôturé');
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
   }
 
   async function handleCreatePoll(question: string, options: string[], allowMultiple: boolean) {
@@ -1303,7 +1304,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
       });
       setShowPollModal(false);
       toast.success('Sondage créé');
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
   }
 
   async function handleLeave() {

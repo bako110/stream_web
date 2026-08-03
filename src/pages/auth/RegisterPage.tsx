@@ -11,6 +11,7 @@ import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
 import { getDeviceFingerprint } from '../../utils/deviceFingerprint';
 import { getSafeRedirect } from '../../utils/safeRedirect';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 const PERKS = [
   { icon: Zap,         label: 'Films, séries & reels en streaming',  color: '#7B3FF2' },
@@ -116,7 +117,7 @@ export default function RegisterPage() {
       const msg = String(e?.message ?? '');
       if (!msg.includes('closed') && !msg.includes('cancelled') && !msg.includes('cancel')) {
         import('react-hot-toast').then(({ default: toast }) =>
-          toast.error((e?.response?.data?.detail ?? msg) || 'Connexion Google impossible')
+          toast.error(extractApiErrorMessage(e, msg || 'Connexion Google impossible'))
         );
       }
     } finally {

@@ -21,6 +21,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner , PageLoader} from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ export default function WalletCreatorDashboardPage() {
       setProfile(prev => prev ? { ...prev, monetization_enabled: next } : null);
       toast.success(next ? 'Monétisation activée' : 'Monétisation mise en pause');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Mise à jour échouée');
+      toast.error(extractApiErrorMessage(e, 'Mise à jour échouée'));
     } finally {
       setToggling(false);
     }
@@ -184,7 +185,7 @@ export default function WalletCreatorDashboardPage() {
       await apiClient.patch(Endpoints.wallet.creatorProfile, { monthly_subscription_price: price });
       toast.success('Prix d\'abonnement mis à jour');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Mise à jour échouée');
+      toast.error(extractApiErrorMessage(e, 'Mise à jour échouée'));
     } finally {
       setSavingPrice(false);
     }
@@ -199,7 +200,7 @@ export default function WalletCreatorDashboardPage() {
       setProfile(prev => prev ? { ...prev, payout_method: method } : null);
       toast.success('Méthode de paiement mise à jour');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Mise à jour échouée');
+      toast.error(extractApiErrorMessage(e, 'Mise à jour échouée'));
     } finally {
       setSavingMethod(null);
     }

@@ -8,6 +8,7 @@ import { apiClient } from '../../../api';
 import { Spinner } from '../../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 import { BOOST_CATEGORIES, daysLeft, fmtNum, type BoostCategory } from './BoostCatalog';
+import { extractApiErrorMessage } from '../../../utils/apiError';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -237,7 +238,7 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
       toast.success(res.data.message);
       onCancelled?.(boost.id, res.data.refund_gogold, res.data.new_balance);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Erreur lors de l\'annulation.');
+      toast.error(extractApiErrorMessage(e, 'Erreur lors de l\')annulation.');
     } finally {
       setStopping(false);
     }

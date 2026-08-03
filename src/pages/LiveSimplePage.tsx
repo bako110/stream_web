@@ -51,6 +51,7 @@ import { LiveAccessGate } from '../components/live/LiveAccessGate';
 import { StageAccessGate } from '../components/live/StageAccessGate';
 import { useLiveSuggestions, LiveSuggestionsBar, LiveBoostedRail } from '../components/live/LiveSuggestions';
 import { useConfirm } from '../components/ui/Dialog';
+import { extractApiErrorMessage } from '../utils/apiError';
 
 // ── LiveKit quality config ─────────────────────────────────────────────────────
 
@@ -549,7 +550,7 @@ function ParticipantContextMenu({
       await apiClient.post(endpoint);
     } catch (e: any) {
       import('react-hot-toast').then(({ default: toast }) =>
-        toast.error(e?.response?.data?.detail ?? 'Action échouée'));
+        toast.error(extractApiErrorMessage(e, 'Action échouée')));
       return;
     }
     onDone();

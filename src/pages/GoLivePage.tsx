@@ -10,6 +10,7 @@ import { Endpoints } from '../api/endpoints';
 import { Spinner } from '../components/ui/Spinner';
 import type { LiveStartResponse } from '../types';
 import type { GiftType } from '../components/live/LiveGiftModal';
+import { extractApiErrorMessage } from '../utils/apiError';
 
 // ── Modal monétisation (bottom sheet) ────────────────────────────────────────
 
@@ -228,7 +229,7 @@ export default function GoLivePage() {
         },
       });
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Impossible de démarrer le live');
+      setError(extractApiErrorMessage(e, 'Impossible de démarrer le live'));
       setStarting(false);
     }
   }

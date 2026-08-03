@@ -11,6 +11,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { formatDistanceToNow, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types (champs API exacts) ─────────────────────────────────────────────────
 
@@ -163,7 +164,7 @@ function CreateModal({ communityId, onClose, onCreated }: {
       });
       toast.success('Cotisation créée');
       onCreated(); onClose();
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Impossible de créer la cotisation'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Impossible de créer la cotisation')); }
     finally { setSaving(false); }
   }
 
@@ -269,8 +270,8 @@ export default function CommunityFundPage() {
       toast.success('Paiement effectué');
       load(true);
     } catch (e: any) {
-      const status = e?.response?.status;
-      const detail = e?.response?.data?.detail ?? '';
+      const status = e?.status;
+      const detail = extractApiErrorMessage(e, '');
       if (status === 402 || detail.toLowerCase().includes('solde') || detail.toLowerCase().includes('insuffi')) {
         toast.error('Solde insuffisant — rechargez vos GoGold');
       } else {

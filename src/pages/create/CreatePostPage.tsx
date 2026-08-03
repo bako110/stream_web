@@ -7,6 +7,7 @@ import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { uploadVideoHls } from '../../api/uploadVideo';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 const FEELINGS = [
   'Content', 'Triste', 'Heureux', 'Motivé',
@@ -161,7 +162,7 @@ export default function CreatePostPage() {
       }
       navigate(-1);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? (isEdit ? 'Erreur lors de la mise à jour' : 'Erreur lors de la publication'));
+      toast.error(extractApiErrorMessage(e, (isEdit ? 'Erreur lors de la mise à jour' : 'Erreur lors de la publication')));
     } finally {
       setPublishing(false);
     }

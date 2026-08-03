@@ -5,6 +5,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 interface WalletBalance {
   gogold_balance: number;
@@ -44,7 +45,7 @@ export default function WalletWithdrawPage() {
       toast.success('Demande de retrait envoyée ! Traitement sous 3-5 jours ouvrés.');
       navigate('/wallet');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Retrait échoué.');
+      toast.error(extractApiErrorMessage(e, 'Retrait échoué.'));
     } finally { setWithdrawing(false); }
   }
 

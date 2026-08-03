@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Send } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 const CONTENT_TYPES = [
   { id: 'music',   label: 'Musique' },
@@ -62,7 +63,7 @@ export default function WalletMonetisationRequestPage() {
       });
       setSuccess(true);
     } catch (err: any) {
-      setErrors({ submit: err?.response?.data?.detail ?? 'Une erreur est survenue. Veuillez reessayer.' });
+      setErrors({ submit: extractApiErrorMessage(err, 'Une erreur est survenue. Veuillez reessayer.') });
     } finally {
       setSubmitting(false);
     }

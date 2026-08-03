@@ -12,6 +12,7 @@ import { uploadVideoHls } from '../api/uploadVideo';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
 import { Spinner } from '../components/ui/Spinner';
+import { getApiErrorDetail } from '../utils/apiError';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -725,7 +726,7 @@ export default function StoryEditorPage() {
       setSuccess(true);
       setTimeout(() => navigate(-1), 2000);
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? err?.message ?? 'Erreur lors de la publication');
+      toast.error(getApiErrorDetail(err) ?? err?.message ?? 'Erreur lors de la publication');
     } finally {
       setUploading(false);
     }

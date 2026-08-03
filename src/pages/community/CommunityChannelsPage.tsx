@@ -16,6 +16,7 @@ import { WS_BASE_URL } from '../../utils/constants';
 import { openAuthenticatedWs } from '../../utils/authenticatedWs';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 interface Channel {
   id: string;
@@ -427,7 +428,7 @@ function ChannelSettingsModal({ channel, communityId, onClose, onSaved, onDelete
       toast.success('Canal mis à jour');
       onSaved();
       onClose();
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setSaving(false); }
   }
 
@@ -439,7 +440,7 @@ function ChannelSettingsModal({ channel, communityId, onClose, onSaved, onDelete
       toast.success('Canal supprimé');
       onDeleted();
       onClose();
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
   }
 
   return (

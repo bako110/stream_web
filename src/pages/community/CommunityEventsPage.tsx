@@ -14,6 +14,7 @@ import { useAuthStore } from '../../store/authStore';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ function CreateEventModal({ communityId, existing, onClose, onSaved }: {
       }
       onSaved(ev); onClose();
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Erreur');
+      toast.error(extractApiErrorMessage(e, 'Erreur'));
     } finally { setSaving(false); }
   }
 

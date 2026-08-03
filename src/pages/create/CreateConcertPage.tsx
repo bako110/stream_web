@@ -9,6 +9,7 @@ import { Endpoints } from '../../api/endpoints';
 import { Spinner , PageLoader} from '../../components/ui/Spinner';
 import { uploadVideoHls } from '../../api/uploadVideo';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -264,7 +265,7 @@ export default function CreateConcertPage() {
         navigate('/my-concerts');
       }
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? (isEdit ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création'));
+      toast.error(extractApiErrorMessage(e, (isEdit ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création')));
     } finally {
       setPublishing(false);
     }

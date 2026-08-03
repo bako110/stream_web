@@ -5,6 +5,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../ui/Spinner';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -170,7 +171,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
         gogold:      selected.gogold_cost,
       });
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Envoi du cadeau échoué. Réessayez.');
+      toast.error(extractApiErrorMessage(e, 'Envoi du cadeau échoué. Réessayez.'));
     }
     finally { setSending(false); }
   }

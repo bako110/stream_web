@@ -1,15 +1,16 @@
 /**
- * Extrait un message d'erreur lisible depuis n'importe quelle réponse API.
+ * Extrait un message d'erreur lisible depuis une erreur levée par apiClient
+ * (voir api/client.ts : ApiError { status, message, data }, data = body JSON brut).
  *
- * Formats gérés :
+ * Formats gérés dans `data` :
  * - FastAPI HTTPException(detail="...")            → string
  * - FastAPI validation Pydantic (422)               → detail: [{msg, ...}, ...]
  * - HTTPException(detail={code, message, ...})      → object avec "message" ou "code"
  * - slowapi rate limit (429)                        → { error: "Rate limit exceeded: ..." }
  */
 export function extractApiErrorMessage(err: unknown, fallback = 'Une erreur est survenue.'): string {
-  const data = (err as any)?.response?.data;
-  const status = (err as any)?.response?.status;
+  const status = (err as any)?.status;
+  const data = (err as any)?.data;
 
   if (status === 429) {
     return 'Trop de tentatives. Merci de patienter quelques minutes avant de réessayer.';
@@ -25,4 +26,9 @@ export function extractApiErrorMessage(err: unknown, fallback = 'Une erreur est 
   if (typeof data?.error === 'string') return data.error;
 
   return fallback;
+}
+
+/** Extrait le `detail` brut (string | array | object) d'une ApiError, sans le transformer en message. */
+export function getApiErrorDetail(err: unknown): unknown {
+  return (err as any)?.data?.detail;
 }

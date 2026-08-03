@@ -7,6 +7,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import type { Gender, User } from '../../types';
 import { getSafeRedirect } from '../../utils/safeRedirect';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 const GENDERS: { value: Gender; label: string }[] = [
   { value: 'female',            label: 'Femme' },
@@ -58,8 +59,7 @@ export default function CompleteProfilePage() {
       updateUser(res.data);
       navigate(redirectTo, { replace: true });
     } catch (e: any) {
-      const detail = e?.response?.data?.detail;
-      setError(typeof detail === 'string' ? detail : 'Mise à jour impossible');
+      setError(extractApiErrorMessage(e, 'Mise à jour impossible'));
     } finally {
       setLoading(false);
     }

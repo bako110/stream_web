@@ -6,6 +6,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
+import { getApiErrorDetail } from '../../utils/apiError';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -154,7 +155,7 @@ export default function WalletSubscriptionPaymentPage() {
       await apiClient.post(Endpoints.subscriptions.subscribeWallet(plan.id));
       setSuccess(true);
     } catch (err: any) {
-      const detail = err?.response?.data?.detail;
+      const detail = getApiErrorDetail(err);
       toast.error(detail ?? 'Paiement echoue. Reessayez.');
     } finally {
       setPaying(false);

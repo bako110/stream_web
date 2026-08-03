@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { User, LoginRequest, RegisterRequest, AuthToken } from '../types';
 import { apiClient, setAuthToken, setRefreshTokenFn, setOnUnauthorized } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { extractApiErrorMessage } from '../utils/apiError';
+import { extractApiErrorMessage, getApiErrorDetail } from '../utils/apiError';
 
 const STORAGE_KEY = 'gofolyx-auth-tokens';
 
@@ -131,10 +131,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       } catch (loginErr: unknown) {
         // Compte créé mais pas encore vérifié (OTP envoyé par email/SMS à
         // l'inscription) — ce n'est pas une erreur, juste une étape de plus.
-        const detail = (loginErr as any)?.response?.data?.detail;
-        if (detail && typeof detail === 'object' && detail.code === 'account_unverified') {
+        const detail = getApiErrorDetail(loginErr);
+        if (detail && typeof detail === 'object' && (detail as any).code === 'account_unverified') {
           set({ isLoading: false, error: null });
-          return { needsVerification: true, userId: detail.user_id };
+          return { needsVerification: true, userId: (detail as any).user_id };
         }
         throw loginErr;
       }
@@ -191,7 +191,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       const res = await apiClient.get<User>(Endpoints.auth.me);
       set({ user: res.data, isAuthenticated: true, isInitializing: false });
     } catch (e: any) {
-      const status = e?.response?.status;
+      const status = e?.status;
       console.warn('[Auth] fetchMe failed status=', status);
       // Token expiré (401) → tenter un refresh avant de déconnecter
       if (status === 401) {

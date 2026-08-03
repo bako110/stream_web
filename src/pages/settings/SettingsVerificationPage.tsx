@@ -11,6 +11,7 @@ import { Endpoints } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 type VerifStatus = 'none' | 'pending' | 'approved' | 'rejected';
 type AccountType = 'artist' | 'creator' | 'public_figure' | 'brand' | 'journalist' | 'other';
@@ -89,8 +90,8 @@ export default function SettingsVerificationPage() {
       setStatus('pending');
       setStep(0);
     } catch (e: any) {
-      const detail = e?.response?.data?.detail ?? '';
-      if (e?.response?.status === 402 || detail.toLowerCase().includes('insuffisant')) {
+      const detail = extractApiErrorMessage(e, '');
+      if (e?.status === 402 || detail.toLowerCase().includes('insuffisant')) {
         const walletRes = await apiClient.get<{ gogold_balance: number }>(Endpoints.wallet.balance).catch(() => null);
         const realBalance = walletRes?.data?.gogold_balance ?? 0;
         setMyGoGold(realBalance);

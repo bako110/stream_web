@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 export default function SettingsAccountPage() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ export default function SettingsAccountPage() {
       setPwSuccess(true);
       setPwForm({ current_password: '', new_password: '', confirm: '' });
     } catch (e: any) {
-      setPwError(e?.response?.data?.detail ?? 'Erreur lors du changement de mot de passe');
+      setPwError(extractApiErrorMessage(e, 'Erreur lors du changement de mot de passe'));
     } finally { setPwLoading(false); }
   }
 

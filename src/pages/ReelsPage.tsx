@@ -28,6 +28,7 @@ import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getApiErrorDetail } from '../utils/apiError';
 
 // ── Gift picker modal ─────────────────────────────────────────────────────────
 interface GiftType { id: string; name: string; emoji: string; gogold_cost: number; }
@@ -2143,7 +2144,7 @@ export default function ReelsPage() {
       setActiveRepostCount(c => c + 1);
       setReels(prev => prev.map(r => r.id === cur.id ? { ...r, repost_count: (r.repost_count ?? 0) + 1 } : r));
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? e?.message ?? 'Impossible de republier';
+      const msg = getApiErrorDetail(e) ?? e?.message ?? 'Impossible de republier';
       toast.error(msg);
     } finally { setReposting(false); }
   }, [reels, activeIndex, reposting]); // eslint-disable-line
@@ -2163,7 +2164,7 @@ export default function ReelsPage() {
       setReels(prev => prev.map(r => r.id === cur.id ? { ...r, cable_count: (r.cable_count ?? 0) + 1 } : r));
       toast.success(`Invitation envoyée ! ${authorName} a reçu ton invitation Cable.`);
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? e?.message ?? 'Impossible d\'envoyer l\'invitation';
+      const msg = getApiErrorDetail(e) ?? e?.message ?? 'Impossible d\'envoyer l\'invitation';
       toast.error(msg);
     } finally { setCabling(false); }
   }, [reels, activeIndex, cabling, confirm]); // eslint-disable-line

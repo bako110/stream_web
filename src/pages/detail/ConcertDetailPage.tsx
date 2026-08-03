@@ -17,6 +17,7 @@ import { Lightbox } from '../../components/ui/Lightbox';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 /* ── Shared tokens (évite la répétition) ───────────────────────────────────── */
 const CARD: React.CSSProperties  = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16 };
@@ -37,7 +38,7 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
     try {
       await apiClient.post(Endpoints.wallet.boostsPurchase, { target_type: 'concert', target_id: concert.id, days });
       onDone(); onClose();
-    } catch (e: any) { setError(e?.response?.data?.detail ?? 'Erreur lors du boost'); }
+    } catch (e: any) { setError(extractApiErrorMessage(e, 'Erreur lors du boost')); }
     finally { setLoading(false); }
   }
 

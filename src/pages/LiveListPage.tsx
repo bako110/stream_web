@@ -11,6 +11,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { Avatar } from '../components/ui/Avatar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { extractApiErrorMessage } from '../utils/apiError';
 
 function LiveBadge() {
   return (
@@ -158,7 +159,7 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
       onDone();
       onClose();
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Erreur lors du boost');
+      setError(extractApiErrorMessage(e, 'Erreur lors du boost'));
     } finally {
       setLoading(false);
     }

@@ -17,6 +17,7 @@ import type { Conversation, ConversationRequestStatus, UserPublic } from '../../
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { getApiErrorDetail } from '../../utils/apiError';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -180,7 +181,7 @@ function MiniChatWindow({
     } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== tempId));
       setInput(body);
-      const code = e?.response?.data?.detail?.code;
+      const code = getApiErrorDetail(e)?.code;
       if (code === 'pending_limit') setRequestStatus('pending_outgoing');
       else if (code === 'conversation_blocked') setRequestStatus('blocked');
       else toast.error('Erreur envoi');

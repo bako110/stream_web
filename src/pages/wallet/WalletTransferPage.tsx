@@ -6,6 +6,7 @@ import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 interface UserResult {
   id: string;
@@ -65,7 +66,7 @@ export default function WalletTransferPage() {
       toast.success(`${amount} GoGold envoyés à @${recipient.username} !`);
       navigate('/wallet');
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Transfert échoué.');
+      toast.error(extractApiErrorMessage(e, 'Transfert échoué.'));
     } finally { setTransferring(false); }
   }
 

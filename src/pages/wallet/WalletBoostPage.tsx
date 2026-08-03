@@ -17,6 +17,7 @@ import {
 } from './boost/BoostCatalog';
 import { ActiveBoostCard, type BoostRecord } from './boost/ActiveBoostCard';
 import { ContentPicker, type TargetContent } from './boost/ContentPicker';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Tab type ──────────────────────────────────────────────────────────────────
 
@@ -161,7 +162,7 @@ export default function WalletBoostPage() {
       setSuccess(true);
       setTimeout(() => { setSuccess(false); setTab('active'); }, 2800);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail ?? 'Achat échoué. Réessayez.');
+      toast.error(extractApiErrorMessage(e, 'Achat échoué. Réessayez.'));
     } finally { setPurchasing(false); }
   }
 

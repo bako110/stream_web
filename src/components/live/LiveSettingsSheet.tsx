@@ -11,6 +11,7 @@ import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../ui/Spinner';
 import { Avatar } from '../ui/Avatar';
 import type { GiftType } from './LiveGiftModal';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 interface HandRequest { identity: string; name: string; avatar?: string | null; }
 
@@ -81,7 +82,7 @@ function MonetForm({
     if (type === 'gift' && !gift) { setError('Choisis un cadeau'); return; }
     setError(null); setSaving(true);
     try { await onSave(type, type === 'gogold' ? parseInt(gogold, 10) : null, type === 'gift' ? gift : null); setShowForm(false); }
-    catch (e: any) { setError(e?.response?.data?.detail ?? 'Erreur'); }
+    catch (e: any) { setError(extractApiErrorMessage(e, 'Erreur')); }
     setSaving(false);
   }
 

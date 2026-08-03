@@ -20,6 +20,7 @@ import type { WsPayload } from '../context/WebSocketContext';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { getApiErrorDetail } from '../utils/apiError';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -804,7 +805,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== tempId));
       setInput(body);
-      const code = e?.response?.data?.detail?.code;
+      const code = getApiErrorDetail(e)?.code;
       if (code === 'pending_limit') setRequestStatus('pending_outgoing');
       else if (code === 'conversation_blocked') setRequestStatus('blocked');
     } finally { setSending(false); setTimeout(() => inputRef.current?.focus(), 50); }
@@ -924,7 +925,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       }
       await loadMessages(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? err?.message ?? 'Erreur lors de l\'upload');
+      toast.error(getApiErrorDetail(err) ?? err?.message ?? 'Erreur lors de l\'upload');
     }
     finally { setUploading(false); }
   }
@@ -1020,7 +1021,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       setMessages(prev => prev.map(m => m.id === id ? { ...m, pinned: pin } : m));
       toast.success(pin ? 'Épinglé' : 'Désépinglé');
     } catch (e: any) {
-      const detail = e?.response?.data?.detail ?? e?.message ?? 'Erreur';
+      const detail = getApiErrorDetail(e) ?? e?.message ?? 'Erreur';
       toast.error(detail);
     }
   }

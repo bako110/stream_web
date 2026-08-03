@@ -11,6 +11,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
     try {
       await apiClient.put(`/api/v1/communities/${communityId}/members/${member.user_id}/role`, { role });
       toast.success('Rôle modifié'); onDone();
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setLoading(null); }
   }
 
@@ -94,7 +95,7 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
     try {
       await apiClient.delete(`/api/v1/communities/${communityId}/members/${member.user_id}`);
       toast.success('Membre exclu'); onDone();
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setLoading(null); }
   }
 
@@ -104,7 +105,7 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
     try {
       await apiClient.post(`/api/v1/communities/${communityId}/members/${member.user_id}/block`);
       toast.success('Membre bloqué'); onDone();
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { setLoading(null); }
   }
 

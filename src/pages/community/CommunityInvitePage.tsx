@@ -7,6 +7,7 @@ import { apiClient } from '../../api';
 import { decodeId } from '../../utils/slugId';
 import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 export default function CommunityInvitePage() {
   const { id: slug } = useParams<{ id: string }>();
@@ -62,7 +63,7 @@ export default function CommunityInvitePage() {
       const newCode = res.data?.invite_code ?? res.data?.data?.invite_code ?? res.data;
       if (typeof newCode === 'string') setCode(newCode);
       toast.success('Code régénéré');
-    } catch (e: any) { toast.error(e?.response?.data?.detail ?? 'Erreur'); }
+    } catch (e: any) { toast.error(extractApiErrorMessage(e, 'Erreur')); }
     finally { if (mountedRef.current) setRegen(false); }
   }
 
