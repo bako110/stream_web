@@ -82,14 +82,14 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     clearError();
+    const phoneTrimmed = identifier.trim();
+    // Si l'utilisateur a déjà tapé son indicatif (+xxx ou 00xxx), on le garde tel quel —
+    // évite un double préfixe si le sélecteur pays n'a pas été changé (silencieusement sur un autre pays).
+    const hasOwnDialCode = /^(\+|00)\d/.test(phoneTrimmed);
+    const id = method === 'email'
+      ? phoneTrimmed
+      : hasOwnDialCode ? phoneTrimmed : `${country.dial}${phoneTrimmed}`;
     try {
-      const phoneTrimmed = identifier.trim();
-      // Si l'utilisateur a déjà tapé son indicatif (+xxx ou 00xxx), on le garde tel quel —
-      // évite un double préfixe si le sélecteur pays n'a pas été changé (silencieusement sur un autre pays).
-      const hasOwnDialCode = /^(\+|00)\d/.test(phoneTrimmed);
-      const id = method === 'email'
-        ? phoneTrimmed
-        : hasOwnDialCode ? phoneTrimmed : `${country.dial}${phoneTrimmed}`;
       await login({ identifier: id, password });
       navigate(redirectTo, { replace: true });
     } catch (err: any) {
