@@ -238,7 +238,7 @@ export function ActiveBoostCard({ boost: initialBoost, onCancelled }: Props) {
       toast.success(res.data.message);
       onCancelled?.(boost.id, res.data.refund_gogold, res.data.new_balance);
     } catch (e: any) {
-      toast.error(extractApiErrorMessage(e, 'Erreur lors de l\')annulation.');
+      toast.error(extractApiErrorMessage(e, 'Erreur lors de l\'annulation.'));
     } finally {
       setStopping(false);
     }

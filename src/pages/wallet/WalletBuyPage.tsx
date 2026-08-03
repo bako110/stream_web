@@ -211,7 +211,7 @@ export default function WalletBuyPage() {
       setStep('waiting');
       startPolling(data.merchant_transaction_id, data.gogold_to_add);
     } catch (e: any) {
-      toast.error(extractApiErrorMessage(e, 'Impossible d\')initier le paiement.');
+      toast.error(extractApiErrorMessage(e, 'Impossible d\'initier le paiement.'));
     } finally {
       setInitiating(false);
     }

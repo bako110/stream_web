@@ -11,7 +11,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { getApiErrorDetail } from '../../utils/apiError';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -150,8 +150,7 @@ export default function WalletMySubscriptionPage() {
       toast.success('Abonnement annule avec succes.');
       fetchSub();
     } catch (err: any) {
-      const detail = getApiErrorDetail(err);
-      toast.error(detail ?? 'Impossible d\'annuler l\'abonnement.');
+      toast.error(extractApiErrorMessage(err, 'Impossible d\'annuler l\'abonnement.'));
     } finally {
       setCancelling(false);
     }

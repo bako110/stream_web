@@ -181,7 +181,8 @@ function MiniChatWindow({
     } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== tempId));
       setInput(body);
-      const code = getApiErrorDetail(e)?.code;
+      const detail = getApiErrorDetail(e);
+      const code = detail && typeof detail === 'object' ? (detail as any).code : undefined;
       if (code === 'pending_limit') setRequestStatus('pending_outgoing');
       else if (code === 'conversation_blocked') setRequestStatus('blocked');
       else toast.error('Erreur envoi');

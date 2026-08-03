@@ -20,7 +20,7 @@ import type { WsPayload } from '../context/WebSocketContext';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { getApiErrorDetail } from '../utils/apiError';
+import { getApiErrorDetail, extractApiErrorMessage } from '../utils/apiError';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -805,7 +805,8 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== tempId));
       setInput(body);
-      const code = getApiErrorDetail(e)?.code;
+      const detail = getApiErrorDetail(e);
+      const code = detail && typeof detail === 'object' ? (detail as any).code : undefined;
       if (code === 'pending_limit') setRequestStatus('pending_outgoing');
       else if (code === 'conversation_blocked') setRequestStatus('blocked');
     } finally { setSending(false); setTimeout(() => inputRef.current?.focus(), 50); }
@@ -925,7 +926,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       }
       await loadMessages(false);
     } catch (err: any) {
-      toast.error(getApiErrorDetail(err) ?? err?.message ?? 'Erreur lors de l\'upload');
+      toast.error(extractApiErrorMessage(err, 'Erreur lors de l\'upload'));
     }
     finally { setUploading(false); }
   }

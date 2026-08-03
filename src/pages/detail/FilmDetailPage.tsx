@@ -16,7 +16,7 @@ import { DetailBackHeader } from '../../components/ui/DetailBackHeader';
 import { useSmartBack } from '../../hooks/useSmartBack';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
-import { getApiErrorDetail } from '../../utils/apiError';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 // ── Conversion GoGold : 1 EUR = 100 GoGold ─────────────────────────────────────
 const GOGOLD_PER_EUR = 100;
@@ -48,8 +48,7 @@ function PaywallModal({ film, onClose, onPurchased }: {
       onPurchased();
       onClose();
     } catch (e: any) {
-      const detail = getApiErrorDetail(e);
-      toast.error(detail ?? 'Achat impossible. Réessayez.');
+      toast.error(extractApiErrorMessage(e, 'Achat impossible. Réessayez.'));
     } finally { setBuying(false); }
   }
 
