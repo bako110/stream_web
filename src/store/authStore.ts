@@ -173,10 +173,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         { refresh_token: refreshToken },
       );
       const newToken = res.data?.access_token;
+      const newRefreshToken = res.data?.refresh_token;
       if (!newToken) throw new Error('Token refresh invalide');
       setAuthToken(newToken);
-      saveTokens(newToken, refreshToken);
-      set({ accessToken: newToken, isRefreshing: false });
+      saveTokens(newToken, newRefreshToken ?? refreshToken);
+      set({ accessToken: newToken, refreshToken: newRefreshToken ?? refreshToken, isRefreshing: false });
       return newToken;
     } catch (e) {
       setAuthToken(null);

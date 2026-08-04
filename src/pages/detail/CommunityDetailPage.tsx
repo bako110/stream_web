@@ -1152,7 +1152,9 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
         } else if (data.type === 'community_cotisation_created' || data.type === 'community_cotisation_updated') {
           if (data.status === 'active') setActiveCotisation(data);
         } else if (data.type === 'treasurer_election_launched' || data.type === 'treasurer_vote_cast') {
-          setActiveElection(data.election ?? data);
+          apiClient.get<any>(`/api/v1/communities/${id}/treasurer-elections/active`)
+            .then(r => setActiveElection(r.data?.election ?? null))
+            .catch(() => {});
         } else if (data.type === 'treasurer_elected') {
           setActiveElection(null);
         }
