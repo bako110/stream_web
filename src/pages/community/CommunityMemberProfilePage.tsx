@@ -22,7 +22,7 @@ interface MemberProfile {
   role: 'admin' | 'moderator' | 'member';
   joined_at?: string | null; bio?: string | null;
   gogold_total: number; badges: string[];
-  posts_count: number; reactions_given: number; events_attended: number;
+  messages_count: number; reactions_given: number; events_attended: number;
   is_online: boolean; last_seen?: string | null;
 }
 
@@ -36,6 +36,11 @@ interface CreatorStats {
 
 const ROLE_COLORS: Record<string, string> = { admin: '#7B3FF2', moderator: '#7B3FF2', member: '#9390AB' };
 const ROLE_LABELS: Record<string, string> = { admin: 'Admin', moderator: 'Modérateur', member: 'Membre' };
+const BADGE_LABELS: Record<string, string> = {
+  founder: '👑 Fondateur',
+  early_bird: '🐦 Early Bird',
+  top_contributor: '🔥 Top Contributeur',
+};
 
 function StatRow({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string | number; color: string }) {
   return (
@@ -210,7 +215,7 @@ export default function CommunityMemberProfilePage() {
             <div className="flex flex-wrap justify-center gap-1.5 mt-3">
               {profile.badges.map((b, i) => (
                 <span key={i} className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                  style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>{b}</span>
+                  style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>{BADGE_LABELS[b] ?? b}</span>
               ))}
             </div>
           )}
@@ -221,7 +226,7 @@ export default function CommunityMemberProfilePage() {
           <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>ACTIVITÉ DANS LA COMMUNAUTÉ</p>
           <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <StatRow icon={<Award size={15} />} label="GoGold gagnés" value={profile.gogold_total} color="#7B3FF2" />
-            <StatRow icon={<MessageCircle size={15} />} label="Messages envoyés" value={profile.posts_count} color="#7B3FF2" />
+            <StatRow icon={<MessageCircle size={15} />} label="Messages envoyés" value={profile.messages_count} color="#7B3FF2" />
             <StatRow icon={<Heart size={15} />} label="Réactions données" value={profile.reactions_given} color="#EF4444" />
             <div className="flex items-center gap-3 py-2.5 px-4">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
