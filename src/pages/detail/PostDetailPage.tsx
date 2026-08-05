@@ -97,7 +97,6 @@ function CommentsSheet({
 }) {
   const navigate = useNavigate();
   const [visible,     setVisible]     = useState(false);
-  const [showAiModal, setShowAiModal] = useState(false);
   const [editingId,   setEditingId]   = useState<string | null>(null);
   const [editBody,    setEditBody]    = useState('');
   const [editSaving,  setEditSaving]  = useState(false);
@@ -283,6 +282,7 @@ export default function PostDetailPage() {
   const [editCommentSaving,  setEditCommentSaving]  = useState(false);
   const [commentLikedIds,    setCommentLikedIds]    = useState<Set<string>>(new Set());
   const [commentLocalLikes,  setCommentLocalLikes]  = useState<Record<string, number>>({});
+  const [showAiModal,        setShowAiModal]        = useState(false);
   const inputRef    = useRef<HTMLInputElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
   const PREVIEW_COUNT = 3;

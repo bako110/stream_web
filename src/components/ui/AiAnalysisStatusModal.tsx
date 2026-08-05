@@ -40,8 +40,8 @@ export function AiAnalysisStatusModal({ open, contentType, contentId, initialSta
 
     setLoading(true);
     apiClient.get<Array<{ notification_type: string }>>(Endpoints.notifications.byRef(contentId))
-      .then(list => {
-        const hit = list.find(n => n.notification_type in VERDICT_FROM_TYPE);
+      .then(res => {
+        const hit = res.data.find(n => n.notification_type in VERDICT_FROM_TYPE);
         if (hit) {
           setStatus('done');
           setVerdict(VERDICT_FROM_TYPE[hit.notification_type]);
