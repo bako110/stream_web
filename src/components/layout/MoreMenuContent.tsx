@@ -4,7 +4,7 @@ import {
   Radio, Users, MessageCircle, Bell, Activity, UserPlus,
   Music2, Calendar, CalendarDays, Heart, Clock,
   Wallet, TrendingUp, HelpCircle, Settings, LogOut,
-  Sun, Moon, Download, BarChart2,
+  Sun, Moon, Download, BarChart2, ShieldCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -29,6 +29,7 @@ export const MORE_SECTIONS = [
     items: [
       { to: '/my-concerts',      label: 'Mes Concerts',   desc: 'Gère les concerts que tu organises',        icon: Music2,       color: '#7B3FF2' },
       { to: '/my-events',        label: 'Mes Événements', desc: 'Gère les événements que tu organises',      icon: Calendar,     color: '#7B3FF2' },
+      { to: '/my-verification-queue', label: 'Vérifications', desc: 'Contenus en attente ou signalés par notre système', icon: ShieldCheck, color: '#F59E0B' },
       { to: '/planning',         label: 'Mon Planning',   desc: 'Ton calendrier de sorties et lives',        icon: CalendarDays,  color: '#7B3FF2' },
       { to: '/wallet/analytics', label: 'Statistiques',   desc: 'Vues, portée et performance de tes contenus', icon: BarChart2,  color: '#E85DAD' },
       { to: '/favorites',        label: 'Favoris',        desc: 'Films, séries et contenus enregistrés',     icon: Heart,         color: '#EF4444' },

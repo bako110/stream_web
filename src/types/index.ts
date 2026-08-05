@@ -115,7 +115,7 @@ export interface VideoMeta {
 // ── Concert ───────────────────────────────────────────────────────────────
 export type ConcertType = 'live' | 'replay' | 'live_and_replay';
 export type AccessType = 'free' | 'subscription' | 'ticket' | 'ppv';
-export type ConcertStatus = 'draft' | 'published' | 'live' | 'ended' | 'archived';
+export type ConcertStatus = 'draft' | 'published' | 'live' | 'ended' | 'archived' | 'limited';
 
 export interface Concert {
   id: string; artist_id: string; title: string; description: string | null;
@@ -129,6 +129,8 @@ export interface Concert {
   video_url: string | null; is_featured: boolean; published_at: string | null;
   created_at: string; updated_at: string; artist?: User;
   user_reaction?: 'like' | 'dislike' | null;
+  category?: string | null;
+  ai_analysis_status?: 'pending' | 'done' | null;
 }
 
 export interface StreamToken { token: string; room_name: string; livekit_url: string; }
@@ -182,7 +184,7 @@ export interface LiveStatusResponse {
 
 // ── Event ─────────────────────────────────────────────────────────────────
 export type EventType = 'concert' | 'birthday' | 'festival' | 'conference' | 'sport' | 'theater' | 'exhibition' | 'other';
-export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
+export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed' | 'limited' | 'archived';
 export type EventAccessType = 'free' | 'ticket' | 'invite_only';
 
 export interface Event {
@@ -199,6 +201,8 @@ export interface Event {
   created_at: string; updated_at: string; organizer?: User;
   user_reaction?: 'like' | 'dislike' | null;
   is_boosted?: boolean;
+  category?: string | null;
+  ai_analysis_status?: 'pending' | 'done' | null;
 }
 
 // ── Sound ─────────────────────────────────────────────────────────────────
@@ -216,7 +220,7 @@ export interface Sound {
 }
 
 // ── Reel ──────────────────────────────────────────────────────────────────
-export type ReelStatus = 'processing' | 'published' | 'archived';
+export type ReelStatus = 'processing' | 'published' | 'archived' | 'limited';
 export type ReelRemixType = 'remix' | 'repost' | null;
 
 export interface Reel {
@@ -240,6 +244,10 @@ export interface Reel {
   music_name?: string | null;
   music_start_sec?: number | null;
   music_end_sec?: number | null;
+  // Badge "analyse en cours" cote createur uniquement (n'a de sens que pour
+  // le proprietaire du reel, comme user_reaction) — cf. moderation_pipeline.py
+  // cote ai_service. "pending" | "done" | undefined (jamais analyse).
+  ai_analysis_status?: 'pending' | 'done' | null;
 }
 
 // ── Post ──────────────────────────────────────────────────────────────────
@@ -252,6 +260,8 @@ export interface Post {
   feeling?: string | null; like_count: number; comment_count: number; share_count: number;
   created_at: string; updated_at: string; author?: PostAuthor | null;
   user_reaction?: 'like' | 'dislike' | null;
+  category?: string | null;
+  ai_analysis_status?: 'pending' | 'done' | null;
 }
 export interface PostCreate { body?: string; image_url?: string; feeling?: string; }
 

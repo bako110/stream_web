@@ -14,6 +14,7 @@ import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { Lightbox } from '../../components/ui/Lightbox';
+import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -144,6 +145,7 @@ export default function ConcertDetailPage() {
   const [remindLoading, setRemindLoading]= useState(false);
   const [otherConcerts, setOtherConcerts]= useState<Concert[]>([]);
   const [lightbox,      setLightbox]     = useState(false);
+  const [showAiModal,   setShowAiModal]  = useState(false);
   const [favId,         setFavId]        = useState<string | null>(null);
   const [savingFav,     setSavingFav]    = useState(false);
 
@@ -319,6 +321,13 @@ export default function ConcertDetailPage() {
                   {c.artist?.display_name ?? c.artist?.username}
                   {c.artist?.is_verified && <VerifiedBadge size={13} />}
                 </button>
+                {isArtist && c.ai_analysis_status === 'pending' && (
+                  <button onClick={() => setShowAiModal(true)} className="flex items-center gap-1.5 mt-1">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full border-2 animate-spin"
+                      style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                    <span className="text-[10px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>Vérification en cours…</span>
+                  </button>
+                )}
                 <div className="flex flex-wrap gap-2 mt-2">
                   {c.genre && (
                     <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold"
@@ -597,6 +606,14 @@ export default function ConcertDetailPage() {
         kind="concert" accessType={c.access_type as any}
         tiers={safeTiers} selectedTierKey={selectedTier}
         onBuy={tierKey => apiClient.post(Endpoints.concerts.buyTicket(c.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
+      />
+
+      <AiAnalysisStatusModal
+        open={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        contentType="concert"
+        contentId={c.id}
+        initialStatus={c.ai_analysis_status}
       />
     </div>
   );

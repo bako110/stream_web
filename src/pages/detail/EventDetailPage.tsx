@@ -18,6 +18,7 @@ import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { Lightbox } from '../../components/ui/Lightbox';
+import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -386,6 +387,7 @@ export default function EventDetailPage() {
   const [favId,        setFavId]        = useState<string | null>(null);
   const [savingFav,    setSavingFav]    = useState(false);
   const [isOwner,      setIsOwner]      = useState(false);
+  const [showAiModal,  setShowAiModal]  = useState(false);
   const [following,    setFollowing]    = useState(false);
   const [reminder,     setReminder]     = useState(false);
   const [remindLoading,setRemindLoading]= useState(false);
@@ -814,6 +816,15 @@ export default function EventDetailPage() {
                     <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                       {ev.organizer.display_name ?? ev.organizer.username}
                     </p>
+                    {isOwner && ev.ai_analysis_status === 'pending' && (
+                      <span
+                        onClick={e => { e.stopPropagation(); setShowAiModal(true); }}
+                        className="flex items-center justify-center gap-1.5 mt-1">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full border-2 animate-spin"
+                          style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        <span className="text-[10px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>Vérification en cours…</span>
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button onClick={() => ev.organizer?.id && navigate(`/user/${encodeId(ev.organizer.id)}`)}
@@ -901,6 +912,14 @@ export default function EventDetailPage() {
         kind="event" accessType={ev.access_type as any}
         tiers={safeTiers} selectedTierKey={selectedTier}
         onBuy={tierKey => apiClient.post(Endpoints.events.buyTicket(ev.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
+      />
+
+      <AiAnalysisStatusModal
+        open={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        contentType="event"
+        contentId={ev.id}
+        initialStatus={ev.ai_analysis_status}
       />
     </div>
   );

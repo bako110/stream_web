@@ -103,6 +103,7 @@ const PolitiqueConfidentialitePage   = lazyWithRetry(() => import('./pages/Polit
 const EncryptionPage                 = lazyWithRetry(() => import('./pages/EncryptionPage'));
 const MyEventsPage                   = lazyWithRetry(() => import('./pages/MyEventsPage'));
 const MyConcertsPage                 = lazyWithRetry(() => import('./pages/MyConcertsPage'));
+const MyVerificationQueuePage        = lazyWithRetry(() => import('./pages/MyVerificationQueuePage'));
 const BlockedUsersPage   = lazyWithRetry(() => import('./pages/BlockedUsersPage'));
 const OnboardingPage     = lazyWithRetry(() => import('./pages/OnboardingPage'));
 const StoryViewersPage   = lazyWithRetry(() => import('./pages/StoryViewersPage'));
@@ -290,6 +291,7 @@ function AppShell() {
             <Route path="/privacy"                        element={<PrivacyPage />} />
             <Route path="/my-events"                      element={<MyEventsPage />} />
             <Route path="/my-concerts"                    element={<MyConcertsPage />} />
+            <Route path="/my-verification-queue"          element={<MyVerificationQueuePage />} />
             <Route path="/blocked-users"                  element={<BlockedUsersPage />} />
             <Route path="/planning"          element={<PlanningPage />} />
             <Route path="/stories/create"                         element={<StoryEditorPage />} />

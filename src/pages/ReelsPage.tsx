@@ -26,6 +26,7 @@ import { HeartRain, LikeNamesFeed } from '../components/ui/HeartRain';
 import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
+import { AiAnalysisStatusModal } from '../components/ui/AiAnalysisStatusModal';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getApiErrorDetail } from '../utils/apiError';
@@ -679,6 +680,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
   const [remixCount,      setRemixCount]     = useState(reel.remix_count ?? 0);
   const [cableCount,      setCableCount]     = useState(reel.cable_count ?? 0);
   const [commentsDisabled,setCommentsDisabled] = useState(reel.comments_disabled ?? false);
+  const [showAiModal,     setShowAiModal]     = useState(false);
   const [showHeart,       setShowHeart]      = useState(false);
   const [heartPos,        setHeartPos]       = useState({ x: 0, y: 0 });
   const [skipAnim,        setSkipAnim]       = useState<{ side: 'left'|'right'; label: string } | null>(null);
@@ -1289,6 +1291,19 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
               {reel.author?.username && (
                 <p className="text-white/55 text-[10px] sm:text-xs leading-none">@{reel.author.username}</p>
               )}
+              {/* Badge visible uniquement par le createur, jamais par les autres
+                  spectateurs (cf. ai_analysis_status : "pending" tant que
+                  ai.analyze_reel n'a pas termine, cote ai_service) — le reel
+                  reste normalement visible/publie pendant ce temps, ce n'est
+                  qu'un indicateur discret, pas un etat bloquant. */}
+              {isMine && reel.ai_analysis_status === 'pending' && (
+                <span
+                  onClick={e => { e.stopPropagation(); setShowAiModal(true); }}
+                  className="flex items-center gap-1.5 text-white/70 text-[10px] mt-0.5">
+                  <span className="inline-block w-2.5 h-2.5 rounded-full border-2 border-white/40 border-t-white/85 animate-spin" />
+                  Vérification en cours…
+                </span>
+              )}
             </button>
             {!isMine && (
               <button onClick={handleFollow} disabled={followLoading}
@@ -1419,6 +1434,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
           onClose={() => setShowGiftPicker(false)}
         />
       )}
+
+      <AiAnalysisStatusModal
+        open={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        contentType="reel"
+        contentId={reel.id}
+        initialStatus={reel.ai_analysis_status}
+      />
     </div>
   );
 }

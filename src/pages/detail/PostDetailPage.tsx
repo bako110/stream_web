@@ -12,6 +12,7 @@ import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { Lightbox } from '../../components/ui/Lightbox';
+import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -96,6 +97,7 @@ function CommentsSheet({
 }) {
   const navigate = useNavigate();
   const [visible,     setVisible]     = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
   const [editingId,   setEditingId]   = useState<string | null>(null);
   const [editBody,    setEditBody]    = useState('');
   const [editSaving,  setEditSaving]  = useState(false);
@@ -457,6 +459,13 @@ export default function PostDetailPage() {
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                     {format(new Date(post.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                   </p>
+                  {isOwn && post.ai_analysis_status === 'pending' && (
+                    <button onClick={() => setShowAiModal(true)} className="flex items-center gap-1.5 mt-0.5">
+                      <span className="inline-block w-2.5 h-2.5 rounded-full border-2 animate-spin"
+                        style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                      <span className="text-[10px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>Vérification en cours…</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Badge type */}
@@ -880,6 +889,14 @@ export default function PostDetailPage() {
           onClose={() => setLightbox(null)}
         />
       )}
+
+      <AiAnalysisStatusModal
+        open={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        contentType="post"
+        contentId={post.id}
+        initialStatus={post.ai_analysis_status}
+      />
     </div>
   );
 }

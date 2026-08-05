@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Bell, Check, Trash2, Heart, UserPlus, MessageCircle, Radio, CheckSquare, Square, X } from 'lucide-react';
+import { Bell, Check, Trash2, Heart, UserPlus, MessageCircle, Radio, CheckSquare, Square, X, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import type { Notification } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
+import { AiAnalysisStatusModal, type AiContentType } from '../components/ui/AiAnalysisStatusModal';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -16,6 +17,11 @@ const NOTIF_ICONS: Record<string, React.ReactNode> = {
   reel_posted:  <Radio size={14} />,
   system:       <Bell size={14} />,
   welcome:      <Bell size={14} />,
+  // Moderation IA (2026-08) — verdict apres analyse automatique d'un reel
+  // publie par l'utilisateur (cf. recommendation_system/ai_service).
+  reel_analysis_cleared: <CheckCircle size={14} />,
+  reel_analysis_limited: <AlertCircle size={14} />,
+  reel_analysis_removed: <AlertTriangle size={14} />,
 };
 
 const NOTIF_COLOR: Record<string, string> = {
@@ -26,6 +32,9 @@ const NOTIF_COLOR: Record<string, string> = {
   reel_posted: '#FF5722',
   system:      '#607D8B',
   welcome:     '#4CAF50',
+  reel_analysis_cleared: '#10B981',
+  reel_analysis_limited: '#F59E0B',
+  reel_analysis_removed: '#EF4444',
 };
 
 function NotifIcon({ type }: { type: string }) {
@@ -49,6 +58,7 @@ export default function NotificationsPage() {
   const [selectMode,  setSelectMode]  = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
   const [deletingSel, setDeletingSel] = useState(false);
+  const [aiStatusTarget, setAiStatusTarget] = useState<{ type: AiContentType; id: string } | null>(null);
 
   const notifications = data ?? [];
   const unread        = notifications.filter(n => !n.is_read).length;
@@ -230,7 +240,12 @@ export default function NotificationsPage() {
             return (
               <div
                 key={n.id}
-                onClick={() => selectMode && toggleItem(n.id)}
+                onClick={() => {
+                  if (selectMode) { toggleItem(n.id); return; }
+                  if (n.notification_type.startsWith('reel_analysis_') && n.ref_id && n.ref_type) {
+                    setAiStatusTarget({ type: n.ref_type as AiContentType, id: n.ref_id });
+                  }
+                }}
                 className="flex items-start gap-3 p-4 rounded-xl transition-all group"
                 style={{
                   background: isSelected
@@ -286,6 +301,14 @@ export default function NotificationsPage() {
           })}
         </div>
       )}
+
+      <AiAnalysisStatusModal
+        open={!!aiStatusTarget}
+        onClose={() => setAiStatusTarget(null)}
+        contentType={aiStatusTarget?.type ?? 'post'}
+        contentId={aiStatusTarget?.id ?? ''}
+        initialStatus="done"
+      />
     </div>
   );
 }

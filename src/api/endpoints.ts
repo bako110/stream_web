@@ -232,6 +232,7 @@ export const Endpoints = {
     deleteAll:  `${V1}/notifications`,
     read:       (id: string) => `${V1}/notifications/${id}/read`,
     delete:     (id: string) => `${V1}/notifications/${id}`,
+    byRef:      (refId: string) => `${V1}/notifications?ref_id=${refId}&limit=5`,
   },
   upload: {
     images:         (folder: string) => `${V1}/upload/images?folder=${folder}`,
@@ -352,6 +353,7 @@ export const Endpoints = {
   },
   reports: {
     create: `${V1}/reports`,
+    me:     `${V1}/reports/me`,
   },
   planning: {
     feed:    `${V1}/planning`,

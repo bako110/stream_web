@@ -25,6 +25,7 @@ import { RichText, renderTextWithLinks } from '../components/ui/RichText';
 import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
 import { CardMoreMenu, type CardMenuAction } from '../components/ui/CardMoreMenu';
 import { ReportModal, type ReportContentType } from '../components/ui/ReportModal';
+import { AiAnalysisStatusModal, type AiContentType } from '../components/ui/AiAnalysisStatusModal';
 import { useWs } from '../context/WebSocketContext';
 import { MediaPlaceholder, paletteBySeed as placeholderPalette } from '../components/ui/MediaPlaceholder';
 import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
@@ -874,7 +875,7 @@ const KIND_BADGE: Record<string, { label: string; bg: string; color: string }> =
   reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' } };
 
 function AuthorRow({
-  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind, onMoreClick }: {
+  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind, onMoreClick, showAiPending, onAiPendingClick }: {
   author: { display_name?: string | null; username?: string | null; avatar_url?: string | null; is_verified?: boolean; is_live?: boolean | null } | undefined;
   authorId: string | undefined;
   publishedAt?: string | null;
@@ -884,6 +885,10 @@ function AuthorRow({
   kind?: string;
   /** Ouvre le menu "..." (favoris, partage, signaler, etc.) — masqué si absent. */
   onMoreClick?: (e: React.MouseEvent) => void;
+  /** Badge "vérification en cours" — visible uniquement par le propriétaire, cf. ReelsPage.tsx pour le même pattern. */
+  showAiPending?: boolean;
+  /** Ouvre l'écran de suivi d'analyse IA au clic sur le badge — masqué (badge non cliquable) si absent. */
+  onAiPendingClick?: () => void;
 }) {
   const { liveUserIds } = useWs();
   if (!author && !authorId) return null;
@@ -907,6 +912,16 @@ function AuthorRow({
           </div>
           {publishedAt && (
             <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{timeAgo(publishedAt)}</span>
+          )}
+          {showAiPending && (
+            <button
+              onClick={e => { e.stopPropagation(); onAiPendingClick?.(); }}
+              className="flex items-center gap-1.5 mt-0.5"
+              disabled={!onAiPendingClick}>
+              <span className="inline-block w-2.5 h-2.5 rounded-full border-2 animate-spin"
+                style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+              <span className="text-[10px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>Vérification en cours…</span>
+            </button>
           )}
         </div>
       </button>
@@ -1674,13 +1689,14 @@ function LiveHero({ concert }: { concert: Concert }) {
 // ── Concert card ──────────────────────────────────────────────────────────────
 type OpenCommentsFn = (id: string, kind: 'event'|'concert'|'post'|'reel', count: number) => void;
 
-function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport }: {
+function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
   concert: Concert; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
   onHide?: () => void;
   openMore: (title: string, actions: CardMenuAction[]) => void;
   openReport: (contentType: ReportContentType, contentId: string) => void;
+  openAiStatus: (contentType: AiContentType, contentId: string, status?: 'pending' | 'done' | null) => void;
 }) {
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
@@ -1716,6 +1732,8 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="concert"
+        showAiPending={isOwn && concert.ai_analysis_status === 'pending'}
+        onAiPendingClick={isOwn ? () => openAiStatus('concert', concert.id, concert.ai_analysis_status) : undefined}
         onMoreClick={isOwn ? undefined : e => { e.stopPropagation(); handleMoreClick(); }}
       />
 
@@ -1770,13 +1788,14 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
 }
 
 // ── Event card ────────────────────────────────────────────────────────────────
-function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport }: {
+function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
   event: Event; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
   onHide?: () => void;
   openMore: (title: string, actions: CardMenuAction[]) => void;
   openReport: (contentType: ReportContentType, contentId: string) => void;
+  openAiStatus: (contentType: AiContentType, contentId: string, status?: 'pending' | 'done' | null) => void;
 }) {
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
@@ -1812,6 +1831,8 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="event"
+        showAiPending={isOwn && event.ai_analysis_status === 'pending'}
+        onAiPendingClick={isOwn ? () => openAiStatus('event', event.id, event.ai_analysis_status) : undefined}
         onMoreClick={isOwn ? undefined : e => { e.stopPropagation(); handleMoreClick(); }}
       />
 
@@ -1917,13 +1938,14 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
 }
 
 // ── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport }: {
+function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
   post: Post; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
   onOpenComments: OpenCommentsFn; commentCountOverride?: number;
   onHide?: () => void;
   openMore: (title: string, actions: CardMenuAction[]) => void;
   openReport: (contentType: ReportContentType, contentId: string) => void;
+  openAiStatus: (contentType: AiContentType, contentId: string, status?: 'pending' | 'done' | null) => void;
 }) {
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
@@ -1963,6 +1985,8 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="post"
+        showAiPending={isOwn && post.ai_analysis_status === 'pending'}
+        onAiPendingClick={isOwn ? () => openAiStatus('post', post.id, post.ai_analysis_status) : undefined}
         onMoreClick={e => { e.stopPropagation(); handleMoreClick(); }}
       />
 
@@ -2739,8 +2763,10 @@ export default function FeedPage() {
   // pas une instance par card (le feed n'est pas virtualisé côté web). ──────────
   const [moreMenu, setMoreMenu] = useState<{ title: string; actions: CardMenuAction[] } | null>(null);
   const [reportTarget, setReportTarget] = useState<{ type: ReportContentType; id: string } | null>(null);
+  const [aiStatusTarget, setAiStatusTarget] = useState<{ type: AiContentType; id: string; status?: 'pending' | 'done' | null } | null>(null);
   const openMore   = useCallback((title: string, actions: CardMenuAction[]) => setMoreMenu({ title, actions }), []);
   const openReport = useCallback((type: ReportContentType, id: string) => setReportTarget({ type, id }), []);
+  const openAiStatus = useCallback((type: AiContentType, id: string, status?: 'pending' | 'done' | null) => setAiStatusTarget({ type, id, status }), []);
 
   // ── Pagination infinie (tab "all") ──────────────────────────────────────────
   const seenIdsRef       = useRef<Set<string>>(new Set());
@@ -3185,16 +3211,17 @@ export default function FeedPage() {
                 if (item.kind === 'concert') {
                   return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'concert' && x.id === item.id)))}
-                    openMore={openMore} openReport={openReport} />;
+                    openMore={openMore} openReport={openReport} openAiStatus={openAiStatus} />;
                 }
                 if (item.kind === 'event') {
                   return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'event' && x.id === item.id)))}
-                    openMore={openMore} openReport={openReport} />;
+                    openMore={openMore} openReport={openReport} openAiStatus={openAiStatus} />;
                 }
                 if (item.kind === 'post') {
                   return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'post' && x.id === item.id)))}
+                    openAiStatus={openAiStatus}
                     openMore={openMore} openReport={openReport} />;
                 }
                 if (item.kind === 'reel') {
@@ -3255,6 +3282,13 @@ export default function FeedPage() {
         onClose={() => setReportTarget(null)}
         contentType={reportTarget?.type ?? 'post'}
         contentId={reportTarget?.id ?? ''}
+      />
+      <AiAnalysisStatusModal
+        open={!!aiStatusTarget}
+        onClose={() => setAiStatusTarget(null)}
+        contentType={aiStatusTarget?.type ?? 'post'}
+        contentId={aiStatusTarget?.id ?? ''}
+        initialStatus={aiStatusTarget?.status}
       />
     </div>
   );
