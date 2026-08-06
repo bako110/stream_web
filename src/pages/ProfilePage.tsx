@@ -4,19 +4,24 @@ import type { ChangeEvent } from 'react';
 import {
   Camera, Edit3, MapPin, Globe, Calendar, Play, Eye,
   Grid3x3, Info, Heart, ImagePlus, Users, FileText, Phone, Gift,
+  MoreVertical, Trash2,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 import type { User, Reel, Event, Concert, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
+import { useConfirm } from '../components/ui/Dialog';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { Modal } from '../components/ui/Modal';
 import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
+import { CardMoreMenu, type CardMenuAction } from '../components/ui/CardMoreMenu';
+import { extractApiErrorMessage } from '../utils/apiError';
 
 type Tab = 'reels' | 'publications' | 'about';
 
@@ -343,6 +348,10 @@ function FollowListModal({ userId, type, onClose }: {
 // ── Publications tab ──────────────────────────────────────────────────────────
 function PublicationsTab({ userId }: { userId: string }) {
   const navigate = useNavigate();
+  const { confirm, ConfirmDialog } = useConfirm();
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+  const [menuItem, setMenuItem] = useState<{ id: string; kind: 'event' | 'concert' | 'post' } | null>(null);
+
   const { data: eventsData,   loading: evL } = useApi<any>(
     () => apiClient.get<any>(`${Endpoints.events.byUser(userId)}?limit=20`), [userId],
   );
@@ -361,7 +370,39 @@ function PublicationsTab({ userId }: { userId: string }) {
     ...events.map(e  => ({ ...e,  _kind: 'event'   as const })),
     ...concerts.map(c => ({ ...c, _kind: 'concert' as const })),
     ...posts.map(p   => ({ ...p,  _kind: 'post'    as const })),
-  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  ]
+    .filter(item => !removedIds.has(`${item._kind}-${item.id}`))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const endpointFor = (kind: 'event' | 'concert' | 'post', id: string) =>
+    kind === 'event' ? Endpoints.events.byId(id) : kind === 'concert' ? Endpoints.concerts.byId(id) : Endpoints.posts.byId(id);
+
+  const editPathFor = (kind: 'event' | 'concert' | 'post', id: string) =>
+    kind === 'event' ? `/create/event?edit=${id}` : kind === 'concert' ? `/create/concert?edit=${id}` : `/posts/${encodeId(id)}`;
+
+  async function handleDelete(kind: 'event' | 'concert' | 'post', id: string) {
+    const label = kind === 'event' ? 'cet événement' : kind === 'concert' ? 'ce concert' : 'ce post';
+    const ok = await confirm({ title: `Supprimer ${label} ?`, message: 'Cette action est définitive et irréversible.', danger: true, confirmLabel: 'Supprimer définitivement' });
+    if (!ok) return;
+    try {
+      await apiClient.delete(endpointFor(kind, id));
+      setRemovedIds(prev => new Set(prev).add(`${kind}-${id}`));
+      toast.success('Supprimé avec succès');
+    } catch (e) {
+      toast.error(extractApiErrorMessage(e, 'Erreur lors de la suppression'));
+    }
+  }
+
+  const menuActions: CardMenuAction[] = menuItem ? [
+    {
+      icon: Edit3, label: 'Modifier',
+      onClick: () => navigate(editPathFor(menuItem.kind, menuItem.id)),
+    },
+    {
+      icon: Trash2, label: 'Supprimer', color: '#EF4444',
+      onClick: () => handleDelete(menuItem.kind, menuItem.id),
+    },
+  ] : [];
 
   if (evL || coL || poL) {
     return (
@@ -396,9 +437,10 @@ function PublicationsTab({ userId }: { userId: string }) {
         const title     = item.title ?? item.body;
 
         return (
-          <button key={`${item._kind}-${item.id}`}
+          <div key={`${item._kind}-${item.id}`}
+            role="button" tabIndex={0}
             onClick={() => navigate(isEvent ? `/events/${encodeId(item.id)}` : isConcert ? `/concerts/${encodeId(item.id)}` : `/posts/${encodeId(item.id)}`)}
-            className="relative overflow-hidden group text-left"
+            className="relative overflow-hidden group text-left cursor-pointer"
             style={{ aspectRatio: '3/4', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
             {img ? (
               <img src={img} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -417,15 +459,26 @@ function PublicationsTab({ userId }: { userId: string }) {
               {label}
             </div>
 
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuItem({ id: item.id, kind: item._kind }); }}
+              className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', color: '#fff' }}
+              aria-label="Options">
+              <MoreVertical size={13} />
+            </button>
+
             {img && title && (
               <div className="absolute inset-x-0 bottom-0 px-2 py-1.5"
                 style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
                 <p className="text-white text-[11px] font-semibold line-clamp-2 leading-tight">{title}</p>
               </div>
             )}
-          </button>
+          </div>
         );
       })}
+
+      <CardMoreMenu open={!!menuItem} onClose={() => setMenuItem(null)} actions={menuActions} />
+      {ConfirmDialog}
     </div>
   );
 }
@@ -433,10 +486,30 @@ function PublicationsTab({ userId }: { userId: string }) {
 // ── Reels tab ─────────────────────────────────────────────────────────────────
 function ReelsTab({ userId }: { userId: string }) {
   const navigate = useNavigate();
-  const { items: reels, loading } = usePaginatedApi<Reel>(
+  const { confirm, ConfirmDialog } = useConfirm();
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+  const [menuReelId, setMenuReelId] = useState<string | null>(null);
+  const { items: allReels, loading } = usePaginatedApi<Reel>(
     (p) => apiClient.get<PaginatedResponse<Reel>>(`${Endpoints.users.userReels(userId)}?page=${p}&limit=18`),
     [userId],
   );
+  const reels = allReels.filter(r => !removedIds.has(r.id));
+
+  async function handleDeleteReel(id: string) {
+    const ok = await confirm({ title: 'Supprimer ce reel ?', message: 'Cette action est définitive et irréversible.', danger: true, confirmLabel: 'Supprimer définitivement' });
+    if (!ok) return;
+    try {
+      await apiClient.delete(Endpoints.reels.byId(id));
+      setRemovedIds(prev => new Set(prev).add(id));
+      toast.success('Reel supprimé');
+    } catch (e) {
+      toast.error(extractApiErrorMessage(e, 'Erreur lors de la suppression'));
+    }
+  }
+
+  const menuActions: CardMenuAction[] = menuReelId ? [
+    { icon: Trash2, label: 'Supprimer', color: '#EF4444', onClick: () => handleDeleteReel(menuReelId) },
+  ] : [];
 
   if (loading && reels.length === 0) {
     return (
@@ -483,8 +556,19 @@ function ReelsTab({ userId }: { userId: string }) {
               </span>
             </div>
           </button>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); setMenuReelId(reel.id); }}
+            className="absolute top-1 right-1 z-10 w-6 h-6 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', color: '#fff' }}
+            aria-label="Options">
+            <MoreVertical size={13} />
+          </button>
         </HoverVideoPreview>
       ))}
+
+      <CardMoreMenu open={!!menuReelId} onClose={() => setMenuReelId(null)} actions={menuActions} />
+      {ConfirmDialog}
     </div>
   );
 }

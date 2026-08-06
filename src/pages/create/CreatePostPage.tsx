@@ -151,14 +151,21 @@ export default function CreatePostPage() {
         });
         toast.success('Post mis à jour !');
       } else {
-        await apiClient.post(Endpoints.posts.create, {
+        const res = await apiClient.post<{ status?: string }>(Endpoints.posts.create, {
           body:      body.trim() || undefined,
           feeling:   feeling ?? undefined,
           image_url,
           image_urls,
           video_url,
         });
-        toast.success('Post publié !');
+        // pending_review (2026-08bis) : media present -> invisible tant que
+        // l'IA n'a pas confirme "cleared" -- message different du succes
+        // immediat habituel, cf. MyVerificationQueuePage.tsx pour le suivi.
+        if (res.data?.status === 'pending_review') {
+          toast.success('Publication envoyée, en cours de vérification. Elle sera visible une fois confirmée.');
+        } else {
+          toast.success('Post publié !');
+        }
       }
       navigate(-1);
     } catch (e: any) {

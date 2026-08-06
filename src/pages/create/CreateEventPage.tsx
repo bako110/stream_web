@@ -271,12 +271,21 @@ export default function CreateEventPage() {
         toast.success('Événement mis à jour !');
         navigate('/my-events');
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.events.list, payload);
+        const res = await apiClient.post<{ id: string; status?: string }>(Endpoints.events.list, payload);
         const id  = res.data?.id;
-        if (id) {
-          await apiClient.patch(`${Endpoints.events.list}/${id}/publish`).catch(() => {});
+        // pending_review (2026-08bis) : si une image est presente, l'analyse
+        // IA a deja demarre a la creation -- publish echouera (409, contenu
+        // en cours de verification) tant qu'elle n'a pas confirme "cleared",
+        // ignore volontairement ce cas (comportement voulu, cf. event_service.py).
+        let stillPending = res.data?.status === 'pending_review';
+        if (id && !stillPending) {
+          await apiClient.patch(`${Endpoints.events.list}/${id}/publish`).catch((e: any) => {
+            if (e?.status === 409) stillPending = true;
+          });
         }
-        toast.success('Événement créé !');
+        toast.success(stillPending
+          ? 'Événement envoyé, en cours de vérification. Il sera visible une fois confirmé.'
+          : 'Événement créé !');
         navigate('/my-events');
       }
     } catch (e: any) {

@@ -256,12 +256,20 @@ export default function CreateConcertPage() {
         toast.success('Concert mis à jour !');
         navigate('/my-concerts');
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.concerts.list, payload);
+        const res = await apiClient.post<{ id: string; status?: string }>(Endpoints.concerts.list, payload);
         const id  = res.data?.id;
-        if (id) {
-          await apiClient.patch(`${Endpoints.concerts.list}/${id}/publish`).catch(() => {});
+        // pending_review (2026-08bis) : cf. CreateEventPage.tsx pour le detail
+        // -- publish echoue volontairement (409) tant que l'IA n'a pas
+        // confirme "cleared", ignore ce cas (comportement voulu).
+        let stillPending = res.data?.status === 'pending_review';
+        if (id && !stillPending) {
+          await apiClient.patch(`${Endpoints.concerts.list}/${id}/publish`).catch((e: any) => {
+            if (e?.status === 409) stillPending = true;
+          });
         }
-        toast.success('Concert créé !');
+        toast.success(stillPending
+          ? 'Concert envoyé, en cours de vérification. Il sera visible une fois confirmé.'
+          : 'Concert créé !');
         navigate('/my-concerts');
       }
     } catch (e: any) {
