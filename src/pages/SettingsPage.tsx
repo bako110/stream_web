@@ -185,7 +185,7 @@ export default function SettingsPage() {
             </p>
             {user?.is_verified && <VerifiedBadge size={16} />}
           </div>
-          <p className="text-sm truncate" style={{ color: 'var(--text-tertiary)' }}>{user?.email}</p>
+          <p className="text-sm truncate" style={{ color: 'var(--text-tertiary)' }}>{user?.email ?? user?.phone}</p>
           <div className="flex flex-wrap gap-2 mt-1.5">
             {user?.location && (
               <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
