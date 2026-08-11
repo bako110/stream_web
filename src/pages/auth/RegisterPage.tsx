@@ -319,15 +319,21 @@ export default function RegisterPage() {
 
           {/* Honeypot anti-bot — invisible pour un humain (hors-écran + aria-hidden),
               mais présent dans le DOM : les bots qui auto-complètent tous les champs
-              d'un formulaire le remplissent aveuglément, révélant leur nature. */}
+              d'un formulaire le remplissent aveuglément, révélant leur nature.
+              Nom générique + autoComplete="new-password" : "website_url"/"url"/"site"
+              sont reconnus par la plupart des gestionnaires de mots de passe (Chrome,
+              Bitwarden, 1Password...) qui le remplissaient automatiquement au chargement
+              de la page — bloquant de vrais utilisateurs avec "Requête invalide" alors
+              qu'ils n'avaient rien fait d'anormal. autoComplete="off" est ignoré par ces
+              gestionnaires ; "new-password" est la seule valeur qu'ils respectent. */}
           <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
-            <label htmlFor="website_url">Site web</label>
+            <label htmlFor="hp_confirm_x92">Confirmation</label>
             <input
-              id="website_url"
-              name="website_url"
+              id="hp_confirm_x92"
+              name="hp_confirm_x92"
               type="text"
               tabIndex={-1}
-              autoComplete="off"
+              autoComplete="new-password"
               value={websiteUrl}
               onChange={e => setWebsiteUrl(e.target.value)}
             />
