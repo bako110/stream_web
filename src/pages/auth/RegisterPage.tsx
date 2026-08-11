@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown, ArrowLeft, ArrowRight, Gift, Check, Calendar, X, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ArrowLeft, ArrowRight, Gift, Check, Calendar, X, Loader2 } from 'lucide-react';
 import type { Gender } from '../../types';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { RoundLogo } from '../../components/ui/RoundLogo';
+import { CountryPicker } from '../../components/auth/CountryPicker';
+import { COUNTRIES } from '../../data/countries';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { apiClient } from '../../api';
@@ -20,25 +22,6 @@ const PERKS = [
 ];
 
 type AuthMethod = 'email' | 'phone';
-
-// Pays les plus courants d'abord, puis le reste — même liste que LoginPage
-const COUNTRIES = [
-  { code: 'SN', dial: '+221', flag: '🇸🇳', name: 'Sénégal' },
-  { code: 'CI', dial: '+225', flag: '🇨🇮', name: "Côte d'Ivoire" },
-  { code: 'ML', dial: '+223', flag: '🇲🇱', name: 'Mali' },
-  { code: 'BF', dial: '+226', flag: '🇧🇫', name: 'Burkina Faso' },
-  { code: 'GN', dial: '+224', flag: '🇬🇳', name: 'Guinée' },
-  { code: 'CM', dial: '+237', flag: '🇨🇲', name: 'Cameroun' },
-  { code: 'FR', dial: '+33',  flag: '🇫🇷', name: 'France' },
-  { code: 'BE', dial: '+32',  flag: '🇧🇪', name: 'Belgique' },
-  { code: 'MA', dial: '+212', flag: '🇲🇦', name: 'Maroc' },
-  { code: 'DZ', dial: '+213', flag: '🇩🇿', name: 'Algérie' },
-  { code: 'TN', dial: '+216', flag: '🇹🇳', name: 'Tunisie' },
-  { code: 'US', dial: '+1',   flag: '🇺🇸', name: 'États-Unis' },
-  { code: 'GB', dial: '+44',  flag: '🇬🇧', name: 'Royaume-Uni' },
-  { code: 'NG', dial: '+234', flag: '🇳🇬', name: 'Nigeria' },
-  { code: 'GH', dial: '+233', flag: '🇬🇭', name: 'Ghana' },
-];
 
 const STEPS = 3;
 const STEP_LABELS = ['Identité', 'Compte', 'Sécurité'];
@@ -85,7 +68,6 @@ export default function RegisterPage() {
   });
   const [authMethod, setAuthMethod]   = useState<AuthMethod>('email');
   const [country,     setCountry]     = useState(COUNTRIES[0]);
-  const [showCountry, setShowCountry] = useState(false);
   const [showPwd,     setShowPwd]     = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
@@ -128,14 +110,6 @@ export default function RegisterPage() {
     setForm(f => ({ ...f, email: '', phone: '' }));
     setFormError('');
   }
-
-  // Fermer le dropdown pays en cliquant dehors
-  useEffect(() => {
-    if (!showCountry) return;
-    const close = () => setShowCountry(false);
-    window.addEventListener('click', close);
-    return () => window.removeEventListener('click', close);
-  }, [showCountry]);
 
   async function handleGoogle() {
     setGLoading(true);
@@ -512,45 +486,7 @@ export default function RegisterPage() {
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    {/* Sélecteur pays */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={e => { e.stopPropagation(); setShowCountry(v => !v); }}
-                        className="flex items-center gap-1.5 h-full px-3 rounded-xl text-sm font-semibold transition-all"
-                        style={{
-                          background: 'var(--bg-secondary)',
-                          border: `1px solid ${focused === 'phone' ? 'var(--primary)' : 'var(--border)'}`,
-                          color: 'var(--text-primary)',
-                          minWidth: 90,
-                        }}>
-                        <span className="text-base">{country.flag}</span>
-                        <span>{country.dial}</span>
-                        <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
-                      </button>
-
-                      {showCountry && (
-                        <div className="absolute top-full left-0 mt-1 z-50 rounded-xl overflow-hidden shadow-xl"
-                          style={{ background: 'var(--surface)', border: '1px solid var(--border)', width: 220, maxHeight: 260, overflowY: 'auto' }}
-                          onClick={e => e.stopPropagation()}>
-                          {COUNTRIES.map(c => (
-                            <button key={c.code} type="button"
-                              onClick={() => { setCountry(c); setShowCountry(false); }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-all"
-                              style={{
-                                background: c.code === country.code ? 'rgba(123,63,242,0.1)' : 'transparent',
-                                color: c.code === country.code ? 'var(--primary)' : 'var(--text-primary)',
-                              }}
-                              onMouseEnter={e => { if (c.code !== country.code) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
-                              onMouseLeave={e => { if (c.code !== country.code) e.currentTarget.style.background = 'transparent'; }}>
-                              <span className="text-base">{c.flag}</span>
-                              <span className="flex-1 truncate">{c.name}</span>
-                              <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>{c.dial}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <CountryPicker value={country} onChange={setCountry} focused={focused === 'phone'} />
 
                     {/* Numéro */}
                     <input
