@@ -34,6 +34,7 @@ export const Endpoints = {
     blocked:       `${V1}/users/me/blocked`,
     suggestions:   `${V1}/users/suggestions`,
     watchHistory:  `${V1}/users/me/history`,
+    checkUsername: `${V1}/users/check-username`,
   },
   content: {
     films:          `${V1}/content/films`,

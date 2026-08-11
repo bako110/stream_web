@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown, ArrowLeft, ArrowRight, Gift, Check, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ChevronDown, ArrowLeft, ArrowRight, Gift, Check, Calendar, X, Loader2 } from 'lucide-react';
 import type { Gender } from '../../types';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { RoundLogo } from '../../components/ui/RoundLogo';
@@ -43,6 +43,13 @@ const COUNTRIES = [
 const STEPS = 3;
 const STEP_LABELS = ['Identité', 'Compte', 'Sécurité'];
 
+// Format email complet — exige un domaine avec au moins un point après le @
+// (rejette "a@b" mais accepte "a@b.com"), contrairement au simple .includes('@').
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_RE = /^[\w\-.]{3,30}$/;
+
+type CheckState = 'idle' | 'checking' | 'ok' | 'taken' | 'invalid';
+
 const GENDERS: { value: Gender; label: string }[] = [
   { value: 'female',             label: 'Femme' },
   { value: 'male',               label: 'Homme' },
@@ -84,6 +91,37 @@ export default function RegisterPage() {
   const [focused, setFocused] = useState<string | null>(null);
   const [gLoading, setGLoading] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Vérification de disponibilité en temps réel (debounce 500ms après la
+  // dernière frappe — évite d'interroger le serveur à chaque caractère).
+  const [usernameCheck, setUsernameCheck] = useState<CheckState>('idle');
+  const usernameCheckSeq = useRef(0);
+
+  useEffect(() => {
+    const value = form.username.trim();
+    if (!value) { setUsernameCheck('idle'); return; }
+    if (!USERNAME_RE.test(value)) { setUsernameCheck('invalid'); return; }
+
+    setUsernameCheck('checking');
+    const seq = ++usernameCheckSeq.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get<{ available: boolean }>(
+          `${Endpoints.users.checkUsername}?value=${encodeURIComponent(value)}`,
+        );
+        if (usernameCheckSeq.current === seq) {
+          setUsernameCheck(res.data.available ? 'ok' : 'taken');
+        }
+      } catch {
+        if (usernameCheckSeq.current === seq) setUsernameCheck('idle');
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [form.username]);
+
+  const emailState: CheckState = !form.email
+    ? 'idle'
+    : EMAIL_RE.test(form.email.trim()) ? 'ok' : 'invalid';
 
   function switchAuthMethod() {
     setAuthMethod(m => m === 'email' ? 'phone' : 'email');
@@ -153,10 +191,11 @@ export default function RegisterPage() {
 
   function validateStep2(): string | null {
     if (authMethod === 'email' && !form.email.trim()) return "L'email est requis";
-    if (authMethod === 'email' && !form.email.includes('@')) return 'Email invalide';
+    if (authMethod === 'email' && !EMAIL_RE.test(form.email.trim())) return 'Email invalide — vérifie le format (ex: nom@domaine.com)';
     if (authMethod === 'phone' && form.phone.trim().length < 6) return 'Numéro de téléphone invalide';
-    if (form.username.trim() && form.username.trim().length < 3) return "Le nom d'utilisateur doit faire au moins 3 caractères";
-    if (form.username.trim() && !/^[\w\-.]+$/.test(form.username.trim())) return "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, _, - et . (sans espaces ni caractères spéciaux)";
+    if (form.username.trim() && !USERNAME_RE.test(form.username.trim())) return "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, _, - et . (3 à 30 caractères, sans espaces)";
+    if (usernameCheck === 'checking') return 'Vérification du nom d\'utilisateur en cours…';
+    if (usernameCheck === 'taken') return 'Ce nom d\'utilisateur est déjà pris';
     return null;
   }
 
@@ -454,10 +493,23 @@ export default function RegisterPage() {
                 </div>
 
                 {authMethod === 'email' ? (
-                  <input className="input" type="email" placeholder="email@exemple.com" autoFocus
-                    value={form.email} onChange={field('email')}
-                    onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} style={inp('email')}
-                    onKeyDown={e => e.key === 'Enter' && goNext()} />
+                  <div className="relative">
+                    <input className="input pr-10" type="email" placeholder="email@exemple.com" autoFocus
+                      value={form.email} onChange={field('email')}
+                      onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
+                      style={{
+                        ...inp('email'),
+                        ...(emailState === 'invalid' ? { borderColor: '#ef4444' } : {}),
+                        ...(emailState === 'ok' ? { borderColor: '#22c55e' } : {}),
+                      }}
+                      onKeyDown={e => e.key === 'Enter' && goNext()} />
+                    {emailState === 'ok' && (
+                      <Check size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#22c55e' }} />
+                    )}
+                    {emailState === 'invalid' && (
+                      <X size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#ef4444' }} />
+                    )}
+                  </div>
                 ) : (
                   <div className="flex gap-2">
                     {/* Sélecteur pays */}
@@ -521,16 +573,38 @@ export default function RegisterPage() {
                 <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                   Nom d'utilisateur <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(optionnel)</span>
                 </label>
-                <input className="input" type="text" placeholder="nom_utilisateur"
-                  value={form.username} onChange={field('username')}
-                  onFocus={() => setFocused('un')} onBlur={() => setFocused(null)} style={inp('un')}
-                  onKeyDown={e => e.key === 'Enter' && goNext()} />
-                <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                  Lettres, chiffres, _ - . uniquement — pas d'espaces
+                <div className="relative">
+                  <input className="input pr-10" type="text" placeholder="nom_utilisateur"
+                    value={form.username} onChange={field('username')}
+                    onFocus={() => setFocused('un')} onBlur={() => setFocused(null)}
+                    style={{
+                      ...inp('un'),
+                      ...(usernameCheck === 'invalid' || usernameCheck === 'taken' ? { borderColor: '#ef4444' } : {}),
+                      ...(usernameCheck === 'ok' ? { borderColor: '#22c55e' } : {}),
+                    }}
+                    onKeyDown={e => e.key === 'Enter' && goNext()} />
+                  {usernameCheck === 'checking' && (
+                    <Loader2 size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2 animate-spin" style={{ color: 'var(--text-tertiary)' }} />
+                  )}
+                  {usernameCheck === 'ok' && (
+                    <Check size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#22c55e' }} />
+                  )}
+                  {(usernameCheck === 'taken' || usernameCheck === 'invalid') && (
+                    <X size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#ef4444' }} />
+                  )}
+                </div>
+                <p className="text-xs mt-1" style={{ color: usernameCheck === 'taken' ? '#ef4444' : 'var(--text-tertiary)' }}>
+                  {usernameCheck === 'taken'
+                    ? 'Ce nom d\'utilisateur est déjà pris'
+                    : usernameCheck === 'ok'
+                    ? 'Disponible ✓'
+                    : 'Lettres, chiffres, _ - . uniquement — pas d\'espaces'}
                 </p>
               </div>
 
-              <button type="button" onClick={goNext} className="btn-primary w-full gap-2 mt-1"
+              <button type="button" onClick={goNext}
+                disabled={usernameCheck === 'checking'}
+                className="btn-primary w-full gap-2 mt-1 disabled:opacity-60"
                 style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
                 Continuer <ArrowRight size={16} />
               </button>
@@ -555,14 +629,21 @@ export default function RegisterPage() {
                   </button>
                 </div>
                 {form.password.length > 0 && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="flex-1 flex gap-1">
-                      {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="flex-1 h-1 rounded-full" style={{ background: i <= strength ? strengthLvl.color : 'var(--border)' }} />
-                      ))}
+                  <>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex-1 flex gap-1">
+                        {[1, 2, 3, 4].map(i => (
+                          <div key={i} className="flex-1 h-1 rounded-full" style={{ background: i <= strength ? strengthLvl.color : 'var(--border)' }} />
+                        ))}
+                      </div>
+                      <span className="text-xs font-semibold" style={{ color: strengthLvl.color }}>{strengthLvl.label}</span>
                     </div>
-                    <span className="text-xs font-semibold" style={{ color: strengthLvl.color }}>{strengthLvl.label}</span>
-                  </div>
+                    {form.password.length < 8 && (
+                      <p className="text-xs mt-1.5" style={{ color: '#ef4444' }}>
+                        Encore {8 - form.password.length} caractère{8 - form.password.length > 1 ? 's' : ''} minimum
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -583,7 +664,13 @@ export default function RegisterPage() {
                   {form.confirm.length > 0 && form.confirm === form.password && (
                     <Check size={15} className="absolute right-11 top-1/2 -translate-y-1/2" style={{ color: '#22c55e' }} />
                   )}
+                  {form.confirm.length > 0 && form.confirm !== form.password && (
+                    <X size={15} className="absolute right-11 top-1/2 -translate-y-1/2" style={{ color: '#ef4444' }} />
+                  )}
                 </div>
+                {form.confirm.length > 0 && form.confirm !== form.password && (
+                  <p className="text-xs mt-1.5" style={{ color: '#ef4444' }}>Les mots de passe ne correspondent pas</p>
+                )}
               </div>
 
               <div>
