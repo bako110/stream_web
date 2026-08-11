@@ -81,7 +81,10 @@
   * { box-sizing: border-box; }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    /* Fallback emoji explicite — "Inter" ne contient aucun glyphe emoji, et
+       sans ce fallback certains navigateurs affichent un vide/carré au lieu
+       de retomber sur la police emoji système (ex: drapeaux de pays). */
+    font-family: 'Inter', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     scroll-behavior: smooth;
   }
 

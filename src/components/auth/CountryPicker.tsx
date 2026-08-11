@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { COUNTRIES, searchCountries, type Country } from '../../data/countries';
+import { FlagIcon } from './FlagIcon';
 
 interface Props {
   value:    Country;
@@ -46,7 +47,7 @@ export function CountryPicker({ value, onChange, focused }: Props) {
           color: 'var(--text-primary)',
           minWidth: 90,
         }}>
-        <span className="text-base">{value.flag}</span>
+        <FlagIcon code={value.code} size={18} />
         <span>{value.dial}</span>
         <ChevronDown size={12} style={{ color: 'var(--text-tertiary)' }} />
       </button>
@@ -87,7 +88,7 @@ export function CountryPicker({ value, onChange, focused }: Props) {
                   }}
                   onMouseEnter={e => { if (c.code !== value.code) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
                   onMouseLeave={e => { if (c.code !== value.code) e.currentTarget.style.background = 'transparent'; }}>
-                  <span className="text-base">{c.flag}</span>
+                  <FlagIcon code={c.code} size={18} />
                   <span className="flex-1 truncate">{c.name}</span>
                   <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>{c.dial}</span>
                 </button>
