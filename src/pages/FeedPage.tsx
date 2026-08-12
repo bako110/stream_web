@@ -16,7 +16,7 @@ import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
 import { toProxiedUrl } from '../utils/constants';
 import { formatTimeAgo } from '../utils/date';
-import { useShare } from '../context/ShareContext';
+import { ShareModal } from '../components/ui/ShareModal';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
@@ -1236,7 +1236,7 @@ function ShareToast({ onDone }: { onDone: () => void }) {
 function ActionBar({
   id, kind, initialLiked, initialLikeCount, initialCommentCount = 0,
   commentCountOverride, shareCount = 0,
-  titleForShare, imageForShare, descForShare, onOpenComments }: {
+  titleForShare, imageForShare, descForShare, onOpenComments, onOpenShare }: {
   id: string;
   kind: 'event' | 'concert' | 'post' | 'reel';
   initialLiked: boolean;
@@ -1248,6 +1248,7 @@ function ActionBar({
   imageForShare?: string;
   descForShare?: string;
   onOpenComments: (id: string, kind: 'event' | 'concert' | 'post' | 'reel', count: number) => void;
+  onOpenShare: (id: string, kind: 'event' | 'concert' | 'post' | 'reel', title?: string, image?: string, desc?: string) => void;
 }) {
   const [liked,      setLiked]      = useState(initialLiked);
   const [likeCount,  setLikeCount]  = useState(initialLikeCount);
@@ -1255,7 +1256,6 @@ function ActionBar({
   const [favId,      setFavId]      = useState<string | null>(null);
   const [savingFav,  setSavingFav]  = useState(false);
   const [shareToast, setShareToast] = useState(false);
-  const shareCtx = useShare();
   const inFlight = useRef(false);
 
   const saved = !!favId;
@@ -1310,18 +1310,7 @@ function ActionBar({
 
   function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    const path = kind === 'concert' ? 'concerts' : kind === 'event' ? 'events' : kind === 'post' ? 'posts' : 'reels';
-    const url  = kind === 'reel'
-      ? `${window.location.origin}/reels?id=${encodeId(id)}`
-      : `${window.location.origin}/${path}/${encodeId(id)}`;
-    shareCtx.open({
-      url,
-      title: titleForShare ?? 'GoFolyX',
-      desc: descForShare,
-      image: imageForShare,
-      targetType: kind,
-      targetId: id,
-    });
+    onOpenShare(id, kind, titleForShare, imageForShare, descForShare);
   }
 
   return (
@@ -1599,11 +1588,12 @@ function LiveHero({ concert }: { concert: Concert }) {
 
 // ── Concert card ──────────────────────────────────────────────────────────────
 type OpenCommentsFn = (id: string, kind: 'event'|'concert'|'post'|'reel', count: number) => void;
+type OpenShareFn = (id: string, kind: 'event'|'concert'|'post'|'reel', title?: string, image?: string, desc?: string) => void;
 
-function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
+function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments, onOpenShare, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
   concert: Concert; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
-  onOpenComments: OpenCommentsFn; commentCountOverride?: number;
+  onOpenComments: OpenCommentsFn; onOpenShare: OpenShareFn; commentCountOverride?: number;
   onHide?: () => void;
   openMore: (title: string, actions: CardMenuAction[]) => void;
   openReport: (contentType: ReportContentType, contentId: string) => void;
@@ -1693,16 +1683,17 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         imageForShare={concert.thumbnail_url ?? undefined}
         descForShare={concert.description?.slice(0, 120) ?? concert.genre ?? undefined}
         onOpenComments={onOpenComments}
+        onOpenShare={onOpenShare}
       />
     </div>
   );
 }
 
 // ── Event card ────────────────────────────────────────────────────────────────
-function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
+function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, onOpenShare, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
   event: Event; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
-  onOpenComments: OpenCommentsFn; commentCountOverride?: number;
+  onOpenComments: OpenCommentsFn; onOpenShare: OpenShareFn; commentCountOverride?: number;
   onHide?: () => void;
   openMore: (title: string, actions: CardMenuAction[]) => void;
   openReport: (contentType: ReportContentType, contentId: string) => void;
@@ -1794,6 +1785,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, co
         imageForShare={event.thumbnail_url ?? event.banner_url ?? undefined}
         descForShare={event.description?.slice(0, 120) ?? undefined}
         onOpenComments={onOpenComments}
+        onOpenShare={onOpenShare}
       />
     </div>
   );
@@ -1849,10 +1841,10 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
 }
 
 // ── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
+function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOpenShare, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
   post: Post; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
-  onOpenComments: OpenCommentsFn; commentCountOverride?: number;
+  onOpenComments: OpenCommentsFn; onOpenShare: OpenShareFn; commentCountOverride?: number;
   onHide?: () => void;
   openMore: (title: string, actions: CardMenuAction[]) => void;
   openReport: (contentType: ReportContentType, contentId: string) => void;
@@ -1944,6 +1936,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, comm
         imageForShare={post.image_url ?? undefined}
         descForShare={post.body?.slice(0, 120) ?? undefined}
         onOpenComments={onOpenComments}
+        onOpenShare={onOpenShare}
       />
     </div>
   );
@@ -2668,6 +2661,13 @@ export default function FeedPage() {
   const { followedIds, toggle: toggleFollow } = useFollow();
   const [commentTarget,   setCommentTarget]   = useState<{ id: string; kind: 'event'|'concert'|'post'|'reel'; count: number } | null>(null);
   const [commentCounts,   setCommentCounts]   = useState<Record<string, number>>({});
+  // Un seul modal de partage partagé par toutes les cards — même principe que
+  // commentTarget/CommentsModal ci-dessus, pour éviter qu'une instance par card
+  // ne se retrouve montée en double (StrictMode + re-render du feed).
+  const [shareTarget, setShareTarget] = useState<{
+    id: string; kind: 'event' | 'concert' | 'post' | 'reel';
+    title?: string; image?: string; desc?: string;
+  } | null>(null);
   const [feedAd,          setFeedAd]          = useState<FeedAd | null>(null);
 
   // ── Menu "..." et signalement — un seul modal partagé par toutes les cards,
@@ -2707,6 +2707,9 @@ export default function FeedPage() {
 
   function openComments(id: string, kind: 'event'|'concert'|'post'|'reel', count: number) {
     setCommentTarget({ id, kind, count });
+  }
+  function openShare(id: string, kind: 'event'|'concert'|'post'|'reel', title?: string, image?: string, desc?: string) {
+    setShareTarget({ id, kind, title, image, desc });
   }
   async function loadFeed(filter: typeof tab) {
     setLoading(true);
@@ -3120,17 +3123,17 @@ export default function FeedPage() {
                   return <ReelRowCard key={item.id} reels={item.data} />;
                 }
                 if (item.kind === 'concert') {
-                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
+                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'concert' && x.id === item.id)))}
                     openMore={openMore} openReport={openReport} openAiStatus={openAiStatus} />;
                 }
                 if (item.kind === 'event') {
-                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
+                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'event' && x.id === item.id)))}
                     openMore={openMore} openReport={openReport} openAiStatus={openAiStatus} />;
                 }
                 if (item.kind === 'post') {
-                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} commentCountOverride={commentCounts[item.id]}
+                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'post' && x.id === item.id)))}
                     openAiStatus={openAiStatus}
                     openMore={openMore} openReport={openReport} />;
@@ -3180,6 +3183,26 @@ export default function FeedPage() {
           if (commentTarget) setCommentCounts(prev => ({ ...prev, [commentTarget.id]: n }));
         }}
       />
+
+      {/* ── Single global share modal — même principe que CommentsModal ── */}
+      {shareTarget && (() => {
+        const path = shareTarget.kind === 'concert' ? 'concerts' : shareTarget.kind === 'event' ? 'events' : shareTarget.kind === 'post' ? 'posts' : 'reels';
+        const url  = shareTarget.kind === 'reel'
+          ? `${window.location.origin}/reels?id=${encodeId(shareTarget.id)}`
+          : `${window.location.origin}/${path}/${encodeId(shareTarget.id)}`;
+        return (
+          <ShareModal
+            open
+            onClose={() => setShareTarget(null)}
+            url={url}
+            title={shareTarget.title ?? 'GoFolyX'}
+            desc={shareTarget.desc}
+            image={shareTarget.image}
+            targetType={shareTarget.kind}
+            targetId={shareTarget.id}
+          />
+        );
+      })()}
 
       {/* ── Single global menu "..." et modal de signalement — partagés par toutes les cards ── */}
       <CardMoreMenu

@@ -17,7 +17,7 @@ import { useSmartBack } from '../../hooks/useSmartBack';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { extractApiErrorMessage } from '../../utils/apiError';
-import { useShare } from '../../context/ShareContext';
+import { ShareModal } from '../../components/ui/ShareModal';
 
 // ── Conversion GoGold : 1 EUR = 100 GoGold ─────────────────────────────────────
 const GOGOLD_PER_EUR = 100;
@@ -214,7 +214,7 @@ export default function FilmDetailPage() {
   const [hasAccess,       setHasAccess]       = useState<boolean | null>(null);
   const [hasActiveSub,    setHasActiveSub]    = useState(false);
   const [showPaywall,     setShowPaywall]      = useState(false);
-  const shareCtx = useShare();
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const film   = useApi<Content>(() => apiClient.get<Content>(Endpoints.content.filmById(id!)), [id]);
   const videos = useApi<VideoMeta[]>(() => apiClient.get<VideoMeta[]>(Endpoints.videos.byContent(id!)), [id]);
@@ -291,13 +291,7 @@ export default function FilmDetailPage() {
 
   function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    shareCtx.open({
-      url: `${window.location.origin}/films/${encodeId(f.id)}`,
-      title: `${f.title} — GoFolyX`,
-      image: f.banner_url ?? f.thumbnail_url ?? undefined,
-      targetType: 'content',
-      targetId: f.id,
-    });
+    setShowShareModal(true);
   }
 
   return (
@@ -491,6 +485,16 @@ export default function FilmDetailPage() {
           onPurchased={() => setHasAccess(true)}
         />
       )}
+
+      <ShareModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={`${window.location.origin}/films/${encodeId(f.id)}`}
+        title={`${f.title} — GoFolyX`}
+        image={f.banner_url ?? f.thumbnail_url ?? undefined}
+        targetType="content"
+        targetId={f.id}
+      />
     </div>
   );
 }

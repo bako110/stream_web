@@ -27,7 +27,7 @@ import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { AiAnalysisStatusModal } from '../components/ui/AiAnalysisStatusModal';
-import { useShare } from '../context/ShareContext';
+import { ShareModal } from '../components/ui/ShareModal';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getApiErrorDetail } from '../utils/apiError';
@@ -637,11 +637,12 @@ function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
 const MAX_RETRIES   = 3;
 const STALL_TIMEOUT = 8000; // 8s identique mobile
 
-function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMuted, onCommentOpen, onMoreOpen, onRatioChange }: {
+function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMuted, onCommentOpen, onMoreOpen, onRatioChange, onShareRequest }: {
   reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void; onMoreOpen: () => void;
   onRatioChange?: (ratio: number | null) => void;
   /** Le navigateur a bloqué l'autoplay avec son — informe le parent pour synchroniser l'icône volume. */
   onAutoplayFallbackMuted?: () => void;
+  onShareRequest: (reelId: string, title: string, image?: string) => void;
 }) {
   const navigate      = useNavigate();
   const { user: me }  = useAuthStore();
@@ -702,7 +703,6 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
   const followFetched     = useRef(false);
   const [captionExpanded, setCaptionExpanded]= useState(false);
   const [showGiftPicker,  setShowGiftPicker] = useState(false);
-  const shareCtx = useShare();
   const [refInfo, setRefInfo] = useState<{ label: string; kind: string; thumbnail: string | null; color: string; url: string } | null>(null);
 
   // Resync si le reel change
@@ -1124,14 +1124,11 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
 
   function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    shareCtx.open({
-      url: `${window.location.origin}/reels?id=${encodeId(reel.id)}`,
-      title: caption ? `${caption} — ${authorName} sur GoFolyX` : `${authorName} sur GoFolyX`,
-      image: reel.thumbnail_url ?? undefined,
-      targetType: 'reel',
-      targetId: reel.id,
-      onShared: () => setShareCount(c => c + 1),
-    });
+    onShareRequest(
+      reel.id,
+      caption ? `${caption} — ${authorName} sur GoFolyX` : `${authorName} sur GoFolyX`,
+      reel.thumbnail_url ?? undefined,
+    );
   }
 
   function goToProfile(e: React.MouseEvent) {
@@ -1825,6 +1822,13 @@ export default function ReelsPage() {
   const [globalMuted,   setGlobalMuted] = useState(false);
   const [sidebarOpen,   setSidebarOpen] = useState(true);
   const [drawerOpen,    setDrawerOpen]  = useState(false);
+  // Un seul modal de partage partagé par tous les ReelPlayer montés en même
+  // temps dans le feed (tous les items sont rendus simultanément pour le
+  // scroll snap, pas juste le "active") — même principe que drawerOpen/
+  // moreSheetOpen ci-dessus, pour éviter une instance par reel.
+  const [shareTarget, setShareTarget] = useState<{
+    reelId: string; title: string; image?: string;
+  } | null>(null);
   // Recherche
   const [searchOpen,    setSearchOpen]  = useState(false);
   const [searchQuery,   setSearchQuery] = useState('');
@@ -2687,6 +2691,7 @@ export default function ReelsPage() {
                     onAutoplayFallbackMuted={() => setGlobalMuted(true)}
                     onCommentOpen={() => {}}
                     onMoreOpen={() => {}}
+                    onShareRequest={(reelId, title, image) => setShareTarget({ reelId, title, image })}
                   />
                 </div>
 
@@ -2784,6 +2789,7 @@ export default function ReelsPage() {
                     onCommentOpen={() => setDrawerOpen(true)}
                     onMoreOpen={() => setMoreSheetOpen(true)}
                     onRatioChange={setActiveRatio}
+                    onShareRequest={(reelId, title, image) => setShareTarget({ reelId, title, image })}
                   />
                 )}
               </div>
@@ -3248,6 +3254,21 @@ export default function ReelsPage() {
           </div>
         );
       })()}
+
+      {/* ── Single global share modal — même principe que drawerOpen/moreSheetOpen :
+          tous les ReelPlayer du feed sont montés en même temps, un seul modal
+          au niveau page évite qu'une instance par reel se retrouve en double. ── */}
+      {shareTarget && (
+        <ShareModal
+          open
+          onClose={() => setShareTarget(null)}
+          url={`${window.location.origin}/reels?id=${encodeId(shareTarget.reelId)}`}
+          title={shareTarget.title}
+          image={shareTarget.image}
+          targetType="reel"
+          targetId={shareTarget.reelId}
+        />
+      )}
 
       {ConfirmDialog}
     </div>

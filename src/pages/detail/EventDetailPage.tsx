@@ -19,7 +19,7 @@ import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { formatTimeAgo } from '../../utils/date';
-import { useShare } from '../../context/ShareContext';
+import { ShareModal } from '../../components/ui/ShareModal';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
@@ -494,18 +494,8 @@ export default function EventDetailPage() {
     finally { setRemindLoading(false); }
   }, [id, remindLoading]);
 
-  const shareCtx = useShare();
-  const openShare = useCallback(() => {
-    shareCtx.open({
-      url: `${window.location.origin}/events/${encodeId(id!)}`,
-      title: event?.title ?? 'Événement GoFolyX',
-      desc: event?.venue_city ?? undefined,
-      image: event?.banner_url ?? event?.thumbnail_url ?? undefined,
-      targetType: 'event',
-      targetId: id!,
-      onShared: () => setShareCount(c => c + 1),
-    });
-  }, [event, id, shareCtx]);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const openShare = useCallback(() => setShowShareModal(true), []);
 
 
   if (loading) return <PageLoader />;
@@ -884,6 +874,18 @@ export default function EventDetailPage() {
       </div>
 
       {showComments && <CommentsModal targetId={id!} onClose={() => setShowComments(false)} />}
+
+      <ShareModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={`${window.location.origin}/events/${encodeId(id!)}`}
+        title={event.title ?? 'Événement GoFolyX'}
+        desc={event.venue_city ?? undefined}
+        image={event.banner_url ?? event.thumbnail_url ?? undefined}
+        targetType="event"
+        targetId={id!}
+        onShared={() => setShareCount(c => c + 1)}
+      />
       {lightbox !== null && (() => {
         const bannerUrl = ev.banner_url ?? ev.thumbnail_url;
         const allImgs = [
