@@ -37,7 +37,9 @@ export function FriendsWhoLiked({ entityId, kind, totalLikes }: Props) {
     _cache.has(entityId) ? _cache.get(entityId)! : null,
   );
   const [showLikes, setShowLikes] = useState(false);
-  const containerRef = useRef<HTMLElement>(null);
+  // any car partagé entre le placeholder <div> (avant chargement) et le
+  // <button> réel (une fois les données arrivées) — deux types HTML distincts.
+  const containerRef = useRef<any>(null);
   const fetchedRef   = useRef(false);
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export function FriendsWhoLiked({ entityId, kind, totalLikes }: Props) {
   return (
     <>
       <button
-        ref={containerRef as React.RefObject<HTMLButtonElement>}
+        ref={containerRef}
         onClick={e => { e.stopPropagation(); setShowLikes(true); }}
         className="flex items-center gap-1.5 px-3 pb-1 text-left"
         style={{ minWidth: 0 }}
