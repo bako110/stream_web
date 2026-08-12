@@ -655,6 +655,10 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
   const likeInFlight  = useRef(false);
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const musicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // true juste après une pause volontaire (clic) — ignore le prochain événement
+  // "playing" du navigateur s'il survient malgré tout (resync HLS interne),
+  // pour ne pas annuler la pause demandée par l'utilisateur.
+  const userPausedRef = useRef(false);
 
   const hasMusic = !!(reel.music_url);
 
@@ -671,6 +675,9 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
   // (le backend ne stocke pas les dimensions des reels). null = pas encore connu.
   const [ratio, setRatio] = useState<number | null>(null);
   const [progress,        setProgress]       = useState(0);
+  const [scrubbing,       setScrubbing]      = useState(false);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const wasPlayingBeforeScrub = useRef(false);
   const [liked,           setLiked]          = useState(reel.user_reaction === 'like');
   const [likeCount,       setLikeCount]      = useState(reel.like_count ?? 0);
   const [commentCount,    setCommentCount]   = useState(reel.comment_count ?? 0);
@@ -841,6 +848,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
       if (!active) return;
       v.currentTime = 0;
       v.muted = globalMuted;
+      userPausedRef.current = false;
       v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => {
         // Autoplay avec son bloqué par le navigateur — retombe en muet pour
         // que la video joue quand meme plutot que de rester en pause.
@@ -893,6 +901,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
     } else if (v.readyState >= 3) {
       v.muted = hasMusic ? true : globalMuted;
       v.currentTime = 0;
+      userPausedRef.current = false;
       v.play().then(() => {
         setPlaying(true);
         startTimeRef.current = Date.now();
@@ -953,8 +962,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
   function togglePlay() {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) { v.play(); setPlaying(true); }
-    else          { v.pause(); setPlaying(false); }
+    if (v.paused) {
+      userPausedRef.current = false;
+      v.play().then(() => setPlaying(true)).catch(() => {});
+    } else {
+      userPausedRef.current = true;
+      v.pause();
+      setPlaying(false);
+    }
   }
 
   // Skip ±10s avec animation (identique mobile)
@@ -965,6 +980,49 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
     const label = seconds < 0 ? `◄◄ ${Math.abs(seconds)}s` : `${seconds}s ►►`;
     setSkipAnim({ side, label });
     setTimeout(() => setSkipAnim(null), 600);
+  }
+
+  // ── Scrub — glisser/cliquer sur la barre de progression pour avancer/reculer ──
+  function ratioFromClientX(clientX: number): number {
+    const el = progressBarRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  }
+
+  function seekToRatio(ratio: number) {
+    const v = videoRef.current;
+    if (!v || !v.duration) return;
+    v.currentTime = ratio * v.duration;
+    setProgress(ratio * 100);
+  }
+
+  function handleScrubStart(e: React.PointerEvent) {
+    e.stopPropagation();
+    const v = videoRef.current;
+    wasPlayingBeforeScrub.current = !!v && !v.paused;
+    userPausedRef.current = true; // pause temporaire du scrub, pas une pause utilisateur définitive
+    v?.pause();
+    setScrubbing(true);
+    seekToRatio(ratioFromClientX(e.clientX));
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function handleScrubMove(e: React.PointerEvent) {
+    if (!scrubbing) return;
+    e.stopPropagation();
+    seekToRatio(ratioFromClientX(e.clientX));
+  }
+
+  function handleScrubEnd(e: React.PointerEvent) {
+    e.stopPropagation();
+    setScrubbing(false);
+    if (wasPlayingBeforeScrub.current) {
+      userPausedRef.current = false;
+      videoRef.current?.play().then(() => setPlaying(true)).catch(() => {});
+    } else {
+      userPausedRef.current = true;
+    }
   }
 
   // Zones de tap : gauche (skip -10), centre (like/pause), droite (skip +10)
@@ -1123,7 +1181,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
             }}
             onWaiting={() => { setBuffering(true); armStall(); }}
             onPlaying={() => {
-              setBuffering(false); clearStall(); setPlaying(true);
+              setBuffering(false); clearStall();
+              // Le navigateur peut réémettre "playing" après un pause() manuel
+              // (resync interne HLS) — ne pas annuler une pause volontaire.
+              if (userPausedRef.current) {
+                videoRef.current?.pause();
+                return;
+              }
+              setPlaying(true);
               if (!sessionStartRef.current) sessionStartRef.current = Date.now();
             }}
             onEnded={() => {
@@ -1133,6 +1198,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
               const v = videoRef.current;
               if (v) {
                 v.currentTime = 0;
+                userPausedRef.current = false;
                 v.play().catch(() => {});
                 viewSentRef.current = false;
                 startTimeRef.current = Date.now();
@@ -1193,10 +1259,31 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 40%, rgba(0,0,0,0.25) 100%)' }} />
 
-      {/* Progress bar */}
-      <div className="absolute top-0 inset-x-0 h-[3px] z-20" style={{ background: 'rgba(255,255,255,0.12)' }}>
-        <div className="h-full transition-[width] duration-200"
-          style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#7B3FF2,#5B2EC4)' }} />
+      {/* Progress bar — cliquable/glissable pour avancer ou reculer dans la vidéo.
+          Hauteur de capture fixe (pas de transition dessus) pour ne jamais
+          déborder sur la zone de tap centrale (pause/like) juste en dessous. */}
+      <div
+        ref={progressBarRef}
+        className="absolute top-0 inset-x-0 z-20 cursor-pointer"
+        style={{ height: 18 }}
+        onPointerDown={handleScrubStart}
+        onPointerMove={handleScrubMove}
+        onPointerUp={handleScrubEnd}
+        onPointerCancel={handleScrubEnd}
+      >
+        <div className="absolute left-0 right-0 rounded-full overflow-visible"
+          style={{ top: 7, height: scrubbing ? 5 : 3, background: 'rgba(255,255,255,0.12)', transition: 'height 120ms' }}>
+          <div className="h-full rounded-full"
+            style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#7B3FF2,#5B2EC4)', transition: scrubbing ? 'none' : 'width 200ms' }} />
+          {scrubbing && (
+            <div className="absolute top-1/2 rounded-full"
+              style={{
+                left: `${progress}%`, width: 13, height: 13,
+                transform: 'translate(-50%, -50%)',
+                background: '#fff', boxShadow: '0 0 0 4px rgba(123,63,242,0.35)',
+              }} />
+          )}
+        </div>
       </div>
 
       {/* Buffering spinner (identique mobile) */}
