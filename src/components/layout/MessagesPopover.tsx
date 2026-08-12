@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   X, Search, SquarePen, Send, ArrowLeft, MessageCircle,
@@ -775,7 +776,11 @@ export function MessagesPopover({ onClose }: { onClose: () => void }) {
     setView('chat');
   }
 
-  return (
+  // Portail vers document.body — le header parent a un backdrop-filter, qui crée un
+  // nouveau containing block CSS pour les descendants position:fixed. Sans portail,
+  // ce popover fixed se retrouve piégé dans la boîte du header (h-14, overflow-hidden)
+  // et devient invisible bien que correctement monté dans le DOM.
+  return createPortal((
     <div
       ref={panelRef}
       className="fixed z-[200] flex flex-col overflow-hidden"
@@ -862,5 +867,5 @@ export function MessagesPopover({ onClose }: { onClose: () => void }) {
         )}
       </div>
     </div>
-  );
+  ), document.body);
 }
