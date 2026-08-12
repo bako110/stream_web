@@ -113,7 +113,6 @@ export const Endpoints = {
     shareCounts:    `${V1}/social/shares/counts`,
   },
   posts: {
-    feed:   `${V1}/posts/feed`,
     byUser: (userId: string) => `${V1}/users/${userId}/posts`,
     create: `${V1}/posts`,
     byId:   (id: string) => `${V1}/posts/${id}`,

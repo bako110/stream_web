@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
+import { LikesModal } from './LikesModal';
 
 interface Friend {
   id: string;
@@ -35,7 +36,8 @@ export function FriendsWhoLiked({ entityId, kind, totalLikes }: Props) {
   const [friends, setFriends] = useState<Friend[] | null>(
     _cache.has(entityId) ? _cache.get(entityId)! : null,
   );
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [showLikes, setShowLikes] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
   const fetchedRef   = useRef(false);
 
   useEffect(() => {
@@ -110,36 +112,50 @@ export function FriendsWhoLiked({ entityId, kind, totalLikes }: Props) {
   }
 
   return (
-    <div ref={containerRef} className="flex items-center gap-1.5 px-3 pb-1" style={{ minWidth: 0 }}>
-      {/* Avatars empilés */}
-      <div className="shrink-0 relative" style={{ width: avatarsWidth, height: AVATAR_SIZE }}>
-        {visible.map((f, i) => (
-          <div
-            key={f.id}
-            className="absolute rounded-full overflow-hidden"
-            style={{
-              left: i * OVERLAP,
-              width: AVATAR_SIZE,
-              height: AVATAR_SIZE,
-              border: '1.5px solid var(--surface)',
-              zIndex: visible.length - i,
-            }}
-          >
-            {f.avatar_url ? (
-              <img src={f.avatar_url} alt={f.display_name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white text-[8px] font-bold"
-                style={{ background: 'var(--primary)' }}>
-                {f.display_name.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      {/* Texte */}
-      <p className="text-xs truncate flex-1 min-w-0" style={{ color: 'var(--text-secondary)' }}>
-        {label}
-      </p>
-    </div>
+    <>
+      <button
+        ref={containerRef as React.RefObject<HTMLButtonElement>}
+        onClick={e => { e.stopPropagation(); setShowLikes(true); }}
+        className="flex items-center gap-1.5 px-3 pb-1 text-left"
+        style={{ minWidth: 0 }}
+      >
+        {/* Avatars empilés */}
+        <div className="shrink-0 relative" style={{ width: avatarsWidth, height: AVATAR_SIZE }}>
+          {visible.map((f, i) => (
+            <div
+              key={f.id}
+              className="absolute rounded-full overflow-hidden"
+              style={{
+                left: i * OVERLAP,
+                width: AVATAR_SIZE,
+                height: AVATAR_SIZE,
+                border: '1.5px solid var(--surface)',
+                zIndex: visible.length - i,
+              }}
+            >
+              {f.avatar_url ? (
+                <img src={f.avatar_url} alt={f.display_name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white text-[8px] font-bold"
+                  style={{ background: 'var(--primary)' }}>
+                  {f.display_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {/* Texte */}
+        <p className="text-xs truncate flex-1 min-w-0 hover:underline" style={{ color: 'var(--text-secondary)' }}>
+          {label}
+        </p>
+      </button>
+
+      <LikesModal
+        open={showLikes}
+        onClose={() => setShowLikes(false)}
+        targetType={kind}
+        targetId={entityId}
+      />
+    </>
   );
 }
