@@ -19,6 +19,7 @@ import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { formatTimeAgo } from '../../utils/date';
+import { ShareModal } from '../../components/ui/ShareModal';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
@@ -385,7 +386,7 @@ export default function EventDetailPage() {
   const [reminder,     setReminder]     = useState(false);
   const [remindLoading,setRemindLoading]= useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [shareOk,      setShareOk]      = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [lightbox,     setLightbox]     = useState<number | null>(null);
   const [paySheet,     setPaySheet]     = useState(false);
   const [selectedTier, setSelectedTier] = useState<TicketTier['key']>('simple');
@@ -494,18 +495,7 @@ export default function EventDetailPage() {
     finally { setRemindLoading(false); }
   }, [id, remindLoading]);
 
-  const share = useCallback(async () => {
-    const url = `${window.location.origin}/events/${encodeId(id!)}`;
-    try {
-      if (navigator.share) await navigator.share({ title: event?.title, url });
-      else await navigator.clipboard.writeText(url);
-      setShareOk(true);
-      setTimeout(() => setShareOk(false), 2000);
-      setShareCount(c => c + 1);
-      apiClient.post(Endpoints.social.share, { platform: 'external', event_id: id })
-        .catch(() => setShareCount(c => Math.max(0, c - 1)));
-    } catch { /* ignore */ }
-  }, [event?.title, id]);
+  const openShare = useCallback(() => setShowShareModal(true), []);
 
 
   if (loading) return <PageLoader />;
@@ -621,16 +611,12 @@ export default function EventDetailPage() {
                 <span className="hidden sm:inline">Commenter</span>
               </button>
               {/* Partager */}
-              <button onClick={share}
+              <button onClick={openShare}
                 className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
-                style={{
-                  background: shareOk ? 'rgba(34,197,94,0.1)' : 'var(--bg-secondary)',
-                  color: shareOk ? '#22c55e' : 'var(--text-secondary)',
-                  border: `1px solid ${shareOk ? 'rgba(34,197,94,0.3)' : 'var(--border)'}`,
-                }}>
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                 <Share2 size={15} />
                 {shareCount > 0 && <span>{shareCount}</span>}
-                <span className="hidden sm:inline">{shareOk ? 'Copié !' : 'Partager'}</span>
+                <span className="hidden sm:inline">Partager</span>
               </button>
               {/* Favoris */}
               <button onClick={handleSaveFav} disabled={savingFav}
@@ -888,6 +874,18 @@ export default function EventDetailPage() {
       </div>
 
       {showComments && <CommentsModal targetId={id!} onClose={() => setShowComments(false)} />}
+
+      <ShareModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={`${window.location.origin}/events/${encodeId(id!)}`}
+        title={event.title ?? 'Événement GoFolyX'}
+        desc={event.venue_city ?? undefined}
+        image={event.banner_url ?? event.thumbnail_url ?? undefined}
+        targetType="event"
+        targetId={id!}
+        onShared={() => setShareCount(c => c + 1)}
+      />
       {lightbox !== null && (() => {
         const bannerUrl = ev.banner_url ?? ev.thumbnail_url;
         const allImgs = [

@@ -27,6 +27,7 @@ import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { AiAnalysisStatusModal } from '../components/ui/AiAnalysisStatusModal';
+import { ShareModal } from '../components/ui/ShareModal';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getApiErrorDetail } from '../utils/apiError';
@@ -701,6 +702,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
   const followFetched     = useRef(false);
   const [captionExpanded, setCaptionExpanded]= useState(false);
   const [showGiftPicker,  setShowGiftPicker] = useState(false);
+  const [showShareModal,  setShowShareModal] = useState(false);
   const [refInfo, setRefInfo] = useState<{ label: string; kind: string; thumbnail: string | null; color: string; url: string } | null>(null);
 
   // Resync si le reel change
@@ -1120,32 +1122,9 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
     finally { setSavingFav(false); }
   }
 
-  async function handleShare(e: React.MouseEvent) {
+  function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    const url = `${window.location.origin}/reels?id=${encodeId(reel.id)}`;
-    const shareTitle = caption ? `${caption} — ${authorName} sur GoFolyX` : `${authorName} sur GoFolyX`;
-    try {
-      // Joint le thumbnail comme fichier — WhatsApp/Messenger/etc affichent alors
-      // l'image du reel directement dans la fenêtre de partage native (pas juste le lien).
-      let shared = false;
-      if (navigator.share && reel.thumbnail_url && navigator.canShare) {
-        try {
-          const res  = await fetch(reel.thumbnail_url);
-          const blob = await res.blob();
-          const file = new File([blob], 'reel.jpg', { type: blob.type || 'image/jpeg' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: shareTitle, text: url, files: [file] });
-            shared = true;
-          }
-        } catch { /* fallback ci-dessous */ }
-      }
-      if (!shared) {
-        if (navigator.share) await navigator.share({ title: shareTitle, url });
-        else await navigator.clipboard.writeText(url);
-      }
-      apiClient.post(Endpoints.social.share, { reel_id: reel.id, platform: 'external' }).catch(() => {});
-      setShareCount(c => c + 1);
-    } catch { /* ignore */ }
+    setShowShareModal(true);
   }
 
   function goToProfile(e: React.MouseEvent) {
@@ -1528,6 +1507,17 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
         contentType="reel"
         contentId={reel.id}
         initialStatus={reel.ai_analysis_status}
+      />
+
+      <ShareModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={`${window.location.origin}/reels?id=${encodeId(reel.id)}`}
+        title={caption ? `${caption} — ${authorName} sur GoFolyX` : `${authorName} sur GoFolyX`}
+        image={reel.thumbnail_url ?? undefined}
+        targetType="reel"
+        targetId={reel.id}
+        onShared={() => setShareCount(c => c + 1)}
       />
     </div>
   );

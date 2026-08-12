@@ -17,6 +17,7 @@ import { useSmartBack } from '../../hooks/useSmartBack';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import { ShareModal } from '../../components/ui/ShareModal';
 
 // ── Conversion GoGold : 1 EUR = 100 GoGold ─────────────────────────────────────
 const GOGOLD_PER_EUR = 100;
@@ -213,6 +214,7 @@ export default function FilmDetailPage() {
   const [hasAccess,       setHasAccess]       = useState<boolean | null>(null);
   const [hasActiveSub,    setHasActiveSub]    = useState(false);
   const [showPaywall,     setShowPaywall]      = useState(false);
+  const [showShareModal,  setShowShareModal]   = useState(false);
 
   const film   = useApi<Content>(() => apiClient.get<Content>(Endpoints.content.filmById(id!)), [id]);
   const videos = useApi<VideoMeta[]>(() => apiClient.get<VideoMeta[]>(Endpoints.videos.byContent(id!)), [id]);
@@ -287,30 +289,9 @@ export default function FilmDetailPage() {
     );
   }
 
-  async function handleShare(e: React.MouseEvent) {
+  function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    const url = `${window.location.origin}/films/${encodeId(f.id)}`;
-    const shareTitle = `${f.title} — GoFolyX`;
-    try {
-      let shared = false;
-      const thumb = f.banner_url || f.thumbnail_url;
-      if (navigator.share && thumb && navigator.canShare) {
-        try {
-          const res  = await fetch(thumb);
-          const blob = await res.blob();
-          const file = new File([blob], 'film.jpg', { type: blob.type || 'image/jpeg' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: shareTitle, text: url, files: [file] });
-            shared = true;
-          }
-        } catch { /* fallback ci-dessous */ }
-      }
-      if (!shared) {
-        if (navigator.share) await navigator.share({ title: shareTitle, url });
-        else { await navigator.clipboard.writeText(url); toast.success('Lien copié !'); }
-      }
-      apiClient.post(Endpoints.social.share, { content_id: f.id, platform: 'external' }).catch(() => {});
-    } catch { /* ignore (annulation utilisateur) */ }
+    setShowShareModal(true);
   }
 
   return (
@@ -504,6 +485,16 @@ export default function FilmDetailPage() {
           onPurchased={() => setHasAccess(true)}
         />
       )}
+
+      <ShareModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={`${window.location.origin}/films/${encodeId(f.id)}`}
+        title={`${f.title} — GoFolyX`}
+        image={f.banner_url ?? f.thumbnail_url ?? undefined}
+        targetType="content"
+        targetId={f.id}
+      />
     </div>
   );
 }

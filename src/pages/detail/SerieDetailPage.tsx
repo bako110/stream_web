@@ -17,6 +17,7 @@ import { useSmartBack } from '../../hooks/useSmartBack';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import { ShareModal } from '../../components/ui/ShareModal';
 
 // 1 EUR = 100 GoGold (taux unifié plateforme)
 const GOGOLD_PER_EUR = 100;
@@ -223,6 +224,7 @@ export default function SerieDetailPage() {
   const [hasAccess,    setHasAccess]    = useState<boolean | null>(null);
   const [hasActiveSub, setHasActiveSub] = useState(false);
   const [showPaywall,  setShowPaywall]  = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Seasons / episodes
   const [seasons,        setSeasons]        = useState<Season[]>([]);
@@ -361,30 +363,9 @@ export default function SerieDetailPage() {
   const accessOk     = !isPremium || hasAccess === true;
   const loadingAccess = isPremium && hasAccess === null;
 
-  async function handleShare(e: React.MouseEvent) {
+  function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    const url = `${window.location.origin}/series/${encodeId(s.id)}`;
-    const shareTitle = `${s.title} — GoFolyX`;
-    try {
-      let shared = false;
-      const thumb = s.banner_url || s.thumbnail_url;
-      if (navigator.share && thumb && navigator.canShare) {
-        try {
-          const res  = await fetch(thumb);
-          const blob = await res.blob();
-          const file = new File([blob], 'serie.jpg', { type: blob.type || 'image/jpeg' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: shareTitle, text: url, files: [file] });
-            shared = true;
-          }
-        } catch { /* fallback ci-dessous */ }
-      }
-      if (!shared) {
-        if (navigator.share) await navigator.share({ title: shareTitle, url });
-        else { await navigator.clipboard.writeText(url); toast.success('Lien copié !'); }
-      }
-      apiClient.post(Endpoints.social.share, { content_id: s.id, platform: 'external' }).catch(() => {});
-    } catch { /* ignore (annulation utilisateur) */ }
+    setShowShareModal(true);
   }
 
   return (
@@ -633,6 +614,16 @@ export default function SerieDetailPage() {
           onPurchased={() => { setHasAccess(true); setShowPaywall(false); }}
         />
       )}
+
+      <ShareModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={`${window.location.origin}/series/${encodeId(s.id)}`}
+        title={`${s.title} — GoFolyX`}
+        image={s.banner_url ?? s.thumbnail_url ?? undefined}
+        targetType="content"
+        targetId={s.id}
+      />
     </div>
   );
 }
