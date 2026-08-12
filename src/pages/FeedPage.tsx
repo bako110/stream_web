@@ -2880,12 +2880,18 @@ export default function FeedPage() {
       ]);
 
       const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
+      const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
+      feedHasMoreRef.current = feedRaw.length >= 20;
+      // Le pool se retrie a chaque page (score = f(temps)) -- une page BRUTE non vide
+      // peut ne contenir QUE des items deja vus sur une page precedente (recoupement),
+      // sans que le catalogue soit pour autant epuise. Ne conclure a la fin du flux que
+      // si le backend lui-meme ne renvoie plus rien, jamais seulement sur la dedup —
+      // sinon le scroll s'arretait prematurement des la 1ere page entierement recoupee.
+      const rawIsEmpty = feedRaw.length === 0 && reelsRaw.length === 0;
+
       const feedItems: FeedItem[] = feedRaw
         .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post'))
         .map((d: any) => ({ kind: d.kind as 'event' | 'concert' | 'post', id: String(d.id), data: d }));
-      feedHasMoreRef.current = feedRaw.length >= 20;
-
-      const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
       const reelItems: FeedItem[] = reelsRaw
         .filter((d: any) => d.id)
         .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
@@ -2907,8 +2913,10 @@ export default function FeedPage() {
       feedPageRef.current = nextPage;
 
       if (freshNonReel.length === 0 && freshReels.length === 0) {
-        // Rien de nouveau sur cette page (tout dédupliqué ou sources épuisées) — fin du flux.
-        setHasMoreFeed(false);
+        // Page entierement recoupee (deja vue) : le flux n'est fini que si le
+        // backend n'a lui-meme plus rien a offrir, sinon la page suivante sera
+        // tentee au prochain scroll (feedPageRef a deja avance ci-dessus).
+        if (rawIsEmpty) setHasMoreFeed(false);
         return;
       }
 
