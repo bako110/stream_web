@@ -2682,8 +2682,7 @@ export default function FeedPage() {
   // ── Pagination infinie (tab "all") ──────────────────────────────────────────
   const seenIdsRef       = useRef<Set<string>>(new Set());
   const feedPageRef      = useRef(1);
-  const postsCursorRef   = useRef<{ created_at: string; id: string } | null>(null);
-  const postsHasMoreRef  = useRef(true);
+  const feedHasMoreRef   = useRef(true);
   const reelsHasMoreRef  = useRef(true);
   const nonReelCountRef  = useRef(0);
   const suggestCountRef  = useRef(0);
@@ -2716,8 +2715,7 @@ export default function FeedPage() {
     // Reset pagination state — nouveau tirage complet
     seenIdsRef.current      = new Set();
     feedPageRef.current     = 1;
-    postsCursorRef.current  = null;
-    postsHasMoreRef.current = true;
+    feedHasMoreRef.current  = true;
     reelsHasMoreRef.current = true;
     nonReelCountRef.current = 0;
     suggestCountRef.current = 0;
@@ -2729,23 +2727,22 @@ export default function FeedPage() {
     try {
       if (filter === 'all') {
         // Parallel load — apiClient.get returns { data, status }
-        // /search/feed → { items: [{kind, ...fields}], total, page, limit }
-        // /reels       → flat array  OR  { items: [...] }
-        // /posts/feed  → flat array
-        const [feedRes, reelsRes, postsRes, commRes, adRes] = await Promise.all([
+        // /search/feed → { items: [{kind, ...fields}], total, page, limit } — events + concerts + posts
+        // /reels       → flat array  OR  { items: [...] } — feed dédié, reste séparé
+        const [feedRes, reelsRes, commRes, adRes] = await Promise.all([
           apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=40`).catch(() => null),
           apiClient.get<any>(`${Endpoints.reels.feed}?page=1&limit=20`).catch(() => null),
-          apiClient.get<any>(`${Endpoints.posts.feed}?page=1&limit=20`).catch(() => null),
           apiClient.get<any>(`${Endpoints.communities.discover}?limit=8`).catch(() => null),
           apiClient.get<any>(Endpoints.ads.feedNext('feed')).catch(() => null),
         ]);
         if (adRes?.data) { setFeedAd(adRes.data); seenAdIdsRef.current = [adRes.data.id]; }
 
-        // /search/feed: events + concerts only (exclude reels — they have their own feed)
+        // /search/feed: events + concerts + posts (exclude reels — they have their own feed)
         const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
         const feedItems: FeedItem[] = feedRaw
-          .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert'))
-          .map((d: any) => ({ kind: d.kind as 'event' | 'concert', id: String(d.id), data: d }));
+          .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post'))
+          .map((d: any) => ({ kind: d.kind as 'event' | 'concert' | 'post', id: String(d.id), data: d }));
+        feedHasMoreRef.current = feedRaw.length >= 40;
 
         // /reels: flat array or { items: [...] }
         const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
@@ -2754,14 +2751,6 @@ export default function FeedPage() {
           .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
         reelsHasMoreRef.current = !!(reelsRes?.data?.has_more ?? (reelsRaw.length >= 20));
 
-        // /posts/feed: { items, has_more, next_cursor }
-        const postsRaw: any[] = postsRes ? toArray<any>(postsRes.data) : [];
-        const postItems: FeedItem[] = postsRaw
-          .filter((d: any) => d.id)
-          .map((d: any) => ({ kind: 'post' as const, id: String(d.id), data: d }));
-        postsCursorRef.current  = postsRes?.data?.next_cursor ?? null;
-        postsHasMoreRef.current = !!(postsRes?.data?.has_more);
-
         // Communities for inline injection
         const commRaw: Community[] = commRes
           ? (Array.isArray(commRes.data) ? commRes.data : commRes.data?.items ?? commRes.data?.data ?? [])
@@ -2769,9 +2758,9 @@ export default function FeedPage() {
         const commData = [...commRaw].sort(() => Math.random() - 0.5);
         commDataRef.current = commData;
 
-        // Merge non-reel items, deduplicate by composite key
+        // Deduplicate by composite key (events/concerts/posts already merged into feedItems)
         const seen = seenIdsRef.current;
-        const merged = [...feedItems, ...postItems].filter(item => {
+        const merged = feedItems.filter(item => {
           const key = `${item.kind}-${item.id}`;
           if (seen.has(key)) return false;
           seen.add(key);
@@ -2836,21 +2825,19 @@ export default function FeedPage() {
 
         nonReelCountRef.current = merged.length;
         setItems(result);
-        setHasMoreFeed(postsHasMoreRef.current || reelsHasMoreRef.current || feedItems.length >= 40);
+        setHasMoreFeed(feedHasMoreRef.current || reelsHasMoreRef.current);
       } else if (filter === 'friends') {
         // Uniquement le contenu des comptes suivis — posts + events/concerts + reels,
         // triés chronologiquement, sans pub/suggestions/communautés (même pattern mobile).
-        const [feedRes, reelsRes, postsRes] = await Promise.all([
+        const [feedRes, reelsRes] = await Promise.all([
           apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=30&following_only=true`).catch(() => null),
           apiClient.get<any>(`${Endpoints.reels.feed}?limit=20&following_only=true`).catch(() => null),
-          apiClient.get<any>(`${Endpoints.posts.feed}?limit=30&following=true`).catch(() => null),
         ]);
         const results: FeedItem[] = [];
         toArray<any>(feedRes?.data)
-          .filter(d => d.id && (d.kind === 'event' || d.kind === 'concert'))
+          .filter(d => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post'))
           .forEach(d => results.push({ kind: d.kind, id: String(d.id), data: d }));
         toArray<Reel>(reelsRes?.data).forEach(r => results.push({ kind: 'reel', id: String(r.id), data: r }));
-        toArray<any>(postsRes?.data).forEach(p => results.push({ kind: 'post', id: String(p.id), data: p }));
         results.sort((a, b) => {
           const dateOf = (it: FeedItem) => (it.data as any).created_at ?? (it.data as any).starts_at ?? (it.data as any).scheduled_at ?? 0;
           return new Date(dateOf(b)).getTime() - new Date(dateOf(a)).getTime();
@@ -2887,34 +2874,24 @@ export default function FeedPage() {
       // Comme le mobile : on interroge toujours les 3 sources à chaque page (pas de
       // hasMore par source qui coupe une source trop tôt) — seul le dédoublonnage
       // global décide si la page ramène quelque chose de neuf.
-      const [feedRes, reelsRes, postsRes] = await Promise.all([
+      const [feedRes, reelsRes] = await Promise.all([
         apiClient.get<any>(`${Endpoints.search.feed}?page=${nextPage}&limit=20`).catch(() => null),
         apiClient.get<any>(`${Endpoints.reels.feed}?page=${nextPage}&limit=20`).catch(() => null),
-        apiClient.get<any>(
-          `${Endpoints.posts.feed}?limit=20${postsCursorRef.current
-            ? `&cursor_created_at=${encodeURIComponent(postsCursorRef.current.created_at)}&cursor_id=${postsCursorRef.current.id}`
-            : ''}`,
-        ).catch(() => null),
       ]);
 
       const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
       const feedItems: FeedItem[] = feedRaw
-        .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert'))
-        .map((d: any) => ({ kind: d.kind as 'event' | 'concert', id: String(d.id), data: d }));
+        .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post'))
+        .map((d: any) => ({ kind: d.kind as 'event' | 'concert' | 'post', id: String(d.id), data: d }));
+      feedHasMoreRef.current = feedRaw.length >= 20;
 
       const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
       const reelItems: FeedItem[] = reelsRaw
         .filter((d: any) => d.id)
         .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
 
-      const postsRaw: any[] = postsRes ? toArray<any>(postsRes.data) : [];
-      const postItems: FeedItem[] = postsRaw
-        .filter((d: any) => d.id)
-        .map((d: any) => ({ kind: 'post' as const, id: String(d.id), data: d }));
-      if (postsRes) postsCursorRef.current = postsRes.data?.next_cursor ?? null;
-
       const seen = seenIdsRef.current;
-      const freshNonReel = [...feedItems, ...postItems].filter(item => {
+      const freshNonReel = feedItems.filter(item => {
         const key = `${item.kind}-${item.id}`;
         if (seen.has(key)) return false;
         seen.add(key);
