@@ -1915,12 +1915,16 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
         />
       )}
 
-      {/* Image */}
+      {/* Image — aspect-ratio fixe (même principe que ConcertCard/EventCard
+          ci-dessus) plutôt qu'une hauteur en dur : s'adapte automatiquement à
+          la largeur de la carte à tout breakpoint. object-cover pour qu'une
+          image source très haute (portrait extrême, comme sur mobile
+          PostCard.tsx) ne fasse jamais exploser la hauteur de la carte. */}
       {post.image_url && !post.video_url && (
         <div onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
-          className="relative overflow-hidden cursor-pointer group flex items-center justify-center"
-          style={{ background: 'var(--bg-secondary)', maxHeight: '600px' }}>
-          <img src={post.image_url} alt="" className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" style={{ maxHeight: '600px' }} />
+          className="relative overflow-hidden cursor-pointer group"
+          style={{ background: 'var(--bg-secondary)', aspectRatio: '4/3' }}>
+          <img src={post.image_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         </div>
       )}
 
