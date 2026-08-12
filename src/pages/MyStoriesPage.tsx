@@ -13,14 +13,7 @@ import { encodeId } from '../utils/slugId';
 import { PageLoader } from '../components/ui/Spinner';
 import { useConfirm } from '../components/ui/Dialog';
 import type { Story } from '../types';
-
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60)    return 'À l\'instant';
-  if (diff < 3600)  return `il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`;
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-}
+import { formatTimeAgo as timeAgo } from '../utils/date';
 
 // ── Ligne story ─────────────────────────────────────────────────────────────
 

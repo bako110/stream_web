@@ -18,6 +18,7 @@ import { toProxiedUrl } from '../utils/constants';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { HeartRain, LikeNamesFeed } from '../components/ui/HeartRain';
+import { formatTimeAgo } from '../utils/date';
 import { useAuthStore } from '../store/authStore';
 import type { StoryGroup } from '../types';
 import { StoryOverlaysRenderer } from '../utils/reelFilters.tsx';
@@ -470,12 +471,7 @@ function StoryViewer({
   if (!group || !story) return null;
   const author = group.user;
 
-  const timeAgo = (() => {
-    const d = (Date.now() - new Date(story.created_at).getTime()) / 1000;
-    if (d < 60) return 'À l\'instant';
-    if (d < 3600) return `${Math.floor(d / 60)} min`;
-    return `${Math.floor(d / 3600)} h`;
-  })();
+  const timeAgo = formatTimeAgo(story.created_at);
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">

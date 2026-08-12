@@ -15,6 +15,7 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
 import { toProxiedUrl } from '../utils/constants';
+import { formatTimeAgo } from '../utils/date';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
@@ -123,12 +124,7 @@ function StoryViewer({
   if (!group || !story) return null;
   const author = group.user;
 
-  const timeAgo = (() => {
-    const d = (Date.now() - new Date(story.created_at).getTime()) / 1000;
-    if (d < 60) return 'À l\'instant';
-    if (d < 3600) return `${Math.floor(d / 60)} min`;
-    return `${Math.floor(d / 3600)} h`;
-  })();
+  const timeAgo = formatTimeAgo(story.created_at);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center"
@@ -824,14 +820,6 @@ function toArray<T>(raw: unknown): T[] {
   return [];
 }
 
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60)    return 'À l\'instant';
-  if (diff < 3600)  return `${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
-  return `${Math.floor(diff / 86400)} j`;
-}
-
 function fmtCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
@@ -911,7 +899,7 @@ function AuthorRow({
             )}
           </div>
           {publishedAt && (
-            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{timeAgo(publishedAt)}</span>
+            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{formatTimeAgo(publishedAt)}</span>
           )}
           {showAiPending && (
             <button
@@ -1177,7 +1165,7 @@ function CommentsModal({
                   )}
                   <div className="flex items-center gap-3 mt-1 ml-1">
                     <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                      {timeAgo(c.created_at)}
+                      {formatTimeAgo(c.created_at)}
                     </p>
                     <button onClick={() => toggleLike(c)}
                       className="flex items-center gap-1 transition-colors"

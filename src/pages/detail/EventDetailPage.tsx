@@ -18,6 +18,7 @@ import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { Lightbox } from '../../components/ui/Lightbox';
+import { formatTimeAgo } from '../../utils/date';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
@@ -36,14 +37,6 @@ const TYPE_COLORS: Record<string, string> = {
 
 
 const QUICK_EMOJIS = ['❤️', '🔥', '👏', '😂', '😍', '🎉'];
-
-function timeAgo(dateStr: string) {
-  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60) return 'à l\'instant';
-  if (diff < 3600) return `${Math.floor(diff / 60)}min`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  return `${Math.floor(diff / 86400)}j`;
-}
 
 function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () => void }) {
   const { user: me } = useAuthStore();
@@ -217,7 +210,7 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
                           {c.author?.is_verified && <VerifiedBadge size={12} />}
                           {c.created_at && (
                             <span className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }}>
-                              {timeAgo(c.created_at)}
+                              {formatTimeAgo(c.created_at)}
                             </span>
                           )}
                         </div>

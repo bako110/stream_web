@@ -15,6 +15,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { formatTimeAgo } from '../utils/date';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -62,18 +63,6 @@ const CFG: Record<string, {
 const NAVIGABLE = ['concert_created','concert_going','event_created','event_going','community_joined','reel_posted'];
 const FOR_YOU   = ['reaction','comment','follow','mention'];
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1)  return 'À l\'instant';
-  if (mins < 60) return `${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return `${hrs}h`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return 'Hier';
-  if (days < 7)  return `${days}j`;
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-}
 
 function groupByDate(items: ActivityItem[]): { title: string; items: ActivityItem[] }[] {
   const sections: Record<string, ActivityItem[]> = {};
@@ -165,7 +154,7 @@ function ActivityCard({
           </p>
         )}
         <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-          {timeAgo(item.created_at)}
+          {formatTimeAgo(item.created_at)}
         </p>
       </div>
 
