@@ -9,6 +9,7 @@ import { PublicOnlyRoute } from './components/layout/PublicOnlyRoute';
 import { MobileGate }      from './components/layout/MobileGate';
 import { bootstrapAuth, useAuthStore } from './store/authStore';
 import { WebSocketProvider } from './context/WebSocketContext';
+import { ShareProvider } from './context/ShareContext';
 import { PageLoader } from './components/ui/Spinner';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 
@@ -338,17 +339,19 @@ export default function App() {
     <BrowserRouter>
       <MobileGate>
         <WebSocketProvider>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: 'var(--surface)',
-                color:      'var(--text-primary)',
-                border:     '1px solid var(--border)',
-              },
-            }}
-          />
-          <AppShell />
+          <ShareProvider>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: 'var(--surface)',
+                  color:      'var(--text-primary)',
+                  border:     '1px solid var(--border)',
+                },
+              }}
+            />
+            <AppShell />
+          </ShareProvider>
         </WebSocketProvider>
       </MobileGate>
     </BrowserRouter>

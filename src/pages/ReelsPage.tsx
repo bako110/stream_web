@@ -27,7 +27,7 @@ import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { AiAnalysisStatusModal } from '../components/ui/AiAnalysisStatusModal';
-import { ShareModal } from '../components/ui/ShareModal';
+import { useShare } from '../context/ShareContext';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getApiErrorDetail } from '../utils/apiError';
@@ -702,7 +702,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
   const followFetched     = useRef(false);
   const [captionExpanded, setCaptionExpanded]= useState(false);
   const [showGiftPicker,  setShowGiftPicker] = useState(false);
-  const [showShareModal,  setShowShareModal] = useState(false);
+  const shareCtx = useShare();
   const [refInfo, setRefInfo] = useState<{ label: string; kind: string; thumbnail: string | null; color: string; url: string } | null>(null);
 
   // Resync si le reel change
@@ -1124,7 +1124,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
 
   function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    setShowShareModal(true);
+    shareCtx.open({
+      url: `${window.location.origin}/reels?id=${encodeId(reel.id)}`,
+      title: caption ? `${caption} — ${authorName} sur GoFolyX` : `${authorName} sur GoFolyX`,
+      image: reel.thumbnail_url ?? undefined,
+      targetType: 'reel',
+      targetId: reel.id,
+      onShared: () => setShareCount(c => c + 1),
+    });
   }
 
   function goToProfile(e: React.MouseEvent) {
@@ -1507,17 +1514,6 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
         contentType="reel"
         contentId={reel.id}
         initialStatus={reel.ai_analysis_status}
-      />
-
-      <ShareModal
-        open={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        url={`${window.location.origin}/reels?id=${encodeId(reel.id)}`}
-        title={caption ? `${caption} — ${authorName} sur GoFolyX` : `${authorName} sur GoFolyX`}
-        image={reel.thumbnail_url ?? undefined}
-        targetType="reel"
-        targetId={reel.id}
-        onShared={() => setShareCount(c => c + 1)}
       />
     </div>
   );

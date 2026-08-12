@@ -17,7 +17,7 @@ import { useSmartBack } from '../../hooks/useSmartBack';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { extractApiErrorMessage } from '../../utils/apiError';
-import { ShareModal } from '../../components/ui/ShareModal';
+import { useShare } from '../../context/ShareContext';
 
 // 1 EUR = 100 GoGold (taux unifié plateforme)
 const GOGOLD_PER_EUR = 100;
@@ -224,7 +224,7 @@ export default function SerieDetailPage() {
   const [hasAccess,    setHasAccess]    = useState<boolean | null>(null);
   const [hasActiveSub, setHasActiveSub] = useState(false);
   const [showPaywall,  setShowPaywall]  = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
+  const shareCtx = useShare();
 
   // Seasons / episodes
   const [seasons,        setSeasons]        = useState<Season[]>([]);
@@ -365,7 +365,13 @@ export default function SerieDetailPage() {
 
   function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    setShowShareModal(true);
+    shareCtx.open({
+      url: `${window.location.origin}/series/${encodeId(s.id)}`,
+      title: `${s.title} — GoFolyX`,
+      image: s.banner_url ?? s.thumbnail_url ?? undefined,
+      targetType: 'content',
+      targetId: s.id,
+    });
   }
 
   return (
@@ -614,16 +620,6 @@ export default function SerieDetailPage() {
           onPurchased={() => { setHasAccess(true); setShowPaywall(false); }}
         />
       )}
-
-      <ShareModal
-        open={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        url={`${window.location.origin}/series/${encodeId(s.id)}`}
-        title={`${s.title} — GoFolyX`}
-        image={s.banner_url ?? s.thumbnail_url ?? undefined}
-        targetType="content"
-        targetId={s.id}
-      />
     </div>
   );
 }

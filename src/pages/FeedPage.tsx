@@ -16,7 +16,7 @@ import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
 import { toProxiedUrl } from '../utils/constants';
 import { formatTimeAgo } from '../utils/date';
-import { ShareModal } from '../components/ui/ShareModal';
+import { useShare } from '../context/ShareContext';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
@@ -1255,7 +1255,7 @@ function ActionBar({
   const [favId,      setFavId]      = useState<string | null>(null);
   const [savingFav,  setSavingFav]  = useState(false);
   const [shareToast, setShareToast] = useState(false);
-  const [showSharePreview, setShowSharePreview] = useState(false);
+  const shareCtx = useShare();
   const inFlight = useRef(false);
 
   const saved = !!favId;
@@ -1310,7 +1310,18 @@ function ActionBar({
 
   function handleShare(e: React.MouseEvent) {
     e.stopPropagation();
-    setShowSharePreview(true);
+    const path = kind === 'concert' ? 'concerts' : kind === 'event' ? 'events' : kind === 'post' ? 'posts' : 'reels';
+    const url  = kind === 'reel'
+      ? `${window.location.origin}/reels?id=${encodeId(id)}`
+      : `${window.location.origin}/${path}/${encodeId(id)}`;
+    shareCtx.open({
+      url,
+      title: titleForShare ?? 'GoFolyX',
+      desc: descForShare,
+      image: imageForShare,
+      targetType: kind,
+      targetId: id,
+    });
   }
 
   return (
@@ -1360,25 +1371,6 @@ function ActionBar({
       {/* Share toast — local */}
       {shareToast && <ShareToast onDone={() => setShareToast(false)} />}
 
-      {/* Share modal */}
-      {showSharePreview && (() => {
-        const path = kind === 'concert' ? 'concerts' : kind === 'event' ? 'events' : kind === 'post' ? 'posts' : 'reels';
-        const url  = kind === 'reel'
-          ? `${window.location.origin}/reels?id=${encodeId(id)}`
-          : `${window.location.origin}/${path}/${encodeId(id)}`;
-        return (
-          <ShareModal
-            open
-            url={url}
-            title={titleForShare ?? 'GoFolyX'}
-            desc={descForShare}
-            image={imageForShare}
-            targetType={kind}
-            targetId={id}
-            onClose={() => setShowSharePreview(false)}
-          />
-        );
-      })()}
     </>
   );
 }
