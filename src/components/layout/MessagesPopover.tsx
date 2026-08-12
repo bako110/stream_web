@@ -46,6 +46,17 @@ function fmtLastSeen(iso?: string | null): string {
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
+// Reconstruit l'URL de navigation d'un contenu partagé (message type=share) —
+// même mapping que ShareModal.tsx pour les URLs de partage externe.
+function sharedContentUrl(shareType: string, shareId: string): string {
+  const path = shareType === 'concert' ? 'concerts'
+    : shareType === 'event'   ? 'events'
+    : shareType === 'reel'    ? 'reels'
+    : shareType === 'content' ? 'films'
+    : 'posts';
+  return shareType === 'reel' ? `/reels?id=${encodeId(shareId)}` : `/${path}/${encodeId(shareId)}`;
+}
+
 // ── Types locaux ──────────────────────────────────────────────────────────────
 
 interface ExtMsg {
@@ -350,6 +361,22 @@ function MiniChatWindow({
                           {msg.attachment_meta?.filename ?? 'Fichier'}
                         </span>
                       </a>
+                    )}
+                    {/* Contenu partagé — preview riche cliquable, comme Instagram/Facebook */}
+                    {msg.message_type === 'share' && msg.attachment_meta && (
+                      <button
+                        onClick={() => navigate(sharedContentUrl(msg.attachment_meta!.share_type, msg.attachment_meta!.share_id))}
+                        className="block text-left w-[180px]" style={{ color: 'inherit' }}>
+                        {msg.attachment_meta.image && (
+                          <img src={msg.attachment_meta.image} alt="" className="w-full object-cover" style={{ maxHeight: 120 }} />
+                        )}
+                        <div className="px-2.5 py-2">
+                          {msg.attachment_meta.author_name && (
+                            <p className="text-[10px] font-semibold opacity-70 truncate">{msg.attachment_meta.author_name}</p>
+                          )}
+                          <p className="text-[11px] font-medium truncate">{msg.attachment_meta.title ?? 'Contenu GoFolyX'}</p>
+                        </div>
+                      </button>
                     )}
                     {/* Texte */}
                     {body ? (

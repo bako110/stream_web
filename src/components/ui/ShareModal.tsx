@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Copy, Check, Share2, Mail } from 'lucide-react';
+import { X, Copy, Check, Share2, Mail, Search } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 
 export type ShareTargetType = 'post' | 'event' | 'concert' | 'reel' | 'content' | 'live' | 'tournament';
+
+// Types acceptés par le backend pour le partage interne (message type=share) —
+// live/tournament n'ont pas de résolution serveur pour l'instant.
+const INTERNAL_SHARE_TYPES = new Set(['post', 'reel', 'event', 'concert', 'content']);
+
+interface Conversation {
+  user: { id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null };
+}
 
 interface Props {
   open: boolean;
@@ -81,7 +89,59 @@ const SHEET_ANIM = 'animate-reveal-up';
 export function ShareModal({ open, onClose, url, title, desc, image, targetType, targetId, onShared }: Props) {
   const [copied, setCopied] = useState(false);
 
+  // ── Envoi interne à un contact (comme Instagram/Facebook) ──────────────────
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loadingConvos, setLoadingConvos] = useState(false);
+  const [search, setSearch] = useState('');
+  const [sendingTo, setSendingTo] = useState<Set<string>>(new Set());
+  const [sentTo, setSentTo] = useState<Set<string>>(new Set());
+  const fetchedConvos = useRef(false);
+  const canSendInternally = INTERNAL_SHARE_TYPES.has(targetType);
+
+  useEffect(() => {
+    if (!open || !canSendInternally || fetchedConvos.current) return;
+    fetchedConvos.current = true;
+    setLoadingConvos(true);
+    apiClient.get<unknown>(Endpoints.messages.conversations)
+      .then(res => {
+        const raw = res.data as any;
+        const list: any[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
+        setConversations(list.filter(c => c?.user?.id));
+      })
+      .catch(() => {})
+      .finally(() => setLoadingConvos(false));
+  }, [open, canSendInternally]);
+
+  // Reset à la fermeture — rouvrir sur un autre contenu doit repartir propre
+  useEffect(() => {
+    if (!open) { setSentTo(new Set()); setSendingTo(new Set()); setSearch(''); }
+  }, [open]);
+
+  const sendToUser = useCallback(async (userId: string) => {
+    if (sendingTo.has(userId) || sentTo.has(userId)) return;
+    setSendingTo(prev => new Set(prev).add(userId));
+    try {
+      await apiClient.post(Endpoints.messages.conversation(userId), {
+        content: '',
+        message_type: 'share',
+        attachment_meta: { share_type: targetType, share_id: targetId },
+      });
+      setSentTo(prev => new Set(prev).add(userId));
+      recordShare(targetType, targetId, 'external');
+      onShared?.();
+    } catch { /* toast géré par apiClient si configuré globalement */ }
+    finally {
+      setSendingTo(prev => { const n = new Set(prev); n.delete(userId); return n; });
+    }
+  }, [sendingTo, sentTo, targetType, targetId, onShared]);
+
   if (!open) return null;
+
+  const filteredConvos = search.trim()
+    ? conversations.filter(c =>
+        (c.user.display_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.user.username ?? '').toLowerCase().includes(search.toLowerCase()))
+    : conversations;
 
   function share(platform: TrackedPlatform, action: () => void) {
     action();
@@ -151,14 +211,14 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}>
-      <div className={`w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl sm:mb-6 overflow-hidden ${SHEET_ANIM}`}
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+      <div className={`w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl sm:mb-6 overflow-hidden flex flex-col ${SHEET_ANIM}`}
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', maxHeight: '85vh' }}
         onClick={e => e.stopPropagation()}>
 
-        <div className="w-9 h-1 rounded-full mx-auto mt-3 sm:hidden" style={{ background: 'var(--border)' }} />
+        <div className="w-9 h-1 rounded-full mx-auto mt-3 sm:hidden shrink-0" style={{ background: 'var(--border)' }} />
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
           <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>Partager</p>
           <button onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -167,44 +227,104 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
           </button>
         </div>
 
-        {/* Preview card */}
-        <div className="rounded-xl mx-3 mb-3 overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-          {image && (
-            <img src={image} alt={title}
-              className="w-full object-cover"
-              style={{ maxHeight: '160px', objectPosition: 'top' }} />
+        <div className="overflow-y-auto flex-1">
+          {/* Preview card */}
+          <div className="rounded-xl mx-3 mb-3 overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+            {image && (
+              <img src={image} alt={title}
+                className="w-full object-cover"
+                style={{ maxHeight: '160px', objectPosition: 'top' }} />
+            )}
+            <div className="p-3" style={{ background: 'var(--bg-secondary)' }}>
+              <p className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>{title}</p>
+              {desc && <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-tertiary)' }}>{desc}</p>}
+              <p className="text-[11px] mt-1 truncate" style={{ color: 'var(--primary)' }}>gofolyx.com</p>
+            </div>
+          </div>
+
+          {/* Envoyer à — contacts internes, comme Instagram/Facebook */}
+          {canSendInternally && (
+            <div className="mb-3">
+              <div className="px-4 mb-2">
+                <div className="relative">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ color: 'var(--text-tertiary)' }} />
+                  <input value={search} onChange={e => setSearch(e.target.value)}
+                    placeholder="Rechercher un contact…"
+                    className="w-full text-xs pl-8 pr-3 py-2 rounded-xl focus:outline-none"
+                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }} />
+                </div>
+              </div>
+              {loadingConvos ? (
+                <div className="flex gap-3 px-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1.5 shrink-0">
+                      <div className="w-12 h-12 rounded-full animate-pulse" style={{ background: 'var(--bg-secondary)' }} />
+                      <div className="w-10 h-2 rounded-full animate-pulse" style={{ background: 'var(--bg-secondary)' }} />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredConvos.length === 0 ? (
+                <p className="text-xs text-center py-3" style={{ color: 'var(--text-tertiary)' }}>
+                  {search ? 'Aucun contact trouvé' : 'Aucune conversation récente'}
+                </p>
+              ) : (
+                <div className="flex gap-3 px-4 pb-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                  {filteredConvos.map(c => {
+                    const u = c.user;
+                    const sending = sendingTo.has(u.id);
+                    const sent = sentTo.has(u.id);
+                    return (
+                      <button key={u.id} onClick={() => sendToUser(u.id)} disabled={sending}
+                        className="flex flex-col items-center gap-1.5 shrink-0 transition-transform active:scale-95"
+                        style={{ width: 56 }}>
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-white text-sm font-bold"
+                          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+                          {u.avatar_url
+                            ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" style={{ opacity: sent ? 0.5 : 1 }} />
+                            : (u.display_name ?? u.username ?? '?').charAt(0).toUpperCase()}
+                          {sent && (
+                            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
+                              <Check size={18} color="#fff" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[10px] truncate w-full text-center" style={{ color: 'var(--text-secondary)' }}>
+                          {sending ? '…' : (u.display_name ?? u.username ?? 'Utilisateur')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
-          <div className="p-3" style={{ background: 'var(--bg-secondary)' }}>
-            <p className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>{title}</p>
-            {desc && <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-tertiary)' }}>{desc}</p>}
-            <p className="text-[11px] mt-1 truncate" style={{ color: 'var(--primary)' }}>gofolyx.com</p>
+
+          {/* Grille des plateformes — comme le "partager sur..." de Facebook */}
+          <div className="grid grid-cols-4 gap-y-4 px-4 pb-4">
+            {PLATFORMS.map(p => (
+              <button key={p.id} onClick={p.onClick}
+                className="flex flex-col items-center gap-1.5 transition-transform active:scale-95">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ background: p.bg }}>
+                  {p.icon}
+                </div>
+                <span className="text-[11px] font-medium text-center" style={{ color: 'var(--text-secondary)' }}>
+                  {p.label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* URL + copier */}
+          <div className="mx-3 mb-3 flex items-center gap-2 px-3 py-2 rounded-xl"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+            <p className="text-xs truncate flex-1" style={{ color: 'var(--text-secondary)' }}>{url}</p>
           </div>
         </div>
 
-        {/* Grille des plateformes — comme le "partager sur..." de Facebook */}
-        <div className="grid grid-cols-4 gap-y-4 px-4 pb-4">
-          {PLATFORMS.map(p => (
-            <button key={p.id} onClick={p.onClick}
-              className="flex flex-col items-center gap-1.5 transition-transform active:scale-95">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center"
-                style={{ background: p.bg }}>
-                {p.icon}
-              </div>
-              <span className="text-[11px] font-medium text-center" style={{ color: 'var(--text-secondary)' }}>
-                {p.label}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* URL + copier */}
-        <div className="mx-3 mb-3 flex items-center gap-2 px-3 py-2 rounded-xl"
-          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <p className="text-xs truncate flex-1" style={{ color: 'var(--text-secondary)' }}>{url}</p>
-        </div>
-
         {/* Actions bas */}
-        <div className="flex gap-2 p-3 pt-0">
+        <div className="flex gap-2 p-3 pt-0 shrink-0">
           <button onClick={copyLink}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all"
             style={{ background: copied ? 'rgba(34,197,94,0.15)' : 'var(--bg-secondary)', color: copied ? '#22C55E' : 'var(--text-primary)', border: '1px solid var(--border)' }}>
