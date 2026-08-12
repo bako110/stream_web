@@ -29,6 +29,7 @@ export default function ExploreReelDetailPage() {
   const [index,   setIndex]   = useState(0);
   const pageRef  = useRef(1);
   const hasMoreRef = useRef(true);
+  const loadingMoreRef = useRef(false);
 
   // Charge la liste (même flux que la grille) et positionne l'index sur le reel demandé.
   // Si le reel n'est pas dans la première page, on le préfixe manuellement — un lien
@@ -65,7 +66,8 @@ export default function ExploreReelDetailPage() {
   }, [reelId]);
 
   const loadMore = useCallback(async () => {
-    if (!hasMoreRef.current) return;
+    if (!hasMoreRef.current || loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
     try {
       const nextPage = pageRef.current + 1;
       const res = await publicClient.get<any>(`${Endpoints.reels.feed}?page=${nextPage}&limit=${PAGE_SIZE}`);
@@ -79,6 +81,7 @@ export default function ExploreReelDetailPage() {
       pageRef.current = nextPage;
       hasMoreRef.current = Array.isArray(raw) ? items.length >= PAGE_SIZE : !!raw?.has_more;
     } catch { /* silencieux */ }
+    finally { loadingMoreRef.current = false; }
   }, []);
 
   const current = reels[index];
