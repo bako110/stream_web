@@ -783,15 +783,10 @@ export function MessagesPopover({ onClose }: { onClose: () => void }) {
   return createPortal((
     <div
       ref={panelRef}
-      className="fixed z-[200] flex flex-col overflow-hidden"
+      className="msg-popover fixed z-[200] flex flex-col overflow-hidden"
       style={{
-        top: 60,
-        right: 12,
-        width: 360,
-        height: 520,
         background: 'var(--surface)',
         border: '1px solid var(--border)',
-        borderRadius: '1.25rem',
         boxShadow: '0 24px 60px rgba(0,0,0,0.28), 0 4px 16px rgba(0,0,0,0.12)',
         animation: 'popover-in 0.18s cubic-bezier(0.34,1.56,0.64,1)',
       }}
@@ -800,6 +795,21 @@ export function MessagesPopover({ onClose }: { onClose: () => void }) {
         @keyframes popover-in {
           from { opacity: 0; transform: scale(0.94) translateY(-8px); transform-origin: top right; }
           to   { opacity: 1; transform: scale(1)    translateY(0);     transform-origin: top right; }
+        }
+        /* Desktop/tablette — panneau flottant classique en haut à droite */
+        .msg-popover {
+          top: 60px; right: 12px; width: 360px; height: 520px;
+          border-radius: 1.25rem;
+        }
+        /* Mobile — plein écran (moins la barre de statut) pour garantir que
+           la liste et le chat restent scrollables au toucher, sans dépendre
+           d'une largeur fixe qui déborderait de l'écran. */
+        @media (max-width: 640px) {
+          .msg-popover {
+            top: 0; right: 0; left: 0; bottom: 0;
+            width: auto; height: 100dvh;
+            border-radius: 0; border: none;
+          }
         }
       `}</style>
 

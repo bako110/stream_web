@@ -212,13 +212,20 @@ function PremiumHero({ items, type }: { items: Content[]; type: 'film' | 'serie'
         {type === 'film' ? 'Films Premium' : 'Séries Premium'}
       </h2>
 
-      {/* Fenêtre masquant le défilement, fondu sur les bords */}
-      <div className="relative overflow-hidden"
-        style={{ WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)' }}>
+      {/* Fenêtre masquant le défilement, fondu sur les bords.
+          overflow-x-auto permet de swiper au doigt sur mobile — sans ça le
+          carrousel ne défilait qu'automatiquement, aucune interaction tactile
+          possible pour parcourir les items manuellement. */}
+      <div className="relative overflow-x-auto"
+        style={{
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%)',
+          scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
+        } as React.CSSProperties}>
         <div className="flex gap-4"
           style={{ animation: `filmsMarquee ${duration}s linear infinite`, willChange: 'transform' }}
           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'; }}>
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'; }}
+          onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'; }}>
           {loopItems.map((item, i) => renderCard(item, `${item.id}-${i}`))}
         </div>
       </div>
@@ -255,12 +262,16 @@ function ContentRow({
       <h2 className="text-base sm:text-lg font-black flex items-center gap-2 mb-3" style={{ color: 'var(--text-primary)' }}>
         {icon} {title}
       </h2>
-      <div className="relative overflow-hidden"
-        style={{ WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%)' }}>
+      <div className="relative overflow-x-auto"
+        style={{
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%)',
+          scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
+        } as React.CSSProperties}>
         <div className="flex gap-3 sm:gap-4"
           style={{ animation: `${animName} ${duration}s linear infinite`, animationDirection: reverse ? 'reverse' : 'normal', willChange: 'transform' }}
           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'; }}>
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'; }}
+          onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'; }}>
           {loopItems.map((item, i) => (
             <div key={`${item.id}-${i}`} className="shrink-0 transition-transform duration-300 hover:scale-105" style={{ width: 140 }}>
               <ContentCard item={item} hasPurchased={purchasedIds.has(item.id)} hasActiveSub={hasActiveSub} />
