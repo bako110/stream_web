@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Copy, Check, Share2, Mail } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -142,7 +143,11 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
     },
   ];
 
-  return (
+  // Portail vers document.body — un ancêtre de la page (ex: header avec
+  // backdrop-filter) peut créer un containing block CSS qui piège ce modal
+  // fixed et le rend invisible bien que correctement monté dans le DOM
+  // (même bug que MessagesPopover, voir Topbar.tsx).
+  return createPortal((
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}>
@@ -215,5 +220,5 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }
