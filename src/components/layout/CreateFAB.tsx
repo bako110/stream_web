@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, X, FileText, Calendar, Music2, Film,
-  Smile, Send, MapPin, Globe, Lock, Tag, Image,
+  Smile, Send, MapPin, Globe, Lock, Tag, Image, Users, ChevronDown, Check,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -128,6 +128,8 @@ function CreatePostModal({ onClose, onDone }: { onClose: () => void; onDone: () 
   const [previews,     setPreviews]     = useState<string[]>([]);
   const [posting,      setPosting]      = useState(false);
   const [apiError,     setApiError]     = useState('');
+  const [isPrivate,    setIsPrivate]    = useState(false);
+  const [showVisibility, setShowVisibility] = useState(false);
   const textRef  = useRef<HTMLTextAreaElement>(null);
   const fileRef  = useRef<HTMLInputElement>(null);
 
@@ -171,6 +173,7 @@ function CreatePostModal({ onClose, onDone }: { onClose: () => void; onDone: () 
         feeling:    feeling || undefined,
         image_url:  imageUrl,
         image_urls: imageUrls,
+        is_private: isPrivate,
       });
       onDone();
     } catch (err: any) {
@@ -187,11 +190,57 @@ function CreatePostModal({ onClose, onDone }: { onClose: () => void; onDone: () 
       <div className="p-5 space-y-4">
         <div className="flex items-center gap-3">
           <Avatar src={me?.avatar_url} name={me?.display_name ?? me?.username ?? '?'} size="md" />
-          <div>
+          <div className="min-w-0">
             <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{me?.display_name ?? me?.username}</p>
-            {feeling
-              ? <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>se sent {feeling}</p>
-              : <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Public</p>}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {feeling && (
+                <p className="text-xs" style={{ color: 'var(--primary)' }}>se sent {feeling}</p>
+              )}
+              <div className="relative">
+                <button onClick={() => setShowVisibility(v => !v)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-colors"
+                  style={{ background: showVisibility ? 'var(--bg-secondary)' : 'transparent' }}>
+                  {isPrivate ? (
+                    <Users size={11} style={{ color: 'var(--text-tertiary)' }} />
+                  ) : (
+                    <Globe size={11} style={{ color: 'var(--text-tertiary)' }} />
+                  )}
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    {isPrivate ? 'Amis' : 'Public'}
+                  </span>
+                  <ChevronDown size={10} style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+
+                {showVisibility && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowVisibility(false)} />
+                    <div className="absolute top-full left-0 mt-1 z-20 rounded-xl overflow-hidden"
+                      style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: 200 }}>
+                      <button onClick={() => { setIsPrivate(false); setShowVisibility(false); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors"
+                        style={{ background: !isPrivate ? 'var(--bg-secondary)' : 'transparent' }}>
+                        <Globe size={16} style={{ color: 'var(--text-secondary)' }} />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Public</p>
+                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Tout le monde peut voir</p>
+                        </div>
+                        {!isPrivate && <Check size={14} style={{ color: 'var(--primary)' }} />}
+                      </button>
+                      <button onClick={() => { setIsPrivate(true); setShowVisibility(false); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors"
+                        style={{ background: isPrivate ? 'var(--bg-secondary)' : 'transparent' }}>
+                        <Users size={16} style={{ color: 'var(--text-secondary)' }} />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Amis</p>
+                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Vos abonnés seulement</p>
+                        </div>
+                        {isPrivate && <Check size={14} style={{ color: 'var(--primary)' }} />}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
