@@ -73,7 +73,7 @@
     --grid-color:       rgba(123, 63, 242, 0.05);
     --glass-bg:         rgba(255, 255, 255, 0.04);
     --glass-border:     rgba(255, 255, 255, 0.08);
-    --glass-strong-bg:  rgba(255, 255, 255, 0.07);
+    --glass-strong-bg:  rgba(15, 15, 30, 0.86);
     --glass-card-bg:    rgba(15, 15, 30, 0.60);
     --glass-card-border:rgba(123, 63, 242, 0.15);
   }
