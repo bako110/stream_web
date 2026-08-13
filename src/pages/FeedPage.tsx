@@ -857,10 +857,12 @@ function useFollow() {
 }
 
 // ── Author row ────────────────────────────────────────────────────────────────
+// Pas de badge "Post" (aligné sur le mobile, PostCard.tsx : nom + date sans
+// badge de type pour ce contenu — seuls concert/événement/reel en ont un,
+// utile pour les distinguer visuellement dans un fil mixte).
 const KIND_BADGE: Record<string, { label: string; bg: string; color: string }> = {
   concert:    { label: 'Concert',     bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' },
   event:      { label: 'Événement',   bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' },
-  post:       { label: 'Post',        bg: 'rgba(123,63,242,0.12)',                   color: 'var(--primary)' },
   reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' } };
 
 function AuthorRow({
