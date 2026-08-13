@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Image, Video, Smile, X, Globe, Upload } from 'lucide-react';
+import { ArrowLeft, Image, Video, Smile, X, Globe, Upload, Users, ChevronDown, Check } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
@@ -48,6 +48,8 @@ export default function CreatePostPage() {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [showFeelings, setShowFeelings] = useState(false);
   const [publishing,   setPublishing]   = useState(false);
+  const [isPrivate,    setIsPrivate]    = useState(false);
+  const [showVisibility, setShowVisibility] = useState(false);
 
   // Médias existants conservés en mode édition (tant qu'on n'y touche pas)
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
@@ -65,6 +67,7 @@ export default function CreatePostPage() {
         const p = r.data?.data ?? r.data;
         setBody(p.body ?? '');
         setFeeling(p.feeling ?? null);
+        setIsPrivate(!!p.is_private);
         const urls: string[] = p.image_urls?.length ? p.image_urls : (p.image_url ? [p.image_url] : []);
         if (urls.length) { setExistingImageUrls(urls); setImagePreviews(urls); }
         if (p.video_url || p.hls_url) setExistingVideoUrl(p.video_url ?? p.hls_url);
@@ -144,6 +147,7 @@ export default function CreatePostPage() {
         await apiClient.put(Endpoints.posts.byId(editId), {
           body:        body.trim() || undefined,
           feeling:     feeling ?? undefined,
+          is_private:  isPrivate,
           image_url,
           image_urls,
           video_url,
@@ -154,6 +158,7 @@ export default function CreatePostPage() {
         const res = await apiClient.post<{ status?: string }>(Endpoints.posts.create, {
           body:      body.trim() || undefined,
           feeling:   feeling ?? undefined,
+          is_private: isPrivate,
           image_url,
           image_urls,
           video_url,
@@ -215,15 +220,57 @@ export default function CreatePostPage() {
           : <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-black"
               style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>{initials}</div>
         }
-        <div>
+        <div className="min-w-0">
           <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{displayName}</p>
-          {feeling
-            ? <p className="text-xs" style={{ color: 'var(--primary)' }}>se sent {feeling}</p>
-            : <div className="flex items-center gap-1">
-                <Globe size={11} style={{ color: 'var(--text-tertiary)' }} />
-                <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Public</span>
-              </div>
-          }
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {feeling && (
+              <p className="text-xs" style={{ color: 'var(--primary)' }}>se sent {feeling}</p>
+            )}
+            <div className="relative">
+              <button onClick={() => setShowVisibility(v => !v)}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-colors"
+                style={{ background: showVisibility ? 'var(--bg-secondary)' : 'transparent' }}>
+                {isPrivate ? (
+                  <Users size={11} style={{ color: 'var(--text-tertiary)' }} />
+                ) : (
+                  <Globe size={11} style={{ color: 'var(--text-tertiary)' }} />
+                )}
+                <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  {isPrivate ? 'Amis' : 'Public'}
+                </span>
+                <ChevronDown size={10} style={{ color: 'var(--text-tertiary)' }} />
+              </button>
+
+              {showVisibility && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowVisibility(false)} />
+                  <div className="absolute top-full left-0 mt-1 z-20 rounded-xl overflow-hidden"
+                    style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: 200 }}>
+                    <button onClick={() => { setIsPrivate(false); setShowVisibility(false); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors"
+                      style={{ background: !isPrivate ? 'var(--bg-secondary)' : 'transparent' }}>
+                      <Globe size={16} style={{ color: 'var(--text-secondary)' }} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Public</p>
+                        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Tout le monde peut voir</p>
+                      </div>
+                      {!isPrivate && <Check size={14} style={{ color: 'var(--primary)' }} />}
+                    </button>
+                    <button onClick={() => { setIsPrivate(true); setShowVisibility(false); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors"
+                      style={{ background: isPrivate ? 'var(--bg-secondary)' : 'transparent' }}>
+                      <Users size={16} style={{ color: 'var(--text-secondary)' }} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Amis</p>
+                        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Vos abonnés seulement</p>
+                      </div>
+                      {isPrivate && <Check size={14} style={{ color: 'var(--primary)' }} />}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Edit3, Play, X, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Edit3, Play, X, ChevronDown, Users } from 'lucide-react';
 import { GuestPreview } from '../../components/ui/GuestPreview';
 import { DetailBackHeader } from '../../components/ui/DetailBackHeader';
 import { useSmartBack } from '../../hooks/useSmartBack';
@@ -456,8 +456,9 @@ export default function PostDetailPage() {
                     <span className="truncate">{author?.display_name ?? author?.username ?? 'Utilisateur'}</span>
                     {author?.is_verified && <VerifiedBadge size={14} />}
                   </button>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                  <p className="flex items-center gap-1 text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                     {format(new Date(post.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                    {post.is_private && <Users size={11} aria-label="Amis uniquement" />}
                   </p>
                   {isOwn && post.ai_analysis_status === 'pending' && (
                     <button onClick={() => setShowAiModal(true)} className="flex items-center gap-1.5 mt-0.5">

@@ -866,7 +866,7 @@ const KIND_BADGE: Record<string, { label: string; bg: string; color: string }> =
   reel:       { label: 'Reel',        bg: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' } };
 
 function AuthorRow({
-  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind, onMoreClick, showAiPending, onAiPendingClick }: {
+  author, authorId, publishedAt, isFollowed, onAuthorClick, onFollowClick, kind, onMoreClick, showAiPending, onAiPendingClick, isPrivate }: {
   author: { display_name?: string | null; username?: string | null; avatar_url?: string | null; is_verified?: boolean; is_live?: boolean | null } | undefined;
   authorId: string | undefined;
   publishedAt?: string | null;
@@ -880,6 +880,8 @@ function AuthorRow({
   showAiPending?: boolean;
   /** Ouvre l'écran de suivi d'analyse IA au clic sur le badge — masqué (badge non cliquable) si absent. */
   onAiPendingClick?: () => void;
+  /** Post visible seulement par les abonnés — affiche une icône "Amis" à côté de la date. */
+  isPrivate?: boolean;
 }) {
   const { liveUserIds } = useWs();
   if (!author && !authorId) return null;
@@ -902,7 +904,10 @@ function AuthorRow({
             )}
           </div>
           {publishedAt && (
-            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{formatTimeAgo(publishedAt)}</span>
+            <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+              {formatTimeAgo(publishedAt)}
+              {isPrivate && <Users size={10} style={{ color: 'var(--text-tertiary)' }} aria-label="Amis uniquement" />}
+            </span>
           )}
           {showAiPending && (
             <button
@@ -1890,6 +1895,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
         onAuthorClick={e => { e.stopPropagation(); if (authorId) navigate(`/user/${encodeId(authorId)}`); }}
         onFollowClick={e => authorId && onFollow(authorId, e)}
         kind="post"
+        isPrivate={post.is_private}
         showAiPending={isOwn && post.ai_analysis_status === 'pending'}
         onAiPendingClick={isOwn ? () => openAiStatus('post', post.id, post.ai_analysis_status) : undefined}
         onMoreClick={e => { e.stopPropagation(); handleMoreClick(); }}

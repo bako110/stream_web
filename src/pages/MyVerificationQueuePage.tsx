@@ -80,20 +80,30 @@ function QueueCard({ item, onDelete }: { item: QueueItem; onDelete: (id: string)
 
   return (
     <div className="overflow-hidden" style={{ borderRadius: '1.25rem', border: '1px solid var(--border)', background: 'var(--surface)', borderLeft: `3px solid ${statusColor}` }}>
-      <div className="relative overflow-hidden" style={{ aspectRatio: '16/9', background: 'var(--bg-tertiary)' }}>
-        {item.thumbnail_url ? (
+      {/* Miniature — uniquement si une vraie image existe. Un contenu
+          texte-only (ex: post sans photo) n'affiche pas de zone 16/9 vide,
+          le badge type/statut passe dans l'en-tête du corps à la place. */}
+      {item.thumbnail_url && (
+        <div className="relative overflow-hidden" style={{ aspectRatio: '16/9', background: 'var(--bg-tertiary)' }}>
           <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: `${statusColor}15` }}>
-            <ShieldCheck size={40} style={{ color: statusColor, opacity: 0.5 }} />
-          </div>
-        )}
-        <span className="absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ background: statusColor }}>
-          {TYPE_LABEL[item.content_type]}
-        </span>
-      </div>
+          <span className="absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ background: statusColor }}>
+            {TYPE_LABEL[item.content_type]}
+          </span>
+        </div>
+      )}
 
       <div className="p-4 space-y-3">
+        {!item.thumbnail_url && (
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${statusColor}15` }}>
+              <ShieldCheck size={18} style={{ color: statusColor }} />
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ background: statusColor }}>
+              {TYPE_LABEL[item.content_type]}
+            </span>
+          </div>
+        )}
+
         <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>{item.title}</p>
 
         <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: statusColor }}>

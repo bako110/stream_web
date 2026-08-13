@@ -264,8 +264,9 @@ export interface Post {
   user_reaction?: 'like' | 'dislike' | null;
   category?: string | null;
   ai_analysis_status?: 'pending' | 'done' | null;
+  is_private?: boolean;
 }
-export interface PostCreate { body?: string; image_url?: string; feeling?: string; }
+export interface PostCreate { body?: string; image_url?: string; feeling?: string; is_private?: boolean; }
 
 // ── Story ─────────────────────────────────────────────────────────────────
 export type StoryMediaType = 'image' | 'video' | 'text' | 'audio' | 'voice';
