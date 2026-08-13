@@ -12,8 +12,12 @@ export type ShareTargetType = 'post' | 'event' | 'concert' | 'reel' | 'content' 
 // live/tournament n'ont pas de résolution serveur pour l'instant.
 const INTERNAL_SHARE_TYPES = new Set(['post', 'reel', 'event', 'concert', 'content']);
 
+interface ContactUser {
+  id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null;
+}
+
 interface Conversation {
-  user: { id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null };
+  user: ContactUser;
 }
 
 interface Props {
@@ -92,9 +96,15 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
   const [copied, setCopied] = useState(false);
 
   // ── Envoi interne à un contact (comme Instagram/Facebook) ──────────────────
+  // Par défaut : conversations récentes. Dès qu'on tape une recherche, on
+  // cherche parmi TOUS les utilisateurs (pas seulement les discussions déjà
+  // ouvertes) via /search?type=users, comme le "Nouvelle conversation" de
+  // MessagesPopover.tsx.
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConvos, setLoadingConvos] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<ContactUser[]>([]);
+  const [searching, setSearching] = useState(false);
   const [sendingTo, setSendingTo] = useState<Set<string>>(new Set());
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
   const fetchedConvos = useRef(false);
@@ -114,9 +124,26 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
       .finally(() => setLoadingConvos(false));
   }, [open, canSendInternally]);
 
+  useEffect(() => {
+    if (!open || !canSendInternally) return;
+    const q = search.trim();
+    if (!q) { setSearchResults([]); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await apiClient.get<unknown>(`${Endpoints.search.query}?q=${encodeURIComponent(q)}&type=users&limit=15`);
+        const raw = res.data as any;
+        const list: ContactUser[] = Array.isArray(raw?.users) ? raw.users : Array.isArray(raw) ? raw : [];
+        setSearchResults(list.filter(u => u?.id));
+      } catch { setSearchResults([]); }
+      finally { setSearching(false); }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search, open, canSendInternally]);
+
   // Reset à la fermeture — rouvrir sur un autre contenu doit repartir propre
   useEffect(() => {
-    if (!open) { setSentTo(new Set()); setSendingTo(new Set()); setSearch(''); }
+    if (!open) { setSentTo(new Set()); setSendingTo(new Set()); setSearch(''); setSearchResults([]); }
   }, [open]);
 
   const sendToUser = useCallback(async (userId: string) => {
@@ -140,11 +167,9 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
 
   if (!open) return null;
 
-  const filteredConvos = search.trim()
-    ? conversations.filter(c =>
-        (c.user.display_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
-        (c.user.username ?? '').toLowerCase().includes(search.toLowerCase()))
-    : conversations;
+  const isSearching = search.trim().length > 0;
+  const contactList: ContactUser[] = isSearching ? searchResults : conversations.map(c => c.user);
+  const contactsLoading = isSearching ? searching : loadingConvos;
 
   function share(platform: TrackedPlatform, action: () => void) {
     action();
@@ -258,7 +283,7 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
                     style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }} />
                 </div>
               </div>
-              {loadingConvos ? (
+              {contactsLoading ? (
                 <div className="flex gap-3 px-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="flex flex-col items-center gap-1.5 shrink-0">
@@ -267,14 +292,13 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
                     </div>
                   ))}
                 </div>
-              ) : filteredConvos.length === 0 ? (
+              ) : contactList.length === 0 ? (
                 <p className="text-xs text-center py-3" style={{ color: 'var(--text-tertiary)' }}>
-                  {search ? 'Aucun contact trouvé' : 'Aucune conversation récente'}
+                  {isSearching ? 'Aucun utilisateur trouvé' : 'Aucune conversation récente'}
                 </p>
               ) : (
                 <div className="flex gap-3 px-4 pb-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-                  {filteredConvos.map(c => {
-                    const u = c.user;
+                  {contactList.map(u => {
                     const sending = sendingTo.has(u.id);
                     const sent = sentTo.has(u.id);
                     return (
