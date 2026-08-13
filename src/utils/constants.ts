@@ -1,5 +1,9 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
-export const WS_BASE_URL  = import.meta.env.VITE_WS_BASE_URL  ?? '';
+// Si non défini, dérive du host courant — le port du serveur Vite en dev
+// varie selon disponibilité (5173, 5174…), une valeur figée casserait le
+// proxy WS dès que le port change.
+export const WS_BASE_URL  = import.meta.env.VITE_WS_BASE_URL
+  || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 
 const R2_PUBLIC_HOST = 'pub-6359d54251d74e879f64e6dc3afdb145.r2.dev';
 

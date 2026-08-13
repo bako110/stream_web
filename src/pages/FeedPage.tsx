@@ -2699,6 +2699,12 @@ export default function FeedPage() {
   const loadingMoreRef   = useRef(false);
   const sentinelRef      = useRef<HTMLDivElement | null>(null);
   const seenAdIdsRef     = useRef<string[]>([]);
+  // Anti-race : deux loadFeed() concurrents (StrictMode double-invoke, ou
+  // changement rapide d'onglet) pouvaient tous les deux appeler setItems --
+  // le dernier à résoudre gagnait indépendamment de l'ordre de démarrage,
+  // écrasant un fil déjà chargé par une réponse vide/obsolète ("le contenu
+  // apparaît puis disparaît"). Seul le run le plus récent a le droit d'écrire.
+  const loadFeedRunRef   = useRef(0);
 
   // Suggestions fetched once — shared across all SuggestionsInline instances
   const [suggestUsers,   setSuggestUsers]   = useState<any[]>([]);
@@ -2717,6 +2723,7 @@ export default function FeedPage() {
     setShareTarget({ id, kind, title, image, desc });
   }
   async function loadFeed(filter: typeof tab) {
+    const runId = ++loadFeedRunRef.current;
     setLoading(true);
     // Reset pagination state — nouveau tirage complet
     seenIdsRef.current      = new Set();
@@ -2830,6 +2837,7 @@ export default function FeedPage() {
         }
 
         nonReelCountRef.current = merged.length;
+        if (runId !== loadFeedRunRef.current) return;
         setItems(result);
         setHasMoreFeed(feedHasMoreRef.current || reelsHasMoreRef.current);
       } else if (filter === 'friends') {
@@ -2848,6 +2856,7 @@ export default function FeedPage() {
           const dateOf = (it: FeedItem) => (it.data as any).created_at ?? (it.data as any).starts_at ?? (it.data as any).scheduled_at ?? 0;
           return new Date(dateOf(b)).getTime() - new Date(dateOf(a)).getTime();
         });
+        if (runId !== loadFeedRunRef.current) return;
         setItems(results);
       } else {
         // Filter-specific — sorted by date, no shuffle
@@ -2864,6 +2873,7 @@ export default function FeedPage() {
           new Date((b.data as any).created_at ?? 0).getTime() -
           new Date((a.data as any).created_at ?? 0).getTime(),
         );
+        if (runId !== loadFeedRunRef.current) return;
         setItems(results);
       }
     } catch { /* silencieux */ }
