@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Copy, Check, Share2, Mail, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
+import { extractApiErrorMessage } from '../../utils/apiError';
 
 export type ShareTargetType = 'post' | 'event' | 'concert' | 'reel' | 'content' | 'live' | 'tournament';
 
@@ -129,8 +131,9 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
       setSentTo(prev => new Set(prev).add(userId));
       recordShare(targetType, targetId, 'external');
       onShared?.();
-    } catch { /* toast géré par apiClient si configuré globalement */ }
-    finally {
+    } catch (err) {
+      toast.error(extractApiErrorMessage(err, "Impossible d'envoyer ce contenu."));
+    } finally {
       setSendingTo(prev => { const n = new Set(prev); n.delete(userId); return n; });
     }
   }, [sendingTo, sentTo, targetType, targetId, onShared]);
