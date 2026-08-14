@@ -683,17 +683,17 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
       </div>
 
       <div className="px-5 pb-8">
-        {/* Avatar + nom */}
-        <div className="flex items-end gap-4 mb-4" style={{ marginTop: -40 }}>
+        {/* Avatar (chevauche la banniere) + nom (sous la banniere, jamais superpose) */}
+        <div className="flex items-end gap-4 mb-4">
           {community.avatar_url
             ? <img src={community.avatar_url} className="w-20 h-20 rounded-2xl object-cover shrink-0"
-                style={{ border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} alt="" />
+                style={{ marginTop: -40, border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} alt="" />
             : <div className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-white text-3xl shrink-0"
-                style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+                style={{ marginTop: -40, background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
                 {community.name[0]?.toUpperCase()}
               </div>
           }
-          <div className="mb-1 min-w-0">
+          <div className="mb-1 min-w-0 pt-3">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>{community.name}</h1>
               {community.is_verified && <VerifiedBadge size={20} />}
