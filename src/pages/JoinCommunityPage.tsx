@@ -90,17 +90,19 @@ export default function JoinCommunityPage() {
 
   if (error || !community) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-8 text-center" style={{ background: 'var(--bg)' }}>
-        <div className="w-18 h-18 rounded-full flex items-center justify-center" style={{ width: 72, height: 72, background: 'rgba(239,68,68,0.1)' }}>
-          <AlertCircle size={36} style={{ color: '#EF4444' }} />
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="flex flex-col items-center gap-4 px-8 py-16 text-center">
+          <div className="rounded-full flex items-center justify-center" style={{ width: 72, height: 72, background: 'rgba(239,68,68,0.1)' }}>
+            <AlertCircle size={36} style={{ color: '#EF4444' }} />
+          </div>
+          <h1 className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>Lien invalide</h1>
+          <p className="text-sm max-w-xs" style={{ color: 'var(--text-secondary)' }}>
+            {error ?? "Ce code d'invitation est invalide ou a expiré."}
+          </p>
+          <button onClick={() => navigate('/communities')} className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
+            Retour
+          </button>
         </div>
-        <h1 className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>Lien invalide</h1>
-        <p className="text-sm max-w-xs" style={{ color: 'var(--text-secondary)' }}>
-          {error ?? "Ce code d'invitation est invalide ou a expiré."}
-        </p>
-        <button onClick={() => navigate('/communities')} className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
-          Retour
-        </button>
       </div>
     );
   }
@@ -115,22 +117,23 @@ export default function JoinCommunityPage() {
     : 'Rejoindre';
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      {/* Bannière */}
-      <div className="relative" style={{ height: 220, background: '#000' }}>
-        {community.banner_url
-          ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
-          : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
-        }
-        <div className="absolute inset-x-0 bottom-0 h-24" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
-        <button onClick={() => navigate('/communities')}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <X size={18} color="#fff" />
-        </button>
-      </div>
+    <div className="min-h-screen flex flex-col items-center" style={{ background: 'var(--bg)' }}>
+      <div className="w-full max-w-lg" style={{ background: 'var(--surface)', boxShadow: '0 8px 40px rgba(0,0,0,0.08)', minHeight: '100vh' }}>
+        {/* Bannière */}
+        <div className="relative" style={{ height: 200, background: '#000' }}>
+          {community.banner_url
+            ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
+            : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
+          }
+          <div className="absolute inset-x-0 bottom-0 h-24" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
+          <button onClick={() => navigate('/communities')}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105"
+            style={{ background: 'rgba(0,0,0,0.5)' }}>
+            <X size={18} color="#fff" />
+          </button>
+        </div>
 
-      <div className="max-w-lg mx-auto px-6 py-6 space-y-4">
+        <div className="px-6 py-6 space-y-4">
         {/* Avatar + nom */}
         <div className="flex items-center gap-3.5" style={{ marginTop: -44 }}>
           {community.avatar_url
@@ -203,6 +206,7 @@ export default function JoinCommunityPage() {
             L'admin devra approuver ta demande
           </p>
         )}
+        </div>
       </div>
     </div>
   );

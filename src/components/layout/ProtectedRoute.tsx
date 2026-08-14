@@ -21,7 +21,12 @@ export function ProtectedRoute() {
     // partagé) pour y revenir automatiquement après connexion — LoginPage lit
     // deja ce parametre via getSafeRedirect(searchParams.get('redirect')).
     const redirect = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/auth/login?redirect=${redirect}`} replace />;
+    // Message explicite affiché sur LoginPage — évite un redirect silencieux
+    // sans contexte, notamment depuis un lien d'invitation communauté /join/.
+    const message = location.pathname.startsWith('/join/')
+      ? "Connecte-toi pour rejoindre cette communauté."
+      : "Connecte-toi pour continuer.";
+    return <Navigate to={`/auth/login?redirect=${redirect}`} state={{ message }} replace />;
   }
 
   return <Outlet />;

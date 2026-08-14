@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio, QrCode, Smartphone, Mail } from 'lucide-react';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { RoundLogo } from '../../components/ui/RoundLogo';
@@ -30,6 +30,7 @@ const FEATURES = [
 
 export default function LoginPage() {
   const navigate   = useNavigate();
+  const location   = useLocation();
   const [searchParams] = useSearchParams();
   const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { isDark } = useThemeStore();
@@ -41,6 +42,10 @@ export default function LoginPage() {
   // rediriger vers le feed). PublicOnlyRoute laisse passer un utilisateur
   // déjà connecté uniquement dans ce mode.
   const isAddAccountMode = searchParams.get('mode') === 'add';
+  // Message contextuel posé par ProtectedRoute lors d'une redirection depuis
+  // une page protégée (ex: /join/{code}) — rend le redirect explicite au lieu
+  // de silencieux.
+  const redirectMessage = (location.state as { message?: string } | null)?.message;
 
   const [method,      setMethod]      = useState<LoginMethod>('email');
   const [identifier,  setIdentifier]  = useState('');
@@ -212,6 +217,13 @@ export default function LoginPage() {
             <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Bon retour</h2>
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte GoFolyX</p>
           </div>
+
+          {redirectMessage && (
+            <div className="mb-5 px-4 py-3 rounded-xl text-sm font-medium"
+              style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.3)', color: '#7B3FF2' }}>
+              {redirectMessage}
+            </div>
+          )}
 
           {/* Google */}
           <button onClick={handleGoogle} disabled={gLoading}
