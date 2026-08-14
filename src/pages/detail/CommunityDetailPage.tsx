@@ -8,7 +8,7 @@ import {
   Search, X, ChevronRight, Info, MoreVertical, Pencil, Smile, Reply,
   Hash, Trophy, UserCheck, Pin, Image as ImageIcon, BarChart2,
   Calendar, MessageCircle, Megaphone, Film as FilmIcon, Vote,
-  PinOff, UserMinus, Ban, Forward, Clock, Briefcase, DollarSign, Link,
+  PinOff, UserMinus, Ban, Forward, Clock, Briefcase, DollarSign, Link, Camera,
 } from 'lucide-react';
 import type { Community } from '../../types';
 import { apiClient } from '../../api';
@@ -90,6 +90,12 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   const [tab,            setTab]            = useState<SettingsTab>(myRole === 'admin' ? 'info' : 'members');
   const [editName,       setEditName]       = useState(community.name);
   const [editDesc,       setEditDesc]       = useState(community.description ?? '');
+  const [avatarUrl,      setAvatarUrl]      = useState(community.avatar_url ?? null);
+  const [bannerUrl,      setBannerUrl]      = useState(community.banner_url ?? null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const [editPrivate,           setEditPrivate]           = useState(community.is_private);
   const [editApproval,          setEditApproval]          = useState((community as any).requires_approval ?? false);
   const [editMembersOnly,       setEditMembersOnly]       = useState((community as any).members_only_chat ?? false);
@@ -120,6 +126,41 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
       setBlockedMembers(Array.isArray(rb.data) ? rb.data : rb.data?.items ?? []);
     }).catch(() => {}).finally(() => setLoadingMembers(false));
   }, [tab, community.id]);
+
+  async function uploadCommunityImage(file: File): Promise<string | null> {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await apiClient.upload<{ uploaded: { url: string }[] }>(Endpoints.upload.images('communities'), fd);
+    return res.data.uploaded?.[0]?.url ?? (res.data as any).url ?? null;
+  }
+
+  async function handleUploadAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadCommunityImage(file);
+      if (!url) throw new Error();
+      await apiClient.patch(`/api/v1/communities/${community.id}`, { avatar_url: url });
+      setAvatarUrl(url); onSaved();
+      toast.success('Photo mise à jour');
+    } catch { toast.error('Impossible de mettre à jour la photo.'); }
+    finally { setUploadingAvatar(false); e.target.value = ''; }
+  }
+
+  async function handleUploadBanner(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    try {
+      const url = await uploadCommunityImage(file);
+      if (!url) throw new Error();
+      await apiClient.patch(`/api/v1/communities/${community.id}`, { banner_url: url });
+      setBannerUrl(url); onSaved();
+      toast.success('Bannière mise à jour');
+    } catch { toast.error('Impossible de mettre à jour la bannière.'); }
+    finally { setUploadingBanner(false); e.target.value = ''; }
+  }
 
   async function saveInfo() {
     if (!editName.trim()) return;
@@ -228,7 +269,60 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
         </div>
         <div className="flex-1 overflow-y-auto min-h-0">
           {tab === 'info' && (
-            <div className="p-5 space-y-4">
+            <div className="space-y-4">
+              {/* Bannière + avatar — même pattern que ProfilePage (upload immédiat au clic) */}
+              <div className="rounded-2xl overflow-hidden mx-5 mt-5" style={{ border: '1px solid var(--border)' }}>
+                <div className="relative h-28 cursor-pointer group"
+                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}
+                  onClick={() => !uploadingBanner && bannerInputRef.current?.click()}>
+                  {bannerUrl && <img src={bannerUrl} className="w-full h-full object-cover" alt="" />}
+                  <div className="absolute inset-0 flex items-center justify-center transition-opacity"
+                    style={{ background: uploadingBanner ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0)' }}
+                    onMouseEnter={e => { if (!uploadingBanner) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.4)'; }}
+                    onMouseLeave={e => { if (!uploadingBanner) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0)'; }}>
+                    {uploadingBanner ? (
+                      <div className="flex flex-col items-center gap-2 text-white">
+                        <Spinner size="sm" />
+                        <span className="text-xs font-semibold">Téléchargement…</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-white text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera size={15} />
+                        {bannerUrl ? 'Changer la bannière' : 'Ajouter une bannière'}
+                      </div>
+                    )}
+                  </div>
+                  <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadBanner} />
+                </div>
+
+                <div className="px-4 pb-4" style={{ background: 'var(--surface)' }}>
+                  <div className="-mt-8">
+                    <div className="relative inline-block">
+                      <div className="rounded-full p-1" style={{ background: 'var(--surface)', display: 'inline-block' }}>
+                        <div className="w-16 h-16 rounded-full overflow-hidden" style={{ border: '3px solid var(--surface)' }}>
+                          {avatarUrl
+                            ? <img src={avatarUrl} className="w-full h-full object-cover" alt="" />
+                            : <div className="w-full h-full flex items-center justify-center text-white text-xl font-black"
+                                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+                                {community.name[0]?.toUpperCase()}
+                              </div>
+                          }
+                        </div>
+                      </div>
+                      <button type="button"
+                        onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                        disabled={uploadingAvatar}
+                        className="absolute bottom-1 right-1 p-1.5 rounded-full transition-all"
+                        style={{ background: uploadingAvatar ? 'var(--bg-secondary)' : '#7B3FF2', border: '2px solid var(--surface)', color: '#fff' }}>
+                        {uploadingAvatar ? <Spinner size="sm" /> : <Camera size={12} />}
+                      </button>
+                      <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-5 space-y-4">
               <div>
                 <label className="text-[10px] font-bold tracking-widest mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>NOM</label>
                 <input value={editName} onChange={e => setEditName(e.target.value)} maxLength={60}
@@ -239,6 +333,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
                 <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} maxLength={300} rows={4}
                   className="input w-full resize-none" placeholder="Description (optionnel)" />
                 <p className="text-[10px] text-right mt-1" style={{ color: 'var(--text-tertiary)' }}>{editDesc.length}/300</p>
+              </div>
               </div>
             </div>
           )}
