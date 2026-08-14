@@ -36,7 +36,7 @@ function PodiumBar({ member, rank, maxGoGold }: { member: Member; rank: number; 
   const pct      = maxGoGold > 0 ? (member.gogold ?? 0) / maxGoGold : 0;
   const heights  = [64, 48, 32];
   const h        = heights[rank - 1] ?? 32;
-  const colors   = ['linear-gradient(180deg, #7B3FF2, #E0389A)', 'rgba(148,163,184,0.5)', 'rgba(205,124,58,0.5)'];
+  const colors   = ['linear-gradient(180deg, #7B3FF2, #5B2EC4)', 'rgba(148,163,184,0.5)', 'rgba(205,124,58,0.5)'];
   const sizes    = ['md' as const, 'sm' as const, 'sm' as const];
   const isFirst  = rank === 1;
 

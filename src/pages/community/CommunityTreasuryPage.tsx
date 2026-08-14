@@ -102,7 +102,7 @@ export default function CommunityTreasuryPage() {
       ) : (
         <div className="flex-1 overflow-y-auto">
           {/* Card solde principal */}
-          <div className="m-4 rounded-3xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #7B3FF2, #E0389A)' }}>
+          <div className="m-4 rounded-3xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #7B3FF2, #5B2EC4)' }}>
             <div className="p-5">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center"

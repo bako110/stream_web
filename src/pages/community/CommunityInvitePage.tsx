@@ -127,7 +127,7 @@ export default function CommunityInvitePage() {
           {isAdmin && (
             <button onClick={regenerate} disabled={regen}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+              style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
               {regen ? <Spinner size="sm" /> : <><RefreshCw size={14} /> Générer un code</>}
             </button>
           )}
@@ -138,7 +138,7 @@ export default function CommunityInvitePage() {
           {/* Illustration */}
           <div className="flex flex-col items-center pt-4 pb-2">
             <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4"
-              style={{ background: 'linear-gradient(135deg, #7B3FF2, #E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg, #7B3FF2, #5B2EC4)' }}>
               <Link size={32} color="white" />
             </div>
             <p className="text-lg font-black text-center" style={{ color: 'var(--text-primary)' }}>
@@ -167,7 +167,7 @@ export default function CommunityInvitePage() {
               <button onClick={copyCode}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all"
                 style={{
-                  background: copied ? '#10B98115' : 'linear-gradient(90deg, #7B3FF2, #E0389A)',
+                  background: copied ? '#10B98115' : 'linear-gradient(90deg, #7B3FF2, #5B2EC4)',
                   color: copied ? '#10B981' : 'white',
                   border: copied ? '1px solid #10B98130' : 'none',
                 }}>
@@ -192,7 +192,7 @@ export default function CommunityInvitePage() {
               </button>
               <button onClick={share}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+                style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
                 <Share2 size={13} /> Partager
               </button>
             </div>

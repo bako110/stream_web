@@ -220,11 +220,11 @@ export default function CommunityFundDetailPage() {
         <div className="flex-1 overflow-y-auto">
 
           {/* Bande colorée statut */}
-          {isActive && <div className="h-1" style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }} />}
+          {isActive && <div className="h-1" style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }} />}
 
           {/* Carte principale */}
           <div className="m-4 rounded-3xl overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #7B3FF2, #E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg, #7B3FF2, #5B2EC4)' }}>
             <div className="p-5">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 min-w-0">
@@ -308,7 +308,7 @@ export default function CommunityFundDetailPage() {
               ) : (
                 <button onClick={pay} disabled={paying}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white transition-all"
-                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
                   {paying ? <Spinner size="sm" /> : <><Target size={16} /> Payer {cot.amount_per_member.toLocaleString()} GoGold</>}
                 </button>
               )}

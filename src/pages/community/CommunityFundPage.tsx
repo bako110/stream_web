@@ -59,7 +59,7 @@ function CotisationCard({ cot, paying, onPay, onPress }: {
       onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(123,63,242,0.5)')}
       onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
 
-      {isActive && <div className="h-1" style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }} />}
+      {isActive && <div className="h-1" style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }} />}
 
       <div className="p-4">
         <div className="flex items-start gap-3 mb-3">
@@ -97,7 +97,7 @@ function CotisationCard({ cot, paying, onPay, onPress }: {
             ) : isActive ? (
               <button onClick={e => { e.stopPropagation(); onPay(cot.id); }} disabled={paying}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
-                style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+                style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
                 {paying ? <Spinner size="sm" /> : 'Payer'}
               </button>
             ) : null}
@@ -120,7 +120,7 @@ function CotisationCard({ cot, paying, onPay, onPress }: {
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
             <div className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }} />
+              style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }} />
           </div>
         </div>
 
@@ -321,7 +321,7 @@ export default function CommunityFundPage() {
           {/* Stats */}
           {cots.length > 0 && (
             <div className="m-4 rounded-3xl overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, #7B3FF2, #E0389A)' }}>
+              style={{ background: 'linear-gradient(135deg, #7B3FF2, #5B2EC4)' }}>
               <div className="p-5">
                 <p className="text-[11px] font-bold tracking-widest text-white/70 mb-3">RÉSUMÉ</p>
                 <div className="grid grid-cols-3 gap-4">
@@ -344,7 +344,7 @@ export default function CommunityFundPage() {
           {cots.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
               <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4"
-                style={{ background: 'linear-gradient(135deg, #7B3FF2, #E0389A)' }}>
+                style={{ background: 'linear-gradient(135deg, #7B3FF2, #5B2EC4)' }}>
                 <Target size={32} color="white" />
               </div>
               <p className="font-bold text-base mb-1" style={{ color: 'var(--text-primary)' }}>Aucune cotisation</p>
@@ -354,7 +354,7 @@ export default function CommunityFundPage() {
               {canManage && (
                 <button onClick={() => setShowCreate(true)}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold text-white"
-                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
                   <Plus size={16} /> Créer une cotisation
                 </button>
               )}

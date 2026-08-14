@@ -481,7 +481,7 @@ export default function CommunityTreasurerPage() {
 
           {/* Solde */}
           <div className="m-4 rounded-3xl overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #7B3FF2, #E0389A)' }}>
+            style={{ background: 'linear-gradient(135deg, #7B3FF2, #5B2EC4)' }}>
             <div className="p-5">
               <p className="text-[11px] font-bold tracking-widest text-white/70 mb-1">SOLDE COMMUNAUTAIRE</p>
               <p className="text-3xl font-black text-white">{balance.toLocaleString()}</p>
@@ -571,7 +571,7 @@ export default function CommunityTreasurerPage() {
                 election ? (
                   <button onClick={closeElection} disabled={closing}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold text-white"
-                    style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+                    style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
                     {closing ? <Spinner size="sm" /> : <><Check size={10} /> Clôturer & Élire</>}
                   </button>
                 ) : (
@@ -630,7 +630,7 @@ export default function CommunityTreasurerPage() {
                           <div className="h-1.5 rounded-full overflow-hidden mb-2" style={{ background: 'var(--border)' }}>
                             <div className="h-full rounded-full transition-all duration-700" style={{
                               width: `${r.pct}%`,
-                              background: isLeader ? 'linear-gradient(90deg, #7B3FF2, #E0389A)' : 'var(--primary)',
+                              background: isLeader ? 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' : 'var(--primary)',
                               opacity: isLeader ? 1 : 0.6,
                             }} />
                           </div>
@@ -799,7 +799,7 @@ export default function CommunityTreasurerPage() {
                               {approvable && (
                                 <button onClick={() => approveRequest(req.id)} disabled={!!actionLoading}
                                   className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
-                                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #E0389A)' }}>
+                                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }}>
                                   {isLoading ? <Spinner size="sm" /> : <><Check size={11} /> {approveLabel(req)}</>}
                                 </button>
                               )}

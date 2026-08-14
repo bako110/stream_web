@@ -1527,7 +1527,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
                   style={{ background: 'var(--bg-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}>
-                  <Briefcase size={15} style={{ color: '#E0389A' }} />
+                  <Briefcase size={15} style={{ color: '#5B2EC4' }} />
                   <span style={{ color: 'var(--text-primary)' }}>Trésorerie</span>
                   <ChevronRight size={14} className="ml-auto" style={{ color: 'var(--text-tertiary)' }} />
                 </button>
