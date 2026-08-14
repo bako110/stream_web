@@ -22,7 +22,8 @@ interface TxItem {
   label: string;
   description?: string | null;
   actor_name?: string | null;
-  amount: number;
+  // Backend renvoie gogold_amount (app/routers/cotisations.py::get_community_wallet_transactions)
+  gogold_amount: number;
   balance_after: number;
   created_at: string;
 }
@@ -185,7 +186,7 @@ export default function CommunityTreasuryPage() {
                 {txs.map((tx, i) => {
                   const cfg = TX_CONFIG[tx.tx_type] ?? { color: 'var(--text-secondary)', bg: 'var(--bg-secondary)', icon: TrendingUp };
                   const Icon = cfg.icon;
-                  const isCredit = tx.amount > 0;
+                  const isCredit = (tx.gogold_amount ?? 0) > 0;
                   return (
                     <div key={tx.id} className="flex items-center gap-3 px-4 py-3"
                       style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}>
@@ -206,10 +207,10 @@ export default function CommunityTreasuryPage() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold" style={{ color: isCredit ? '#10B981' : '#EF4444' }}>
-                          {isCredit ? '+' : ''}{tx.amount.toLocaleString()} GoGold
+                          {isCredit ? '+' : ''}{(tx.gogold_amount ?? 0).toLocaleString()} GoGold
                         </p>
                         <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                          Solde : {tx.balance_after.toLocaleString()}
+                          Solde : {(tx.balance_after ?? 0).toLocaleString()}
                         </p>
                       </div>
                     </div>
