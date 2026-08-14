@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Spinner, PageLoader } from '../ui/Spinner';
+import { Lightbox } from '../ui/Lightbox';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
@@ -100,6 +101,7 @@ function MiniChatWindow({
   const [replyTo,  setReplyTo]  = useState<ExtMsg | null>(null);
   const [uploading,setUploading]= useState(false);
   const [emojiFor, setEmojiFor] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLInputElement>(null);
   const fileRef   = useRef<HTMLInputElement>(null);
@@ -348,9 +350,15 @@ function MiniChatWindow({
                     style={isMe
                       ? { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', opacity: isTemp ? 0.6 : 1, boxShadow: '0 2px 10px rgba(123,63,242,0.2)' }
                       : { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
-                    {/* Image */}
+                    {/* Image — clic pour ouvrir en plein écran (télécharger/copier) */}
                     {msg.attachment_url && msg.message_type === 'image' && (
-                      <img src={msg.attachment_url} alt="" className="max-w-[180px] rounded-lg object-cover" style={{ display: 'block', maxHeight: 180 }} />
+                      <button
+                        onClick={e => { e.stopPropagation(); setLightboxUrl(msg.attachment_url!); }}
+                        className="block transition-opacity hover:opacity-90"
+                        style={{ padding: 0, border: 'none', background: 'none', cursor: 'zoom-in' }}
+                      >
+                        <img src={msg.attachment_url} alt="" className="max-w-[180px] rounded-lg object-cover" style={{ display: 'block', maxHeight: 180 }} />
+                      </button>
                     )}
                     {/* Fichier */}
                     {msg.attachment_url && msg.message_type === 'file' && (
@@ -521,6 +529,9 @@ function MiniChatWindow({
         </div>
         )}
       </div>
+      {lightboxUrl && (
+        <Lightbox urls={[lightboxUrl]} index={0} onClose={() => setLightboxUrl(null)} />
+      )}
     </div>
   );
 }

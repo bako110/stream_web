@@ -14,6 +14,7 @@ import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
 import { Avatar } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
+import { Lightbox } from '../components/ui/Lightbox';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import type { WsPayload } from '../context/WebSocketContext';
@@ -308,7 +309,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteForMe, onPin, onReact, onForward, navigate }: {
+function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteForMe, onPin, onReact, onForward, navigate, onImageClick }: {
   msg: ExtMessage; isMe: boolean; peer: UserPublic | null;
   onReply: (msg: ExtMessage) => void;
   onEdit: (msg: ExtMessage) => void;
@@ -318,6 +319,7 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
   onReact: (id: string, emoji: string) => void;
   onForward: (msg: ExtMessage) => void;
   navigate: (to: string) => void;
+  onImageClick: (url: string) => void;
 }) {
   const [menuOpen,  setMenuOpen]  = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -383,10 +385,16 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
                 </div>
               )}
 
-              {/* Image */}
+              {/* Image — clic pour ouvrir en plein écran (Lightbox : télécharger/copier) */}
               {(msg as any).attachment_url && msg.message_type === 'image' && (
-                <img src={(msg as any).attachment_url} alt="" className="max-w-[240px] rounded-lg object-cover"
-                  style={{ display: 'block', maxHeight: 280 }} />
+                <button
+                  onClick={e => { e.stopPropagation(); onImageClick((msg as any).attachment_url); }}
+                  className="block transition-opacity hover:opacity-90"
+                  style={{ padding: 0, border: 'none', background: 'none', cursor: 'zoom-in' }}
+                >
+                  <img src={(msg as any).attachment_url} alt="" className="max-w-[240px] rounded-lg object-cover"
+                    style={{ display: 'block', maxHeight: 280 }} />
+                </button>
               )}
               {/* Vidéo */}
               {msg.message_type === 'video' && ((msg as any).attachment_url || (msg as any).attachment_meta?.hls_url) && (
@@ -651,6 +659,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   const [searchQuery,setSearchQuery]= useState('');
   const [searchResults,setSearchResults]= useState<ExtMessage[]>([]);
   const [forwardMsg,setForwardMsg]= useState<ExtMessage | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [uploading,   setUploading]   = useState(false);
   const [pendingFiles,setPendingFiles]= useState<File[] | null>(null);
   const [pendingCaption,setPendingCaption]= useState('');
@@ -1246,6 +1255,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
                   onReact={handleReact}
                   onForward={m => setForwardMsg(m)}
                   navigate={navigate}
+                  onImageClick={setLightboxUrl}
                 />
               )}
             </div>
@@ -1391,6 +1401,9 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
 
       {forwardMsg && (
         <ForwardModal msg={forwardMsg} onClose={() => setForwardMsg(null)} onForwarded={() => {}} />
+      )}
+      {lightboxUrl && (
+        <Lightbox urls={[lightboxUrl]} index={0} onClose={() => setLightboxUrl(null)} />
       )}
       {MsgConfirmDialog}
     </div>
