@@ -9,6 +9,8 @@ import { Endpoints } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../ui/Avatar';
 import { Spinner } from '../ui/Spinner';
+import { LinkPreviewCard } from '../ui/LinkPreviewCard';
+import { URL_SPLIT, isUrl, toHref } from '../ui/RichText';
 
 // ── Upload helpers (browser) ──────────────────────────────────────────────────
 
@@ -130,10 +132,17 @@ function CreatePostModal({ onClose, onDone }: { onClose: () => void; onDone: () 
   const [apiError,     setApiError]     = useState('');
   const [isPrivate,    setIsPrivate]    = useState(false);
   const [showVisibility, setShowVisibility] = useState(false);
+  const [dismissedLink, setDismissedLink] = useState<string | null>(null);
   const textRef  = useRef<HTMLTextAreaElement>(null);
   const fileRef  = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setTimeout(() => textRef.current?.focus(), 100); }, []);
+
+  // Détecte le 1er lien collé dans le texte — preview OG en direct, comme Facebook.
+  // Masquée uniquement si une image est déjà jointe (évite de mélanger les deux) ou
+  // si l'utilisateur a explicitement fermé la carte pour ce lien précis.
+  const detectedLink = body.match(URL_SPLIT)?.find(isUrl) ?? null;
+  const showLinkPreview = !!detectedLink && images.length === 0 && detectedLink !== dismissedLink;
 
   const addImages = useCallback((files: FileList | null) => {
     if (!files) return;
@@ -248,6 +257,18 @@ function CreatePostModal({ onClose, onDone }: { onClose: () => void; onDone: () 
           rows={3} placeholder="Quoi de neuf ?"
           className="input w-full resize-none text-sm leading-relaxed"
           style={{ minHeight: 80 }} />
+
+        {/* Aperçu du lien collé — chargé en direct pendant la saisie, comme Facebook */}
+        {showLinkPreview && (
+          <div className="relative">
+            <LinkPreviewCard url={toHref(detectedLink!)} />
+            <button onClick={() => setDismissedLink(detectedLink)}
+              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.6)' }}>
+              <X size={12} color="#fff" />
+            </button>
+          </div>
+        )}
 
         {/* Image previews */}
         {previews.length > 0 && (

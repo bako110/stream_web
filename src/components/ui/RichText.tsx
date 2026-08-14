@@ -5,16 +5,16 @@ import { LinkPreviewCard } from './LinkPreviewCard';
 // truc.net, exemple.org...) sans http(s):// devant. Pas de flag `g` sur la version
 // singulière — utilisée uniquement via split/match avec new RegExp.
 const COMMON_TLDS = 'com|net|org|io|co|app|dev|info|biz|fr|africa|sn|ci|ma|ly';
-const URL_PATTERN = new RegExp(
+export const URL_PATTERN = new RegExp(
   `(?:https?:\\/\\/[^\\s<>"']+)|(?:[a-zA-Z0-9-]+\\.(?:${COMMON_TLDS})(?:\\.[a-z]{2})?(?:\\/[^\\s<>"']*)?)`,
 );
-const URL_SPLIT = new RegExp(`(${URL_PATTERN.source})`, 'g');
+export const URL_SPLIT = new RegExp(`(${URL_PATTERN.source})`, 'g');
 
-function isUrl(str: string): boolean {
+export function isUrl(str: string): boolean {
   return new RegExp(`^(?:${URL_PATTERN.source})$`).test(str);
 }
 
-function toHref(url: string): string {
+export function toHref(url: string): string {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
