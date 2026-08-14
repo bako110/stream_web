@@ -11,14 +11,13 @@ import { Spinner } from '../../components/ui/Spinner';
 import { extractApiErrorMessage } from '../../utils/apiError';
 import { accountsService, MAX_ACCOUNTS } from '../../services/accountsService';
 import type { StoredAccount } from '../../services/accountsService';
-import { AddAccountModal } from '../../components/auth/AddAccountModal';
 import { useConfirm } from '../../components/ui/Dialog';
 
 // ── Section multi-compte — parite avec SettingsCompteScreen.tsx (mobile) ──────
 function AccountsSection() {
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState<StoredAccount[]>(() => accountsService.listAccounts());
   const [switchingId, setSwitchingId] = useState<string | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
   const { confirm, ConfirmDialog } = useConfirm();
   const canAdd = accounts.length < MAX_ACCOUNTS;
 
@@ -90,7 +89,7 @@ function AccountsSection() {
           </div>
         );
       })}
-      <button onClick={() => setShowAdd(true)} disabled={!canAdd}
+      <button onClick={() => navigate('/login?mode=add')} disabled={!canAdd}
         className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-semibold transition-colors disabled:opacity-40"
         style={{ borderTop: '1px solid var(--border)', color: 'var(--primary)' }}
         onMouseEnter={e => { if (canAdd) (e.currentTarget.style.background = 'var(--bg-secondary)'); }}
@@ -99,12 +98,6 @@ function AccountsSection() {
         {canAdd ? 'Ajouter un compte' : `Maximum ${MAX_ACCOUNTS} comptes atteint`}
       </button>
 
-      {showAdd && (
-        <AddAccountModal
-          onClose={() => setShowAdd(false)}
-          onAdded={() => window.location.reload()}
-        />
-      )}
       {ConfirmDialog}
     </div>
   );

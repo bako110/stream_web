@@ -14,6 +14,7 @@ import { googleOAuthPopup } from '../../utils/googleOAuth';
 import QRLoginPanel from '../../components/auth/QRLoginPanel';
 import { getSafeRedirect } from '../../utils/safeRedirect';
 import { getApiErrorDetail, extractApiErrorMessage } from '../../utils/apiError';
+import { accountsService } from '../../services/accountsService';
 
 declare global { interface Window { google?: any; } }
 
@@ -34,6 +35,12 @@ export default function LoginPage() {
   const { isDark } = useThemeStore();
 
   const redirectTo = getSafeRedirect(searchParams.get('redirect'));
+  // Multi-compte (parité mobile AddAccountScreen.tsx) : ce mode réutilise
+  // TOUT le formulaire tel quel, seul le comportement post-connexion change
+  // (enregistrer comme compte supplémentaire + recharger, au lieu de
+  // rediriger vers le feed). PublicOnlyRoute laisse passer un utilisateur
+  // déjà connecté uniquement dans ce mode.
+  const isAddAccountMode = searchParams.get('mode') === 'add';
 
   const [method,      setMethod]      = useState<LoginMethod>('email');
   const [identifier,  setIdentifier]  = useState('');
@@ -45,13 +52,31 @@ export default function LoginPage() {
   const [showQR,      setShowQR]      = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) navigate(redirectTo, { replace: true });
-  }, [isAuthenticated, navigate, redirectTo]);
+    // En mode ajout, isAuthenticated est déjà true dès l'arrivée sur la page
+    // (session existante conservée) — ne jamais rediriger automatiquement,
+    // sinon impossible d'afficher le formulaire. La redirection après un
+    // ajout réussi est gérée explicitement dans handleSubmit/handleGoogle.
+    if (isAuthenticated && !isAddAccountMode) navigate(redirectTo, { replace: true });
+  }, [isAuthenticated, navigate, redirectTo, isAddAccountMode]);
 
   function switchMethod() {
     setMethod(m => m === 'email' ? 'phone' : 'email');
     setIdentifier('');
     clearError();
+  }
+
+  // Après une connexion réussie : soit on rejoint la destination normale,
+  // soit (mode ajout) on enregistre la session fraîchement connectée comme
+  // compte supplémentaire puis on recharge — window.location.reload() plutôt
+  // qu'un navigate() pour repartir sur un état propre (WebSocket, caches en
+  // mémoire), même principe que le switch/remove de compte.
+  function completeAuth() {
+    if (isAddAccountMode) {
+      accountsService.addCurrentSessionAsAccount();
+      window.location.href = '/settings/account';
+      return;
+    }
+    navigate(redirectTo, { replace: true });
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -66,10 +91,19 @@ export default function LoginPage() {
       : hasOwnDialCode ? phoneTrimmed : `${country.dial}${phoneTrimmed}`;
     try {
       await login({ identifier: id, password });
-      navigate(redirectTo, { replace: true });
+      completeAuth();
     } catch (err: any) {
       const detail = getApiErrorDetail(err) as any;
-      if (detail && typeof detail === 'object' && detail.code === 'account_unverified') {
+      // En mode ajout, pas d'écran OTP dédié (comme AddAccountScreen.tsx sur
+      // mobile) — naviguer vers /auth/verify-registration quitterait le mode
+      // ajout et enverrait l'OTP à un compte jamais enregistré dans la liste,
+      // laissant la session précédente définitivement remplacée en mémoire
+      // sans y avoir jamais été sauvegardée. Message clair à la place.
+      if (isAddAccountMode && detail?.code === 'account_unverified') {
+        useAuthStore.setState({ error: 'Ce compte doit d\'abord être vérifié depuis la page de connexion principale.' });
+        return;
+      }
+      if (!isAddAccountMode && detail && typeof detail === 'object' && detail.code === 'account_unverified') {
         navigate(`/auth/verify-registration?redirect=${encodeURIComponent(redirectTo)}`, {
           state: { userId: detail.user_id, identifier: id, password },
         });
@@ -87,7 +121,9 @@ export default function LoginPage() {
       if (token?.access_token) {
         // Réutilise loginWithQR — même logique : setAuthToken + saveTokens + fetchMe
         await useAuthStore.getState().loginWithQR(token.access_token, token.refresh_token);
-        if (token.profile_incomplete) {
+        if (isAddAccountMode) {
+          completeAuth();
+        } else if (token.profile_incomplete) {
           navigate(`/auth/complete-profile?redirect=${encodeURIComponent(redirectTo)}`, { replace: true });
         } else {
           navigate(redirectTo, { replace: true });

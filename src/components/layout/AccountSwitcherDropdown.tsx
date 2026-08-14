@@ -6,7 +6,6 @@ import { Spinner } from '../ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
 import { accountsService, MAX_ACCOUNTS } from '../../services/accountsService';
 import type { StoredAccount } from '../../services/accountsService';
-import { AddAccountModal } from '../auth/AddAccountModal';
 
 /** Avatar + flèche dans le header — ouvre un menu de bascule rapide entre
  * comptes (parité mobile : bascule instantanée sans reconnexion, ajout
@@ -18,7 +17,6 @@ export function AccountSwitcherDropdown() {
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState<StoredAccount[]>(() => accountsService.listAccounts());
   const [switchingId, setSwitchingId] = useState<string | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -104,7 +102,7 @@ export function AccountSwitcherDropdown() {
             Voir mon profil
           </button>
           <button
-            onClick={() => { setOpen(false); setShowAdd(true); }}
+            onClick={() => { setOpen(false); navigate('/login?mode=add'); }}
             disabled={!canAdd}
             className="w-full flex items-center gap-2.5 px-3.5 py-3 text-sm font-semibold transition-colors disabled:opacity-40"
             style={{ color: 'var(--primary)' }}
@@ -115,13 +113,6 @@ export function AccountSwitcherDropdown() {
             {canAdd ? 'Ajouter un compte' : `Maximum ${MAX_ACCOUNTS} comptes`}
           </button>
         </div>
-      )}
-
-      {showAdd && (
-        <AddAccountModal
-          onClose={() => setShowAdd(false)}
-          onAdded={() => window.location.reload()}
-        />
       )}
     </div>
   );
