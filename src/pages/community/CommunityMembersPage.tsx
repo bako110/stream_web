@@ -9,6 +9,7 @@ import { apiClient } from '../../api';
 import { decodeId, encodeId } from '../../utils/slugId';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { extractApiErrorMessage } from '../../utils/apiError';
@@ -79,6 +80,7 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
   communityId: string; onDone: () => void; onClose: () => void;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   async function changeRole(role: string) {
     setLoading('role_' + role);
@@ -90,7 +92,8 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
   }
 
   async function kick() {
-    if (!confirm(`Exclure ${member.display_name ?? member.username} ?`)) return;
+    const ok = await confirm({ title: `Exclure ${member.display_name ?? member.username} ?`, confirmLabel: 'Exclure', danger: true });
+    if (!ok) return;
     setLoading('kick');
     try {
       await apiClient.delete(`/api/v1/communities/${communityId}/members/${member.user_id}`);
@@ -100,7 +103,8 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
   }
 
   async function block() {
-    if (!confirm(`Bloquer ${member.display_name ?? member.username} définitivement ?`)) return;
+    const ok = await confirm({ title: `Bloquer ${member.display_name ?? member.username} définitivement ?`, confirmLabel: 'Bloquer', danger: true });
+    if (!ok) return;
     setLoading('block');
     try {
       await apiClient.post(`/api/v1/communities/${communityId}/members/${member.user_id}/block`);
@@ -164,6 +168,7 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
         </div>
         <div className="h-4" />
       </div>
+      {ConfirmDialog}
     </>
   );
 }

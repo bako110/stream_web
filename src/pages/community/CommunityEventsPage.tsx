@@ -10,6 +10,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useAuthStore } from '../../store/authStore';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -297,6 +298,7 @@ export default function CommunityEventsPage() {
   const id             = decodeId(slug!);
   const navigate       = useNavigate();
   const { user: me }   = useAuthStore();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [events,    setEvents]    = useState<CommunityEvent[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [myRole,    setMyRole]    = useState<string | null>(null);
@@ -333,7 +335,8 @@ export default function CommunityEventsPage() {
   }
 
   async function handleDelete(eventId: string) {
-    if (!confirm('Supprimer cet événement ?')) return;
+    const ok = await confirm({ title: 'Supprimer cet événement ?', confirmLabel: 'Supprimer', danger: true });
+    if (!ok) return;
     try {
       await apiClient.delete(`${Endpoints.communities.events(id!)}/${eventId}`);
       setEvents(prev => prev.filter(e => e.id !== eventId));
@@ -356,6 +359,7 @@ export default function CommunityEventsPage() {
   });
 
   return (
+    <>
     <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0"
@@ -432,5 +436,7 @@ export default function CommunityEventsPage() {
         />
       )}
     </div>
+    {ConfirmDialog}
+    </>
   );
 }

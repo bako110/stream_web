@@ -7,6 +7,7 @@ import type { Concert } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
+import { useConfirm } from '../components/ui/Dialog';
 import { Avatar } from '../components/ui/Avatar';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
@@ -29,12 +30,14 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
   const navigate   = useNavigate();
   const isLive     = concert.status === 'live';
   const [deleting, setDeleting] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const goEdit = () => navigate(`/create/concert?edit=${concert.id}`);
 
   const handleDelete = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Supprimer ce concert définitivement ?')) return;
+    const ok = await confirm({ title: 'Supprimer ce concert définitivement ?', confirmLabel: 'Supprimer', danger: true });
+    if (!ok) return;
     setDeleting(true);
     try {
       await apiClient.delete(Endpoints.concerts.byId(concert.id));
@@ -44,9 +47,10 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
       toast.error('Erreur lors de la suppression');
       setDeleting(false);
     }
-  }, [concert.id, onDelete]);
+  }, [concert.id, onDelete, confirm]);
 
   return (
+    <>
     <div
       className="cursor-pointer group overflow-hidden transition-all duration-300"
       style={{ borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface)', borderLeft: '3px solid #7B3FF2' }}
@@ -137,6 +141,8 @@ function ConcertCard({ concert, onDelete }: { concert: Concert; onDelete: (id: s
         </div>
       </div>
     </div>
+    {ConfirmDialog}
+    </>
   );
 }
 

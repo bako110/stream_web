@@ -16,6 +16,7 @@ import { Endpoints } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
 import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useAuthStore } from '../../store/authStore';
 import { WS_BASE_URL } from '../../utils/constants';
 import { openAuthenticatedWs } from '../../utils/authenticatedWs';
@@ -106,6 +107,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   const isAdmin = myRole === 'admin';
   const isMod   = myRole === 'moderator';
   const { user: me } = useAuthStore();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     if (tab !== 'members') return;
@@ -154,7 +156,8 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   }
 
   async function kick(userId: string, name: string) {
-    if (!confirm(`Exclure ${name} ?`)) return;
+    const ok = await confirm({ title: `Exclure ${name} ?`, confirmLabel: 'Exclure', danger: true });
+    if (!ok) return;
     try {
       await apiClient.delete(Endpoints.communities.member(community.id, userId));
       setMembers(prev => prev.filter(m => m.user_id !== userId));
@@ -163,7 +166,8 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   }
 
   async function blockMember(userId: string, name: string) {
-    if (!confirm(`Bloquer ${name} de la communauté ?`)) return;
+    const ok = await confirm({ title: `Bloquer ${name} de la communauté ?`, confirmLabel: 'Bloquer', danger: true });
+    if (!ok) return;
     setBlockLoading(userId);
     try {
       await apiClient.post(Endpoints.communities.block(community.id, userId));
@@ -181,7 +185,8 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
   }
 
   async function deleteCommunity() {
-    if (!confirm('Supprimer définitivement cette communauté ? Action irréversible.')) return;
+    const ok = await confirm({ title: 'Supprimer définitivement cette communauté ?', message: 'Action irréversible.', confirmLabel: 'Supprimer', danger: true });
+    if (!ok) return;
     try { await apiClient.delete(`/api/v1/communities/${community.id}`); onClose(); onSaved(); } catch { toast.error('Erreur'); }
   }
 
@@ -469,6 +474,7 @@ function SettingsPanel({ community, myRole, onClose, onSaved }: {
         </div>
         </div>
       </div>
+      {ConfirmDialog}
     </>
   );
 }
@@ -1083,6 +1089,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
 }) {
   const navigate                       = useNavigate();
   const { user: me }                   = useAuthStore();
+  const { confirm, ConfirmDialog }     = useConfirm();
   const [messages,      setMessages]     = useState<CommunityMessage[]>([]);
   const [input,         setInput]        = useState('');
   const [showSettings,  setShowSettings] = useState(false);
@@ -1226,7 +1233,8 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   }
 
   async function handleDelete(msgId: string) {
-    if (!confirm('Supprimer ce message ?')) return;
+    const ok = await confirm({ title: 'Supprimer ce message ?', confirmLabel: 'Supprimer', danger: true });
+    if (!ok) return;
     try {
       await apiClient.delete(Endpoints.communities.messageById(id, msgId));
       setMessages(prev => prev.filter(m => m.id !== msgId));
@@ -1262,7 +1270,8 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   }
 
   async function handleBlockSender(msg: CommunityMessage) {
-    if (!confirm(`Bloquer ${msg.sender_display_name ?? msg.sender_username} ?`)) return;
+    const ok = await confirm({ title: `Bloquer ${msg.sender_display_name ?? msg.sender_username} ?`, confirmLabel: 'Bloquer', danger: true });
+    if (!ok) return;
     try {
       await apiClient.post(Endpoints.communities.block(id, msg.sender_id));
       toast.success('Utilisateur bloqué');
@@ -1286,7 +1295,8 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   }
 
   async function handleClosePoll(msgId: string) {
-    if (!confirm('Clôturer ce sondage ?')) return;
+    const ok = await confirm({ title: 'Clôturer ce sondage ?', confirmLabel: 'Clôturer' });
+    if (!ok) return;
     try {
       const msg = messages.find(m => m.id === msgId);
       if (!msg?.poll) return;
@@ -1310,7 +1320,8 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   }
 
   async function handleLeave() {
-    if (!confirm('Quitter cette communauté ?')) return;
+    const ok = await confirm({ title: 'Quitter cette communauté ?', confirmLabel: 'Quitter', danger: true });
+    if (!ok) return;
     try { await apiClient.post(Endpoints.communities.leave(id)); onRefresh(); } catch { }
   }
 
@@ -1733,6 +1744,7 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
       {showPollModal && (
         <PollCreateModal onClose={() => setShowPollModal(false)} onCreate={handleCreatePoll} />
       )}
+      {ConfirmDialog}
     </>
   );
 }

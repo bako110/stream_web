@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio, QrCode, Smartphone, Mail } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio, QrCode, Smartphone, Mail, LogIn, X } from 'lucide-react';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
 import { RoundLogo } from '../../components/ui/RoundLogo';
 import { CountryPicker } from '../../components/auth/CountryPicker';
@@ -46,6 +46,7 @@ export default function LoginPage() {
   // une page protégée (ex: /join/{code}) — rend le redirect explicite au lieu
   // de silencieux.
   const redirectMessage = (location.state as { message?: string } | null)?.message;
+  const [showRedirectPopup, setShowRedirectPopup] = useState(!!redirectMessage);
 
   const [method,      setMethod]      = useState<LoginMethod>('email');
   const [identifier,  setIdentifier]  = useState('');
@@ -217,13 +218,6 @@ export default function LoginPage() {
             <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Bon retour</h2>
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte GoFolyX</p>
           </div>
-
-          {redirectMessage && (
-            <div className="mb-5 px-4 py-3 rounded-xl text-sm font-medium"
-              style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid rgba(123,63,242,0.3)', color: '#7B3FF2' }}>
-              {redirectMessage}
-            </div>
-          )}
 
           {/* Google */}
           <button onClick={handleGoogle} disabled={gLoading}
@@ -397,6 +391,41 @@ export default function LoginPage() {
 
         </div>
       </div>
+
+      {/* Popup message de redirection (ex: depuis /join/{code}) — centré, impossible
+          à manquer, contrairement à un bandeau inline qui peut se retrouver hors champ. */}
+      {redirectMessage && showRedirectPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowRedirectPopup(false)}>
+          <div onClick={e => e.stopPropagation()}
+            className="relative w-full max-w-sm rounded-2xl p-6 text-center animate-scale-in"
+            style={{ background: 'var(--surface)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <button onClick={() => setShowRedirectPopup(false)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+              style={{ color: 'var(--text-tertiary)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <X size={18} />
+            </button>
+            <div className="mx-auto mb-4 rounded-full flex items-center justify-center"
+              style={{ width: 56, height: 56, background: 'rgba(123,63,242,0.12)' }}>
+              <LogIn size={26} style={{ color: '#7B3FF2' }} />
+            </div>
+            <h3 className="text-base font-black mb-1.5" style={{ color: 'var(--text-primary)' }}>
+              Connexion requise
+            </h3>
+            <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-secondary)' }}>
+              {redirectMessage}
+            </p>
+            <button onClick={() => setShowRedirectPopup(false)}
+              className="w-full py-3 rounded-xl font-bold text-white text-sm"
+              style={{ background: 'linear-gradient(90deg,#7B3FF2,#5B2EC4)' }}>
+              Compris
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

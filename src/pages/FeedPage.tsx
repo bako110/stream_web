@@ -22,6 +22,7 @@ import type { Sound } from '../types';
 import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
+import { useConfirm } from '../components/ui/Dialog';
 import { ExpandableText } from '../components/ui/ExpandableText';
 import { RichText, renderTextWithLinks } from '../components/ui/RichText';
 import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
@@ -1865,13 +1866,15 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
 }) {
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
+  const { confirm, ConfirmDialog } = useConfirm();
   const authorId   = post.author?.id;
   const isFollowed = authorId ? followedIds.has(authorId) : false;
   const isOwn      = !!me && me.id === post.user_id;
   const body = post.body ?? '';
 
   async function handleDelete() {
-    if (!window.confirm('Supprimer ce post ? Cette action est irréversible.')) return;
+    const ok = await confirm({ title: 'Supprimer ce post ?', message: 'Cette action est irréversible.', confirmLabel: 'Supprimer', danger: true });
+    if (!ok) return;
     try { await apiClient.delete(Endpoints.posts.byId(post.id)); onHide?.(); toast.success('Post supprimé.'); }
     catch { toast.error('Impossible de supprimer ce post.'); }
   }
@@ -1890,6 +1893,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
   }
 
   return (
+    <>
     <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)', animationDelay: `${delay}s` }}>
 
@@ -1957,6 +1961,8 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
         onOpenShare={onOpenShare}
       />
     </div>
+    {ConfirmDialog}
+    </>
   );
 }
 

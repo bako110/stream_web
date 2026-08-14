@@ -5,6 +5,7 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { encodeId } from '../utils/slugId';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
+import { useConfirm } from '../components/ui/Dialog';
 import { extractApiErrorMessage } from '../utils/apiError';
 import toast from 'react-hot-toast';
 
@@ -32,6 +33,7 @@ export default function JoinCommunityPage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
 
+  const { confirm, ConfirmDialog } = useConfirm();
   const [community, setCommunity] = useState<JoinCommunity | null>(null);
   const [loading, setLoading]     = useState(true);
   const [joining, setJoining]     = useState(false);
@@ -72,7 +74,7 @@ export default function JoinCommunityPage() {
     }
   }
 
-  function handleAction() {
+  async function handleAction() {
     if (!community) return;
     if (community.join_status === 'member') {
       navigate(`/communities/${encodeId(community.id)}`);
@@ -80,7 +82,11 @@ export default function JoinCommunityPage() {
     }
     const price = community.entry_price_gogold ?? 0;
     if (price > 0) {
-      const ok = window.confirm(`Cette communauté coûte ${price} GoGold pour rejoindre. Continuer ?`);
+      const ok = await confirm({
+        title: 'Rejoindre cette communauté ?',
+        message: `Cette communauté coûte ${price} GoGold pour rejoindre.`,
+        confirmLabel: 'Continuer',
+      });
       if (!ok) return;
     }
     doJoin();
@@ -117,18 +123,21 @@ export default function JoinCommunityPage() {
     : 'Rejoindre';
 
   return (
+    <>
     <div className="min-h-screen flex flex-col items-center" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-lg" style={{ background: 'var(--surface)', boxShadow: '0 8px 40px rgba(0,0,0,0.08)', minHeight: '100vh' }}>
         {/* Bannière */}
-        <div className="relative" style={{ height: 200, background: '#000' }}>
-          {community.banner_url
-            ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
-            : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
-          }
-          <div className="absolute inset-x-0 bottom-0 h-24" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
+        <div className="relative overflow-hidden" style={{ height: 200, background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+          {community.banner_url && (
+            <img src={community.banner_url} className="absolute inset-0 w-full h-full object-cover" alt="" />
+          )}
+          {/* Voile de marque — homogénéise n'importe quelle image (y compris fonds blancs/logos)
+              et garantit un contraste suffisant pour l'avatar/le bouton fermer par-dessus. */}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg, rgba(123,63,242,0.35), rgba(15,4,32,0.15) 45%, rgba(15,4,32,0.85))' }} />
+          <div className="absolute inset-x-0 bottom-0 h-20" style={{ background: 'linear-gradient(to top, var(--surface), transparent)' }} />
           <button onClick={() => navigate('/communities')}
             className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105"
-            style={{ background: 'rgba(0,0,0,0.5)' }}>
+            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
             <X size={18} color="#fff" />
           </button>
         </div>
@@ -209,5 +218,7 @@ export default function JoinCommunityPage() {
         </div>
       </div>
     </div>
+    {ConfirmDialog}
+    </>
   );
 }

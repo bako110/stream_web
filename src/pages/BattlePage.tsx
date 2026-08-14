@@ -6,6 +6,7 @@ import {
 } from '@livekit/components-react';
 import { Track, VideoPresets } from 'livekit-client';
 import { PageLoader, Spinner } from '../components/ui/Spinner';
+import { useConfirm } from '../components/ui/Dialog';
 import { decodeId } from '../utils/slugId';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -124,6 +125,7 @@ export default function BattlePage() {
   const navigate = useNavigate();
   const { user, accessToken } = useAuthStore();
   const { addListener, removeListener } = useWs();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const [battle, setBattle] = useState<Battle | null>(null);
   const [token, setToken]   = useState<string | null>(null);
@@ -314,9 +316,10 @@ export default function BattlePage() {
     const isLeading = myScore > otherScore;
     const halfGogold = Math.floor(myScore / 2);
     const msg = isLeading && halfGogold > 0
-      ? `Tu es en tête, mais si tu abandonnes maintenant tu perds automatiquement ce match ET tu reverses la moitié de tes GoGold gagnés (${halfGogold} GoGold) à ton adversaire. Continuer ?`
-      : 'Si tu quittes maintenant, tu perds automatiquement ce match. Continuer ?';
-    if (!window.confirm(msg)) return;
+      ? `Tu es en tête, mais si tu abandonnes maintenant tu perds automatiquement ce match ET tu reverses la moitié de tes GoGold gagnés (${halfGogold} GoGold) à ton adversaire.`
+      : 'Si tu quittes maintenant, tu perds automatiquement ce match.';
+    const ok = await confirm({ title: 'Quitter le battle ?', message: msg, confirmLabel: 'Continuer', danger: true });
+    if (!ok) return;
     setLeaving(true);
     try { await battlesApi.end(battleId, true); } catch { /* silencieux */ }
     navigate(-1);
@@ -367,6 +370,7 @@ export default function BattlePage() {
   const topDonor = ranking?.top_donor;
 
   return (
+    <>
     <LiveKitRoom serverUrl={wsUrl} token={token} connect options={BATTLE_ROOM_OPTIONS} className="h-[calc(100vh-57px)]">
       <RoomAudioRenderer />
       <div className="flex flex-col h-full bg-black">
@@ -529,6 +533,8 @@ export default function BattlePage() {
         }
       `}</style>
     </LiveKitRoom>
+    {ConfirmDialog}
+    </>
   );
 }
 
