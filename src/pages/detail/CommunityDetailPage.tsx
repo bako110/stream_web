@@ -826,20 +826,20 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
   function submitEdit() { if (editingText.trim()) { onEdit({ ...msg, content: editingText.trim() }); } setIsEditing(false); }
 
   return (
-    <div className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : ''}`} id={`msg-${msg.id}`}>
+    <div className={`flex gap-2 group min-w-0 ${isMe ? 'flex-row-reverse' : ''}`} id={`msg-${msg.id}`}>
       {!isMe && (
         <button className="mt-1 shrink-0" onClick={() => navigate(`/user/${encodeId(msg.sender_id)}`)}>
           <Avatar src={msg.sender_avatar_url} name={msg.sender_display_name ?? msg.sender_username ?? '?'} size="xs" />
         </button>
       )}
-      <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+      <div className={`max-w-[72%] min-w-0 flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
         {!isMe && (
           <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>
             {msg.sender_display_name ?? msg.sender_username}
           </span>
         )}
-        <div className={`flex items-end gap-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-          <div className="relative">
+        <div className={`flex items-end gap-1 min-w-0 ${isMe ? 'flex-row-reverse' : ''}`}>
+          <div className="relative min-w-0">
             {/* Mode édition */}
             {isEditing ? (
               <div className="flex gap-1.5 items-center">
@@ -1356,28 +1356,28 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
           </div>
         </button>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-hide" style={{ maxWidth: '48vw' }}>
           {canManage && (
-            <button onClick={() => setShowPins(true)} className="p-1.5 rounded-xl transition-all" title="Épinglés"
+            <button onClick={() => setShowPins(true)} className="p-1.5 rounded-xl transition-all shrink-0" title="Épinglés"
               style={{ color: 'var(--text-tertiary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
               <Pin size={18} />
             </button>
           )}
-          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/events`)} className="p-1.5 rounded-xl transition-all" title="Événements"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/events`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Événements"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <Calendar size={18} />
           </button>
-          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/channels`)} className="p-1.5 rounded-xl transition-all" title="Canaux"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/channels`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Canaux"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <Hash size={18} />
           </button>
-          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/leaderboard`)} className="p-1.5 rounded-xl transition-all" title="Classement"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/leaderboard`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Classement"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -1385,25 +1385,25 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
           </button>
           {canManage && (
             <>
-              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/stats`)} className="p-1.5 rounded-xl transition-all" title="Statistiques"
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/stats`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Statistiques"
                 style={{ color: 'var(--text-tertiary)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <BarChart2 size={18} />
               </button>
-              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/treasury`)} className="p-1.5 rounded-xl transition-all" title="Trésorerie"
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/treasury`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Trésorerie"
                 style={{ color: 'var(--text-tertiary)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <Briefcase size={18} />
               </button>
-              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/invite`)} className="p-1.5 rounded-xl transition-all" title="Inviter"
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/invite`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Inviter"
                 style={{ color: 'var(--text-tertiary)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <Link size={18} />
               </button>
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button onClick={() => navigate(`/communities/${encodeId(community.id)}/join-requests`)} className="p-1.5 rounded-xl transition-all" title="Demandes"
                   style={{ color: 'var(--text-tertiary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
@@ -1417,20 +1417,20 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               </div>
             </>
           )}
-          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/members`)} className="p-1.5 rounded-xl transition-all" title="Membres"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/members`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Membres"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <Users size={18} />
           </button>
-          <button onClick={() => setShowInfo(v => !v)} className="p-1.5 rounded-xl transition-all"
+          <button onClick={() => setShowInfo(v => !v)} className="p-1.5 rounded-xl transition-all shrink-0"
             style={{ color: showInfo ? 'var(--primary)' : 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             <Info size={18} />
           </button>
           {canManage && (
-            <button onClick={() => setShowSettings(true)} className="p-1.5 rounded-xl transition-all"
+            <button onClick={() => setShowSettings(true)} className="p-1.5 rounded-xl transition-all shrink-0"
               style={{ color: 'var(--text-tertiary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>

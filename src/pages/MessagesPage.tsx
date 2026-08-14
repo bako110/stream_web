@@ -341,21 +341,21 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
   );
 
   return (
-    <div className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex gap-2 group min-w-0 ${isMe ? 'flex-row-reverse' : ''}`}>
       {!isMe && (
         <button className="mt-1 shrink-0" onClick={() => navigate(`/user/${encodeId(msg.sender_id)}`)}>
           <Avatar src={senderAvatar} name={senderName} size="xs" />
         </button>
       )}
-      <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+      <div className={`max-w-[72%] min-w-0 flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
         {/* Nom de l'expéditeur pour les messages reçus */}
         {!isMe && senderName && (
           <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>
             {senderName}
           </span>
         )}
-        <div className={`flex items-end gap-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-          <div className="relative">
+        <div className={`flex items-end gap-1 min-w-0 ${isMe ? 'flex-row-reverse' : ''}`}>
+          <div className="relative min-w-0">
             {/* Bulle */}
             <div className={`rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
               style={isMe

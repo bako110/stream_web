@@ -384,3 +384,18 @@
     font-weight: 500;
   }
 }
+
+/* Masque la scrollbar visuelle sur un conteneur scrollable (le scroll reste
+   fonctionnel) — classe deja referencee a 7 endroits du code (tabs, listes
+   horizontales) mais jamais definie nulle part, donc sans effet reel. */
+@layer utilities {
+  .scrollbar-hide,
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar,
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
