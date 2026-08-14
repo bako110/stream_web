@@ -43,7 +43,7 @@ function AccountsSection() {
     const wasActive = account.is_active;
     const newActive = await accountsService.removeAccount(account.user_id);
     if (wasActive) {
-      if (newActive === null) window.location.href = '/login';
+      if (newActive === null) window.location.href = '/auth/login';
       else window.location.reload();
       return;
     }
@@ -89,7 +89,7 @@ function AccountsSection() {
           </div>
         );
       })}
-      <button onClick={() => navigate('/login?mode=add')} disabled={!canAdd}
+      <button onClick={() => navigate('/auth/login?mode=add')} disabled={!canAdd}
         className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-semibold transition-colors disabled:opacity-40"
         style={{ borderTop: '1px solid var(--border)', color: 'var(--primary)' }}
         onMouseEnter={e => { if (canAdd) (e.currentTarget.style.background = 'var(--bg-secondary)'); }}

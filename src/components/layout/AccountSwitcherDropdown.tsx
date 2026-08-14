@@ -102,7 +102,7 @@ export function AccountSwitcherDropdown() {
             Voir mon profil
           </button>
           <button
-            onClick={() => { setOpen(false); navigate('/login?mode=add'); }}
+            onClick={() => { setOpen(false); navigate('/auth/login?mode=add'); }}
             disabled={!canAdd}
             className="w-full flex items-center gap-2.5 px-3.5 py-3 text-sm font-semibold transition-colors disabled:opacity-40"
             style={{ color: 'var(--primary)' }}
