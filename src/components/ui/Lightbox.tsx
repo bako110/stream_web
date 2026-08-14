@@ -19,10 +19,24 @@ function filenameFromUrl(url: string): string {
   return `image-${Date.now()}.jpg`;
 }
 
-async function downloadImage(url: string) {
+// fetch() est soumis a CORS (contrairement a <img> qui l'ignore pour un
+// simple affichage) -- si le CDN qui sert l'image n'a pas de politique CORS
+// autorisant l'origine du site, le fetch echoue avant meme d'atteindre le
+// clipboard/telechargement. On distingue ce cas pour donner un message
+// utile plutot qu'un "impossible" generique qui ne dit rien du probleme reel.
+async function fetchImageBlob(url: string): Promise<Blob> {
   try {
     const res = await fetch(url);
-    const blob = await res.blob();
+    if (!res.ok) throw new Error(`http_${res.status}`);
+    return await res.blob();
+  } catch (e) {
+    throw new Error('cors_or_network');
+  }
+}
+
+async function downloadImage(url: string) {
+  try {
+    const blob = await fetchImageBlob(url);
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objectUrl;
@@ -32,23 +46,33 @@ async function downloadImage(url: string) {
     a.remove();
     URL.revokeObjectURL(objectUrl);
   } catch {
-    toast.error('Téléchargement impossible.');
+    // Repli : ouvrir l'image dans un nouvel onglet — l'utilisateur peut
+    // toujours faire "Enregistrer sous" manuellement meme si le CDN bloque
+    // le fetch() cross-origin necessaire pour un telechargement direct.
+    window.open(url, '_blank', 'noopener,noreferrer');
+    toast.error('Téléchargement direct indisponible — image ouverte dans un nouvel onglet, clic droit → Enregistrer sous.');
   }
 }
 
 async function copyImage(url: string): Promise<boolean> {
   try {
-    if (!navigator.clipboard || !window.ClipboardItem) throw new Error('unsupported');
-    const res = await fetch(url);
-    const blob = await res.blob();
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      toast.error('Copie non supportée par ce navigateur.');
+      return false;
+    }
+    const blob = await fetchImageBlob(url);
     // Clipboard API n'accepte que quelques types image (png/jpeg/webp selon
     // navigateur) — reconvertir en PNG via canvas si le blob source est dans
     // un format non supporte (ex: certains CDN servent du webp).
     const pngBlob = blob.type === 'image/png' ? blob : await toPng(blob);
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
     return true;
-  } catch {
-    toast.error('Copie impossible sur ce navigateur.');
+  } catch (e: any) {
+    if (e?.message === 'cors_or_network') {
+      toast.error("Copie impossible : le serveur d'images bloque cette action (CORS).");
+    } else {
+      toast.error('Copie impossible sur ce navigateur.');
+    }
     return false;
   }
 }
