@@ -13,6 +13,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
+import { ShareModal } from '../../components/ui/ShareModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -269,6 +270,7 @@ export default function PostDetailPage() {
   const [likes,           setLikes]           = useState(0);
   const [favId,           setFavId]           = useState<string | null>(null);
   const [savingFav,       setSavingFav]       = useState(false);
+  const [showShare,       setShowShare]       = useState(false);
   const [comments,        setComments]        = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [input,           setInput]           = useState('');
@@ -577,7 +579,8 @@ export default function PostDetailPage() {
                   {comments.length > 0 && <span>{comments.length}</span>}
                 </button>
                 {/* Partager */}
-                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                <button onClick={() => setShowShare(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                   style={{ color: 'var(--text-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -898,6 +901,19 @@ export default function PostDetailPage() {
         contentId={post.id}
         initialStatus={post.ai_analysis_status}
       />
+
+      {showShare && (
+        <ShareModal
+          open
+          onClose={() => setShowShare(false)}
+          url={`${window.location.origin}/posts/${encodeId(post.id)}`}
+          title={author?.display_name ?? author?.username ?? 'GoFolyX'}
+          desc={post.body ?? undefined}
+          image={post.image_url ?? post.image_urls?.[0]}
+          targetType="post"
+          targetId={post.id}
+        />
+      )}
     </div>
   );
 }
