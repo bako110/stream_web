@@ -349,7 +349,10 @@ export const Endpoints = {
   favorites: {
     list:   (type: string) => `${V1}/favorites?type=${type}`,
     add:    `${V1}/favorites`,
-    remove: (id: string) => `${V1}/favorites/${id}`,
+    // Backend identifie un favori par (target_type, target_id), pas par
+    // l'id de la ligne UserFavorite — cf. routers/favorites.py DELETE
+    // "/{target_type}/{target_id}".
+    remove: (targetType: string, targetId: string) => `${V1}/favorites/${targetType}/${targetId}`,
   },
   reports: {
     create: `${V1}/reports`,

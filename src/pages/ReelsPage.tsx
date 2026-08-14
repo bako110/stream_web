@@ -1112,10 +1112,16 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
     setSavingFav(true);
     try {
       if (favId) {
-        await apiClient.delete(Endpoints.favorites.remove(favId));
+        await apiClient.delete(Endpoints.favorites.remove('reel', reel.id));
         setFavId(null);
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { target_type: 'reel', target_id: reel.id });
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, {
+          target_type: 'reel',
+          target_id: reel.id,
+          target_title: reel.author?.display_name ?? reel.author?.username ?? undefined,
+          target_subtitle: reel.caption ?? undefined,
+          target_thumbnail: reel.thumbnail_url ?? undefined,
+        });
         setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
       }
     } catch { /* ignore */ }

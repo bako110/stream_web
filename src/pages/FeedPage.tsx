@@ -1273,10 +1273,16 @@ function ActionBar({
     setSavingFav(true);
     try {
       if (favId) {
-        await apiClient.delete(Endpoints.favorites.remove(favId));
+        await apiClient.delete(Endpoints.favorites.remove(kind, id));
         setFavId(null);
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { target_type: kind, target_id: id });
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, {
+          target_type: kind,
+          target_id: id,
+          target_title: titleForShare,
+          target_subtitle: descForShare,
+          target_thumbnail: imageForShare,
+        });
         setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
       }
     } catch {

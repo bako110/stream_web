@@ -350,10 +350,16 @@ export default function PostDetailPage() {
     setSavingFav(true);
     try {
       if (favId) {
-        await apiClient.delete(Endpoints.favorites.remove(favId));
+        await apiClient.delete(Endpoints.favorites.remove('post', post.id));
         setFavId(null);
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { target_type: 'post', target_id: post.id });
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, {
+          target_type: 'post',
+          target_id: post.id,
+          target_title: author?.display_name ?? author?.username ?? undefined,
+          target_subtitle: post.body ?? undefined,
+          target_thumbnail: post.image_url ?? post.image_urls?.[0] ?? undefined,
+        });
         setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
       }
     } catch {}

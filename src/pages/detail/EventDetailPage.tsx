@@ -457,10 +457,16 @@ export default function EventDetailPage() {
     setSavingFav(true);
     try {
       if (favId) {
-        await apiClient.delete(Endpoints.favorites.remove(favId));
+        await apiClient.delete(Endpoints.favorites.remove('event', event.id));
         setFavId(null);
       } else {
-        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, { target_type: 'event', target_id: event.id });
+        const res = await apiClient.post<{ id: string }>(Endpoints.favorites.add, {
+          target_type: 'event',
+          target_id: event.id,
+          target_title: event.title,
+          target_subtitle: event.venue_city || event.description || undefined,
+          target_thumbnail: event.thumbnail_url ?? event.banner_url ?? undefined,
+        });
         setFavId((res.data as any)?.id ?? (res.data as any)?.favorite?.id ?? null);
       }
     } catch {}
