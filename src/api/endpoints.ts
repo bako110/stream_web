@@ -358,6 +358,10 @@ export const Endpoints = {
     create: `${V1}/reports`,
     me:     `${V1}/reports/me`,
   },
+  feedback: {
+    create: `${V1}/feedback`,
+    mine:   `${V1}/feedback/me`,
+  },
   planning: {
     feed:    `${V1}/planning`,
     entries: `${V1}/planning/entries`,

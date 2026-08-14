@@ -4,7 +4,7 @@ import {
   Radio, Users, MessageCircle, Bell, Activity, UserPlus,
   Music2, Calendar, CalendarDays, Heart, Clock,
   Wallet, TrendingUp, HelpCircle, Settings, LogOut,
-  Sun, Moon, Download, BarChart2, ShieldCheck,
+  Sun, Moon, Download, BarChart2, ShieldCheck, Edit3,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -153,6 +153,7 @@ export function MoreMenuContent({ onNavigate }: Props) {
         <div className="space-y-0.5">
           <MoreRow to="/settings" label="Paramètres" desc="Compte, confidentialité et sécurité" icon={Settings} color="#7B3FF2" onNavigate={onNavigate} />
           <MoreRow to="/support" label="Aide & Support" desc="Contacte-nous ou consulte la FAQ" icon={HelpCircle} color="#06B6D4" onNavigate={onNavigate} />
+          <MoreRow to="/feedback" label="Donner mon avis" desc="Signaler un bug ou proposer une idée" icon={Edit3} color="#7B3FF2" onNavigate={onNavigate} />
           <MoreRow
             label={isDark ? 'Mode clair' : 'Mode sombre'}
             desc={isDark ? 'Passer à un affichage clair' : 'Passer à un affichage sombre'}

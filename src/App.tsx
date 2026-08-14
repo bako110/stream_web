@@ -112,6 +112,7 @@ const StoryEditorPage    = lazyWithRetry(() => import('./pages/StoryEditorPage')
 const MyStoriesPage      = lazyWithRetry(() => import('./pages/MyStoriesPage'));
 const PlanningPage       = lazyWithRetry(() => import('./pages/PlanningPage'));
 const SupportPage        = lazyWithRetry(() => import('./pages/SupportPage'));
+const FeedbackPage       = lazyWithRetry(() => import('./pages/FeedbackPage'));
 const CommunityChannelsPage      = lazyWithRetry(() => import('./pages/community/CommunityChannelsPage'));
 const CommunityLeaderboardPage   = lazyWithRetry(() => import('./pages/community/CommunityLeaderboardPage'));
 const CommunityJoinRequestsPage  = lazyWithRetry(() => import('./pages/community/CommunityJoinRequestsPage'));
@@ -311,6 +312,7 @@ function AppShell() {
             <Route path="/communities/:id/members"                element={<CommunityMembersPage />} />
             <Route path="/communities/:id/invite"                 element={<CommunityInvitePage />} />
             <Route path="/support"                                element={<SupportPage />} />
+            <Route path="/feedback"                               element={<FeedbackPage />} />
           </Route>
         </Route>
 
