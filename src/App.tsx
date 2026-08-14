@@ -142,6 +142,7 @@ const ConcertDetailPage   = lazyWithRetry(() => import('./pages/detail/ConcertDe
 const EventDetailPage     = lazyWithRetry(() => import('./pages/detail/EventDetailPage'));
 const PostDetailPage      = lazyWithRetry(() => import('./pages/detail/PostDetailPage'));
 const CommunityDetailPage = lazyWithRetry(() => import('./pages/detail/CommunityDetailPage'));
+const JoinCommunityPage   = lazyWithRetry(() => import('./pages/JoinCommunityPage'));
 
 function GlobalLoader() { return <PageLoader />; }
 
@@ -242,6 +243,7 @@ function AppShell() {
             <Route path="/messages/:userId"  element={<MessagesPage />} />
             <Route path="/communities"       element={<CommunitiesPage />} />
             <Route path="/communities/:id"   element={<CommunityDetailPage />} />
+            <Route path="/join/:code"        element={<JoinCommunityPage />} />
             <Route path="/notifications"     element={<NotificationsPage />} />
             <Route path="/more"              element={<MorePage />} />
             <Route path="/profile"           element={<ProfilePage />} />

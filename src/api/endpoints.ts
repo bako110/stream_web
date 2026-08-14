@@ -155,6 +155,8 @@ export const Endpoints = {
     byId:     (id: string) => `${V1}/communities/${id}`,
     join:     (id: string) => `${V1}/communities/${id}/join`,
     leave:    (id: string) => `${V1}/communities/${id}/leave`,
+    // Lien d'invitation /join/{code} — distinct de join(id) ci-dessus
+    joinByCode: (code: string) => `${V1}/communities/join/${code}`,
     role:     (id: string) => `${V1}/communities/${id}/role`,
     // Messages
     messages:      (id: string)                    => `${V1}/communities/${id}/messages`,

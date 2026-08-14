@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { Spinner } from '../ui/Spinner';
 
@@ -6,6 +6,7 @@ import { Spinner } from '../ui/Spinner';
 // We also wait during an in-flight token refresh to avoid a premature redirect.
 export function ProtectedRoute() {
   const { isAuthenticated, accessToken, isRefreshing } = useAuthStore();
+  const location = useLocation();
 
   if (isRefreshing) {
     return (
@@ -16,7 +17,11 @@ export function ProtectedRoute() {
   }
 
   if (!isAuthenticated || !accessToken) {
-    return <Navigate to="/" replace />;
+    // Conserve la destination (ex: /join/{code} depuis un lien d'invitation
+    // partagé) pour y revenir automatiquement après connexion — LoginPage lit
+    // deja ce parametre via getSafeRedirect(searchParams.get('redirect')).
+    const redirect = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/auth/login?redirect=${redirect}`} replace />;
   }
 
   return <Outlet />;
