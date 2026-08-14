@@ -61,8 +61,13 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
         const list: any[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? raw?.comments ?? [];
         setComments(list);
         const counts: Record<string, number> = {};
-        list.forEach(c => { counts[c.id] = c.likes_count ?? 0; });
+        const likedMap: Record<string, boolean> = {};
+        list.forEach(c => {
+          counts[c.id] = c.likes_count ?? c.like_count ?? 0;
+          if (c.user_reaction === 'like') likedMap[c.id] = true;
+        });
         setLikeCounts(counts);
+        setLiked(likedMap);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -90,8 +95,13 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
   }
 
   function toggleLike(id: string) {
-    setLiked(prev => ({ ...prev, [id]: !prev[id] }));
-    setLikeCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) + (liked[id] ? -1 : 1) }));
+    const wasLiked = !!liked[id];
+    setLiked(prev => ({ ...prev, [id]: !wasLiked }));
+    setLikeCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) + (wasLiked ? -1 : 1) }));
+    apiClient.post(Endpoints.social.toggleReaction, { comment_id: id, reaction_type: 'like' }).catch(() => {
+      setLiked(prev => ({ ...prev, [id]: wasLiked }));
+      setLikeCounts(prev => ({ ...prev, [id]: (prev[id] ?? 0) + (wasLiked ? 1 : -1) }));
+    });
   }
 
   async function deleteComment(id: string) {
