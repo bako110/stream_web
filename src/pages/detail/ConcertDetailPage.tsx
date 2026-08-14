@@ -501,6 +501,12 @@ export default function ConcertDetailPage() {
                   style={{ background: '#10B981' }}>
                   <Ticket size={15} /> Réserver ma place
                 </button>
+              ) : c.access_type === 'subscription' ? (
+                <button onClick={() => navigate('/wallet/subscription/plans')}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
+                  style={{ background: activeTierColor }}>
+                  <Ticket size={15} /> Voir les abonnements
+                </button>
               ) : (
                 <p className="text-center text-sm py-3 mb-3" style={{ color: 'var(--text-secondary)' }}>
                   Le concert n'a pas encore commencé.

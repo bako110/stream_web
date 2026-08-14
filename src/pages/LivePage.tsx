@@ -306,6 +306,12 @@ export default function LivePage() {
     : null;
 
   const needsTicket = concert.access_type === 'ticket' && !token && !isArtist;
+  // Meme principe que needsTicket : le backend renvoie 402 si l'abonnement
+  // n'est pas actif (streaming.py::get_viewer_token), mais fetchViewerToken()
+  // avalait l'erreur silencieusement -- l'utilisateur se retrouvait devant un
+  // spinner infini (aucune des conditions du switch ci-dessous ne matchait),
+  // sans jamais savoir qu'un abonnement etait requis.
+  const needsSubscription = concert.access_type === 'subscription' && !token && !isArtist;
 
   // URL LiveKit WebSocket
   const livekitUrl = status?.livekit_url ?? token?.livekit_url ?? '';
@@ -389,6 +395,24 @@ export default function LivePage() {
                 style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 20px rgba(123,63,242,0.4)' }}>
                 {buying ? <Spinner size="sm" /> : <Ticket size={16} />}
                 {buying ? 'Traitement...' : `Adhérer — ${concert.ticket_price != null ? concert.ticket_price.toLocaleString() + ' FCFA' : 'Gratuit'}`}
+              </button>
+            </div>
+
+          ) : needsSubscription ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-4 z-10">
+              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                <Lock size={28} />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-lg">Abonnement requis</p>
+                <p className="text-sm text-white/60 mt-1">
+                  Un abonnement actif est nécessaire pour accéder à ce live.
+                </p>
+              </div>
+              <button onClick={() => navigate('/wallet/subscription/plans')}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 20px rgba(123,63,242,0.4)' }}>
+                <Ticket size={16} /> Voir les abonnements
               </button>
             </div>
 
