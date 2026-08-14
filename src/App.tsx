@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 
 import { AppLayout }       from './components/layout/AppLayout';
 import { ExploreLayout }   from './components/layout/ExploreLayout';
@@ -8,6 +8,7 @@ import { ProtectedRoute }  from './components/layout/ProtectedRoute';
 import { PublicOnlyRoute } from './components/layout/PublicOnlyRoute';
 import { MobileGate }      from './components/layout/MobileGate';
 import { bootstrapAuth, useAuthStore } from './store/authStore';
+import { accountsService } from './services/accountsService';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { PageLoader } from './components/ui/Spinner';
 import { lazyWithRetry } from './utils/lazyWithRetry';
@@ -159,7 +160,13 @@ bootstrapAuth();
 
 // ── Shell principal ───────────────────────────────────────────────────────────
 function AppShell() {
-  const { isInitializing } = useAuthStore();
+  const { isInitializing, user } = useAuthStore();
+
+  // Multi-compte (parité mobile) — reconstruit un slot unique depuis la
+  // session active si la liste de comptes n'existe pas encore.
+  useEffect(() => {
+    if (user) accountsService.migrateIfNeeded();
+  }, [user]);
 
   // Bloquer tout rendu de route tant que l'état auth n'est pas résolu
   if (isInitializing) return <GlobalLoader />;

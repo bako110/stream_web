@@ -2,13 +2,113 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   ArrowLeft, Lock, Eye, EyeOff, Shield, AlertTriangle,
-  User, Edit2, ChevronRight, CheckCircle,
+  User, Edit2, ChevronRight, CheckCircle, PlusCircle, XCircle, CheckCircle2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import { accountsService, MAX_ACCOUNTS } from '../../services/accountsService';
+import type { StoredAccount } from '../../services/accountsService';
+import { AddAccountModal } from '../../components/auth/AddAccountModal';
+import { useConfirm } from '../../components/ui/Dialog';
+
+// ── Section multi-compte — parite avec SettingsCompteScreen.tsx (mobile) ──────
+function AccountsSection() {
+  const [accounts, setAccounts] = useState<StoredAccount[]>(() => accountsService.listAccounts());
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
+  const canAdd = accounts.length < MAX_ACCOUNTS;
+
+  async function handleSwitch(account: StoredAccount) {
+    if (account.is_active || switchingId) return;
+    setSwitchingId(account.user_id);
+    try {
+      await accountsService.switchAccount(account.user_id);
+      window.location.reload();
+    } catch {
+      setSwitchingId(null);
+    }
+  }
+
+  async function handleRemove(account: StoredAccount) {
+    const ok = await confirm({
+      title: 'Retirer ce compte ?',
+      message: `Tu pourras ajouter à nouveau "${account.display_name || account.username}" plus tard.`,
+      confirmLabel: 'Retirer',
+      danger: true,
+    });
+    if (!ok) return;
+    const wasActive = account.is_active;
+    const newActive = await accountsService.removeAccount(account.user_id);
+    if (wasActive) {
+      if (newActive === null) window.location.href = '/login';
+      else window.location.reload();
+      return;
+    }
+    setAccounts(accountsService.listAccounts());
+  }
+
+  if (accounts.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <p className="px-4 pt-3.5 pb-2 text-xs font-black tracking-widest" style={{ color: 'var(--text-tertiary)' }}>COMPTES</p>
+      {accounts.map((account, i) => {
+        const isSwitching = switchingId === account.user_id;
+        const initial = (account.display_name || account.username || '?')[0]?.toUpperCase() ?? '?';
+        return (
+          <div key={account.user_id}
+            className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-all"
+            style={{ borderTop: '1px solid var(--border)', opacity: account.is_active ? 1 : 0.9 }}
+            onClick={() => handleSwitch(account)}
+            onMouseEnter={e => { if (!account.is_active) (e.currentTarget.style.background = 'var(--bg-secondary)'); }}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+              style={account.is_active ? { border: '2px solid var(--primary)' } : {}}>
+              {account.avatar_url
+                ? <img src={account.avatar_url} className="w-full h-full object-cover" alt="" />
+                : <div className="w-full h-full flex items-center justify-center font-black" style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>{initial}</div>
+              }
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{account.display_name || account.username}</p>
+              <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>@{account.username}</p>
+            </div>
+            {isSwitching ? (
+              <Spinner size="sm" />
+            ) : account.is_active ? (
+              <CheckCircle2 size={20} style={{ color: 'var(--primary)' }} />
+            ) : (
+              <button onClick={e => { e.stopPropagation(); handleRemove(account); }}
+                className="p-1" style={{ color: 'var(--text-tertiary)' }} title="Retirer ce compte">
+                <XCircle size={18} />
+              </button>
+            )}
+          </div>
+        );
+      })}
+      <button onClick={() => setShowAdd(true)} disabled={!canAdd}
+        className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-semibold transition-colors disabled:opacity-40"
+        style={{ borderTop: '1px solid var(--border)', color: 'var(--primary)' }}
+        onMouseEnter={e => { if (canAdd) (e.currentTarget.style.background = 'var(--bg-secondary)'); }}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+        <PlusCircle size={16} />
+        {canAdd ? 'Ajouter un compte' : `Maximum ${MAX_ACCOUNTS} comptes atteint`}
+      </button>
+
+      {showAdd && (
+        <AddAccountModal
+          onClose={() => setShowAdd(false)}
+          onAdded={() => window.location.reload()}
+        />
+      )}
+      {ConfirmDialog}
+    </div>
+  );
+}
 
 export default function SettingsAccountPage() {
   const navigate = useNavigate();
@@ -53,6 +153,9 @@ export default function SettingsAccountPage() {
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Profil, sécurité et confidentialité</p>
         </div>
       </div>
+
+      {/* Multi-compte */}
+      <AccountsSection />
 
       {/* Navigation links */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>

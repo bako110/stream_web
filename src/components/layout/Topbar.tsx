@@ -6,6 +6,7 @@ import { RoundLogo } from '../ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
 import { useWs } from '../../context/WebSocketContext';
 import { MessagesPopover } from './MessagesPopover';
+import { AccountSwitcherDropdown } from './AccountSwitcherDropdown';
 
 interface Props { onMenuClick: () => void; }
 
@@ -146,20 +147,8 @@ export function Topbar({ onMenuClick }: Props) {
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
         </button>
 
-        {/* Avatar — desktop */}
-        {user && (
-          <button
-            onClick={() => navigate('/profile')}
-            className="hidden lg:flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl transition-all shrink-0"
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-          >
-            <Avatar src={user.avatar_url} name={user.display_name ?? user.username} size="sm" verified={user.is_verified} />
-            <span className="text-sm font-medium truncate max-w-[110px]" style={{ color: 'var(--text-primary)' }}>
-              {user.display_name ?? user.username ?? user.first_name}
-            </span>
-          </button>
-        )}
+        {/* Avatar — desktop (flèche → bascule rapide entre comptes) */}
+        <AccountSwitcherDropdown />
 
         {/* Avatar — mobile only (tap → profile) */}
         {user && (
