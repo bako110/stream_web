@@ -723,31 +723,6 @@ function StoriesBar() {
   const otherGroups = groups.filter(g => g.user.id !== user?.id);
   const allGroups   = myGroup ? [myGroup, ...otherGroups] : groups;
 
-  if (!loading && allGroups.length === 0) {
-    return (
-      <>
-        <div className="rounded-2xl overflow-hidden animate-reveal-up"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <div className="flex gap-3 px-3 py-3">
-            <button onClick={() => navigate('/stories/create')}
-              className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 58 }}>
-              <div className="relative">
-                <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
-                <div className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
-                  style={{ background: 'var(--primary)', width: 18, height: 18, border: '2px solid var(--surface)' }}>
-                  <Plus size={9} className="text-white" />
-                </div>
-              </div>
-              <span className="text-[10px] font-semibold text-center w-full truncate" style={{ color: 'var(--text-secondary)' }}>
-                Ajouter
-              </span>
-            </button>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <div className="rounded-2xl overflow-hidden animate-reveal-up"

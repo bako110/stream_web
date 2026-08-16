@@ -154,9 +154,11 @@ function SupportChat({ onClose }: { onClose: () => void }) {
     } finally { setCreating(false); }
   }
 
+  const isClosed = ticket?.status === 'closed';
+
   // Envoyer un message sur le ticket existant
   async function sendMessage() {
-    if (!input.trim() || sending) return;
+    if (!input.trim() || sending || isClosed) return;
     const body = input.trim();
     setInput('');
 
@@ -178,11 +180,23 @@ function SupportChat({ onClose }: { onClose: () => void }) {
     try {
       await apiClient.post(`/api/v1/support/tickets/${ticket.id}/messages`, { body });
       // Le polling va synchroniser les vrais messages
-    } catch {
-      toast.error('Erreur lors de l\'envoi');
+    } catch (err: any) {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       setInput(body);
+      if (err?.status === 409) {
+        toast.error('Ce ticket est fermé — ouvrez une nouvelle demande.');
+        setTicket(t => t ? { ...t, status: 'closed' } : t);
+      } else {
+        toast.error('Erreur lors de l\'envoi');
+      }
     } finally { setSending(false); }
+  }
+
+  // Repart sur une conversation fraîche (le ticket fermé reste consultable en historique)
+  function startNewTicket() {
+    setTicket(null);
+    setMessages([]);
+    setInput('');
   }
 
   return (
@@ -264,23 +278,35 @@ function SupportChat({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      {/* Input */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2"
-        style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
-        <input
-          className="input flex-1 text-sm rounded-full px-4 py-2.5"
-          placeholder="Décrivez votre problème…"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          disabled={sending || creating}
-        />
-        <button onClick={sendMessage} disabled={!input.trim() || sending || creating}
-          className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-40 shrink-0 transition-all"
-          style={{ background: input.trim() ? 'var(--primary)' : 'var(--bg-secondary)' }}>
-          {(sending || creating) ? <Spinner size="sm" /> : <Send size={16} style={{ color: input.trim() ? '#fff' : 'var(--text-tertiary)' }} />}
-        </button>
-      </div>
+      {/* Ticket fermé — conversation en lecture seule, il faut en ouvrir une nouvelle */}
+      {isClosed ? (
+        <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3"
+          style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Ce ticket est fermé.</p>
+          <button onClick={startNewTicket}
+            className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0"
+            style={{ background: 'rgba(123,63,242,0.12)', color: 'var(--primary)' }}>
+            Nouvelle demande
+          </button>
+        </div>
+      ) : (
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2"
+          style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+          <input
+            className="input flex-1 text-sm rounded-full px-4 py-2.5"
+            placeholder="Décrivez votre problème…"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            disabled={sending || creating}
+          />
+          <button onClick={sendMessage} disabled={!input.trim() || sending || creating}
+            className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-40 shrink-0 transition-all"
+            style={{ background: input.trim() ? 'var(--primary)' : 'var(--bg-secondary)' }}>
+            {(sending || creating) ? <Spinner size="sm" /> : <Send size={16} style={{ color: input.trim() ? '#fff' : 'var(--text-tertiary)' }} />}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
