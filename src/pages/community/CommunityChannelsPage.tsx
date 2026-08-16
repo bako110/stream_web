@@ -137,17 +137,24 @@ function ChannelChat({ communityId, channel, myRole, onBack, onChannelUpdated }:
       .then(r => setMessages(Array.isArray(r.data) ? r.data : r.data?.items ?? r.data?.data ?? []))
       .catch(() => {});
 
+    // Pas de WS dédié par canal côté backend — les messages de canal sont
+    // diffusés sur le WS de communauté (communities.py::send_channel_message,
+    // community_manager.broadcast) avec channel_id dans le payload, même
+    // pattern que CommunityDetailPage.tsx (chat général). Filtrer ici plutôt
+    // que de se connecter à .../channels/{id}/ws, qui n'a jamais existé côté
+    // serveur (403 systématique, signalé en prod).
     const token = useAuthStore.getState().accessToken ?? '';
     const ws = openAuthenticatedWs(
-      `${WS_BASE_URL}/api/v1/communities/${communityId}/channels/${channel.id}/ws`, token
+      `${WS_BASE_URL}/api/v1/communities/${communityId}/ws`, token
     );
     wsRef.current = ws;
     ws.onmessage = e => {
       try {
         const data = JSON.parse(e.data);
-        if (data.type === 'channel_message' || data.type === 'channel_message_sent') {
+        if (data.channel_id !== channel.id) return;
+        if (data.type === 'community_message' || data.type === 'community_message_sent') {
           setMessages(prev => [...prev.slice(-99), data]);
-        } else if (data.type === 'channel_message_deleted') {
+        } else if (data.type === 'community_message_deleted') {
           setMessages(prev => prev.filter(m => m.id !== data.id));
         }
       } catch { }
