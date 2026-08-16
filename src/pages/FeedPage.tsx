@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTabReselect } from '../utils/tabReselect';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 import { encodeId } from '../utils/slugId';
@@ -2999,6 +3000,13 @@ export default function FeedPage() {
 
   // Reload when tab changes
   useEffect(() => { loadFeed(tab); }, [tab]);
+
+  // Retap sur l'onglet "Accueil" déjà actif (Sidebar/BottomNav) — scroll en
+  // haut + recharge le fil, cf. utils/tabReselect.ts.
+  useTabReselect('/feed', useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    loadFeed(tab);
+  }, [tab]));
 
   // Infinite scroll — sentinel observé en bas de liste
   useEffect(() => {

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { Home, Play, Film, Radio, Video, ChevronLeft, Zap, Award, MoreHorizontal, X } from 'lucide-react';
 import { RoundLogo } from '../ui/RoundLogo';
 import { MoreMenuContent } from './MoreMenuContent';
+import { emitTabReselect } from '../../utils/tabReselect';
 
 // Section principale — toujours visible dans la nav
 const MAIN_SECTION = {
@@ -24,12 +25,25 @@ interface Props { collapsed?: boolean; onClose?: () => void; onCollapseToggle?: 
 
 export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
   const [showMore, setShowMore] = useState(false);
+  const { pathname } = useLocation();
 
   // Helper — un lien de nav réutilisable
   function NavItem({ to, label, desc, icon: Icon, color, end }: { to: string; label: string; desc?: string; icon: any; color: string; end?: boolean }) {
+    const isOnThisTab = end ? pathname === to : pathname.startsWith(to);
     return (
       <NavLink
-        to={to} end={end} onClick={onClose}
+        to={to} end={end}
+        onClick={e => {
+          // Retap sur l'onglet déjà actif — équivalent web du popToTabRoot mobile
+          // (cf. utils/tabReselect.ts) : pas de nouvelle entrée d'historique, on
+          // notifie la page pour qu'elle scrolle en haut + se rafraîchisse.
+          if (isOnThisTab) {
+            e.preventDefault();
+            emitTabReselect(to);
+            return;
+          }
+          onClose?.();
+        }}
         title={collapsed ? label : undefined}
         className={({ isActive }) => clsx(
           'flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-150 cursor-pointer group relative',

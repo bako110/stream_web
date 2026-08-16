@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Play, Film, MessageCircle } from 'lucide-react';
+import { emitTabReselect } from '../../utils/tabReselect';
 
 const tabs = [
   { to: '/feed',     icon: Home,          label: 'Accueil'  },
@@ -9,6 +10,8 @@ const tabs = [
 ];
 
 export function BottomNav() {
+  const { pathname } = useLocation();
+
   return (
     <nav
       className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-around px-2"
@@ -20,11 +23,22 @@ export function BottomNav() {
         borderTop: '1px solid var(--border)',
       }}
     >
-      {tabs.map(({ to, icon: Icon, label }) => (
+      {tabs.map(({ to, icon: Icon, label }) => {
+        const isOnThisTab = to === '/feed' ? pathname === to : pathname.startsWith(to);
+        return (
         <NavLink
           key={to}
           to={to}
           end={to === '/feed'}
+          onClick={e => {
+            // Retap sur l'onglet déjà actif — pas de nouvelle entrée d'historique,
+            // on notifie plutôt la page pour qu'elle scrolle en haut + se rafraîchisse
+            // (équivalent web du popToTabRoot mobile, cf. utils/tabReselect.ts).
+            if (isOnThisTab) {
+              e.preventDefault();
+              emitTabReselect(to);
+            }
+          }}
           className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all"
           style={({ isActive }) => ({
             color: isActive ? 'var(--primary)' : 'var(--text-tertiary)',
@@ -42,7 +56,8 @@ export function BottomNav() {
             </>
           )}
         </NavLink>
-      ))}
+        );
+      })}
     </nav>
   );
 }
