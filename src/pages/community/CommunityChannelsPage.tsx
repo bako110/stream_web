@@ -5,7 +5,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { decodeId } from '../../utils/slugId';
 import {
   ArrowLeft, Hash, Megaphone, Plus, Send, Settings, Lock, Globe,
-  Trash2, X, Check, Users, Pencil,
+  Trash2, X, Check, Users, Pencil, Mic, Zap, Music, BookOpen, Star,
+  Award, Film, Target, Wrench, Rss, Camera, Heart, MessageCircle, Key,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiClient } from '../../api';
@@ -21,11 +22,14 @@ import { extractApiErrorMessage } from '../../utils/apiError';
 interface Channel {
   id: string;
   name: string;
-  type: 'announcement' | 'chat' | string;
+  type: 'announcement' | 'chat' | 'voice' | string;
   description?: string | null;
+  emoji?: string | null;
+  avatar_url?: string | null;
   is_private?: boolean;
+  has_password?: boolean;
   members_count?: number;
-  last_message?: { content: string; created_at: string } | null;
+  last_message?: { content: string | null; created_at: string; sender_display_name?: string | null } | null;
 }
 
 interface ChannelMessage {
@@ -524,41 +528,107 @@ function ChannelSettingsModal({ channel, communityId, onClose, onSaved, onDelete
   );
 }
 
+// Icônes Feather proposées par le picker (identique au mobile,
+// CommunityChannelsScreen.tsx::CHANNEL_ICONS) — mapping nom -> composant
+// Lucide, nécessaire ici car lucide-react n'a pas de résolution dynamique
+// par string contrairement à react-native-vector-icons.
+const CHANNEL_ICON_MAP: Record<string, typeof Hash> = {
+  'message-circle': MessageCircle, bell: Megaphone, zap: Zap, music: Music,
+  'book-open': BookOpen, star: Star, award: Award, globe: Globe, film: Film,
+  target: Target, tool: Wrench, mic: Mic, rss: Rss, camera: Camera, heart: Heart,
+};
+
+// Un emoji (ancien format) contient toujours un caractère hors de la plage
+// ASCII imprimable des noms d'icônes Feather — même détection que mobile
+// (CommunityChannelsScreen.tsx::isLegacyEmoji).
+const isLegacyEmoji = (value: string) => !/^[a-z0-9-]+$/i.test(value);
+
+const TYPE_BADGE: Record<string, { label: string; bg: string; color: string }> = {
+  announcement: { label: 'Annonces', bg: '#F59E0B20', color: '#D97706' },
+  voice:        { label: 'Vocal',    bg: '#10B98120', color: '#059669' },
+};
+
+function fmtChannelTime(iso: string): string {
+  const d = new Date(iso), now = new Date();
+  const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
+  if (diffMin < 1)  return 'maintenant';
+  if (diffMin < 60) return `${diffMin} min`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24)   return `${diffH}h`;
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
 function ChannelItem({ channel, onClick, isAdmin, communityId, onDeleted, onUpdated }: {
   channel: Channel; onClick: () => void; isAdmin: boolean; communityId: string;
   onDeleted: () => void; onUpdated: () => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
-  const typeColor = channel.type === 'announcement' ? '#7B3FF2' : '#7B3FF2';
-  const TypeIcon  = channel.type === 'announcement' ? Megaphone : Hash;
+  const badge = TYPE_BADGE[channel.type];
+  const iconColor = channel.type === 'announcement' ? '#D97706' : channel.type === 'voice' ? '#059669' : '#7B3FF2';
+  const hasEmoji = !!channel.emoji && isLegacyEmoji(channel.emoji);
+  const IconComp = !hasEmoji
+    ? (channel.emoji && CHANNEL_ICON_MAP[channel.emoji])
+      || (channel.type === 'announcement' ? Megaphone : channel.type === 'voice' ? Mic : Hash)
+    : null;
 
   return (
     <>
       <button onClick={onClick}
-        className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all text-left group"
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all text-left group"
         onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: typeColor + '15', color: typeColor }}>
-          <TypeIcon size={18} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>#{channel.name}</p>
-          {channel.description && (
-            <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{channel.description}</p>
-          )}
-          {channel.last_message && !channel.description && (
-            <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
-              {channel.last_message.content}
-            </p>
-          )}
-        </div>
-        {channel.members_count !== undefined && (
-          <div className="flex items-center gap-1 shrink-0" style={{ color: 'var(--text-tertiary)' }}>
-            <Users size={12} />
-            <span className="text-xs">{channel.members_count}</span>
+        {channel.avatar_url ? (
+          <img src={channel.avatar_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0"
+            style={{ border: '1px solid var(--border)' }} />
+        ) : (
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: iconColor + '15', color: iconColor }}>
+            {hasEmoji
+              ? <span style={{ fontSize: 20, lineHeight: 1 }}>{channel.emoji}</span>
+              : IconComp && <IconComp size={19} />}
           </div>
         )}
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>#{channel.name}</p>
+            {channel.is_private && <Lock size={11} style={{ color: 'var(--text-tertiary)' }} />}
+            {channel.has_password && <Key size={11} color="#F59E0B" />}
+            {badge && (
+              <span className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                style={{ background: badge.bg, color: badge.color }}>
+                {badge.label}
+              </span>
+            )}
+          </div>
+          {channel.last_message ? (
+            <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+              {channel.last_message.sender_display_name && (
+                <span className="font-medium">{channel.last_message.sender_display_name} : </span>
+              )}
+              {channel.last_message.content ?? 'Média'}
+            </p>
+          ) : channel.description ? (
+            <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{channel.description}</p>
+          ) : (
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)', opacity: 0.6 }}>Aucun message</p>
+          )}
+        </div>
+
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {channel.last_message?.created_at && (
+            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+              {fmtChannelTime(channel.last_message.created_at)}
+            </span>
+          )}
+          {!!channel.members_count && (
+            <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
+              <Users size={11} />
+              <span className="text-[10px]">{channel.members_count}</span>
+            </div>
+          )}
+        </div>
+
         {isAdmin && (
           <button onClick={e => { e.stopPropagation(); setShowSettings(true); }}
             className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-full flex items-center justify-center transition-opacity shrink-0"
