@@ -560,7 +560,14 @@ function ParticipantContextMenu({
 
   return (
     <div
-      className="absolute left-full top-0 ml-2 z-50 flex flex-col gap-0.5 py-1.5 px-1.5 rounded-xl shadow-2xl min-w-[140px]"
+      // Ouvre en dessous du bouton (top-full) plutôt qu'à côté (left-full/right-full)
+      // — le bouton "..." est utilisé à la fois sur le bloc principal (collé au bord
+      // droit de l'écran) et sur les vignettes étroites de la colonne latérale (~84px,
+      // pas assez de place ni à gauche ni à droite) : un menu horizontal débordait
+      // hors écran ou recouvrait la vignette elle-même dans les deux cas. right-0
+      // aligne le bord droit du menu sur celui du bouton, pour rester dans l'écran
+      // même quand le bouton est collé au bord droit de la vidéo.
+      className="absolute right-0 top-full mt-1 z-50 flex flex-col gap-0.5 py-1.5 px-1.5 rounded-xl shadow-2xl min-w-[140px]"
       style={{ background: 'rgba(15,15,20,0.96)', border: '1px solid rgba(255,255,255,0.08)' }}
       onClick={e => e.stopPropagation()}
     >
