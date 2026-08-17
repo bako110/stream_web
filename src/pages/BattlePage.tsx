@@ -206,7 +206,7 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
           <div key={t.id} className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold text-white truncate"
             style={{
               background: side === 'a' ? 'linear-gradient(135deg,#7B3FF2,#4C1D95)' : 'linear-gradient(135deg,#F0365A,#9B1C3F)',
-              animation: 'battle-gift-tick 4.2s ease-out forwards',
+              animation: 'battle-gift-tick 2s ease-out forwards',
             }}>
             <span>{t.emoji}</span>
             <span className="truncate">{t.senderName} · {t.gogold}🪙</span>
@@ -451,7 +451,7 @@ export default function BattlePage() {
               gogold: gf.gogold_spent ?? 0,
             };
             (side === 'a' ? setGiftTicksA : setGiftTicksB)(prev => [...prev.slice(-3), tick]);
-            setTimeout(() => (side === 'a' ? setGiftTicksA : setGiftTicksB)(prev => prev.filter(t => t.id !== tick.id)), 4200);
+            setTimeout(() => (side === 'a' ? setGiftTicksA : setGiftTicksB)(prev => prev.filter(t => t.id !== tick.id)), 2000);
 
             (side === 'a' ? setCrownA : setCrownB)(tick.id);
             setTimeout(() => (side === 'a' ? setCrownA : setCrownB)(prev => prev === tick.id ? null : prev), 2600);
