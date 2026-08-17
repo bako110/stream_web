@@ -470,9 +470,15 @@ export default function BattlePage() {
 
   if (loading) return <PageLoader />;
 
-  // Battle déjà terminé au chargement (pas de token LiveKit à obtenir) — on
-  // affiche directement le résultat, sans essayer de monter une room LiveKit.
-  if (ended && (!token || !wsUrl)) {
+  // Battle terminé — que ce soit déjà le cas au chargement (pas de token
+  // LiveKit à obtenir) OU reçu en direct via battle_ended pendant qu'on
+  // regarde : coupe la vidéo (démonte LiveKitRoom, ne reste PAS connecté
+  // en arrière-plan derrière le modal de résultat) et affiche le score
+  // final + vainqueur. Avant ce fix, seul le cas "déjà terminé au
+  // chargement" coupait la vidéo — un battle qui se terminait EN COURS de
+  // visionnage laissait LiveKitRoom connecté, le modal de résultat
+  // flottant juste en semi-transparence par-dessus la vidéo toujours active.
+  if (ended) {
     return (
       <div className="h-[calc(100vh-57px)] bg-black flex items-center justify-center">
         <button onClick={() => navigate(-1)} className="absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.1)' }}>
@@ -689,8 +695,6 @@ export default function BattlePage() {
           onSent={() => setGiftSide(null)}
         />
       )}
-
-      <MatchResultModal result={matchResult} onClose={() => setEnded(null)} />
 
       <style>{`
         @keyframes battle-crown-pop {
