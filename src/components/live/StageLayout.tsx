@@ -29,17 +29,18 @@ export interface StageParticipant {
 }
 
 export function StageLayout({
-  participants, mainIdentity, isHost, onGiftClick, onMenuClick, onPinClick, menuFor, renderMenu,
+  participants, mainIdentity, isHost, onGiftClick, onMenuClick, onPinClick,
 }: {
   participants: StageParticipant[];
   /** Identité affichée en grand — la personne épinglée par le host, ou par défaut le premier participant. */
   mainIdentity: string | null;
   isHost: boolean;
   onGiftClick: (identity: string, name: string) => void;
-  onMenuClick: (identity: string) => void;
+  /** Reçoit la position du bouton cliqué — le menu est rendu via portail par
+   * l'appelant (LiveSimplePage), pour ne jamais être rogné par l'overflow-hidden
+   * des tuiles/cadres vidéo (cf. commentaire historique plus bas). */
+  onMenuClick: (identity: string, anchor: { x: number; y: number; alignRight: boolean }) => void;
   onPinClick:  (identity: string) => void;
-  menuFor:     string | null;
-  renderMenu:  (identity: string, name: string, onStage: boolean) => React.ReactNode;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -90,15 +91,16 @@ export function StageLayout({
                     <PinOff size={16} color="#fff" />
                   </button>
                 )}
-                <div className="relative">
-                  <button
-                    className="w-9 h-9 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(0,0,0,0.55)' }}
-                    onClick={(e) => { e.stopPropagation(); onMenuClick(main.identity); }}>
-                    <MoreVertical size={16} color="#fff" />
-                  </button>
-                  {menuFor === main.identity && renderMenu(main.identity, main.name, main.onStage)}
-                </div>
+                <button
+                  className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(0,0,0,0.55)' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const r = e.currentTarget.getBoundingClientRect();
+                    onMenuClick(main.identity, { x: r.right, y: r.bottom, alignRight: true });
+                  }}>
+                  <MoreVertical size={16} color="#fff" />
+                </button>
               </>
             )}
           </div>
@@ -147,15 +149,16 @@ export function StageLayout({
                     <Gift size={8} style={{ color: '#fbbf24' }} />
                   </button>
                   {isHost && (
-                    <div className="relative">
-                      <button
-                        className="w-4 h-4 rounded-full flex items-center justify-center"
-                        style={{ background: 'rgba(0,0,0,0.6)' }}
-                        onClick={(e) => { e.stopPropagation(); onMenuClick(p.identity); }}>
-                        <MoreVertical size={8} color="#fff" />
-                      </button>
-                      {menuFor === p.identity && renderMenu(p.identity, p.name, p.onStage)}
-                    </div>
+                    <button
+                      className="w-4 h-4 rounded-full flex items-center justify-center"
+                      style={{ background: 'rgba(0,0,0,0.6)' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const r = e.currentTarget.getBoundingClientRect();
+                        onMenuClick(p.identity, { x: r.right, y: r.bottom, alignRight: true });
+                      }}>
+                      <MoreVertical size={8} color="#fff" />
+                    </button>
                   )}
                 </div>
               )}

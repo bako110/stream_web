@@ -542,10 +542,13 @@ function GiftHistoryPanel({
 // ── Menu modération vignette ──────────────────────────────────────────────────
 
 function ParticipantContextMenu({
-  identity, name, liveId, isOnStage, onDone,
+  identity, name, liveId, isOnStage, anchor, onDone,
 }: {
   identity: string; name: string; liveId: string;
-  isOnStage: boolean; onDone: () => void;
+  isOnStage: boolean;
+  /** Coordonnées écran du bouton cliqué (getBoundingClientRect), en position fixed. */
+  anchor: { x: number; y: number; alignRight: boolean };
+  onDone: () => void;
 }) {
   async function act(endpoint: string) {
     try {
@@ -558,17 +561,22 @@ function ParticipantContextMenu({
     onDone();
   }
 
+  const MENU_WIDTH = 160;
+  // Rendu via portail dans document.body (cf. appelant) — position fixed calculée
+  // depuis le bouton réellement cliqué, donc jamais rogné par l'overflow-hidden
+  // des tuiles vidéo, ni forcé hors écran quand le bouton est collé au bord.
+  const left = anchor.alignRight
+    ? Math.max(8, anchor.x - MENU_WIDTH)
+    : anchor.x;
+
   return (
     <div
-      // Ouvre en dessous du bouton (top-full) plutôt qu'à côté (left-full/right-full)
-      // — le bouton "..." est utilisé à la fois sur le bloc principal (collé au bord
-      // droit de l'écran) et sur les vignettes étroites de la colonne latérale (~84px,
-      // pas assez de place ni à gauche ni à droite) : un menu horizontal débordait
-      // hors écran ou recouvrait la vignette elle-même dans les deux cas. right-0
-      // aligne le bord droit du menu sur celui du bouton, pour rester dans l'écran
-      // même quand le bouton est collé au bord droit de la vidéo.
-      className="absolute right-0 top-full mt-1 z-50 flex flex-col gap-0.5 py-1.5 px-1.5 rounded-xl shadow-2xl min-w-[140px]"
-      style={{ background: 'rgba(15,15,20,0.96)', border: '1px solid rgba(255,255,255,0.08)' }}
+      className="fixed z-[100] flex flex-col gap-0.5 py-1.5 px-1.5 rounded-xl shadow-2xl"
+      style={{
+        top: anchor.y + 4, left,
+        width: MENU_WIDTH,
+        background: 'rgba(15,15,20,0.98)', border: '1px solid rgba(255,255,255,0.08)',
+      }}
       onClick={e => e.stopPropagation()}
     >
       <p className="text-[10px] px-2 py-0.5 mb-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{name}</p>
@@ -656,7 +664,12 @@ function LiveKitViewer({
   const speakingIds  = useActiveSpeakersSet();
   const { localParticipant } = useLocalParticipant();
   const micOn = useLocalMicEnabled();
-  const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  // Position capturée depuis le bouton "..." cliqué (getBoundingClientRect) — le
+  // menu est rendu via portail dans document.body (cf. plus bas), donc il n'est
+  // jamais rogné par l'overflow-hidden des tuiles/cadres vidéo qui le contiennent
+  // visuellement, ni forcé hors écran par un positionnement absolute relatif à
+  // un petit conteneur proche du bord de l'écran.
+  const [contextMenu, setContextMenu] = useState<{ identity: string; x: number; y: number; alignRight: boolean } | null>(null);
   const [showMicHint,   setShowMicHint]   = useState(false);
   const micHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -680,11 +693,11 @@ function LiveKitViewer({
   }
 
   useEffect(() => {
-    if (!contextMenuId) return;
-    const close = () => setContextMenuId(null);
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
-  }, [contextMenuId]);
+  }, [contextMenu]);
 
   const activeTracks = tracks.filter(t => !t.publication?.isMuted);
 
@@ -753,6 +766,8 @@ function LiveKitViewer({
     isSpeaking: speakingIds.has(t.participant.identity),
   }));
 
+  const menuParticipant = contextMenu ? stageParticipants.find(p => p.identity === contextMenu.identity) : null;
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       <RoomAudioRenderer />
@@ -761,17 +776,20 @@ function LiveKitViewer({
         mainIdentity={mainIdentity}
         isHost={isHost}
         onGiftClick={onGiftClick}
-        onMenuClick={(identity) => setContextMenuId(prev => prev === identity ? null : identity)}
+        onMenuClick={(identity, anchor) => setContextMenu(prev => prev?.identity === identity ? null : { identity, ...anchor })}
         onPinClick={(identity) => onPin(pinnedIdentity === identity ? '' : identity)}
-        menuFor={contextMenuId}
-        renderMenu={(identity, name, onStage) => (
-          <ParticipantContextMenu
-            identity={identity} name={name} liveId={liveId}
-            isOnStage={onStage}
-            onDone={() => setContextMenuId(null)}
-          />
-        )}
       />
+      {contextMenu && menuParticipant && createPortal(
+        <ParticipantContextMenu
+          identity={menuParticipant.identity}
+          name={menuParticipant.isLocal ? 'Toi' : menuParticipant.name}
+          liveId={liveId}
+          isOnStage={menuParticipant.onStage}
+          anchor={contextMenu}
+          onDone={() => setContextMenu(null)}
+        />,
+        document.body,
+      )}
     </div>
   );
 }
