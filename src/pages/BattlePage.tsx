@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { X, Send, Award, User, Heart, Users, Gift, Zap } from 'lucide-react';
+import { X, Send, Award, User, Heart, Users, Gift } from 'lucide-react';
 import {
   LiveKitRoom, VideoTrack, useTracks, useParticipants, RoomAudioRenderer,
 } from '@livekit/components-react';
@@ -37,6 +37,16 @@ function formatCountdown(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function VerifiedCheck() {
+  return (
+    <span className="inline-flex items-center justify-center shrink-0 rounded-full" style={{ width: 13, height: 13, background: '#1D9BF0' }}>
+      <svg width={8} height={8} viewBox="0 0 10 10" fill="none">
+        <path d="M2 5.2L4 7L8 3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
 }
 
 function BouncyScore({ value, color }: { value: number; color: string }) {
@@ -109,10 +119,10 @@ function useHypeMessage(params: {
 
 function HypeBanner({ message }: { message: { text: string; key: string } }) {
   return (
-    <div className="relative h-5 overflow-hidden w-full flex items-center justify-center">
+    <div className="relative h-5 overflow-hidden flex-1 min-w-0 flex items-center justify-center px-1">
       <span
         key={message.key}
-        className="absolute whitespace-nowrap text-[11px] sm:text-xs font-bold px-2"
+        className="truncate max-w-full text-[10px] sm:text-[11px] lg:text-xs font-bold px-1"
         style={{
           color: '#fff',
           textShadow: '0 1px 4px rgba(0,0,0,0.8)',
@@ -270,10 +280,12 @@ export default function BattlePage() {
   const [hostNameB, setHostNameB] = useState('Créateur B');
   const [hostAvatarA, setHostAvatarA] = useState<string | null>(null);
   const [hostAvatarB, setHostAvatarB] = useState<string | null>(null);
-  const [followersA, setFollowersA] = useState(0);
-  const [followersB, setFollowersB] = useState(0);
+  const [likesA, setLikesA] = useState(0);
+  const [likesB, setLikesB] = useState(0);
   const [followingA, setFollowingA] = useState(false);
   const [followingB, setFollowingB] = useState(false);
+  const [verifiedA, setVerifiedA] = useState(false);
+  const [verifiedB, setVerifiedB] = useState(false);
   const [giftTicksA, setGiftTicksA] = useState<GiftTick[]>([]);
   const [giftTicksB, setGiftTicksB] = useState<GiftTick[]>([]);
   const [crownA, setCrownA] = useState<string | null>(null);
@@ -333,8 +345,8 @@ export default function BattlePage() {
       .then(r => {
         setHostNameA(r.data.display_name || r.data.username || 'Créateur A');
         setHostAvatarA(r.data.avatar_url);
-        setFollowersA(r.data.followers_count ?? 0);
         setFollowingA(!!r.data.is_followed);
+        setVerifiedA(!!r.data.is_verified);
       })
       .catch(() => {});
   }, [battle?.host_a_id]);
@@ -345,26 +357,39 @@ export default function BattlePage() {
       .then(r => {
         setHostNameB(r.data.display_name || r.data.username || 'Créateur B');
         setHostAvatarB(r.data.avatar_url);
-        setFollowersB(r.data.followers_count ?? 0);
         setFollowingB(!!r.data.is_followed);
+        setVerifiedB(!!r.data.is_verified);
       })
       .catch(() => {});
   }, [battle?.host_b_id]);
+
+  // "X j'aime" affiché sous chaque host = like_count du LIVE d'origine (pas le
+  // nombre d'abonnés du compte) — vient de GET /lives/{id}, pas du profil public.
+  useEffect(() => {
+    if (!battle?.live_a_id) return;
+    apiClient.get<any>(Endpoints.lives.byId(battle.live_a_id))
+      .then(r => setLikesA(r.data?.like_count ?? 0))
+      .catch(() => {});
+  }, [battle?.live_a_id]);
+
+  useEffect(() => {
+    if (!battle?.live_b_id) return;
+    apiClient.get<any>(Endpoints.lives.byId(battle.live_b_id))
+      .then(r => setLikesB(r.data?.like_count ?? 0))
+      .catch(() => {});
+  }, [battle?.live_b_id]);
 
   const toggleFollow = useCallback(async (side: 'a' | 'b') => {
     if (!battle) return;
     const hostId = side === 'a' ? battle.host_a_id : battle.host_b_id;
     const currentlyFollowing = side === 'a' ? followingA : followingB;
     const setFollowing = side === 'a' ? setFollowingA : setFollowingB;
-    const setFollowers = side === 'a' ? setFollowersA : setFollowersB;
     setFollowing(!currentlyFollowing);
-    setFollowers(c => c + (currentlyFollowing ? -1 : 1));
     try {
       if (currentlyFollowing) await apiClient.delete(Endpoints.users.follow(hostId));
       else await apiClient.post(Endpoints.users.follow(hostId));
     } catch {
       setFollowing(currentlyFollowing);
-      setFollowers(c => c + (currentlyFollowing ? 1 : -1));
     }
   }, [battle, followingA, followingB]);
 
@@ -436,6 +461,9 @@ export default function BattlePage() {
               setTimeout(() => setBigGift(prev => prev?.id === tick.id ? null : prev), 3800);
             }
             refreshRanking();
+          }
+          if (d.type === 'like_added' && typeof d.total === 'number') {
+            (side === 'a' ? setLikesA : setLikesB)(d.total);
           }
         } catch { /* ignore */ }
       };
@@ -590,8 +618,6 @@ export default function BattlePage() {
 
   if (!token || !wsUrl) return <PageLoader />;
 
-  const total = scoreA + scoreB;
-  const pctA = total > 0 ? (scoreA / total) * 100 : 50;
   const topDonor = ranking?.top_donor;
 
   return (
@@ -605,8 +631,8 @@ export default function BattlePage() {
 
         {/* ── Colonne vidéo + header ── */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          {/* Header — fermer, participants, countdown+score+barre, top supporter */}
-          <div className="relative shrink-0 px-3 sm:px-4 lg:px-5 py-3 lg:py-3.5 flex items-center gap-2 sm:gap-3">
+          {/* Header — fermer, participants, countdown, classement/top supporter */}
+          <div className="relative shrink-0 px-3 sm:px-4 lg:px-5 py-2.5 lg:py-3 flex items-center gap-2 sm:gap-3">
             <button onClick={handleClose} disabled={leaving} className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
               {leaving ? <Spinner size="sm" /> : <X size={18} color="#fff" />}
             </button>
@@ -616,17 +642,9 @@ export default function BattlePage() {
                 l'espace restant entre les boutons — sinon le centre visuel dérive dès
                 que les deux côtés (fermer+participants vs top supporter) n'ont pas la
                 même largeur, cf. le badge topDonor qui peut aller jusqu'à 150px. */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 pointer-events-none">
-              <span className="text-white font-mono text-base lg:text-lg font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>{formatCountdown(remaining)}</span>
-              <div className="w-40 sm:w-52 lg:w-64 h-1.5 lg:h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
-                <div className="h-full transition-all duration-500" style={{ width: `${pctA}%`, background: 'linear-gradient(90deg,#7B3FF2,#F0365A)' }} />
-              </div>
-              <div className="flex items-center gap-2.5">
-                <BouncyScore value={scoreA} color="#A78BFA" />
-                <Zap size={16} color="#FFD700" />
-                <BouncyScore value={scoreB} color="#F87A9C" />
-              </div>
-              <HypeBanner message={hypeMessage} />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
+              <span className="text-white text-xs lg:text-sm font-black tracking-wide">BATTLE LIVE</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
             </div>
 
             <div className="flex-1" />
@@ -647,15 +665,21 @@ export default function BattlePage() {
             )}
           </div>
 
-          {/* Rangée hosts — avatar + nom + followers + bouton Suivre, un par camp. */}
+          {/* Rangée hosts — avatar + nom + followers + bouton Suivre, un par camp
+              (seule source du nom/avatar dans le header : le badge nom qui apparaît
+              aussi sur la vidéo elle-même, plus bas, reste car utile même quand le
+              spectateur a scrollé/zoomé sur la vidéo, mais n'est plus dupliqué ici). */}
           <div className="shrink-0 flex items-center justify-between gap-2 px-3 sm:px-4 lg:px-5 pb-2 lg:pb-3">
             <div className="flex items-center gap-2 min-w-0">
               {hostAvatarA
-                ? <img src={hostAvatarA} className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2" style={{ borderColor: '#7B3FF2' }} />
+                ? <img src={hostAvatarA} className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2 shrink-0" style={{ borderColor: '#7B3FF2' }} />
                 : <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#7B3FF2' }}><User size={14} color="#fff" /></div>}
               <div className="min-w-0">
-                <p className="text-white text-xs lg:text-sm font-bold truncate max-w-[90px] sm:max-w-[140px] lg:max-w-[200px]">{hostNameA}</p>
-                <p className="text-[10px] lg:text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>{followersA.toLocaleString('fr-FR')} j'aime</p>
+                <p className="flex items-center gap-1 text-white text-xs lg:text-sm font-bold truncate max-w-[90px] sm:max-w-[140px] lg:max-w-[200px]">
+                  <span className="truncate">{hostNameA}</span>
+                  {verifiedA && <VerifiedCheck />}
+                </p>
+                <p className="text-[10px] lg:text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>{likesA.toLocaleString('fr-FR')} j'aime</p>
               </div>
               {myHostSide !== 'a' && (
                 <button onClick={() => toggleFollow('a')}
@@ -671,11 +695,14 @@ export default function BattlePage() {
 
             <div className="flex items-center gap-2 min-w-0 flex-row-reverse">
               {hostAvatarB
-                ? <img src={hostAvatarB} className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2" style={{ borderColor: '#F0365A' }} />
+                ? <img src={hostAvatarB} className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2 shrink-0" style={{ borderColor: '#F0365A' }} />
                 : <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#F0365A' }}><User size={14} color="#fff" /></div>}
               <div className="min-w-0 text-right">
-                <p className="text-white text-xs lg:text-sm font-bold truncate max-w-[90px] sm:max-w-[140px] lg:max-w-[200px]">{hostNameB}</p>
-                <p className="text-[10px] lg:text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>{followersB.toLocaleString('fr-FR')} j'aime</p>
+                <p className="flex items-center justify-end gap-1 text-white text-xs lg:text-sm font-bold truncate max-w-[90px] sm:max-w-[140px] lg:max-w-[200px]">
+                  {verifiedB && <VerifiedCheck />}
+                  <span className="truncate">{hostNameB}</span>
+                </p>
+                <p className="text-[10px] lg:text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>{likesB.toLocaleString('fr-FR')} j'aime</p>
               </div>
               {myHostSide !== 'b' && (
                 <button onClick={() => toggleFollow('b')}
@@ -691,12 +718,14 @@ export default function BattlePage() {
           </div>
 
           {/* Barre de score pleine largeur — un score par camp aux extrémités,
-              dégradé violet→rose continu façon maquette (distincte de la petite
-              barre de progression du countdown dans le header ci-dessus). */}
-          <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 lg:px-5 py-1 lg:py-1.5"
+              dégradé violet→rose continu, remplace la barre de progression fine
+              qu'il y avait avant dans le header (score affiché une seule fois ici,
+              plus de doublon avec BouncyScore qui était dans le header). */}
+          <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 lg:px-5 py-1.5 lg:py-2"
             style={{ background: 'linear-gradient(90deg,#7B3FF2,#4C1D95 48%,#9B1C3F 52%,#F0365A)' }}>
-            <span className="text-white text-sm sm:text-base lg:text-lg font-black tabular-nums">{scoreA.toLocaleString('fr-FR')}</span>
-            <span className="text-white text-sm sm:text-base lg:text-lg font-black tabular-nums">{scoreB.toLocaleString('fr-FR')}</span>
+            <BouncyScore value={scoreA} color="#fff" />
+            <HypeBanner message={hypeMessage} />
+            <BouncyScore value={scoreB} color="#fff" />
           </div>
 
           {/* Video zone — deux colonnes nettement séparées, prend tout l'espace
@@ -705,8 +734,14 @@ export default function BattlePage() {
             <BattleVideoHalf hostId={battle?.host_a_id} hostName={hostNameA} hostAvatar={hostAvatarA} side="a" leading={leadingSide === 'a'}
               giftTicks={giftTicksA} crownKey={crownA} onGiftClick={battle ? () => setGiftSide('a') : undefined}
               winCount={battle?.win_count_a ?? 0} topDonors={ranking?.top_donors_a ?? []} />
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-full font-black text-white text-xs shadow-lg"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#F0365A)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>VS</div>
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-1.5">
+              <span className="px-3 py-1.5 rounded-full font-black text-white text-xs shadow-lg"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#F0365A)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>VS</span>
+              <span className="px-2.5 py-1 rounded-full text-white font-mono text-xs lg:text-sm font-bold"
+                style={{ background: 'rgba(0,0,0,0.6)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                {formatCountdown(remaining)}
+              </span>
+            </div>
             <BattleVideoHalf hostId={battle?.host_b_id} hostName={hostNameB} hostAvatar={hostAvatarB} side="b" leading={leadingSide === 'b'}
               giftTicks={giftTicksB} crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined}
               winCount={battle?.win_count_b ?? 0} topDonors={ranking?.top_donors_b ?? []} />
