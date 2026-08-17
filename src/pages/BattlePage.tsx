@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X, Send, Award, User, Heart, Users, Gift } from 'lucide-react';
 import {
-  LiveKitRoom, VideoTrack, useTracks, useParticipants, RoomAudioRenderer,
+  LiveKitRoom, VideoTrack, useTracks, useParticipants, useLocalParticipant, RoomAudioRenderer,
 } from '@livekit/components-react';
 import { Track, VideoPresets } from 'livekit-client';
 import { PageLoader, Spinner } from '../components/ui/Spinner';
@@ -74,6 +74,31 @@ const BATTLE_ROOM_OPTIONS = {
     videoSimulcastLayers: [VideoPresets.h720],
   },
 };
+
+// Active caméra + micro pour le host côté web dès la connexion à la room de
+// battle — <LiveKitRoom connect> seul ne publie AUCUN flux local par défaut,
+// contrairement au SDK mobile qui active la caméra nativement à l'entrée. Sans
+// ce composant, deux hosts web l'un contre l'autre se connectent bien à la
+// même room LiveKit (is_publisher=True côté token, cf. battle_service.py) mais
+// aucun des deux ne publie jamais de piste vidéo : chacun voit un écran noir/
+// spinner infini côté adversaire ET côté sa propre vignette — pas un problème
+// réseau, juste un flux jamais démarré. Même pattern que LiveSimplePage.tsx.
+function BattleMediaActivator({ isHost }: { isHost: boolean }) {
+  const { localParticipant } = useLocalParticipant();
+  useEffect(() => {
+    if (!isHost) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await localParticipant.setCameraEnabled(true);
+        if (cancelled) return;
+        await localParticipant.setMicrophoneEnabled(true);
+      } catch { /* permission caméra/micro refusée */ }
+    })();
+    return () => { cancelled = true; };
+  }, [localParticipant, isHost]);
+  return null;
+}
 
 interface ChatMsg { id: string; side: 'a' | 'b'; user: string; text: string; }
 
@@ -695,6 +720,7 @@ export default function BattlePage() {
     <>
     <LiveKitRoom serverUrl={wsUrl} token={token} connect options={BATTLE_ROOM_OPTIONS} className="h-[calc(100vh-57px)]">
       <RoomAudioRenderer />
+      <BattleMediaActivator isHost={!!isHost} />
       {/* Desktop (lg+) : chat en colonne fixe à gauche, vidéo à droite prenant tout
           l'espace restant (flex-row-reverse, même pattern que LiveSimplePage) —
           mobile web : empilé verticalement comme avant. */}
