@@ -134,11 +134,15 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
   const color = side === 'a' ? '#7B3FF2' : '#F0365A';
 
   return (
-    <div className="relative flex-1 min-w-0 h-full overflow-hidden rounded-xl"
+    <div
+      className="relative flex-1 min-w-0 h-full overflow-hidden rounded-xl"
+      onClick={onGiftClick}
+      role={onGiftClick ? 'button' : undefined}
       style={{
         border: `1.5px solid ${leading ? color : 'rgba(255,255,255,0.12)'}`,
         boxShadow: leading ? `0 0 20px ${color}66` : 'none',
         transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+        cursor: onGiftClick ? 'pointer' : 'default',
       }}>
       {track ? (
         <VideoTrack trackRef={track} className="w-full h-full object-cover" />
@@ -165,11 +169,15 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
         {leading && <span className="text-xs">👑</span>}
       </div>
 
+      {/* Repère visuel seulement — toute la carte est cliquable (onClick sur le
+          conteneur racine) pour ouvrir le modal de cadeaux, pas besoin de viser
+          précisément ce bouton. pointer-events-none pour ne pas intercepter le
+          clic avant qu'il ne remonte au parent. */}
       {onGiftClick && (
-        <button onClick={onGiftClick} className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center z-10"
+        <div className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center z-10 pointer-events-none"
           style={{ background: 'rgba(0,0,0,0.55)' }}>
           <Gift size={14} color="#fbbf24" />
-        </button>
+        </div>
       )}
 
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10 max-w-[75%]">
