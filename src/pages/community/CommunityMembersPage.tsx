@@ -115,10 +115,12 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden"
-        style={{ background: 'var(--surface)', boxShadow: '0 -16px 64px rgba(0,0,0,0.3)' }}>
-        <div className="flex justify-center pt-3"><div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} /></div>
+      <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center"
+        style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+      <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl sm:mb-6 overflow-hidden z-50"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 -16px 64px rgba(0,0,0,0.3)' }}
+        onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center pt-3 sm:hidden"><div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} /></div>
         <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
           <Avatar src={member.avatar_url ?? null} name={member.display_name ?? member.username ?? '?'} size="sm" />
           <div>
@@ -167,6 +169,7 @@ function MemberActionsMenu({ member, isAdmin, isMod, communityId, onDone, onClos
           )}
         </div>
         <div className="h-4" />
+      </div>
       </div>
       {ConfirmDialog}
     </>
