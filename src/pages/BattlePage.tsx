@@ -150,6 +150,13 @@ export default function BattlePage() {
   const [crownB, setCrownB] = useState<string | null>(null);
   const [bigGift, setBigGift] = useState<{ id: string; senderName: string; emoji: string; giftName: string; gogold: number } | null>(null);
   const [giftSide, setGiftSide] = useState<'a' | 'b' | null>(null);
+  // Coeurs "façon TikTok" — purement visuels (ne comptent pas dans le score,
+  // cf. BattleService.react côté backend), déclenchés par le broadcast WS
+  // battle_reaction reçu par TOUS les clients (soi-même inclus, pas de mise
+  // à jour optimiste locale — même pattern que le mobile, BattleScreen.tsx).
+  const [heartFloaters, setHeartFloaters] = useState<{ id: string; side: 'a' | 'b'; drift: number }[]>([]);
+  const [heartCountA, setHeartCountA] = useState(0);
+  const [heartCountB, setHeartCountB] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoEndTriggeredRef = useRef(false);
@@ -205,7 +212,12 @@ export default function BattlePage() {
     battlesApi.getRanking(battleId).then(setRanking).catch(() => {});
   }, [battleId]);
 
-  // WS global — battle_started / battle_ended
+  // WS global — battle_started / battle_ended (battle_score_update, LUI, est
+  // diffusé sur le canal dédié "battle" via comment_room_manager, pas ici —
+  // cf. le useEffect plus bas qui ouvre ws/battle/{battleId}. Avant ce fix, ce
+  // handler écoutait battle_score_update sur le mauvais canal : ce type précis
+  // n'y arrive jamais (seul battle_score_update_broadcast y transite), donc le
+  // score affiché ne bougeait jamais en cours de match malgré des cadeaux reçus.
   useEffect(() => {
     const handler = (payload: any) => {
       if (payload.battle_id !== battleId) return;
@@ -216,9 +228,6 @@ export default function BattlePage() {
       if (payload.type === 'battle_ended') {
         setEnded({ winner_id: payload.winner_id, score_a: payload.score_a, score_b: payload.score_b });
         setBattle(prev => prev ? { ...prev, status: 'ended', score_a: payload.score_a, score_b: payload.score_b, winner_id: payload.winner_id } : prev);
-      }
-      if (payload.type === 'battle_score_update') {
-        setBattle(prev => prev ? { ...prev, score_a: payload.score_a, score_b: payload.score_b } : prev);
       }
     };
     addListener(handler);
@@ -275,6 +284,40 @@ export default function BattlePage() {
     wsRef.current = sockets[myHostSide === 'b' ? 1 : 0];
     return () => { cancelled = true; sockets.forEach(s => s.close()); };
   }, [accessToken, battle?.live_a_id, battle?.live_b_id, refreshRanking, myHostSide]);
+
+  // WS room "battle" dédié — événements propres au match (réactions coeur,
+  // score en temps réel, objectifs, effets), diffusés via
+  // comment_room_manager.broadcast("battle", ...) côté backend, un canal
+  // DISTINCT des deux room "live" ci-dessus (qui ne portent que chat + cadeaux
+  // de chaque live d'origine) ET du WS global (qui ne porte que battle_started/
+  // battle_ended/battle_score_update_broadcast). Sans ce socket séparé,
+  // battle_reaction n'était jamais reçu côté web (coeur qui monte au clic), et
+  // battle_score_update (le VRAI temps réel du score pendant le match, cf.
+  // wallet.py) non plus — le score affiché ne bougeait qu'au tout début/fin du
+  // battle. Même pattern que le mobile, cf. BattleScreen.tsx::useRoomSocket('battle', ...).
+  useEffect(() => {
+    if (!accessToken || !battleId) return;
+    let cancelled = false;
+    const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
+    const ws = openAuthenticatedWs(`${base}/api/v1/social/comments/ws/battle/${battleId}`, accessToken);
+    ws.onmessage = (e) => {
+      if (cancelled) return;
+      try {
+        const d = JSON.parse(e.data);
+        if (d.type === 'battle_reaction' && (d.side === 'a' || d.side === 'b')) {
+          const id = `${Date.now()}-${Math.random()}`;
+          const drift = (Math.random() - 0.5) * 40;
+          setHeartFloaters(prev => [...prev.slice(-20), { id, side: d.side, drift }]);
+          setTimeout(() => setHeartFloaters(prev => prev.filter(f => f.id !== id)), 1800);
+          (d.side === 'a' ? setHeartCountA : setHeartCountB)(c => c + 1);
+        }
+        if (d.type === 'battle_score_update') {
+          setBattle(prev => prev ? { ...prev, score_a: d.score_a, score_b: d.score_b } : prev);
+        }
+      } catch { /* ignore */ }
+    };
+    return () => { cancelled = true; ws.close(); };
+  }, [accessToken, battleId]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -427,6 +470,32 @@ export default function BattlePage() {
             <BattleVideoHalf hostId={battle?.host_b_id} hostName={hostNameB} hostAvatar={hostAvatarB} side="b" leading={leadingSide === 'b'}
               giftTicks={giftTicksB} crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined} />
 
+            {/* Coeurs "façon TikTok" — purement visuels, un par réaction reçue via WS
+                (soi-même inclus), montent depuis le bas de la moitié d'écran du camp
+                concerné. z-30 : au-dessus des cadres vidéo et du badge VS (z-20). */}
+            <div className="absolute pointer-events-none z-30" style={{ bottom: 12, left: '12%', width: 10, height: 10, overflow: 'visible' }}>
+              {heartFloaters.filter(f => f.side === 'a').map(f => (
+                <span key={f.id} style={{
+                  position: 'absolute', left: -18, top: -18, width: 36, height: 36,
+                  fontSize: 26, textAlign: 'center', lineHeight: '36px',
+                  animation: 'liveHeartRise 1700ms cubic-bezier(0.22,1,0.36,1) forwards',
+                  // @ts-expect-error custom property lue par le keyframe via var()
+                  '--drift-x': `${f.drift}px`,
+                }}>💜</span>
+              ))}
+            </div>
+            <div className="absolute pointer-events-none z-30" style={{ bottom: 12, right: '12%', width: 10, height: 10, overflow: 'visible' }}>
+              {heartFloaters.filter(f => f.side === 'b').map(f => (
+                <span key={f.id} style={{
+                  position: 'absolute', left: -18, top: -18, width: 36, height: 36,
+                  fontSize: 26, textAlign: 'center', lineHeight: '36px',
+                  animation: 'liveHeartRise 1700ms cubic-bezier(0.22,1,0.36,1) forwards',
+                  // @ts-expect-error custom property lue par le keyframe via var()
+                  '--drift-x': `${f.drift}px`,
+                }}>🩷</span>
+              ))}
+            </div>
+
             {showParticipants && <BattleParticipantsPanel onClose={() => setShowParticipants(false)} />}
 
             {/* Ranking modal — centré, compact, pas plein écran */}
@@ -474,8 +543,14 @@ export default function BattlePage() {
           </div>
 
           <div className="shrink-0 flex items-center gap-2 px-3 py-2">
-            <button onClick={() => handleReact('a')} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.25)' }}>
+            <button onClick={() => handleReact('a')} className="relative w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.25)' }}>
               <Heart size={15} color="#fff" />
+              {heartCountA > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                  style={{ background: '#7B3FF2' }}>
+                  {heartCountA > 99 ? '99+' : heartCountA}
+                </span>
+              )}
             </button>
             <input
               className="flex-1 min-w-0 text-white text-sm rounded-full px-3.5 py-2 focus:outline-none"
@@ -488,8 +563,14 @@ export default function BattlePage() {
             <button onClick={handleSendChat} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <Send size={14} color="#fff" />
             </button>
-            <button onClick={() => handleReact('b')} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(240,54,90,0.25)' }}>
+            <button onClick={() => handleReact('b')} className="relative w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(240,54,90,0.25)' }}>
               <Heart size={15} color="#fff" />
+              {heartCountB > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                  style={{ background: '#F0365A' }}>
+                  {heartCountB > 99 ? '99+' : heartCountB}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -544,6 +625,15 @@ export default function BattlePage() {
           0%   { transform: scale(0.3); opacity: 0; }
           60%  { transform: scale(1.08); opacity: 1; }
           100% { transform: scale(1); opacity: 1; }
+        }
+        /* Coeurs de réaction (heartFloaters) — même keyframe que LiveHeartsOverlay
+           (LiveInteractions.tsx), redéclarée ici car pas importée sur cette page.
+           Déplacement en pixels absolus (pas de %, qui se base sur la taille de
+           l'élément animé lui-même — 36px — et rendrait la montée invisible). */
+        @keyframes liveHeartRise {
+          0%   { transform: translate(0, 0) scale(0);   opacity: 1; }
+          15%  { transform: translate(calc(var(--drift-x) * 0.2), -70px) scale(1); }
+          100% { transform: translate(var(--drift-x), -320px) scale(1); opacity: 0; }
         }
       `}</style>
     </LiveKitRoom>
