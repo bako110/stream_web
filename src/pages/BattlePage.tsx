@@ -66,10 +66,11 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
   const color = side === 'a' ? '#7B3FF2' : '#F0365A';
 
   return (
-    <div className="relative flex-1 h-full overflow-hidden rounded-lg"
+    <div className="relative flex-1 min-w-0 h-full overflow-hidden rounded-xl"
       style={{
-        boxShadow: leading ? `inset 0 0 0 3px ${color}, 0 0 20px ${color}66` : `inset 0 0 0 1px rgba(255,255,255,0.08)`,
-        transition: 'box-shadow 0.3s ease',
+        border: `1.5px solid ${leading ? color : 'rgba(255,255,255,0.12)'}`,
+        boxShadow: leading ? `0 0 20px ${color}66` : 'none',
+        transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
       }}>
       {track ? (
         <VideoTrack trackRef={track} className="w-full h-full object-cover" />
@@ -134,6 +135,7 @@ export default function BattlePage() {
   const [remaining, setRemaining] = useState(0);
   const [ranking, setRanking] = useState<BattleRanking | null>(null);
   const [showRanking, setShowRanking] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [ended, setEnded] = useState<{ winner_id: string | null; score_a: number; score_b: number } | null>(null);
@@ -373,54 +375,92 @@ export default function BattlePage() {
     <>
     <LiveKitRoom serverUrl={wsUrl} token={token} connect options={BATTLE_ROOM_OPTIONS} className="h-[calc(100vh-57px)]">
       <RoomAudioRenderer />
-      <div className="flex flex-col h-full bg-black">
-        {/* Header — fermer, participants, countdown+score+barre, top supporter */}
-        <div className="shrink-0 px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
-          <button onClick={handleClose} disabled={leaving} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
-            {leaving ? <Spinner size="sm" /> : <X size={18} color="#fff" />}
-          </button>
-          <ParticipantsCount />
+      {/* Desktop (lg+) : chat en colonne fixe à gauche, vidéo à droite prenant tout
+          l'espace restant (flex-row-reverse, même pattern que LiveSimplePage) —
+          mobile web : empilé verticalement comme avant. */}
+      <div className="flex flex-col lg:flex-row-reverse h-full bg-black">
 
-          <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-            <span className="text-white font-mono text-sm font-bold">{formatCountdown(remaining)}</span>
-            <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
-              <div className="h-full transition-all duration-500" style={{ width: `${pctA}%`, background: 'linear-gradient(90deg,#7B3FF2,#F0365A)' }} />
+        {/* ── Colonne vidéo + header ── */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          {/* Header — fermer, participants, countdown+score+barre, top supporter */}
+          <div className="shrink-0 px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
+            <button onClick={handleClose} disabled={leaving} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
+              {leaving ? <Spinner size="sm" /> : <X size={18} color="#fff" />}
+            </button>
+            <ParticipantsCount onClick={() => setShowParticipants(v => !v)} />
+
+            <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+              <span className="text-white font-mono text-sm font-bold">{formatCountdown(remaining)}</span>
+              <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                <div className="h-full transition-all duration-500" style={{ width: `${pctA}%`, background: 'linear-gradient(90deg,#7B3FF2,#F0365A)' }} />
+              </div>
+              <div className="flex items-center gap-2.5">
+                <BouncyScore value={scoreA} color="#A78BFA" />
+                <Zap size={16} color="#FFD700" />
+                <BouncyScore value={scoreB} color="#F87A9C" />
+              </div>
             </div>
-            <div className="flex items-center gap-2.5">
-              <BouncyScore value={scoreA} color="#A78BFA" />
-              <Zap size={16} color="#FFD700" />
-              <BouncyScore value={scoreB} color="#F87A9C" />
-            </div>
+
+            {topDonor ? (
+              <button onClick={() => setShowRanking(true)}
+                className="flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 shrink-0 max-w-[120px] sm:max-w-[150px]"
+                style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)' }}>
+                {topDonor.avatar_url
+                  ? <img src={topDonor.avatar_url} className="w-[18px] h-[18px] rounded-full object-cover shrink-0" />
+                  : <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.15)' }}><User size={10} color="#fff" /></div>}
+                <span className="text-[10px] font-bold truncate" style={{ color: '#FFD700' }}>👑 {topDonor.display_name ?? 'Supporter'}</span>
+              </button>
+            ) : (
+              <button onClick={() => setShowRanking(true)} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                <Award size={17} color="#FFD700" />
+              </button>
+            )}
           </div>
 
-          {topDonor ? (
-            <button onClick={() => setShowRanking(true)}
-              className="flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 shrink-0 max-w-[120px] sm:max-w-[150px]"
-              style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)' }}>
-              {topDonor.avatar_url
-                ? <img src={topDonor.avatar_url} className="w-[18px] h-[18px] rounded-full object-cover shrink-0" />
-                : <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.15)' }}><User size={10} color="#fff" /></div>}
-              <span className="text-[10px] font-bold truncate" style={{ color: '#FFD700' }}>👑 {topDonor.display_name ?? 'Supporter'}</span>
-            </button>
-          ) : (
-            <button onClick={() => setShowRanking(true)} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
-              <Award size={17} color="#FFD700" />
-            </button>
-          )}
+          {/* Video zone — deux colonnes nettement séparées, prend tout l'espace
+              restant (flex-1) sur desktop au lieu d'une hauteur mobile figée. */}
+          <div className="flex-1 flex relative min-h-0 gap-1.5 p-1.5" style={{ background: '#000' }}>
+            <BattleVideoHalf hostId={battle?.host_a_id} hostName={hostNameA} hostAvatar={hostAvatarA} side="a" leading={leadingSide === 'a'}
+              giftTicks={giftTicksA} crownKey={crownA} onGiftClick={battle ? () => setGiftSide('a') : undefined} />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-full font-black text-white text-xs shadow-lg"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#F0365A)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>VS</div>
+            <BattleVideoHalf hostId={battle?.host_b_id} hostName={hostNameB} hostAvatar={hostAvatarB} side="b" leading={leadingSide === 'b'}
+              giftTicks={giftTicksB} crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined} />
+
+            {showParticipants && <BattleParticipantsPanel onClose={() => setShowParticipants(false)} />}
+
+            {/* Ranking modal — centré, compact, pas plein écran */}
+            {showRanking && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center p-6 bg-black/60" onClick={() => setShowRanking(false)}>
+                <div className="w-full max-w-xs rounded-2xl p-4 max-h-[70vh] overflow-y-auto" style={{ background: 'var(--surface)' }} onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>🏆 Classement des supporters</p>
+                    <button onClick={() => setShowRanking(false)} style={{ color: 'var(--text-tertiary)' }}><X size={16} /></button>
+                  </div>
+                  {!ranking || ranking.top_10.length === 0 ? (
+                    <p className="text-sm text-center py-6" style={{ color: 'var(--text-tertiary)' }}>Aucun cadeau envoyé pour le moment.</p>
+                  ) : (
+                    ranking.top_10.map((item, i) => (
+                      <div key={`${item.id}-${i}`} className="flex items-center gap-2.5 py-1.5">
+                        <span className="text-sm font-bold w-4" style={{ color: 'var(--text-tertiary)' }}>{i + 1}</span>
+                        {item.avatar_url
+                          ? <img src={item.avatar_url} className="w-8 h-8 rounded-full object-cover" />
+                          : <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}><User size={14} className="text-[var(--text-tertiary)]" /></div>}
+                        <span className="flex-1 text-sm truncate font-medium" style={{ color: 'var(--text-primary)' }}>{item.display_name ?? 'Supporter'}</span>
+                        <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{(item as any).gogold_spent} 🪙</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Video zone — deux colonnes nettement séparées */}
-        <div className="flex-1 flex relative min-h-0 gap-[3px] px-[3px]" style={{ background: '#000' }}>
-          <BattleVideoHalf hostId={battle?.host_a_id} hostName={hostNameA} hostAvatar={hostAvatarA} side="a" leading={leadingSide === 'a'}
-            giftTicks={giftTicksA} crownKey={crownA} onGiftClick={battle ? () => setGiftSide('a') : undefined} />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-full font-black text-white text-xs shadow-lg"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#F0365A)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>VS</div>
-          <BattleVideoHalf hostId={battle?.host_b_id} hostName={hostNameB} hostAvatar={hostAvatarB} side="b" leading={leadingSide === 'b'}
-            giftTicks={giftTicksB} crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined} />
-        </div>
-
-        {/* Bottom: chat + actions */}
-        <div className="shrink-0 flex flex-col" style={{ height: '38%', background: 'rgba(15,15,20,0.97)' }}>
+        {/* ── Colonne chat — en bas sur mobile (hauteur fixe 38%), colonne latérale
+            fixe sur desktop (lg:w-[380px], hauteur pleine) ── */}
+        <div className="shrink-0 flex flex-col lg:w-[380px] lg:!h-full lg:border-r"
+          style={{ height: '38%', background: 'rgba(15,15,20,0.97)', borderColor: 'rgba(255,255,255,0.08)' }}>
           <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0">
             {messages.map(m => (
               <div key={m.id} className="flex items-start gap-2 py-0.5">
@@ -453,32 +493,6 @@ export default function BattlePage() {
             </button>
           </div>
         </div>
-
-        {/* Ranking modal — centré, compact, pas plein écran */}
-        {showRanking && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center p-6 bg-black/60" onClick={() => setShowRanking(false)}>
-            <div className="w-full max-w-xs rounded-2xl p-4 max-h-[70vh] overflow-y-auto" style={{ background: 'var(--surface)' }} onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>🏆 Classement des supporters</p>
-                <button onClick={() => setShowRanking(false)} style={{ color: 'var(--text-tertiary)' }}><X size={16} /></button>
-              </div>
-              {!ranking || ranking.top_10.length === 0 ? (
-                <p className="text-sm text-center py-6" style={{ color: 'var(--text-tertiary)' }}>Aucun cadeau envoyé pour le moment.</p>
-              ) : (
-                ranking.top_10.map((item, i) => (
-                  <div key={`${item.id}-${i}`} className="flex items-center gap-2.5 py-1.5">
-                    <span className="text-sm font-bold w-4" style={{ color: 'var(--text-tertiary)' }}>{i + 1}</span>
-                    {item.avatar_url
-                      ? <img src={item.avatar_url} className="w-8 h-8 rounded-full object-cover" />
-                      : <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}><User size={14} className="text-[var(--text-tertiary)]" /></div>}
-                    <span className="flex-1 text-sm truncate font-medium" style={{ color: 'var(--text-primary)' }}>{item.display_name ?? 'Supporter'}</span>
-                    <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{(item as any).gogold_spent} 🪙</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Gros cadeau — bannière plein écran avec trône + nom du donateur */}
@@ -538,11 +552,47 @@ export default function BattlePage() {
   );
 }
 
-function ParticipantsCount() {
+function ParticipantsCount({ onClick }: { onClick: () => void }) {
   const participants = useParticipants();
   return (
-    <span className="flex items-center gap-1 text-white text-xs font-bold px-2 py-1 rounded-full shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
+    <button onClick={onClick}
+      className="flex items-center gap-1 text-white text-xs font-bold px-2 py-1 rounded-full shrink-0 transition-colors hover:bg-white/20"
+      style={{ background: 'rgba(255,255,255,0.1)' }}>
       <Users size={12} /> {participants.length}
-    </span>
+    </button>
+  );
+}
+
+// ── Panel participants — tous les viewers connectés à la room du battle
+// (spectateurs des deux camps confondus, seuls A et B publient de la vidéo) ──
+function BattleParticipantsPanel({ onClose }: { onClose: () => void }) {
+  const participants = useParticipants();
+  return (
+    <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 w-72"
+      style={{ background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(16px)', borderRadius: '1rem', border: '1px solid rgba(123,63,242,0.3)' }}>
+      <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: 'rgba(123,63,242,0.2)' }}>
+        <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: '#a78bfa' }}>
+          <Users size={12} /> Participants ({participants.length})
+        </span>
+        <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <X size={13} />
+        </button>
+      </div>
+      <div className="p-2 space-y-1.5 max-h-72 overflow-y-auto">
+        {participants.map(p => {
+          const name = p.isLocal ? 'Toi' : (p.name || p.identity || 'Participant');
+          return (
+            <div key={p.identity} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
+              style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#EC4899)' }}>
+                {name[0]?.toUpperCase() ?? '?'}
+              </div>
+              <span className="text-xs text-white truncate flex-1">{name}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
