@@ -1000,8 +1000,15 @@ function MediaControls({
   // LiveKitViewer, un composant frère distinct de celui-ci ; sans cette sync,
   // le bouton Cam/Cam off de la barre du bas restait affiché "Cam off" même
   // après activation réussie depuis l'autre bouton). Le micro suit useLocalMicEnabled.
+  //
+  // Se réabonne dès le montage (pas seulement quand isOnStage/isHost passe à
+  // true) : l'ancienne condition ratait l'event si la caméra était déjà
+  // publiée AVANT que ce useEffect démarre à écouter (ex: le guest clique
+  // Cam via toggleGuestCam pendant un court instant où l'effet n'était pas
+  // encore réabonné après un changement de isOnStage) — camOn restait
+  // bloqué à false indéfiniment malgré une vraie vidéo déjà active, gardant
+  // le gros bandeau "active ta caméra" affiché par-dessus sa propre vidéo.
   useEffect(() => {
-    if (!isHost && !isOnStage) return;
     function sync() {
       const camPub = localParticipant.getTrackPublication(Track.Source.Camera);
       setCamOn(camPub ? !camPub.isMuted : false);
@@ -1017,7 +1024,7 @@ function MediaControls({
       localParticipant.off(ParticipantEvent.TrackMuted, sync);
       localParticipant.off(ParticipantEvent.TrackUnmuted, sync);
     };
-  }, [isOnStage, isHost, localParticipant]);
+  }, [localParticipant]);
 
   function SideBtn({ icon, label, onClick, active, color, badge, danger }: {
     icon: React.ReactNode; label: string; onClick?: () => void;
