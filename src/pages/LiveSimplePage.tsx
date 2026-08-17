@@ -713,7 +713,19 @@ function LiveKitViewer({
     ? (activeTracks.find(t => t.participant.isLocal) ?? activeTracks[0] ?? null)
     : (activeTracks.find(t => !t.participant.isLocal) ?? activeTracks[0] ?? null);
 
-  if (activeTracks.length === 0) {
+  // La place du host reste réservée dès qu'il est connecté à la room, même
+  // sans caméra active — sa présence (avatar fallback) ne doit jamais dépendre
+  // de sa caméra, ni de celle d'un éventuel guest sur scène. Avant ce fix,
+  // l'écran "clique pour activer ta caméra" s'affichait à la place de TOUTE
+  // la grille dès qu'aucune caméra n'était active nulle part (host ET guests
+  // confondus), masquant même les guests sur scène qui, eux, avaient déjà une
+  // case réservée (cf. stageParticipants plus bas) — cet écran ne doit
+  // apparaître que si absolument personne n'est présent sur scène.
+  const anyoneOnStage = activeTracks.length > 0
+    || (isHost && !!localParticipant)
+    || participants.some(p => stageIdentities.has(p.identity));
+
+  if (!anyoneOnStage) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
         <div className="relative"
@@ -772,19 +784,20 @@ function LiveKitViewer({
     onStage:    stageIdentities.has(t.participant.identity),
     isSpeaking: speakingIds.has(t.participant.identity),
   }));
-  // Participants sur scène (invités par le host) mais sans caméra active — être
-  // sur scène n'oblige pas à publier de vidéo (contrôle entier utilisateur).
-  // Sans ce fallback, ils étaient absents de la grille : aucune case affichée,
-  // ni pour eux-mêmes ni pour les autres viewers, malgré une invitation acceptée.
+  // Participants sur scène (le host lui-même, ou un guest invité) mais sans
+  // caméra active — être sur scène n'oblige pas à publier de vidéo (contrôle
+  // entier utilisateur). Sans ce fallback, ils étaient absents de la grille :
+  // aucune case affichée, ni pour eux-mêmes ni pour les autres viewers, malgré
+  // une place légitimement réservée (host connecté, ou invitation acceptée).
   const withoutTrack: StageParticipant[] = participants
-    .filter(p => stageIdentities.has(p.identity) && !withTrack.some(w => w.identity === p.identity))
+    .filter(p => (stageIdentities.has(p.identity) || (isHost && p.isLocal)) && !withTrack.some(w => w.identity === p.identity))
     .map(p => ({
       identity:   p.identity,
       name:       p.isLocal ? 'Toi' : (participantNames.get(p.identity) ?? p.name ?? p.identity),
       track:      null,
-      avatarUrl:  participantAvatars.get(p.identity) ?? null,
+      avatarUrl:  p.isLocal ? (streamerAvatarUrl ?? null) : (participantAvatars.get(p.identity) ?? null),
       isLocal:    p.isLocal,
-      onStage:    true,
+      onStage:    stageIdentities.has(p.identity),
       isSpeaking: false,
     }));
   const stageParticipants: StageParticipant[] = [...withTrack, ...withoutTrack];
