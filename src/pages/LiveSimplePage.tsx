@@ -1760,6 +1760,11 @@ export default function LiveSimplePage() {
 
                 {/* Zone tap coeur — comme sur mobile, chaque tap n'importe où sur la
                     vidéo déclenche un coeur (throttlée côté LiveLikeButton pour l'API).
+                    likeRef.trigger() anime le petit coeur du bouton like (barre du bas,
+                    FloatingHearts) ET incrémente/poste le like — heartsOverlayRef.spawn()
+                    anime en plus un coeur qui monte depuis le bas de la VIDÉO elle-même
+                    (LiveHeartsOverlay), même comportement que côté mobile
+                    (SimpleLiveViewerScreen.handleLike) où le tap déclenche les deux.
                     Pas de onDoubleClick ici : sa présence forcerait le navigateur à
                     retarder chaque clic de ~300ms en attendant de savoir si un second
                     clic arrive, ce qui empêchait de tapoter vite plusieurs fois.
@@ -1769,7 +1774,7 @@ export default function LiveSimplePage() {
                     vrai bouton en dessous. */}
                 <div
                   className="absolute inset-0 z-10"
-                  onClick={() => likeRef.current?.trigger()}
+                  onClick={() => { likeRef.current?.trigger(); heartsOverlayRef.current?.spawn(1); }}
                 />
 
                 {/* Badge "Tu es sur scène" */}

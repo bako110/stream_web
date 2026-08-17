@@ -328,11 +328,13 @@ export const LIVE_ANIMATIONS_CSS = `
   100% { transform: translateY(-200px) scale(1.2); opacity: 0; }
 }
 /* Coeurs des likes reçus (LiveHeartsOverlay) — montée depuis le bas-droite avec
-   dérive continue vers la gauche, sans zigzag, comme sur mobile. */
+   dérive continue vers la gauche, sans zigzag, comme sur mobile. Déplacement en
+   pixels absolus (pas de %, qui se base sur la taille de l'élément lui-même —
+   36px ici — et rendait la montée quasi invisible : ~25px de trajet total). */
 @keyframes liveHeartRise {
   0%   { transform: translate(0, 0) scale(0);   opacity: 1; }
-  15%  { transform: translate(calc(var(--drift-x) * 0.2), -18%) scale(1); }
-  100% { transform: translate(var(--drift-x), -70%) scale(1); opacity: 0; }
+  15%  { transform: translate(calc(var(--drift-x) * 0.2), -70px) scale(1); }
+  100% { transform: translate(var(--drift-x), -320px) scale(1); opacity: 0; }
 }
 /* Trajectoire avec léger zigzag latéral façon TikTok — au lieu d'une ligne
    droite, le cœur/emoji "serpente" légèrement en montant pour un rendu
