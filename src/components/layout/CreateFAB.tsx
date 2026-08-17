@@ -840,7 +840,10 @@ export function CreateFAB() {
 
   return (
     <>
-      <div className="fixed bottom-20 right-5 lg:bottom-8 lg:right-8 z-30 flex flex-col items-end gap-3">
+      {/* hidden lg:flex : sur mobile, le bouton Créer est désormais intégré
+          au centre de BottomNav.tsx (même pattern que AppTabBar.tsx mobile
+          natif) — ce FAB flottant reste utilisé uniquement sur desktop. */}
+      <div className="hidden lg:flex fixed bottom-8 right-8 z-30 flex-col items-end gap-3">
         {open && FAB_ACTIONS.map((action, i) => (
           <div key={action.id} className="flex items-center gap-3"
             style={{ animation: `fade-up 0.15s ease ${i * 0.05}s both` }}>
