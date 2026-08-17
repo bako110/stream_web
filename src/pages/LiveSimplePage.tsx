@@ -685,7 +685,10 @@ function LiveKitViewer({
 
   async function activateCamera() {
     if (!isHost) return;
-    try { await localParticipant.setCameraEnabled(true); } catch { /* permission refusée */ }
+    try {
+      await localParticipant.setCameraEnabled(true);
+      await localParticipant.setMicrophoneEnabled(true);
+    } catch { /* permission refusée */ }
   }
 
   async function toggleMicFromAvatar(e: React.MouseEvent) {
@@ -913,37 +916,11 @@ function MediaControls({
     return () => { localParticipant.off(ParticipantEvent.ParticipantPermissionsChanged, sync); };
   }, [localParticipant, isHost, onStageDetected]);
 
-  // Active cam+mic automatiquement pour le host
-  useEffect(() => {
-    if (!isHost) return;
-    let cancelled = false;
-    async function enableMedia() {
-      try {
-        await localParticipant.setCameraEnabled(true);
-        if (!cancelled) setCamOn(true);
-        await localParticipant.setMicrophoneEnabled(true);
-      } catch { /* permission refusée */ }
-    }
-    enableMedia();
-    return () => { cancelled = true; };
-  }, [localParticipant, isHost]);
-
-  // Active cam+mic automatiquement pour le guest dès qu'il monte sur scène —
-  // sinon il apparaît sur scène sans image/son tant qu'il n'a pas cliqué
-  // manuellement sur Cam/Micro, ce qui donnait l'impression qu'il ne montait pas.
-  useEffect(() => {
-    if (isHost || !isOnStage) return;
-    let cancelled = false;
-    async function enableGuestMedia() {
-      try {
-        await localParticipant.setCameraEnabled(true);
-        if (!cancelled) setCamOn(true);
-        await localParticipant.setMicrophoneEnabled(true);
-      } catch { /* permission refusée */ }
-    }
-    enableGuestMedia();
-    return () => { cancelled = true; };
-  }, [localParticipant, isHost, isOnStage]);
+  // Caméra/micro désactivés par défaut, pour le host comme pour le guest qui
+  // monte sur scène — l'utilisateur garde le contrôle entier et doit cliquer
+  // explicitement (bouton "Activer ma caméra"/SideBtn Cam) pour publier son
+  // flux. Avant ce fix, les deux étaient auto-activés dès la connexion/montée
+  // sur scène, sans possibilité de rester caméra coupée par choix.
 
   async function toggleCam() {
     const next = !camOn;
@@ -986,12 +963,29 @@ function MediaControls({
     }
   }
 
-  // Sync état cam avec l'état LiveKit réel pour le guest (le micro suit useLocalMicEnabled)
+  // Sync état cam avec l'état LiveKit réel — pour le guest sur scène ET pour le
+  // host (qui peut activer sa caméra via le gros bouton "Activer ma caméra" de
+  // LiveKitViewer, un composant frère distinct de celui-ci ; sans cette sync,
+  // le bouton Cam/Cam off de la barre du bas restait affiché "Cam off" même
+  // après activation réussie depuis l'autre bouton). Le micro suit useLocalMicEnabled.
   useEffect(() => {
-    if (isHost || !isOnStage) return;
-    const camPub = localParticipant.getTrackPublication(Track.Source.Camera);
-    setCamOn(camPub ? !camPub.isMuted : false);
-  }, [isOnStage, localParticipant, isHost]);
+    if (!isHost && !isOnStage) return;
+    function sync() {
+      const camPub = localParticipant.getTrackPublication(Track.Source.Camera);
+      setCamOn(camPub ? !camPub.isMuted : false);
+    }
+    sync();
+    localParticipant.on(ParticipantEvent.LocalTrackPublished, sync);
+    localParticipant.on(ParticipantEvent.LocalTrackUnpublished, sync);
+    localParticipant.on(ParticipantEvent.TrackMuted, sync);
+    localParticipant.on(ParticipantEvent.TrackUnmuted, sync);
+    return () => {
+      localParticipant.off(ParticipantEvent.LocalTrackPublished, sync);
+      localParticipant.off(ParticipantEvent.LocalTrackUnpublished, sync);
+      localParticipant.off(ParticipantEvent.TrackMuted, sync);
+      localParticipant.off(ParticipantEvent.TrackUnmuted, sync);
+    };
+  }, [isOnStage, isHost, localParticipant]);
 
   function SideBtn({ icon, label, onClick, active, color, badge, danger }: {
     icon: React.ReactNode; label: string; onClick?: () => void;
