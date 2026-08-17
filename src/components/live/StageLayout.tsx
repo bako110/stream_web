@@ -72,7 +72,7 @@ export function StageLayout({
         </div>
 
         {!main.isLocal && (
-          <div className={`absolute top-3 right-3 flex items-center gap-2 transition-opacity ${hoveredId === main.identity || isHost ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`absolute top-3 right-3 z-20 flex items-center gap-2 transition-opacity ${hoveredId === main.identity || isHost ? 'opacity-100' : 'opacity-0'}`}>
             <button
               className="w-9 h-9 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.55)' }}
@@ -112,7 +112,7 @@ export function StageLayout({
           grand espace. Scroll dès que ça déborde, pour accueillir beaucoup de
           monde sans jamais agrandir les cases. ── */}
       {others.length > 0 && (
-        <div className="flex flex-row lg:flex-col gap-1 shrink-0 w-full h-[76px] lg:w-[84px] lg:h-full
+        <div className="relative z-20 flex flex-row lg:flex-col gap-1 shrink-0 w-full h-[76px] lg:w-[84px] lg:h-full
           overflow-x-auto lg:overflow-x-visible overflow-y-visible lg:overflow-y-auto">
           {others.map(p => (
             <div
@@ -139,7 +139,7 @@ export function StageLayout({
               </div>
 
               {!p.isLocal && (hoveredId === p.identity || isHost) && (
-                <div className="absolute top-0.5 right-0.5 flex items-center gap-0.5">
+                <div className="absolute top-0.5 right-0.5 z-20 flex items-center gap-0.5">
                   <button
                     className="w-4 h-4 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(0,0,0,0.6)' }}

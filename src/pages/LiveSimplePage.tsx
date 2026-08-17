@@ -1737,7 +1737,11 @@ export default function LiveSimplePage() {
                     vidéo déclenche un coeur (throttlée côté LiveLikeButton pour l'API).
                     Pas de onDoubleClick ici : sa présence forcerait le navigateur à
                     retarder chaque clic de ~300ms en attendant de savoir si un second
-                    clic arrive, ce qui empêchait de tapoter vite plusieurs fois. */}
+                    clic arrive, ce qui empêchait de tapoter vite plusieurs fois.
+                    z-10, EN DESSOUS des boutons de StageLayout (z-20, cf. StageLayout.tsx)
+                    — avant ce fix elle recouvrait tout LiveKitViewer et absorbait les
+                    clics sur les boutons cadeau/menu/pin avant qu'ils n'atteignent le
+                    vrai bouton en dessous. */}
                 <div
                   className="absolute inset-0 z-10"
                   onClick={() => likeRef.current?.trigger()}
