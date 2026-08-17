@@ -649,10 +649,15 @@ function useLocalMicEnabled(): boolean {
 }
 
 function LiveKitViewer({
-  isHost, liveId, stageIdentities, participantNames, participantAvatars, onGiftClick, streamerAvatarUrl, streamerName,
+  isHost, liveId, hostId, stageIdentities, participantNames, participantAvatars, onGiftClick, streamerAvatarUrl, streamerName,
   pinnedIdentity, onPin,
 }: {
-  isHost: boolean; liveId: string; stageIdentities: Set<string>;
+  isHost: boolean; liveId: string;
+  /** Identité réelle du host, peu importe qui regarde — nécessaire pour lui
+   * réserver une case dans la grille même côté viewer (stageIdentities ne
+   * couvre que les guests invités, jamais le host lui-même). */
+  hostId: string | null;
+  stageIdentities: Set<string>;
   participantNames: Map<string, string>;
   participantAvatars: Map<string, string>;
   onGiftClick: (identity: string, name: string) => void;
@@ -662,6 +667,7 @@ function LiveKitViewer({
   pinnedIdentity: string | null;
   onPin: (identity: string) => void;
 }) {
+  const { user: currentUser } = useAuthStore();
   const tracks       = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const participants = useParticipants();
   const speakingIds  = useActiveSpeakersSet();
@@ -707,11 +713,15 @@ function LiveKitViewer({
 
   const activeTracks = tracks.filter(t => !t.publication?.isMuted);
 
-  // Défaut tant qu'aucun pin explicite n'est actif — l'hôte pour les viewers,
-  // soi-même pour le host.
-  const defaultSpotlight = isHost
-    ? (activeTracks.find(t => t.participant.isLocal) ?? activeTracks[0] ?? null)
-    : (activeTracks.find(t => !t.participant.isLocal) ?? activeTracks[0] ?? null);
+  // Défaut tant qu'aucun pin explicite n'est actif — le HOST est TOUJOURS
+  // l'écran principal par défaut, pour tout le monde (viewers ET le host
+  // lui-même), qu'il ait une caméra active ou non — jamais un guest.
+  // Identifié par hostId (identité réelle, indépendante des tracks) plutôt
+  // que par activeTracks : avant ce fix, sans caméra active nulle part, ce
+  // défaut tombait à null pour tout le monde et StageLayout retombait sur
+  // participants[0], un ordre de tableau arbitraire — côté viewer ça pouvait
+  // afficher SOI-MÊME en grand (son propre avatar) au lieu du host.
+  const defaultSpotlightIdentity = hostId ?? (isHost ? localParticipant.identity : null);
 
   // La place du host reste réservée dès qu'il est connecté à la room, même
   // sans caméra active — sa présence (avatar fallback) ne doit jamais dépendre
@@ -722,8 +732,7 @@ function LiveKitViewer({
   // case réservée (cf. stageParticipants plus bas) — cet écran ne doit
   // apparaître que si absolument personne n'est présent sur scène.
   const anyoneOnStage = activeTracks.length > 0
-    || (isHost && !!localParticipant)
-    || participants.some(p => stageIdentities.has(p.identity));
+    || participants.some(p => stageIdentities.has(p.identity) || (!!hostId && p.identity === hostId));
 
   if (!anyoneOnStage) {
     return (
@@ -773,7 +782,7 @@ function LiveKitViewer({
   // Priorité : pin explicite du host (synchronisé pour tous via WS) > défaut
   // local (l'hôte pour les viewers, soi-même pour le host tant que personne
   // d'autre n'a été mis en avant).
-  const mainIdentity = pinnedIdentity ?? defaultSpotlight?.participant.identity ?? null;
+  const mainIdentity = pinnedIdentity ?? defaultSpotlightIdentity;
 
   const withTrack: StageParticipant[] = activeTracks.map(t => ({
     identity:   t.participant.identity,
@@ -790,16 +799,30 @@ function LiveKitViewer({
   // aucune case affichée, ni pour eux-mêmes ni pour les autres viewers, malgré
   // une place légitimement réservée (host connecté, ou invitation acceptée).
   const withoutTrack: StageParticipant[] = participants
-    .filter(p => (stageIdentities.has(p.identity) || (isHost && p.isLocal)) && !withTrack.some(w => w.identity === p.identity))
-    .map(p => ({
-      identity:   p.identity,
-      name:       p.isLocal ? 'Toi' : (participantNames.get(p.identity) ?? p.name ?? p.identity),
-      track:      null,
-      avatarUrl:  p.isLocal ? (streamerAvatarUrl ?? null) : (participantAvatars.get(p.identity) ?? null),
-      isLocal:    p.isLocal,
-      onStage:    stageIdentities.has(p.identity),
-      isSpeaking: false,
-    }));
+    .filter(p => (stageIdentities.has(p.identity) || p.identity === hostId) && !withTrack.some(w => w.identity === p.identity))
+    .map(p => {
+      const isThisHost = p.identity === hostId;
+      // Priorité de l'avatar affiché : le host garde toujours streamerAvatarUrl
+      // (identifié par hostId, peu importe qui regarde — avant ce fix,
+      // "isHost && p.isLocal" ne matchait QUE la session du host lui-même,
+      // donc un simple viewer ne voyait jamais la case du host sans caméra) ;
+      // sinon, si c'est moi (viewer/guest), mon propre avatar (currentUser) ;
+      // sinon, l'avatar connu de cet autre participant (participantAvatars).
+      const avatarUrl = isThisHost
+        ? (streamerAvatarUrl ?? null)
+        : p.isLocal
+          ? (currentUser?.avatar_url ?? null)
+          : (participantAvatars.get(p.identity) ?? null);
+      return {
+        identity:   p.identity,
+        name:       p.isLocal ? 'Toi' : (isThisHost ? (streamerName ?? p.name ?? p.identity) : (participantNames.get(p.identity) ?? p.name ?? p.identity)),
+        track:      null,
+        avatarUrl,
+        isLocal:    p.isLocal,
+        onStage:    stageIdentities.has(p.identity),
+        isSpeaking: false,
+      };
+    });
   const stageParticipants: StageParticipant[] = [...withTrack, ...withoutTrack];
 
   const menuParticipant = contextMenu ? stageParticipants.find(p => p.identity === contextMenu.identity) : null;
@@ -1794,6 +1817,7 @@ export default function LiveSimplePage() {
 
                 <LiveKitViewer
                   isHost={isHost} liveId={id!}
+                  hostId={live.user?.id ?? null}
                   stageIdentities={stageIdentities}
                   participantNames={participantNames}
                   participantAvatars={participantAvatars}
