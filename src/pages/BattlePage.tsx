@@ -57,6 +57,74 @@ function BouncyScore({ value, color }: { value: number; color: string }) {
   );
 }
 
+// ── Message de hype contextuel — façon TikTok Live, réagit à l'état réel du
+// match (temps restant, score, écart, retournement de situation) plutôt que
+// de défiler au hasard. Priorité du plus urgent au plus générique : dernières
+// secondes > retournement tout juste survenu > score très serré > un camp
+// mène largement > accueil en tout début de match.
+function useHypeMessage(params: {
+  remaining: number; scoreA: number; scoreB: number;
+  leadingSide: 'a' | 'b' | null; hostNameA: string; hostNameB: string;
+  isActive: boolean;
+}): { text: string; key: string } {
+  const { remaining, scoreA, scoreB, leadingSide, hostNameA, hostNameB, isActive } = params;
+  const prevLeaderRef = useRef<'a' | 'b' | null>(null);
+  const [flipMsg, setFlipMsg] = useState<{ text: string; key: string } | null>(null);
+
+  // Détecte un retournement de situation — message prioritaire pendant 3s
+  useEffect(() => {
+    const prev = prevLeaderRef.current;
+    if (prev !== null && leadingSide !== null && prev !== leadingSide) {
+      const name = leadingSide === 'a' ? hostNameA : hostNameB;
+      setFlipMsg({ text: `🔥 ${name} prend le dessus !`, key: `flip-${Date.now()}` });
+      const t = setTimeout(() => setFlipMsg(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [leadingSide, hostNameA, hostNameB]);
+  useEffect(() => { prevLeaderRef.current = leadingSide; }, [leadingSide]);
+
+  return useMemo(() => {
+    if (!isActive) return { text: '⚔️ Le combat va commencer…', key: 'idle' };
+    if (flipMsg) return flipMsg;
+    if (remaining <= 10 && remaining > 0) return { text: '⏱️ DERNIERS INSTANTS !!', key: 'final-seconds' };
+    if (remaining <= 30 && remaining > 10) return { text: '⚡ Ça se termine bientôt…', key: 'closing' };
+
+    const total = scoreA + scoreB;
+    if (total === 0) return { text: '💬 Envoie un cadeau pour soutenir ton camp !', key: 'start' };
+
+    const diff = Math.abs(scoreA - scoreB);
+    const diffPct = total > 0 ? (diff / total) * 100 : 0;
+
+    if (diffPct < 10) return { text: '😱 Match ULTRA serré, tout peut basculer !', key: 'tight' };
+    if (leadingSide) {
+      const leaderName = leadingSide === 'a' ? hostNameA : hostNameB;
+      const trailingName = leadingSide === 'a' ? hostNameB : hostNameA;
+      return diffPct > 60
+        ? { text: `👑 ${leaderName} domine le combat !`, key: 'dominant' }
+        : { text: `💪 ${trailingName} peut encore renverser la situation !`, key: 'comeback' };
+    }
+    return { text: '🎯 Qui va prendre l\'avantage ?', key: 'neutral' };
+  }, [isActive, flipMsg, remaining, scoreA, scoreB, leadingSide, hostNameA, hostNameB]);
+}
+
+function HypeBanner({ message }: { message: { text: string; key: string } }) {
+  return (
+    <div className="relative h-5 overflow-hidden w-full flex items-center justify-center">
+      <span
+        key={message.key}
+        className="absolute whitespace-nowrap text-[11px] sm:text-xs font-bold px-2"
+        style={{
+          color: '#fff',
+          textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+          animation: 'hype-msg-in 0.35s cubic-bezier(0.16,1,0.3,1) both',
+        }}
+      >
+        {message.text}
+      </span>
+    </div>
+  );
+}
+
 function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTicks, crownKey, onGiftClick }: {
   hostId: string | undefined; hostName: string; hostAvatar: string | null; side: 'a' | 'b'; leading: boolean;
   giftTicks: GiftTick[]; crownKey: string | null; onGiftClick?: () => void;
@@ -390,6 +458,16 @@ export default function BattlePage() {
     };
   }, [ended, battle, myId, hostNameA, hostNameB, hostAvatarA, hostAvatarB]);
 
+  // Calculés ici (avant les early return) car useHypeMessage est un hook —
+  // doit être appelé inconditionnellement à chaque render, comme tous les hooks.
+  const scoreA = battle?.score_a ?? 0;
+  const scoreB = battle?.score_b ?? 0;
+  const leadingSide: 'a' | 'b' | null = (scoreA + scoreB) === 0 ? null : scoreA > scoreB ? 'a' : scoreB > scoreA ? 'b' : null;
+  const hypeMessage = useHypeMessage({
+    remaining, scoreA, scoreB, leadingSide, hostNameA, hostNameB,
+    isActive: battle?.status === 'active',
+  });
+
   if (loading) return <PageLoader />;
 
   // Battle déjà terminé au chargement (pas de token LiveKit à obtenir) — on
@@ -407,11 +485,8 @@ export default function BattlePage() {
 
   if (!token || !wsUrl) return <PageLoader />;
 
-  const scoreA = battle?.score_a ?? 0;
-  const scoreB = battle?.score_b ?? 0;
   const total = scoreA + scoreB;
   const pctA = total > 0 ? (scoreA / total) * 100 : 50;
-  const leadingSide: 'a' | 'b' | null = total === 0 ? null : scoreA > scoreB ? 'a' : scoreB > scoreA ? 'b' : null;
   const topDonor = ranking?.top_donor;
 
   return (
@@ -442,6 +517,7 @@ export default function BattlePage() {
                 <Zap size={16} color="#FFD700" />
                 <BouncyScore value={scoreB} color="#F87A9C" />
               </div>
+              <HypeBanner message={hypeMessage} />
             </div>
 
             {topDonor ? (
@@ -634,6 +710,12 @@ export default function BattlePage() {
           0%   { transform: translate(0, 0) scale(0);   opacity: 1; }
           15%  { transform: translate(calc(var(--drift-x) * 0.2), -70px) scale(1); }
           100% { transform: translate(var(--drift-x), -320px) scale(1); opacity: 0; }
+        }
+        /* Message de hype (HypeBanner) — slide-up + fade façon TikTok à chaque
+           changement de message (nouvelle key = nouveau montage = animation rejouée). */
+        @keyframes hype-msg-in {
+          0%   { transform: translateY(6px); opacity: 0; }
+          100% { transform: translateY(0);    opacity: 1; }
         }
       `}</style>
     </LiveKitRoom>
