@@ -492,7 +492,12 @@ export default function BattlePage() {
       if (cancelled) return;
       try {
         const d = JSON.parse(e.data);
-        if (d.type === 'battle_reaction' && (d.side === 'a' || d.side === 'b')) {
+        // Notre propre réaction est déjà appliquée de façon optimiste dans
+        // handleReact() au moment du clic — l'appliquer une seconde fois ici
+        // quand le broadcast revient (le backend ne s'exclut pas lui-même de
+        // comment_room_manager.broadcast) doublerait le compteur et ferait
+        // monter deux coeurs pour un seul clic.
+        if (d.type === 'battle_reaction' && (d.side === 'a' || d.side === 'b') && d.user_id !== user?.id) {
           const id = `${Date.now()}-${Math.random()}`;
           const drift = (Math.random() - 0.5) * 40;
           setHeartFloaters(prev => [...prev.slice(-20), { id, side: d.side, drift }]);
@@ -512,7 +517,7 @@ export default function BattlePage() {
       } catch { /* ignore */ }
     };
     return () => { cancelled = true; ws.close(); };
-  }, [accessToken, battleId]);
+  }, [accessToken, battleId, user?.id]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -538,7 +543,21 @@ export default function BattlePage() {
   }, [battle?.started_at, battle?.status, battle?.duration_seconds, isHost, battleId]);
 
   function handleReact(side: 'a' | 'b') {
-    battlesApi.react(battleId, side).catch(() => {});
+    // Mise à jour optimiste locale immédiate — avant ce fix, le coeur/compteur ne
+    // bougeait QUE si le broadcast WS battle_reaction revenait (cf. le socket
+    // ws/battle/{battleId} plus bas), donc un aller-retour réseau complet avant
+    // le moindre retour visuel ; en cas de coupure/latence WS ponctuelle,
+    // l'utilisateur clique sans jamais rien voir. Les coeurs des AUTRES viewers
+    // continuent d'arriver via ce même WS, qui reste la source de vérité pour eux.
+    const id = `local-${Date.now()}-${Math.random()}`;
+    const drift = (Math.random() - 0.5) * 40;
+    setHeartFloaters(prev => [...prev.slice(-20), { id, side, drift }]);
+    setTimeout(() => setHeartFloaters(prev => prev.filter(f => f.id !== id)), 1800);
+    (side === 'a' ? setHeartCountA : setHeartCountB)(c => c + 1);
+
+    battlesApi.react(battleId, side).catch((e) => {
+      console.error('battle react failed', e);
+    });
   }
 
   async function handleSendChat() {
