@@ -14,7 +14,7 @@ import { WS_BASE_URL } from '../utils/constants';
 import { openAuthenticatedWs } from '../utils/authenticatedWs';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
-import { battlesApi, type Battle, type BattleRanking } from '../api/battles';
+import { battlesApi, type Battle, type BattleRanking, type BattleGoal, type SideDonor } from '../api/battles';
 import { MatchResultModal, type MatchResultData } from '../components/live/MatchResultModal';
 import { LiveGiftModal } from '../components/live/LiveGiftModal';
 
@@ -125,9 +125,10 @@ function HypeBanner({ message }: { message: { text: string; key: string } }) {
   );
 }
 
-function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTicks, crownKey, onGiftClick }: {
+function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTicks, crownKey, onGiftClick, winCount, topDonors }: {
   hostId: string | undefined; hostName: string; hostAvatar: string | null; side: 'a' | 'b'; leading: boolean;
   giftTicks: GiftTick[]; crownKey: string | null; onGiftClick?: () => void;
+  winCount: number; topDonors: SideDonor[];
 }) {
   const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const track = tracks.find(t => t.participant.identity === hostId);
@@ -154,18 +155,28 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
 
       {/* Voile de couleur pour identifier le camp d'un coup d'œil */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(${side === 'a' ? '90deg' : '270deg'}, ${color}22, transparent 40%)` }} />
+      {/* Voile bas plus sombre pour la lisibilité des cartes donateurs/avatars */}
+      <div className="absolute inset-x-0 bottom-0 h-28 pointer-events-none" style={{ background: 'linear-gradient(0deg, rgba(0,0,0,0.65), transparent)' }} />
 
       {crownKey && (
         <span key={crownKey} className="absolute top-3 left-1/2 -translate-x-1/2 text-3xl z-10"
           style={{ animation: 'battle-crown-pop 2.6s ease-out forwards' }}>👑</span>
       )}
 
-      <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-full backdrop-blur-sm z-10"
+      {winCount > 0 && (
+        <div className="absolute top-2 left-2 flex items-center gap-1 px-2 lg:px-2.5 py-0.5 lg:py-1 rounded-full z-10"
+          style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,215,0,0.4)' }}>
+          <span className="text-[10px] lg:text-xs font-black italic" style={{ color: '#FFD700' }}>WIN</span>
+          <span className="text-[10px] lg:text-xs font-bold text-white">×{winCount}</span>
+        </div>
+      )}
+
+      <div className="absolute top-9 lg:top-11 left-2 flex items-center gap-1.5 px-2 py-1 rounded-full backdrop-blur-sm z-10"
         style={{ background: 'rgba(0,0,0,0.55)', border: `1px solid ${color}55` }}>
         {hostAvatar
-          ? <img src={hostAvatar} className="w-5 h-5 rounded-full object-cover" />
-          : <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: color }}><User size={10} color="#fff" /></div>}
-        <span className="text-white text-xs font-bold truncate max-w-[110px]">{hostName}</span>
+          ? <img src={hostAvatar} className="w-5 h-5 lg:w-6 lg:h-6 rounded-full object-cover" />
+          : <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full flex items-center justify-center" style={{ background: color }}><User size={10} color="#fff" /></div>}
+        <span className="text-white text-xs lg:text-sm font-bold truncate max-w-[110px] lg:max-w-[160px]">{hostName}</span>
         {leading && <span className="text-xs">👑</span>}
       </div>
 
@@ -192,6 +203,45 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
           </div>
         ))}
       </div>
+
+      {/* Top 3 donateurs de ce camp — avatar, nom, dernier cadeau envoyé (icône
+          en grand à droite) + quantité totale, façon carte plutôt que pilule
+          pour laisser le cadeau bien lisible comme dans la maquette. */}
+      {topDonors.length > 0 && (
+        <div className="absolute bottom-9 lg:bottom-11 left-2 right-2 flex flex-col gap-1 z-10">
+          {topDonors.slice(0, 3).map(d => (
+            <div key={d.id} className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 lg:py-1.5 rounded-xl backdrop-blur-sm max-w-full"
+              style={{ background: 'rgba(20,16,28,0.6)' }} onClick={e => e.stopPropagation()}>
+              {d.avatar_url
+                ? <img src={d.avatar_url} className="w-7 h-7 lg:w-8 lg:h-8 rounded-full object-cover shrink-0" />
+                : <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: color }}><User size={13} color="#fff" /></div>}
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-[11px] lg:text-xs font-bold truncate leading-tight">{d.display_name}</p>
+                <p className="text-[9px] lg:text-[10px] truncate leading-tight" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                  a envoyé {d.last_gift_name ?? 'un cadeau'}
+                </p>
+              </div>
+              {d.last_gift_emoji && <span className="text-xl lg:text-2xl shrink-0">{d.last_gift_emoji}</span>}
+              <span className="text-xs lg:text-sm font-black shrink-0" style={{ color: '#FDE68A' }}>×{d.gifts_count}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Avatars des top supporters — superposés en cascade façon "qui a vu",
+          dernier slot = badge MVP (plus gros donateur du camp). */}
+      {topDonors.length > 0 && (
+        <div className="absolute bottom-2 left-2 flex items-center z-10">
+          {topDonors.slice(0, 3).map((d, i) => (
+            d.avatar_url
+              ? <img key={d.id} src={d.avatar_url} className="w-7 h-7 lg:w-8 lg:h-8 rounded-full object-cover border-2"
+                  style={{ borderColor: '#0B0812', marginLeft: i === 0 ? 0 : -8 }} />
+              : <div key={d.id} className="w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center border-2"
+                  style={{ borderColor: '#0B0812', marginLeft: i === 0 ? 0 : -8, background: color }}><User size={12} color="#fff" /></div>
+          ))}
+          <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] lg:text-[10px] font-black text-black" style={{ background: '#FFD700' }}>MVP</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -220,6 +270,10 @@ export default function BattlePage() {
   const [hostNameB, setHostNameB] = useState('Créateur B');
   const [hostAvatarA, setHostAvatarA] = useState<string | null>(null);
   const [hostAvatarB, setHostAvatarB] = useState<string | null>(null);
+  const [followersA, setFollowersA] = useState(0);
+  const [followersB, setFollowersB] = useState(0);
+  const [followingA, setFollowingA] = useState(false);
+  const [followingB, setFollowingB] = useState(false);
   const [giftTicksA, setGiftTicksA] = useState<GiftTick[]>([]);
   const [giftTicksB, setGiftTicksB] = useState<GiftTick[]>([]);
   const [crownA, setCrownA] = useState<string | null>(null);
@@ -233,6 +287,7 @@ export default function BattlePage() {
   const [heartFloaters, setHeartFloaters] = useState<{ id: string; side: 'a' | 'b'; drift: number }[]>([]);
   const [heartCountA, setHeartCountA] = useState(0);
   const [heartCountB, setHeartCountB] = useState(0);
+  const [battleGoal, setBattleGoal] = useState<BattleGoal | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoEndTriggeredRef = useRef(false);
@@ -265,6 +320,8 @@ export default function BattlePage() {
         }
         const rank = await battlesApi.getRanking(battleId).catch(() => null);
         if (mounted) setRanking(rank);
+        const goal = await battlesApi.getActiveGoal(battleId).catch(() => null);
+        if (mounted) setBattleGoal(goal);
       } catch { /* silencieux */ } finally { if (mounted) setLoading(false); }
     })();
     return () => { mounted = false; };
@@ -273,16 +330,43 @@ export default function BattlePage() {
   useEffect(() => {
     if (!battle?.host_a_id) return;
     apiClient.get<any>(Endpoints.users.publicProfile(battle.host_a_id))
-      .then(r => { setHostNameA(r.data.display_name || r.data.username || 'Créateur A'); setHostAvatarA(r.data.avatar_url); })
+      .then(r => {
+        setHostNameA(r.data.display_name || r.data.username || 'Créateur A');
+        setHostAvatarA(r.data.avatar_url);
+        setFollowersA(r.data.followers_count ?? 0);
+        setFollowingA(!!r.data.is_followed);
+      })
       .catch(() => {});
   }, [battle?.host_a_id]);
 
   useEffect(() => {
     if (!battle?.host_b_id) return;
     apiClient.get<any>(Endpoints.users.publicProfile(battle.host_b_id))
-      .then(r => { setHostNameB(r.data.display_name || r.data.username || 'Créateur B'); setHostAvatarB(r.data.avatar_url); })
+      .then(r => {
+        setHostNameB(r.data.display_name || r.data.username || 'Créateur B');
+        setHostAvatarB(r.data.avatar_url);
+        setFollowersB(r.data.followers_count ?? 0);
+        setFollowingB(!!r.data.is_followed);
+      })
       .catch(() => {});
   }, [battle?.host_b_id]);
+
+  const toggleFollow = useCallback(async (side: 'a' | 'b') => {
+    if (!battle) return;
+    const hostId = side === 'a' ? battle.host_a_id : battle.host_b_id;
+    const currentlyFollowing = side === 'a' ? followingA : followingB;
+    const setFollowing = side === 'a' ? setFollowingA : setFollowingB;
+    const setFollowers = side === 'a' ? setFollowersA : setFollowersB;
+    setFollowing(!currentlyFollowing);
+    setFollowers(c => c + (currentlyFollowing ? -1 : 1));
+    try {
+      if (currentlyFollowing) await apiClient.delete(Endpoints.users.follow(hostId));
+      else await apiClient.post(Endpoints.users.follow(hostId));
+    } catch {
+      setFollowing(currentlyFollowing);
+      setFollowers(c => c + (currentlyFollowing ? 1 : -1));
+    }
+  }, [battle, followingA, followingB]);
 
   const refreshRanking = useCallback(() => {
     battlesApi.getRanking(battleId).then(setRanking).catch(() => {});
@@ -389,6 +473,13 @@ export default function BattlePage() {
         }
         if (d.type === 'battle_score_update') {
           setBattle(prev => prev ? { ...prev, score_a: d.score_a, score_b: d.score_b } : prev);
+        }
+        if (d.type === 'battle_goal_started' || d.type === 'battle_goal_progress') {
+          setBattleGoal(d as BattleGoal);
+        }
+        if (d.type === 'battle_goal_succeeded' || d.type === 'battle_goal_failed') {
+          setBattleGoal(d as BattleGoal);
+          setTimeout(() => setBattleGoal(prev => (prev?.id === d.id ? null : prev)), 5000);
         }
       } catch { /* ignore */ }
     };
@@ -515,8 +606,8 @@ export default function BattlePage() {
         {/* ── Colonne vidéo + header ── */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           {/* Header — fermer, participants, countdown+score+barre, top supporter */}
-          <div className="relative shrink-0 px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
-            <button onClick={handleClose} disabled={leaving} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
+          <div className="relative shrink-0 px-3 sm:px-4 lg:px-5 py-3 lg:py-3.5 flex items-center gap-2 sm:gap-3">
+            <button onClick={handleClose} disabled={leaving} className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
               {leaving ? <Spinner size="sm" /> : <X size={18} color="#fff" />}
             </button>
             <ParticipantsCount onClick={() => setShowParticipants(v => !v)} />
@@ -526,8 +617,8 @@ export default function BattlePage() {
                 que les deux côtés (fermer+participants vs top supporter) n'ont pas la
                 même largeur, cf. le badge topDonor qui peut aller jusqu'à 150px. */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 pointer-events-none">
-              <span className="text-white font-mono text-base font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>{formatCountdown(remaining)}</span>
-              <div className="w-40 sm:w-52 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
+              <span className="text-white font-mono text-base lg:text-lg font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>{formatCountdown(remaining)}</span>
+              <div className="w-40 sm:w-52 lg:w-64 h-1.5 lg:h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
                 <div className="h-full transition-all duration-500" style={{ width: `${pctA}%`, background: 'linear-gradient(90deg,#7B3FF2,#F0365A)' }} />
               </div>
               <div className="flex items-center gap-2.5">
@@ -542,29 +633,94 @@ export default function BattlePage() {
 
             {topDonor ? (
               <button onClick={() => setShowRanking(true)}
-                className="flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 shrink-0 max-w-[120px] sm:max-w-[150px]"
+                className="flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 shrink-0 max-w-[120px] sm:max-w-[150px] lg:max-w-[180px]"
                 style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)' }}>
                 {topDonor.avatar_url
-                  ? <img src={topDonor.avatar_url} className="w-[18px] h-[18px] rounded-full object-cover shrink-0" />
-                  : <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.15)' }}><User size={10} color="#fff" /></div>}
-                <span className="text-[10px] font-bold truncate" style={{ color: '#FFD700' }}>👑 {topDonor.display_name ?? 'Supporter'}</span>
+                  ? <img src={topDonor.avatar_url} className="w-[18px] h-[18px] lg:w-6 lg:h-6 rounded-full object-cover shrink-0" />
+                  : <div className="w-[18px] h-[18px] lg:w-6 lg:h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.15)' }}><User size={10} color="#fff" /></div>}
+                <span className="text-[10px] lg:text-xs font-bold truncate" style={{ color: '#FFD700' }}>👑 {topDonor.display_name ?? 'Supporter'}</span>
               </button>
             ) : (
-              <button onClick={() => setShowRanking(true)} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
+              <button onClick={() => setShowRanking(true)} className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
                 <Award size={17} color="#FFD700" />
               </button>
             )}
+          </div>
+
+          {/* Rangée hosts — avatar + nom + followers + bouton Suivre, un par camp. */}
+          <div className="shrink-0 flex items-center justify-between gap-2 px-3 sm:px-4 lg:px-5 pb-2 lg:pb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              {hostAvatarA
+                ? <img src={hostAvatarA} className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2" style={{ borderColor: '#7B3FF2' }} />
+                : <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#7B3FF2' }}><User size={14} color="#fff" /></div>}
+              <div className="min-w-0">
+                <p className="text-white text-xs lg:text-sm font-bold truncate max-w-[90px] sm:max-w-[140px] lg:max-w-[200px]">{hostNameA}</p>
+                <p className="text-[10px] lg:text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>{followersA.toLocaleString('fr-FR')} j'aime</p>
+              </div>
+              {myHostSide !== 'a' && (
+                <button onClick={() => toggleFollow('a')}
+                  className="shrink-0 px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-[11px] lg:text-xs font-bold"
+                  style={{
+                    background: followingA ? 'rgba(255,255,255,0.12)' : 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
+                    color: '#fff',
+                  }}>
+                  {followingA ? 'Suivi' : 'Suivre'}
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 min-w-0 flex-row-reverse">
+              {hostAvatarB
+                ? <img src={hostAvatarB} className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2" style={{ borderColor: '#F0365A' }} />
+                : <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#F0365A' }}><User size={14} color="#fff" /></div>}
+              <div className="min-w-0 text-right">
+                <p className="text-white text-xs lg:text-sm font-bold truncate max-w-[90px] sm:max-w-[140px] lg:max-w-[200px]">{hostNameB}</p>
+                <p className="text-[10px] lg:text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>{followersB.toLocaleString('fr-FR')} j'aime</p>
+              </div>
+              {myHostSide !== 'b' && (
+                <button onClick={() => toggleFollow('b')}
+                  className="shrink-0 px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-[11px] lg:text-xs font-bold"
+                  style={{
+                    background: followingB ? 'rgba(255,255,255,0.12)' : 'linear-gradient(135deg,#F0365A,#9B1C3F)',
+                    color: '#fff',
+                  }}>
+                  {followingB ? 'Suivi' : 'Suivre'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Barre de score pleine largeur — un score par camp aux extrémités,
+              dégradé violet→rose continu façon maquette (distincte de la petite
+              barre de progression du countdown dans le header ci-dessus). */}
+          <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 lg:px-5 py-1 lg:py-1.5"
+            style={{ background: 'linear-gradient(90deg,#7B3FF2,#4C1D95 48%,#9B1C3F 52%,#F0365A)' }}>
+            <span className="text-white text-sm sm:text-base lg:text-lg font-black tabular-nums">{scoreA.toLocaleString('fr-FR')}</span>
+            <span className="text-white text-sm sm:text-base lg:text-lg font-black tabular-nums">{scoreB.toLocaleString('fr-FR')}</span>
           </div>
 
           {/* Video zone — deux colonnes nettement séparées, prend tout l'espace
               restant (flex-1) sur desktop au lieu d'une hauteur mobile figée. */}
           <div className="flex-1 flex relative min-h-0 gap-1.5 p-1.5" style={{ background: '#000' }}>
             <BattleVideoHalf hostId={battle?.host_a_id} hostName={hostNameA} hostAvatar={hostAvatarA} side="a" leading={leadingSide === 'a'}
-              giftTicks={giftTicksA} crownKey={crownA} onGiftClick={battle ? () => setGiftSide('a') : undefined} />
+              giftTicks={giftTicksA} crownKey={crownA} onGiftClick={battle ? () => setGiftSide('a') : undefined}
+              winCount={battle?.win_count_a ?? 0} topDonors={ranking?.top_donors_a ?? []} />
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-full font-black text-white text-xs shadow-lg"
               style={{ background: 'linear-gradient(135deg,#7B3FF2,#F0365A)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>VS</div>
             <BattleVideoHalf hostId={battle?.host_b_id} hostName={hostNameB} hostAvatar={hostAvatarB} side="b" leading={leadingSide === 'b'}
-              giftTicks={giftTicksB} crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined} />
+              giftTicks={giftTicksB} crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined}
+              winCount={battle?.win_count_b ?? 0} topDonors={ranking?.top_donors_b ?? []} />
+
+            {/* Bandeau objectif communautaire — cible commune aux deux camps
+                (BattleGoal côté backend), affiché tant qu'un objectif est actif. */}
+            {battleGoal && battleGoal.status === 'active' && (
+              <div className="absolute bottom-2 lg:bottom-3 left-1/2 -translate-x-1/2 z-20 px-3.5 lg:px-4 py-1.5 lg:py-2 rounded-full flex items-center gap-2"
+                style={{ background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,215,0,0.35)', backdropFilter: 'blur(6px)' }}>
+                <span className="text-white text-[11px] lg:text-xs font-bold whitespace-nowrap">
+                  {battleGoal.mode === 'boss' ? '👹' : '🎯'} {battleGoal.title} : {battleGoal.current_amount.toLocaleString('fr-FR')} / {battleGoal.target_amount.toLocaleString('fr-FR')}
+                </span>
+              </div>
+            )}
 
             {/* Coeurs "façon TikTok" — purement visuels, un par réaction reçue via WS
                 (soi-même inclus), montent depuis le bas de la moitié d'écran du camp
