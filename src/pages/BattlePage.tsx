@@ -216,7 +216,7 @@ export default function BattlePage() {
   const [giftTicksB, setGiftTicksB] = useState<GiftTick[]>([]);
   const [crownA, setCrownA] = useState<string | null>(null);
   const [crownB, setCrownB] = useState<string | null>(null);
-  const [bigGift, setBigGift] = useState<{ id: string; senderName: string; emoji: string; giftName: string; gogold: number } | null>(null);
+  const [bigGift, setBigGift] = useState<{ id: string; side: 'a' | 'b'; senderName: string; emoji: string; giftName: string; gogold: number } | null>(null);
   const [giftSide, setGiftSide] = useState<'a' | 'b' | null>(null);
   // Coeurs "façon TikTok" — purement visuels (ne comptent pas dans le score,
   // cf. BattleService.react côté backend), déclenchés par le broadcast WS
@@ -340,7 +340,7 @@ export default function BattlePage() {
             setTimeout(() => (side === 'a' ? setCrownA : setCrownB)(prev => prev === tick.id ? null : prev), 2600);
 
             if (tick.gogold >= BIG_GIFT_THRESHOLD) {
-              setBigGift({ id: tick.id, senderName, emoji: tick.emoji, giftName: tick.giftName, gogold: tick.gogold });
+              setBigGift({ id: tick.id, side, senderName, emoji: tick.emoji, giftName: tick.giftName, gogold: tick.gogold });
               setTimeout(() => setBigGift(prev => prev?.id === tick.id ? null : prev), 3800);
             }
             refreshRanking();
@@ -501,15 +501,19 @@ export default function BattlePage() {
         {/* ── Colonne vidéo + header ── */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           {/* Header — fermer, participants, countdown+score+barre, top supporter */}
-          <div className="shrink-0 px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
+          <div className="relative shrink-0 px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
             <button onClick={handleClose} disabled={leaving} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
               {leaving ? <Spinner size="sm" /> : <X size={18} color="#fff" />}
             </button>
             <ParticipantsCount onClick={() => setShowParticipants(v => !v)} />
 
-            <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+            {/* Centré par rapport à TOUT le header (position absolute), pas juste à
+                l'espace restant entre les boutons — sinon le centre visuel dérive dès
+                que les deux côtés (fermer+participants vs top supporter) n'ont pas la
+                même largeur, cf. le badge topDonor qui peut aller jusqu'à 150px. */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 pointer-events-none">
               <span className="text-white font-mono text-sm font-bold">{formatCountdown(remaining)}</span>
-              <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
+              <div className="w-40 sm:w-52 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
                 <div className="h-full transition-all duration-500" style={{ width: `${pctA}%`, background: 'linear-gradient(90deg,#7B3FF2,#F0365A)' }} />
               </div>
               <div className="flex items-center gap-2.5">
@@ -519,6 +523,8 @@ export default function BattlePage() {
               </div>
               <HypeBanner message={hypeMessage} />
             </div>
+
+            <div className="flex-1" />
 
             {topDonor ? (
               <button onClick={() => setShowRanking(true)}
@@ -571,6 +577,27 @@ export default function BattlePage() {
                 }}>🩷</span>
               ))}
             </div>
+
+            {/* Gros cadeau — centré au-dessus de la tête du DESTINATAIRE (moitié
+                gauche/droite de la zone vidéo selon le camp), pas au centre de tout
+                l'écran comme avant (aucun rapport visuel avec qui a reçu le cadeau). */}
+            {bigGift && (
+              <div key={bigGift.id} className="absolute inset-y-0 z-[65] flex items-center justify-center pointer-events-none"
+                style={{ left: bigGift.side === 'a' ? 0 : '50%', width: '50%' }}>
+                <div className="flex flex-col items-center gap-1.5 px-6 py-6 rounded-3xl text-center mx-2"
+                  style={{ background: 'linear-gradient(135deg,#F59E0B,#F0365A,#9B65F5)', animation: 'battle-biggift-in 0.45s ease-out' }}>
+                  <span className="text-3xl">🪑</span>
+                  <span className="text-xl -mt-3">👑</span>
+                  <p className="text-white text-[10px] font-black tracking-widest">LE ROI DU MATCH</p>
+                  <span className="text-3xl mt-1">{bigGift.emoji}</span>
+                  <p className="text-white text-xs font-bold">{bigGift.giftName}</p>
+                  <p className="text-white/90 text-xs font-semibold truncate max-w-[160px]">{bigGift.senderName}</p>
+                  <div className="mt-1 px-2.5 py-1 rounded-full" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[10px] font-bold">🪙 {bigGift.gogold.toLocaleString('fr-FR')} GoGold</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {showParticipants && <BattleParticipantsPanel onClose={() => setShowParticipants(false)} />}
 
@@ -651,24 +678,6 @@ export default function BattlePage() {
           </div>
         </div>
       </div>
-
-      {/* Gros cadeau — bannière plein écran avec trône + nom du donateur */}
-      {bigGift && (
-        <div key={bigGift.id} className="fixed inset-0 z-[65] flex items-center justify-center pointer-events-none">
-          <div className="flex flex-col items-center gap-1.5 px-8 py-7 rounded-3xl text-center"
-            style={{ background: 'linear-gradient(135deg,#F59E0B,#F0365A,#9B65F5)', animation: 'battle-biggift-in 0.45s ease-out' }}>
-            <span className="text-4xl">🪑</span>
-            <span className="text-2xl -mt-3">👑</span>
-            <p className="text-white text-xs font-black tracking-widest">LE ROI DU MATCH</p>
-            <span className="text-4xl mt-1">{bigGift.emoji}</span>
-            <p className="text-white text-sm font-bold">{bigGift.giftName}</p>
-            <p className="text-white/90 text-sm font-semibold truncate max-w-[220px]">{bigGift.senderName}</p>
-            <div className="mt-1 px-3 py-1.5 rounded-full" style={{ background: 'rgba(0,0,0,0.3)' }}>
-              <span className="text-white text-xs font-bold">🪙 {bigGift.gogold.toLocaleString('fr-FR')} GoGold</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Envoyer un cadeau à l'un des deux compétiteurs */}
       {giftSide && battle && (
