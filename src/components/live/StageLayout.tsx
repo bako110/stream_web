@@ -44,8 +44,28 @@ export function StageLayout({
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const main = participants.find(p => p.identity === mainIdentity) ?? participants[0] ?? null;
+  const pinnedParticipant = mainIdentity ? participants.find(p => p.identity === mainIdentity) : undefined;
+  // La personne épinglée par le host n'a pas encore de flux vidéo disponible chez
+  // CE client précis (souscription LiveKit pas encore arrivée, quelques centaines
+  // de ms après le broadcast WS) — avant ce fix, ce cas retombait SILENCIEUSEMENT
+  // sur le premier participant de la liste (souvent quelqu'un d'autre), donnant
+  // l'impression que "les autres ne voient pas la même personne en principal".
+  // On affiche plutôt un état de chargement explicite le temps que le flux arrive,
+  // jamais quelqu'un d'autre à sa place.
+  const pinnedButNotReady = !!mainIdentity && !pinnedParticipant;
+  const main = pinnedParticipant ?? (mainIdentity ? undefined : participants[0]) ?? null;
   const others = participants.filter(p => p.identity !== main?.identity);
+
+  if (pinnedButNotReady) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <div className="flex flex-col items-center gap-2 text-white/60">
+          <Pin size={22} />
+          <span className="text-xs">Connexion au flux épinglé…</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!main) return null;
 
