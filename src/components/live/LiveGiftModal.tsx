@@ -257,7 +257,7 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
                       background: isSel
                         ? 'linear-gradient(135deg,#7B3FF2,#5B2EC4)'
                         : 'var(--bg-secondary)',
-                      border: isSel ? '2px solid #7B3FF2' : '2px solid transparent',
+                      border: isSel ? '2px solid #7B3FF2' : '2px solid var(--border)',
                       opacity: locked ? 0.5 : 1,
                     }}>
                     <span className="text-3xl">{g.emoji}</span>
