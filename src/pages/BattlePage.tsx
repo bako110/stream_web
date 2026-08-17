@@ -23,23 +23,42 @@ const BIG_GIFT_THRESHOLD = 500;
 interface GiftTick { id: string; side: 'a' | 'b'; senderName: string; emoji: string; giftName: string; gogold: number; }
 
 // Chaque badge gère son propre minuteur d'auto-retrait via son propre useEffect
-// (mount = démarre le timer, unmount = clearTimeout) — plus robuste que le
-// setTimeout précédent posé depuis le handler WS parent, qui restait suspect
-// de ne jamais aboutir si l'effet WS parent se ré-exécutait entre-temps
-// (fermeture/réouverture des sockets sur changement de dépendance) : le badge
-// pouvait alors ne jamais être retiré de giftTicksA/B et restait affiché
-// indéfiniment malgré l'animation CSS qui, elle, ne se rejoue pas en boucle.
+// (mount = démarre le timer, unmount = clearTimeout), et pilote sa disparition
+// visuelle via un state React (opacity/transform), PAS via une animation CSS
+// nommée en "forwards" : BattleVideoHalf (le parent direct) re-render très
+// fréquemment à cause de useTracks() (stats LiveKit republiées en continu), et
+// réappliquer le même style `animation: '... forwards'` sur un élément à
+// chaque re-render peut redémarrer l'animation depuis 0% côté navigateur —
+// c'était la vraie cause du badge qui restait figé indéfiniment à l'écran :
+// il "disparaissait" recommençait sans cesse avant d'avoir fini.
 function GiftTickItem({ tick, side, onExpire }: { tick: GiftTick; side: 'a' | 'b'; onExpire: (id: string) => void }) {
-  useEffect(() => {
-    const t = setTimeout(() => onExpire(tick.id), 2000);
-    return () => clearTimeout(t);
-  }, [tick.id, onExpire]);
+  const [entered, setEntered] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
+  useEffect(() => {
+    // Double rAF avant de passer entered=true : force le navigateur à peindre
+    // l'état initial (opacity 0/scale 0.7) au moins une fois avant la
+    // transition, sinon le premier render "sauterait" directement à l'état
+    // final sans jouer l'entrée (React batch le state initial + entered=true
+    // du même tick sinon).
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(() => setEntered(true));
+      return () => cancelAnimationFrame(raf2);
+    });
+    const leaveTimer = setTimeout(() => setLeaving(true), 1600);
+    const removeTimer = setTimeout(() => onExpire(tick.id), 2000);
+    return () => { cancelAnimationFrame(raf1); clearTimeout(leaveTimer); clearTimeout(removeTimer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick.id]);
+
+  const visible = entered && !leaving;
   return (
     <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold text-white truncate"
       style={{
         background: side === 'a' ? 'linear-gradient(135deg,#7B3FF2,#4C1D95)' : 'linear-gradient(135deg,#F0365A,#9B1C3F)',
-        animation: 'battle-gift-tick 2s ease-out forwards',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'scale(1)' : 'scale(0.7)',
+        transition: 'opacity 0.3s ease-out, transform 0.3s ease-out',
       }}>
       <span>{tick.emoji}</span>
       <span className="truncate">{tick.senderName} · {tick.gogold}🪙</span>
@@ -949,12 +968,6 @@ export default function BattlePage() {
           15%  { transform: translateY(0) scale(1.1); opacity: 1; }
           25%  { transform: scale(1); opacity: 1; }
           85%  { opacity: 1; }
-          100% { opacity: 0; }
-        }
-        @keyframes battle-gift-tick {
-          0%   { transform: scale(0.7); opacity: 0; }
-          10%  { transform: scale(1); opacity: 1; }
-          88%  { opacity: 1; }
           100% { opacity: 0; }
         }
         @keyframes battle-biggift-in {
