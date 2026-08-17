@@ -122,6 +122,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
       <video
         ref={videoRef}
         className={className ?? 'w-full h-full'}
+        style={{ objectFit: 'contain', display: 'block' }}
         poster={poster}
         controls
         playsInline

@@ -369,7 +369,7 @@ export default function SerieDetailPage() {
   }
 
   return (
-    <div className="w-full mx-auto p-4 sm:p-6 space-y-6">
+    <div className="w-full mx-auto px-4 sm:px-6 pb-4 sm:pb-6 pt-2 space-y-6">
 
       <DetailBackHeader onBack={goBack} />
 
