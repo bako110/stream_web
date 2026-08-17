@@ -22,6 +22,31 @@ const BIG_GIFT_THRESHOLD = 500;
 
 interface GiftTick { id: string; side: 'a' | 'b'; senderName: string; emoji: string; giftName: string; gogold: number; }
 
+// Chaque badge gère son propre minuteur d'auto-retrait via son propre useEffect
+// (mount = démarre le timer, unmount = clearTimeout) — plus robuste que le
+// setTimeout précédent posé depuis le handler WS parent, qui restait suspect
+// de ne jamais aboutir si l'effet WS parent se ré-exécutait entre-temps
+// (fermeture/réouverture des sockets sur changement de dépendance) : le badge
+// pouvait alors ne jamais être retiré de giftTicksA/B et restait affiché
+// indéfiniment malgré l'animation CSS qui, elle, ne se rejoue pas en boucle.
+function GiftTickItem({ tick, side, onExpire }: { tick: GiftTick; side: 'a' | 'b'; onExpire: (id: string) => void }) {
+  useEffect(() => {
+    const t = setTimeout(() => onExpire(tick.id), 2000);
+    return () => clearTimeout(t);
+  }, [tick.id, onExpire]);
+
+  return (
+    <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold text-white truncate"
+      style={{
+        background: side === 'a' ? 'linear-gradient(135deg,#7B3FF2,#4C1D95)' : 'linear-gradient(135deg,#F0365A,#9B1C3F)',
+        animation: 'battle-gift-tick 2s ease-out forwards',
+      }}>
+      <span>{tick.emoji}</span>
+      <span className="truncate">{tick.senderName} · {tick.gogold}🪙</span>
+    </div>
+  );
+}
+
 const BATTLE_ROOM_OPTIONS = {
   adaptiveStream: true,
   dynacast: true,
@@ -135,9 +160,9 @@ function HypeBanner({ message }: { message: { text: string; key: string } }) {
   );
 }
 
-function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTicks, crownKey, onGiftClick, winCount, topDonors }: {
+function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTicks, onGiftTickExpire, crownKey, onGiftClick, winCount, topDonors }: {
   hostId: string | undefined; hostName: string; hostAvatar: string | null; side: 'a' | 'b'; leading: boolean;
-  giftTicks: GiftTick[]; crownKey: string | null; onGiftClick?: () => void;
+  giftTicks: GiftTick[]; onGiftTickExpire: (id: string) => void; crownKey: string | null; onGiftClick?: () => void;
   winCount: number; topDonors: SideDonor[];
 }) {
   const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
@@ -203,14 +228,7 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
 
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10 max-w-[75%]">
         {giftTicks.map(t => (
-          <div key={t.id} className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold text-white truncate"
-            style={{
-              background: side === 'a' ? 'linear-gradient(135deg,#7B3FF2,#4C1D95)' : 'linear-gradient(135deg,#F0365A,#9B1C3F)',
-              animation: 'battle-gift-tick 2s ease-out forwards',
-            }}>
-            <span>{t.emoji}</span>
-            <span className="truncate">{t.senderName} · {t.gogold}🪙</span>
-          </div>
+          <GiftTickItem key={t.id} tick={t} side={side} onExpire={onGiftTickExpire} />
         ))}
       </div>
 
@@ -288,6 +306,13 @@ export default function BattlePage() {
   const [verifiedB, setVerifiedB] = useState(false);
   const [giftTicksA, setGiftTicksA] = useState<GiftTick[]>([]);
   const [giftTicksB, setGiftTicksB] = useState<GiftTick[]>([]);
+  // Références stables (useCallback) — un handler recréé à chaque render de
+  // BattlePage (countdown qui tick chaque seconde, scores, etc.) ferait que le
+  // useEffect de GiftTickItem, qui dépend de cette fonction, se redéclencherait
+  // en boucle et repousserait indéfiniment son propre setTimeout de retrait —
+  // c'est ce qui faisait que le badge de cadeau ne disparaissait jamais.
+  const expireGiftTickA = useCallback((id: string) => setGiftTicksA(prev => prev.filter(t => t.id !== id)), []);
+  const expireGiftTickB = useCallback((id: string) => setGiftTicksB(prev => prev.filter(t => t.id !== id)), []);
   const [crownA, setCrownA] = useState<string | null>(null);
   const [crownB, setCrownB] = useState<string | null>(null);
   const [bigGift, setBigGift] = useState<{ id: string; side: 'a' | 'b'; senderName: string; emoji: string; giftName: string; gogold: number } | null>(null);
@@ -450,8 +475,10 @@ export default function BattlePage() {
               giftName: gf.gift_type?.name ?? 'Cadeau',
               gogold: gf.gogold_spent ?? 0,
             };
+            // Le retrait après 2s est géré par GiftTickItem lui-même (son propre
+            // useEffect/setTimeout au montage) — pas ici, cf. commentaire sur
+            // GiftTickItem plus haut dans le fichier.
             (side === 'a' ? setGiftTicksA : setGiftTicksB)(prev => [...prev.slice(-3), tick]);
-            setTimeout(() => (side === 'a' ? setGiftTicksA : setGiftTicksB)(prev => prev.filter(t => t.id !== tick.id)), 2000);
 
             (side === 'a' ? setCrownA : setCrownB)(tick.id);
             setTimeout(() => (side === 'a' ? setCrownA : setCrownB)(prev => prev === tick.id ? null : prev), 2600);
@@ -751,7 +778,8 @@ export default function BattlePage() {
               restant (flex-1) sur desktop au lieu d'une hauteur mobile figée. */}
           <div className="flex-1 flex relative min-h-0 gap-1.5 p-1.5" style={{ background: '#000' }}>
             <BattleVideoHalf hostId={battle?.host_a_id} hostName={hostNameA} hostAvatar={hostAvatarA} side="a" leading={leadingSide === 'a'}
-              giftTicks={giftTicksA} crownKey={crownA} onGiftClick={battle ? () => setGiftSide('a') : undefined}
+              giftTicks={giftTicksA} onGiftTickExpire={expireGiftTickA}
+              crownKey={crownA} onGiftClick={battle ? () => setGiftSide('a') : undefined}
               winCount={battle?.win_count_a ?? 0} topDonors={ranking?.top_donors_a ?? []} />
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-1.5">
               <span className="px-3 py-1.5 rounded-full font-black text-white text-xs shadow-lg"
@@ -762,7 +790,8 @@ export default function BattlePage() {
               </span>
             </div>
             <BattleVideoHalf hostId={battle?.host_b_id} hostName={hostNameB} hostAvatar={hostAvatarB} side="b" leading={leadingSide === 'b'}
-              giftTicks={giftTicksB} crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined}
+              giftTicks={giftTicksB} onGiftTickExpire={expireGiftTickB}
+              crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined}
               winCount={battle?.win_count_b ?? 0} topDonors={ranking?.top_donors_b ?? []} />
 
             {/* Bandeau objectif communautaire — cible commune aux deux camps
