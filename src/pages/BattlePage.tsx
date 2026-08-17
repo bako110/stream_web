@@ -655,6 +655,12 @@ export default function BattlePage() {
   const scoreA = battle?.score_a ?? 0;
   const scoreB = battle?.score_b ?? 0;
   const leadingSide: 'a' | 'b' | null = (scoreA + scoreB) === 0 ? null : scoreA > scoreB ? 'a' : scoreB > scoreA ? 'b' : null;
+  // Position de la ligne de partage de la barre de score — reflète la part
+  // réelle de chaque camp (scoreA / total), pas un centre fixe à 50%. Bornée
+  // à [15, 85] pour qu'aucun des deux camps ne disparaisse visuellement de
+  // la barre même en cas de domination écrasante.
+  const scoreTotal = scoreA + scoreB;
+  const scoreSplitPct = scoreTotal > 0 ? Math.min(85, Math.max(15, (scoreA / scoreTotal) * 100)) : 50;
   const hypeMessage = useHypeMessage({
     remaining, scoreA, scoreB, leadingSide, hostNameA, hostNameB,
     isActive: battle?.status === 'active',
@@ -783,14 +789,19 @@ export default function BattlePage() {
           </div>
 
           {/* Barre de score pleine largeur — un score par camp aux extrémités,
-              dégradé violet→rose continu, remplace la barre de progression fine
-              qu'il y avait avant dans le header (score affiché une seule fois ici,
-              plus de doublon avec BouncyScore qui était dans le header). */}
-          <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 lg:px-5 py-1.5 lg:py-2"
-            style={{ background: 'linear-gradient(90deg,#7B3FF2,#4C1D95 48%,#9B1C3F 52%,#F0365A)' }}>
-            <BouncyScore value={scoreA} color="#fff" />
-            <HypeBanner message={hypeMessage} />
-            <BouncyScore value={scoreB} color="#fff" />
+              dégradé violet→rose dont la ligne de partage suit réellement la
+              proportion du score de chaque camp (scoreSplitPct), pas un centre
+              fixe à 50% : le camp qui domine visuellement gagne du terrain sur
+              la barre, transition douce en largeur. */}
+          <div className="relative shrink-0 flex items-center justify-between px-3 sm:px-4 lg:px-5 py-1.5 lg:py-2 overflow-hidden"
+            style={{ background: '#2A1D42' }}>
+            <div className="absolute inset-0 transition-all duration-700 ease-out"
+              style={{
+                background: `linear-gradient(90deg,#7B3FF2,#4C1D95 ${scoreSplitPct - 2}%,#9B1C3F ${scoreSplitPct + 2}%,#F0365A)`,
+              }} />
+            <div className="relative"><BouncyScore value={scoreA} color="#fff" /></div>
+            <div className="relative flex-1 min-w-0 flex"><HypeBanner message={hypeMessage} /></div>
+            <div className="relative"><BouncyScore value={scoreB} color="#fff" /></div>
           </div>
 
           {/* Video zone — deux colonnes nettement séparées, prend tout l'espace
