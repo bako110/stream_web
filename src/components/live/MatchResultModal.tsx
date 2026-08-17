@@ -92,9 +92,20 @@ export function MatchResultModal({ result, onClose }: { result: MatchResultData 
     );
   }
 
-  // Champion — vainqueur ET spectateurs voient ce même écran doré à pétales
+  // Champion — vainqueur ET spectateurs voient ce même écran doré à pétales,
+  // avec la vidéo de victoire en fond (autoplay muted loop — obligatoire pour
+  // que les navigateurs autorisent l'autoplay sans interaction préalable).
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 overflow-hidden animate-[mrm-fadein_0.3s_ease-out]">
+      <video
+        src="/victoire.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover opacity-60"
+      />
+      <div className="absolute inset-0 bg-black/40" />
       <FallingPetals />
       <div className="w-[86%] max-w-sm rounded-[32px] p-1 animate-[mrm-bouncein_0.8s_ease-out]"
         style={{ background: 'linear-gradient(135deg,#FFD700,#FFA000,#B8860B)' }}>
