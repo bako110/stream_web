@@ -232,10 +232,10 @@ function HypeBanner({ message }: { message: { text: string; key: string } }) {
   );
 }
 
-function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTicks, onGiftTickExpire, crownKey, onGiftClick, winCount, topDonors }: {
+function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTicks, onGiftTickExpire, crownKey, onGiftClick, winCount, topDonors, showDonors }: {
   hostId: string | undefined; hostName: string; hostAvatar: string | null; side: 'a' | 'b'; leading: boolean;
   giftTicks: GiftTick[]; onGiftTickExpire: (id: string) => void; crownKey: string | null; onGiftClick?: () => void;
-  winCount: number; topDonors: SideDonor[];
+  winCount: number; topDonors: SideDonor[]; showDonors: boolean;
 }) {
   const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const track = tracks.find(t => t.participant.identity === hostId);
@@ -306,8 +306,12 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
 
       {/* Top 3 donateurs de ce camp — avatar, nom, dernier cadeau envoyé (icône
           en grand à droite) + quantité totale, façon carte plutôt que pilule
-          pour laisser le cadeau bien lisible comme dans la maquette. */}
-      {topDonors.length > 0 && (
+          pour laisser le cadeau bien lisible comme dans la maquette. Reste
+          affichée tant que des cadeaux arrivent pour ce camp, se masque après
+          8s sans nouveau cadeau (cf. bumpDonorsVisibility) — contrairement au
+          badge GiftTickItem (notif ponctuelle de 2s), reflète une activité
+          continue tant qu'elle dure. */}
+      {topDonors.length > 0 && showDonors && (
         <div className="absolute bottom-9 lg:bottom-11 left-2 right-2 flex flex-col gap-1 z-10">
           {topDonors.slice(0, 3).map(d => (
             <div key={d.id} className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 lg:py-1.5 rounded-xl backdrop-blur-sm max-w-full"
@@ -385,6 +389,26 @@ export default function BattlePage() {
   // c'est ce qui faisait que le badge de cadeau ne disparaissait jamais.
   const expireGiftTickA = useCallback((id: string) => setGiftTicksA(prev => prev.filter(t => t.id !== id)), []);
   const expireGiftTickB = useCallback((id: string) => setGiftTicksB(prev => prev.filter(t => t.id !== id)), []);
+  // Carte "top donateurs" (classement en bas de la vidéo) — visible tant qu'il
+  // y a des cadeaux qui arrivent pour ce camp, se masque si plus aucun cadeau
+  // n'arrive pendant 8s (mais reste affichée en continu tant que les cadeaux
+  // s'enchaînent, contrairement à GiftTickItem qui est une notif ponctuelle de
+  // 2s) ; réapparaît instantanément dès qu'un nouveau cadeau arrive.
+  const [showDonorsA, setShowDonorsA] = useState(false);
+  const [showDonorsB, setShowDonorsB] = useState(false);
+  const donorsHideTimerA = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const donorsHideTimerB = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bumpDonorsVisibility = useCallback((side: 'a' | 'b') => {
+    const setShow = side === 'a' ? setShowDonorsA : setShowDonorsB;
+    const timerRef = side === 'a' ? donorsHideTimerA : donorsHideTimerB;
+    setShow(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setShow(false), 8000);
+  }, []);
+  useEffect(() => () => {
+    if (donorsHideTimerA.current) clearTimeout(donorsHideTimerA.current);
+    if (donorsHideTimerB.current) clearTimeout(donorsHideTimerB.current);
+  }, []);
   const [crownA, setCrownA] = useState<string | null>(null);
   const [crownB, setCrownB] = useState<string | null>(null);
   const [bigGift, setBigGift] = useState<{ id: string; side: 'a' | 'b'; senderName: string; emoji: string; giftName: string; gogold: number } | null>(null);
@@ -569,6 +593,7 @@ export default function BattlePage() {
               setTimeout(() => setBigGift(prev => prev?.id === tick.id ? null : prev), 3800);
             }
             refreshRanking();
+            bumpDonorsVisibility(side);
           }
           if (d.type === 'like_added' && typeof d.total === 'number') {
             (side === 'a' ? setLikesA : setLikesB)(d.total);
@@ -579,7 +604,7 @@ export default function BattlePage() {
     });
     wsRef.current = sockets[myHostSide === 'b' ? 1 : 0];
     return () => { cancelled = true; sockets.forEach(s => s.close()); };
-  }, [accessToken, battle?.live_a_id, battle?.live_b_id, refreshRanking, myHostSide]);
+  }, [accessToken, battle?.live_a_id, battle?.live_b_id, refreshRanking, myHostSide, bumpDonorsVisibility]);
 
   // WS room "battle" dédié — événements propres au match (réactions coeur,
   // score en temps réel, objectifs, effets), diffusés via
@@ -873,7 +898,7 @@ export default function BattlePage() {
             <BattleVideoHalf hostId={battle?.host_a_id} hostName={hostNameA} hostAvatar={hostAvatarA} side="a" leading={leadingSide === 'a'}
               giftTicks={giftTicksA} onGiftTickExpire={expireGiftTickA}
               crownKey={crownA} onGiftClick={battle ? () => setGiftSide('a') : undefined}
-              winCount={battle?.win_count_a ?? 0} topDonors={ranking?.top_donors_a ?? []} />
+              winCount={battle?.win_count_a ?? 0} topDonors={ranking?.top_donors_a ?? []} showDonors={showDonorsA} />
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-1.5">
               <span className="px-3 py-1.5 rounded-full font-black text-white text-xs shadow-lg"
                 style={{ background: 'linear-gradient(135deg,#7B3FF2,#F0365A)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>VS</span>
@@ -885,7 +910,7 @@ export default function BattlePage() {
             <BattleVideoHalf hostId={battle?.host_b_id} hostName={hostNameB} hostAvatar={hostAvatarB} side="b" leading={leadingSide === 'b'}
               giftTicks={giftTicksB} onGiftTickExpire={expireGiftTickB}
               crownKey={crownB} onGiftClick={battle ? () => setGiftSide('b') : undefined}
-              winCount={battle?.win_count_b ?? 0} topDonors={ranking?.top_donors_b ?? []} />
+              winCount={battle?.win_count_b ?? 0} topDonors={ranking?.top_donors_b ?? []} showDonors={showDonorsB} />
 
             {/* Bandeau objectif communautaire — cible commune aux deux camps
                 (BattleGoal côté backend), affiché tant qu'un objectif est actif. */}
