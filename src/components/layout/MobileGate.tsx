@@ -11,21 +11,16 @@ const APP_STORE_URL  = 'https://apps.apple.com/app/gofolyx/id0000000000';
 /**
  * Routes BLOQUÉES sur mobile → écran de téléchargement.
  *
- * Critère : lecteur vidéo/streaming, upload, formulaire multi-step,
- * interactions fines (WebRTC, gifting, contrôles vidéo).
- * Ces pages sont inutilisables ou sans sens sur un navigateur mobile.
+ * Critère : lecteur vidéo/streaming natif, interactions fines (WebRTC,
+ * gifting, contrôles vidéo) qui n'ont pas de sens sur un navigateur mobile.
+ * Un formulaire multi-step à lui seul n'est plus un critère de blocage —
+ * /create/reel, /create/concert, /create/post, /create/event sont tous
+ * responsives et utilisables sur mobile web (2026-08, plus aucune route
+ * de création verrouillée derrière ce mur).
  */
 const MOBILE_BLOCKED_EXACT = new Set<string>([]);
 
-// /create/reel exclu : l'éditeur (filtres/texte/stickers/dessin/trim/musique)
-// est responsive et testé au toucher (pointer events natifs) — plus de raison
-// de le bloquer. Post/événement/concert restent bloqués tant qu'ils n'ont pas
-// été vérifiés sur mobile web.
-const MOBILE_BLOCKED_PREFIXES = [
-  '/create/post',
-  '/create/event',
-  '/create/concert',
-];
+const MOBILE_BLOCKED_PREFIXES: string[] = [];
 
 function isBlockedOnMobile(pathname: string): boolean {
   if (MOBILE_BLOCKED_EXACT.has(pathname)) return true;
