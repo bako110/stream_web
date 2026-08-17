@@ -613,19 +613,14 @@ function MyStoryCard({ user, myGroup, onClick, onAdd }: { user: any; myGroup: St
       }
       {/* Gradient bottom */}
       <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 35%, transparent 100%)' }} />
-      {/* Avatar + bouton + */}
+      {/* Avatar + bouton + — bordure simple (pas d'anneau dégradé, qui débordait
+          de façon décentrée autour de l'avatar) */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2">
         <div className="relative">
-          {myGroup ? (
-            <div className="rounded-full p-[2px]"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-              <div className="rounded-full p-[1.5px]" style={{ background: 'var(--surface)' }}>
-                <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
-              </div>
-            </div>
-          ) : (
-            <Avatar src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm" />
-          )}
+          <Avatar
+            src={user?.avatar_url} name={user?.display_name ?? user?.username ?? ''} size="sm"
+            style={{ border: '2px solid var(--surface)', borderRadius: '9999px' }}
+          />
           <div
             onClick={myGroup ? (e => { e.stopPropagation(); onAdd(); }) : undefined}
             role={myGroup ? 'button' : undefined}
