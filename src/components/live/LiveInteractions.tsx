@@ -239,7 +239,7 @@ export function LiveReactionPicker({
 
 export function FloatingEmojiOverlay({ floats }: { floats: EmojiFloat[] }) {
   return (
-    <div className="pointer-events-none absolute bottom-28 right-6"
+    <div className="pointer-events-none absolute bottom-28 right-6 z-40"
       style={{ width: 0, height: 0, overflow: 'visible' }}>
       {floats.map((f, i) => (
         <div key={f.id}
@@ -299,7 +299,7 @@ export const LiveHeartsOverlay = forwardRef<LiveHeartsOverlayRef>((_props, ref) 
   useImperativeHandle(ref, () => ({ spawn }), [spawn]);
 
   return (
-    <div className="pointer-events-none absolute" style={{ bottom: 90, right: 24, width: 10, height: 10, overflow: 'visible' }}>
+    <div className="pointer-events-none absolute z-40" style={{ bottom: 90, right: 24, width: 10, height: 10, overflow: 'visible' }}>
       {hearts.map(h => (
         <span key={h.id}
           style={{
