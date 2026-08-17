@@ -57,7 +57,7 @@ export function StageLayout({
         onMouseEnter={() => setHoveredId(main.identity)}
         onMouseLeave={() => setHoveredId(null)}
       >
-        <VideoTrack trackRef={main.track} className="w-full h-full object-contain" />
+        <VideoTrack trackRef={main.track} className="w-full h-full object-cover" />
         {main.isSpeaking && (
           <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 3px #22c55e' }} />
         )}
@@ -117,11 +117,10 @@ export function StageLayout({
           {others.map(p => (
             <div
               key={p.identity}
-              className="relative rounded-md overflow-hidden shrink-0 cursor-pointer transition-transform hover:scale-[0.97]"
+              className="relative rounded-md overflow-hidden shrink-0 cursor-pointer transition-transform hover:scale-[0.97] w-14 h-[72px] lg:w-full lg:h-auto"
               style={{
                 border: `1.5px solid ${p.isSpeaking ? '#22c55e' : 'rgba(255,255,255,0.12)'}`,
                 aspectRatio: '3 / 4',
-                height: '100%',
               }}
               onMouseEnter={() => setHoveredId(p.identity)}
               onMouseLeave={() => setHoveredId(null)}
