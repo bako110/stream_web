@@ -518,7 +518,7 @@ export default function BattlePage() {
                 que les deux côtés (fermer+participants vs top supporter) n'ont pas la
                 même largeur, cf. le badge topDonor qui peut aller jusqu'à 150px. */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 pointer-events-none">
-              <span className="text-white font-mono text-sm font-bold">{formatCountdown(remaining)}</span>
+              <span className="text-white font-mono text-base font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>{formatCountdown(remaining)}</span>
               <div className="w-40 sm:w-52 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
                 <div className="h-full transition-all duration-500" style={{ width: `${pctA}%`, background: 'linear-gradient(90deg,#7B3FF2,#F0365A)' }} />
               </div>
