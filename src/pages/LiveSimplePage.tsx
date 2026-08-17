@@ -47,6 +47,7 @@ import {
   type GiftNotif,
 } from '../components/live/LiveGiftModal';
 import { LiveSettingsSheet } from '../components/live/LiveSettingsSheet';
+import { ShareModal } from '../components/ui/ShareModal';
 import { BattleChallengeSheet } from '../components/live/BattleChallengeSheet';
 import { battlesApi } from '../api/battles';
 import { LiveAccessGate } from '../components/live/LiveAccessGate';
@@ -1143,6 +1144,10 @@ export default function LiveSimplePage() {
   const [pinnedIdentity,   setPinnedIdentity]   = useState<string | null>(null);
   const [participantNames, setParticipantNames] = useState<Map<string, string>>(new Map());
   const [handRaised,       setHandRaised]       = useState(false);
+  // Un seul vrai partage (ShareModal) — avant, deux boutons "Partager" distincts
+  // (header + barre du bas) faisaient juste un clipboard.writeText silencieux,
+  // sans confirmation ni options réseaux sociaux.
+  const [showShareModal,   setShowShareModal]   = useState(false);
 
   // Scène payante — modal de confirmation avant hand-raise
   const [showStageGate, setShowStageGate] = useState(false);
@@ -1536,11 +1541,6 @@ export default function LiveSimplePage() {
                   {following ? 'Suivi' : 'Suivre'}
                 </button>
               )}
-              <button onClick={() => navigator.clipboard?.writeText(window.location.href)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all"
-                style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <Send size={14} /> Partager
-              </button>
               {isHost && (
                 <>
                   <button
@@ -1897,7 +1897,7 @@ export default function LiveSimplePage() {
                   <span className="text-[8px] sm:text-[9px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Participants</span>
                 </div>
                 <button
-                  onClick={() => { navigator.clipboard?.writeText(window.location.href); }}
+                  onClick={() => setShowShareModal(true)}
                   className="flex flex-col items-center gap-0.5 shrink-0" style={{ minWidth: 32 }}>
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
@@ -2057,6 +2057,22 @@ export default function LiveSimplePage() {
           onRequested={() => { setShowStageGate(false); setHandRaised(true); }}
           onClose={() => setShowStageGate(false)}
           onOpenGift={(receiverId, receiverName) => setGiftTarget({ id: receiverId, name: receiverName })}
+        />
+      )}
+
+      {/* Partage — un seul bouton "Partager" dans toute la page (barre du bas),
+          câblé sur le vrai ShareModal (réseaux sociaux, envoi interne, copier le
+          lien avec confirmation) au lieu d'un clipboard.writeText silencieux. */}
+      {showShareModal && (
+        <ShareModal
+          open
+          onClose={() => setShowShareModal(false)}
+          url={window.location.href}
+          title={live.title}
+          desc={live.description ?? undefined}
+          image={live.thumbnail_url ?? undefined}
+          targetType="live"
+          targetId={id!}
         />
       )}
 
