@@ -17,15 +17,30 @@
 import { useState } from 'react';
 import type { TrackReference } from '@livekit/components-react';
 import { VideoTrack } from '@livekit/components-react';
-import { Gift, MoreVertical, Pin, PinOff } from 'lucide-react';
+import { Gift, MoreVertical, Pin, PinOff, User } from 'lucide-react';
 
 export interface StageParticipant {
   identity:   string;
   name:       string;
-  track:      TrackReference;
+  /** Absent si ce participant n'a pas (encore, ou par choix) activé sa caméra
+   * — être sur scène n'oblige pas à publier de vidéo, cf. LiveSimplePage.tsx
+   * (contrôle entier laissé à l'utilisateur). Dans ce cas la case affiche son
+   * avatar de profil à la place d'un flux vidéo. */
+  track:      TrackReference | null;
+  avatarUrl:  string | null;
   isLocal:    boolean;
   onStage:    boolean;
   isSpeaking: boolean;
+}
+
+function ParticipantAvatarFallback({ avatarUrl, name }: { avatarUrl: string | null; name: string }) {
+  return (
+    <div className="w-full h-full flex items-center justify-center" style={{ background: '#1C1033' }}>
+      {avatarUrl
+        ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+        : <User size={28} color="rgba(255,255,255,0.4)" />}
+    </div>
+  );
 }
 
 export function StageLayout({
@@ -78,7 +93,9 @@ export function StageLayout({
         onMouseEnter={() => setHoveredId(main.identity)}
         onMouseLeave={() => setHoveredId(null)}
       >
-        <VideoTrack trackRef={main.track} className="w-full h-full object-cover" />
+        {main.track
+          ? <VideoTrack trackRef={main.track} className="w-full h-full object-cover" />
+          : <ParticipantAvatarFallback avatarUrl={main.avatarUrl} name={main.name} />}
         {main.isSpeaking && (
           <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 3px #22c55e' }} />
         )}
@@ -149,7 +166,9 @@ export function StageLayout({
               onClick={() => isHost && onPinClick(p.identity)}
               title={isHost ? 'Épingler en plein écran pour tous' : undefined}
             >
-              <VideoTrack trackRef={p.track} className="w-full h-full object-cover" />
+              {p.track
+                ? <VideoTrack trackRef={p.track} className="w-full h-full object-cover" />
+                : <ParticipantAvatarFallback avatarUrl={p.avatarUrl} name={p.name} />}
               {p.isSpeaking && (
                 <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 2px #22c55e' }} />
               )}

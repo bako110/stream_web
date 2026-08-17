@@ -649,11 +649,12 @@ function useLocalMicEnabled(): boolean {
 }
 
 function LiveKitViewer({
-  isHost, liveId, stageIdentities, participantNames, onGiftClick, streamerAvatarUrl, streamerName,
+  isHost, liveId, stageIdentities, participantNames, participantAvatars, onGiftClick, streamerAvatarUrl, streamerName,
   pinnedIdentity, onPin,
 }: {
   isHost: boolean; liveId: string; stageIdentities: Set<string>;
   participantNames: Map<string, string>;
+  participantAvatars: Map<string, string>;
   onGiftClick: (identity: string, name: string) => void;
   streamerAvatarUrl?: string | null;
   streamerName?: string | null;
@@ -762,14 +763,31 @@ function LiveKitViewer({
   // d'autre n'a été mis en avant).
   const mainIdentity = pinnedIdentity ?? defaultSpotlight?.participant.identity ?? null;
 
-  const stageParticipants: StageParticipant[] = activeTracks.map(t => ({
+  const withTrack: StageParticipant[] = activeTracks.map(t => ({
     identity:   t.participant.identity,
     name:       t.participant.isLocal ? 'Toi' : (participantNames.get(t.participant.identity) ?? t.participant.name ?? t.participant.identity),
     track:      t,
+    avatarUrl:  participantAvatars.get(t.participant.identity) ?? null,
     isLocal:    t.participant.isLocal,
     onStage:    stageIdentities.has(t.participant.identity),
     isSpeaking: speakingIds.has(t.participant.identity),
   }));
+  // Participants sur scène (invités par le host) mais sans caméra active — être
+  // sur scène n'oblige pas à publier de vidéo (contrôle entier utilisateur).
+  // Sans ce fallback, ils étaient absents de la grille : aucune case affichée,
+  // ni pour eux-mêmes ni pour les autres viewers, malgré une invitation acceptée.
+  const withoutTrack: StageParticipant[] = participants
+    .filter(p => stageIdentities.has(p.identity) && !withTrack.some(w => w.identity === p.identity))
+    .map(p => ({
+      identity:   p.identity,
+      name:       p.isLocal ? 'Toi' : (participantNames.get(p.identity) ?? p.name ?? p.identity),
+      track:      null,
+      avatarUrl:  participantAvatars.get(p.identity) ?? null,
+      isLocal:    p.isLocal,
+      onStage:    true,
+      isSpeaking: false,
+    }));
+  const stageParticipants: StageParticipant[] = [...withTrack, ...withoutTrack];
 
   const menuParticipant = contextMenu ? stageParticipants.find(p => p.identity === contextMenu.identity) : null;
 
@@ -1162,6 +1180,10 @@ export default function LiveSimplePage() {
   // mécanisme que la version mobile, cf. stream_mobile SimpleLiveStreamScreen).
   const [pinnedIdentity,   setPinnedIdentity]   = useState<string | null>(null);
   const [participantNames, setParticipantNames] = useState<Map<string, string>>(new Map());
+  // Avatar de secours affiché dans la vignette d'un participant sur scène sans
+  // caméra active — être sur scène n'oblige pas à publier de vidéo (contrôle
+  // entier laissé à l'utilisateur, cf. MediaControls plus haut).
+  const [participantAvatars, setParticipantAvatars] = useState<Map<string, string>>(new Map());
   const [handRaised,       setHandRaised]       = useState(false);
   // Un seul vrai partage (ShareModal) — avant, deux boutons "Partager" distincts
   // (header + barre du bas) faisaient juste un clipboard.writeText silencieux,
@@ -1331,6 +1353,7 @@ export default function LiveSimplePage() {
         if (!identity) break;
         setHandRequests(prev => prev.some(r => r.identity === identity) ? prev : [...prev, { identity, name, avatar }]);
         setParticipantNames(prev => new Map(prev).set(identity, name));
+        if (avatar) setParticipantAvatars(prev => new Map(prev).set(identity, avatar));
         if (isHost) { setShowRequests(true); setShowOnStage(false); setShowGifts(false); }
         break;
       }
@@ -1358,6 +1381,12 @@ export default function LiveSimplePage() {
         setStageIdentities(prev => { const s = new Set(prev); s.delete(identity); return s; });
         chatRef.current?.addSysMsg(`${participantNamesRef.current.get(identity) ?? identity} a quitté la scène`);
         if (user && identity === user.id) setIsOnStage(false);
+        // Si ce participant était épinglé en plein écran (spotlight), le retirer
+        // du pin — sinon StageLayout reste bloqué sur "Connexion au flux
+        // épinglé…" indéfiniment (le participant a disparu de stageParticipants
+        // mais mainIdentity continue de pointer vers lui) au lieu de retomber
+        // sur le défaut (le host reprend sa position).
+        setPinnedIdentity(prev => (prev === identity ? null : prev));
         break;
       }
       case 'viewer_kicked':
@@ -1635,6 +1664,7 @@ export default function LiveSimplePage() {
               )}
             </div>
           </div>
+          
 
           <div className="flex flex-col min-w-0 lg:w-full lg:rounded-2xl lg:overflow-hidden"
             style={{ flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}>
@@ -1770,6 +1800,7 @@ export default function LiveSimplePage() {
                   isHost={isHost} liveId={id!}
                   stageIdentities={stageIdentities}
                   participantNames={participantNames}
+                  participantAvatars={participantAvatars}
                   onGiftClick={(identity, name) => setGiftTarget({ id: identity, name })}
                   streamerAvatarUrl={live.user?.avatar_url}
                   streamerName={live.user?.display_name ?? live.user?.username}
