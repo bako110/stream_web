@@ -3050,6 +3050,22 @@ export default function FeedPage() {
             </p>
           </div>
 
+          {/* ── Tabs — au-dessus des stories, compact sur mobile (moins de
+               hauteur perdue avant le contenu réel du fil). ── */}
+          <div className="flex items-center gap-1.5 lg:gap-2 animate-reveal-up">
+            {(['all', 'friends', 'concerts', 'events'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className="flex-1 lg:flex-none text-xs lg:text-sm font-bold px-2.5 lg:px-4 py-1.5 lg:py-2 rounded-full lg:rounded-xl transition-all text-center whitespace-nowrap overflow-hidden"
+                style={{
+                  background: tab === t ? 'var(--primary)' : 'var(--surface)',
+                  color:      tab === t ? '#fff' : 'var(--text-secondary)',
+                  border:     `1px solid ${tab === t ? 'var(--primary)' : 'var(--border)'}`,
+                  boxShadow:  tab === t ? '0 4px 16px rgba(123,63,242,0.35)' : 'none' }}>
+                {t === 'all' ? 'Tout' : t === 'friends' ? 'Mes amis' : t === 'concerts' ? 'Concerts' : 'Événements'}
+              </button>
+            ))}
+          </div>
+
           {/* ── Stories ── */}
           <StoriesBar />
 
@@ -3069,21 +3085,6 @@ export default function FeedPage() {
               {live.slice(0, 1).map(c => <LiveHero key={c.id} concert={c} />)}
             </section>
           )}
-
-          {/* ── Tabs ── */}
-          <div className="flex items-center gap-2 animate-reveal-up delay-200">
-            {(['all', 'friends', 'concerts', 'events'] as const).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className="flex-1 lg:flex-none text-sm font-bold px-3 lg:px-4 py-2 rounded-xl transition-all text-center whitespace-nowrap overflow-hidden"
-                style={{
-                  background: tab === t ? 'var(--primary)' : 'var(--surface)',
-                  color:      tab === t ? '#fff' : 'var(--text-secondary)',
-                  border:     `1px solid ${tab === t ? 'var(--primary)' : 'var(--border)'}`,
-                  boxShadow:  tab === t ? '0 4px 16px rgba(123,63,242,0.35)' : 'none' }}>
-                {t === 'all' ? 'Tout' : t === 'friends' ? 'Mes amis' : t === 'concerts' ? 'Concerts' : 'Événements'}
-              </button>
-            ))}
-          </div>
 
           {/* ── Feed ── */}
           {loading ? (
