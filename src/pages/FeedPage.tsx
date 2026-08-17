@@ -2196,7 +2196,11 @@ function UpcomingEventsPanel() {
 
   useEffect(() => {
     apiClient.get<any>(`${Endpoints.events.list}?limit=4&status=published`)
-      .then(res => setEvents(toArray<any>(res.data).slice(0, 4)))
+      .then(res => setEvents(
+        toArray<any>(res.data)
+          .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+          .slice(0, 4)
+      ))
       .catch(() => {});
   }, []);
 
@@ -3021,7 +3025,7 @@ export default function FeedPage() {
   }, [loadMoreFeed]);
 
   return (
-    <div className="px-2 sm:px-4 py-6 w-full mx-auto">
+    <div className="px-2 sm:px-4 py-2 lg:py-6 w-full mx-auto">
       <div className="flex gap-4 items-start justify-center">
 
         {/* ── Left panel (lg+) ── */}
@@ -3033,7 +3037,7 @@ export default function FeedPage() {
         {/* ── Feed column — largeur de lecture confortable, comme Facebook, pour que
              les images de post (souvent portrait) ne flottent pas dans un vide immense
              maintenant que la page occupe toute la largeur d'écran. ── */}
-        <div className="flex-1 min-w-0 max-w-2xl space-y-5">
+        <div className="flex-1 min-w-0 max-w-2xl space-y-3 lg:space-y-5">
 
           {/* Greeting — desktop uniquement, superflu sur mobile */}
           <div className="hidden lg:block animate-reveal-up">
