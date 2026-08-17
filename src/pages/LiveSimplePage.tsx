@@ -1072,29 +1072,6 @@ function MediaControls({
   }
 
   return (
-    <>
-      {/* Invite explicite à activer la caméra une fois monté sur scène — sans
-          ça, un guest accepté sur scène restait invisible pour tout le monde
-          (lui y compris) sans jamais comprendre pourquoi : la caméra désactivée
-          par défaut (contrôle utilisateur, cf. commentaire plus haut) ne
-          publie aucun flux, donc il n'apparaît dans aucune vignette, et le
-          seul indice était un petit bouton "Cam off" perdu dans la barre du
-          bas — jamais mis en avant, contrairement au host qui a un gros bouton
-          "Activer ma caméra" dédié quand personne ne publie encore. */}
-      {!isHost && isOnStage && !camOn && (
-        <button onClick={toggleGuestCam}
-          className="fixed inset-x-0 top-1/2 -translate-y-1/2 z-40 mx-auto flex flex-col items-center gap-2 px-6 py-4 rounded-3xl text-white"
-          style={{
-            background: 'rgba(123,63,242,0.92)', backdropFilter: 'blur(10px)',
-            boxShadow: '0 0 40px rgba(123,63,242,0.5)', width: 'fit-content',
-            animation: 'fadeInScale 0.3s ease-out',
-          }}>
-          <VideoOff size={28} />
-          <p className="text-sm font-black">Tu es sur scène — active ta caméra</p>
-          <p className="text-xs opacity-80">Personne ne te voit tant qu'elle est coupée</p>
-        </button>
-      )}
-
     <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
 
       {/* HOST — barre principale : essentiel uniquement, le reste dans le menu "Plus" */}
@@ -1141,7 +1118,6 @@ function MediaControls({
         </>
       )}
     </div>
-    </>
   );
 }
 
