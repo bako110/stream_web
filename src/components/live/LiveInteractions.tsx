@@ -117,17 +117,17 @@ export const LiveLikeButton = forwardRef<LiveLikeButtonRef, {
     <div className="relative flex flex-col items-center gap-1">
       <FloatingHearts hearts={hearts} isHost={isHost} />
       <button onClick={trigger}
-        className="flex flex-col items-center gap-1 transition-all"
+        className="flex flex-col items-center gap-0.5 transition-all"
         style={{ transform: bumping ? (isHost ? 'scale(1.55)' : 'scale(1.4)') : 'scale(1)', transition: 'transform 0.15s' }}>
-        <div className={isHost ? 'w-12 h-12 rounded-full flex items-center justify-center transition-all' : 'w-10 h-10 rounded-full flex items-center justify-center transition-all'}
+        <div className={isHost ? 'w-8 h-8 rounded-full flex items-center justify-center transition-all' : 'w-7 h-7 rounded-full flex items-center justify-center transition-all'}
           style={{
             background: isHost ? 'rgba(251,191,36,0.22)' : 'rgba(239,68,68,0.15)',
             border: `1.5px solid ${isHost ? '#FBBF24' : 'rgba(239,68,68,0.3)'}`,
             boxShadow: isHost ? '0 0 14px rgba(251,191,36,0.5)' : 'none',
           }}>
-          <Heart size={isHost ? 22 : 18} style={{ color: isHost ? '#FBBF24' : '#EF4444' }} fill="none" />
+          <Heart size={isHost ? 15 : 13} style={{ color: isHost ? '#FBBF24' : '#EF4444' }} fill="none" />
         </div>
-        <span className="text-white text-xs font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+        <span className="text-white text-[9px] font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
           {count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count}
         </span>
       </button>

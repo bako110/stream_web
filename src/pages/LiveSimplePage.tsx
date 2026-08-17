@@ -20,6 +20,8 @@ import {
 } from '@livekit/components-react';
 import { Track, VideoPresets, RoomEvent, ParticipantEvent } from 'livekit-client';
 import type { LiveStream, StreamToken } from '../types';
+import { StageLayout } from '../components/live/StageLayout';
+import type { StageParticipant } from '../components/live/StageLayout';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
@@ -631,19 +633,22 @@ function useLocalMicEnabled(): boolean {
 
 function LiveKitViewer({
   isHost, liveId, stageIdentities, participantNames, onGiftClick, streamerAvatarUrl, streamerName,
+  pinnedIdentity, onPin,
 }: {
   isHost: boolean; liveId: string; stageIdentities: Set<string>;
   participantNames: Map<string, string>;
   onGiftClick: (identity: string, name: string) => void;
   streamerAvatarUrl?: string | null;
   streamerName?: string | null;
+  // Spotlight synchronisé pour tous les viewers — cf. StageLayout.tsx.
+  pinnedIdentity: string | null;
+  onPin: (identity: string) => void;
 }) {
   const tracks       = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const participants = useParticipants();
   const speakingIds  = useActiveSpeakersSet();
   const { localParticipant } = useLocalParticipant();
   const micOn = useLocalMicEnabled();
-  const [spotlightId,   setSpotlightId]   = useState<string | null>(null);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const [showMicHint,   setShowMicHint]   = useState(false);
   const micHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -676,20 +681,11 @@ function LiveKitViewer({
 
   const activeTracks = tracks.filter(t => !t.publication?.isMuted);
 
+  // Défaut tant qu'aucun pin explicite n'est actif — l'hôte pour les viewers,
+  // soi-même pour le host.
   const defaultSpotlight = isHost
     ? (activeTracks.find(t => t.participant.isLocal) ?? activeTracks[0] ?? null)
     : (activeTracks.find(t => !t.participant.isLocal) ?? activeTracks[0] ?? null);
-
-  const spotlightTrack  = activeTracks.find(t => t.participant.identity === spotlightId) ?? defaultSpotlight;
-  const thumbnailTracks = activeTracks.filter(t => t !== spotlightTrack);
-  const localTrack      = activeTracks.find(t => t.participant.isLocal) ?? null;
-
-  const showHostPip = isHost && spotlightTrack && !spotlightTrack.participant.isLocal && localTrack != null;
-
-  // Grille façon TikTok multi-guest — dès 2 participants ou plus, tout le monde
-  // s'affiche en cases égales adaptées au nombre (2 cases empilées, 3 en L, 4 en 2×2).
-  // Avec 1 seul participant, on garde le mode spotlight plein écran classique.
-  const isGridMode = activeTracks.length >= 2;
 
   if (activeTracks.length === 0) {
     return (
@@ -734,109 +730,41 @@ function LiveKitViewer({
     );
   }
 
-  // ── Mode grille (2+ participants) — mosaïque égale façon TikTok multi-guest ──
-  if (isGridMode) {
-    // Disposition des cases : 2 → colonne de 2 (empilées), 3 → 1 en haut + 2 en bas,
-    // 4 → 2×2, 5+ → 2 colonnes, hauteur de case fixe et scroll vertical si ça déborde.
-    const n = activeTracks.length;
-    const gridClass =
-      n === 2 ? 'grid-cols-1 grid-rows-2' :
-      n === 3 ? 'grid-cols-2 grid-rows-2' :
-      n === 4 ? 'grid-cols-2 grid-rows-2' :
-      'grid-cols-2 auto-rows-[160px]';
-    const scrollable = n > 4;
+  // ── Affichage multi-participants — bloc principal (organisateur ou personne
+  // épinglée par le host) + colonne verticale des autres, cf. StageLayout.tsx.
+  // Priorité : pin explicite du host (synchronisé pour tous via WS) > défaut
+  // local (l'hôte pour les viewers, soi-même pour le host tant que personne
+  // d'autre n'a été mis en avant).
+  const mainIdentity = pinnedIdentity ?? defaultSpotlight?.participant.identity ?? null;
 
-    return (
-      <div className="relative w-full h-full bg-black overflow-hidden">
-        <RoomAudioRenderer />
-        <div className={`grid ${gridClass} w-full gap-1.5 p-1.5 ${scrollable ? 'h-full overflow-y-auto' : 'h-full'}`}>
-          {activeTracks.map((t, i) => {
-            const identity = t.participant.identity;
-            const name     = t.participant.isLocal ? 'Toi' : (participantNames.get(identity) ?? t.participant.name ?? identity);
-            const onStage  = stageIdentities.has(identity);
-            const speaking = speakingIds.has(identity);
-            const showMenu = contextMenuId === identity;
-            // Cas à 3 : le premier participant occupe toute la largeur du haut (col-span-2)
-            const spanFull = n === 3 && i === 0;
-            return (
-              <div
-                key={identity}
-                className={`relative overflow-hidden rounded-xl ${spanFull ? 'col-span-2' : ''}`}
-                style={{ border: `1.5px solid ${speaking ? '#22c55e' : 'rgba(255,255,255,0.12)'}` }}
-                onClick={() => { if (showMenu) setContextMenuId(null); }}
-              >
-                <VideoTrack trackRef={t} className="w-full h-full object-cover" />
-                {speaking && (
-                  <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 3px #22c55e' }} />
-                )}
-                <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-                  {onStage && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />}
-                  {name}
-                </div>
-                {!t.participant.isLocal && (
-                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5">
-                    <button
-                      className="w-7 h-7 rounded-full flex items-center justify-center"
-                      style={{ background: 'rgba(0,0,0,0.55)' }}
-                      onClick={e => { e.stopPropagation(); onGiftClick(identity, name); }}>
-                      <Gift size={13} style={{ color: '#fbbf24' }} />
-                    </button>
-                    {isHost && (
-                      <button
-                        className="w-7 h-7 rounded-full flex items-center justify-center"
-                        style={{ background: 'rgba(0,0,0,0.55)' }}
-                        onClick={e => { e.stopPropagation(); setContextMenuId(showMenu ? null : identity); }}>
-                        <MoreVertical size={13} color="#fff" />
-                      </button>
-                    )}
-                  </div>
-                )}
-                {showMenu && (
-                  <ParticipantContextMenu
-                    identity={identity} name={name} liveId={liveId}
-                    isOnStage={onStage}
-                    onDone={() => setContextMenuId(null)}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  const stageParticipants: StageParticipant[] = activeTracks.map(t => ({
+    identity:   t.participant.identity,
+    name:       t.participant.isLocal ? 'Toi' : (participantNames.get(t.participant.identity) ?? t.participant.name ?? t.participant.identity),
+    track:      t,
+    isLocal:    t.participant.isLocal,
+    onStage:    stageIdentities.has(t.participant.identity),
+    isSpeaking: speakingIds.has(t.participant.identity),
+  }));
 
-  // ── Mode spotlight (1 seul participant) ──────────────────────────────────────
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       <RoomAudioRenderer />
-
-      {spotlightTrack && (
-        <VideoTrack trackRef={spotlightTrack} className="w-full h-full object-contain" />
-      )}
-
-      {spotlightTrack && (
-        <div className="absolute top-3 left-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm z-10 flex items-center gap-1.5">
-          {(stageIdentities.has(spotlightTrack.participant.identity) || speakingIds.has(spotlightTrack.participant.identity)) && (
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          )}
-          {spotlightTrack.participant.isLocal ? 'Toi' : (participantNames.get(spotlightTrack.participant.identity) ?? spotlightTrack.participant.name ?? spotlightTrack.participant.identity)}
-        </div>
-      )}
-
-      {/* PiP host */}
-      {showHostPip && localTrack && (
-        <div
-          className="absolute bottom-20 right-4 w-28 h-40 rounded-2xl overflow-hidden shadow-2xl cursor-pointer z-20 transition-all"
-          style={{ border: '2px solid rgba(255,255,255,0.4)' }}
-          onClick={() => setSpotlightId(null)}
-          title="Revenir sur ta vue"
-        >
-          <VideoTrack trackRef={localTrack} className="w-full h-full object-cover" />
-          <div className="absolute bottom-0 left-0 right-0 text-white text-[10px] text-center py-1" style={{ background: 'rgba(0,0,0,0.6)' }}>Toi</div>
-        </div>
-      )}
+      <StageLayout
+        participants={stageParticipants}
+        mainIdentity={mainIdentity}
+        isHost={isHost}
+        onGiftClick={onGiftClick}
+        onMenuClick={(identity) => setContextMenuId(prev => prev === identity ? null : identity)}
+        onPinClick={(identity) => onPin(pinnedIdentity === identity ? '' : identity)}
+        menuFor={contextMenuId}
+        renderMenu={(identity, name, onStage) => (
+          <ParticipantContextMenu
+            identity={identity} name={name} liveId={liveId}
+            isOnStage={onStage}
+            onDone={() => setContextMenuId(null)}
+          />
+        )}
+      />
     </div>
   );
 }
@@ -1047,18 +975,18 @@ function MediaControls({
     const border = danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.15)';
     const txt    = danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : 'rgba(255,255,255,0.7)';
     return (
-      <button onClick={onClick} className="flex flex-col items-center gap-0.5 sm:gap-1 relative shrink-0" style={{ minWidth: 40 }}>
-        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
+      <button onClick={onClick} className="flex flex-col items-center gap-0.5 relative shrink-0" style={{ minWidth: 32 }}>
+        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all"
           style={{ background: bg, border: `1.5px solid ${border}`, color: danger ? '#EF4444' : active ? (color ?? '#7B3FF2') : '#fff' }}>
           {icon}
         </div>
         {badge !== undefined && badge > 0 && (
-          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+          <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
             style={{ background: color ?? '#7B3FF2' }}>
             {badge}
           </div>
         )}
-        <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: txt }}>{label}</span>
+        <span className="text-[8px] sm:text-[9px] font-semibold whitespace-nowrap" style={{ color: txt }}>{label}</span>
       </button>
     );
   }
@@ -1085,15 +1013,15 @@ function MediaControls({
   }
 
   return (
-    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+    <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
 
       {/* HOST — barre principale : essentiel uniquement, le reste dans le menu "Plus" */}
       {isHost && (
         <>
-          <SideBtn icon={camOn ? <VideoIcon size={19} /> : <VideoOff size={19} />}
+          <SideBtn icon={camOn ? <VideoIcon size={14} /> : <VideoOff size={14} />}
             label={camOn ? 'Cam' : 'Cam off'} onClick={toggleCam} active={camOn} color="#10B981" />
 
-          <SideBtn icon={<StopCircle size={19} />}
+          <SideBtn icon={<StopCircle size={14} />}
             label={stopping ? '...' : 'Terminer'} onClick={onStop} danger />
         </>
       )}
@@ -1102,18 +1030,18 @@ function MediaControls({
       {!isHost && isOnStage && (
         <>
           <SideBtn
-            icon={camOn ? <VideoIcon size={19} /> : <VideoOff size={19} />}
+            icon={camOn ? <VideoIcon size={14} /> : <VideoOff size={14} />}
             label={camOn ? 'Cam' : 'Cam off'}
             onClick={toggleGuestCam} active={camOn} color="#10B981" />
           <SideBtn
-            icon={micOn ? <Mic size={19} /> : <MicOff size={19} />}
+            icon={micOn ? <Mic size={14} /> : <MicOff size={14} />}
             label={micOn ? 'Micro' : 'Muet'}
             onClick={toggleGuestMic} active={micOn} color="#10B981" />
           <SideBtn
-            icon={<ArrowDown size={19} />} label="Descendre"
+            icon={<ArrowDown size={14} />} label="Descendre"
             onClick={onLeaveStage} danger />
           <SideBtn
-            icon={<X size={19} />} label="Quitter"
+            icon={<X size={14} />} label="Quitter"
             onClick={onLeave} danger />
         </>
       )}
@@ -1122,11 +1050,11 @@ function MediaControls({
       {!isHost && !isOnStage && (
         <>
           <SideBtn
-            icon={<Hand size={19} />}
+            icon={<Hand size={14} />}
             label={handRaised ? 'En attente...' : 'Lever main'}
             onClick={onHandRaise} active={handRaised} color="#fbbf24" />
           <SideBtn
-            icon={<X size={19} />} label="Quitter"
+            icon={<X size={14} />} label="Quitter"
             onClick={onLeave} danger />
         </>
       )}
@@ -1184,6 +1112,10 @@ export default function LiveSimplePage() {
   // Modération
   const [handRequests,     setHandRequests]     = useState<HandRequest[]>([]);
   const [stageIdentities,  setStageIdentities]  = useState<Set<string>>(new Set());
+  // Spotlight épingle par le host — synchronisé pour tous les viewers via
+  // POST/DELETE /lives/{id}/spotlight + WS live_spotlight_changed (même
+  // mécanisme que la version mobile, cf. stream_mobile SimpleLiveStreamScreen).
+  const [pinnedIdentity,   setPinnedIdentity]   = useState<string | null>(null);
   const [participantNames, setParticipantNames] = useState<Map<string, string>>(new Map());
   const [handRaised,       setHandRaised]       = useState(false);
 
@@ -1220,6 +1152,13 @@ export default function LiveSimplePage() {
   const live     = liveApi.data ? { ...liveApi.data, ...liveOverride } as LiveStream : null;
   const isHost   = !!(live && user && live.user_id === user.id);
   const isActive = live?.status === 'active';
+
+  // Initialise le spotlight depuis le live chargé — sinon un viewer qui rejoint
+  // en cours de route ne voit pas le pin déjà posé par le host (le WS ne livre
+  // que les CHANGEMENTS survenus après la connexion).
+  useEffect(() => {
+    if (liveApi.data) setPinnedIdentity(liveApi.data.pinned_identity ?? null);
+  }, [liveApi.data]);
 
   // Le host de ce live est peut-être déjà en plein battle (rejoint après le début
   // du match, donc après l'émission de l'event WS "battle_started") — sans ce
@@ -1386,6 +1325,10 @@ export default function LiveSimplePage() {
         if (d.battle_id) navigate(`/battles/${encodeId(d.battle_id)}`, { replace: true });
         break;
       }
+      case 'live_spotlight_changed': {
+        setPinnedIdentity(d.identity ?? null);
+        break;
+      }
       case 'like_added': {
         // total = source de vérité serveur — toujours s'aligner dessus plutôt que
         // d'accumuler des deltas locaux (sinon chaque client dérive selon les
@@ -1481,6 +1424,17 @@ export default function LiveSimplePage() {
   const handleDismiss = useCallback((identity: string) => {
     setHandRequests(prev => prev.filter(r => r.identity !== identity));
     if (id) apiClient.post(Endpoints.lives.dismissHand(id, identity)).catch(() => {});
+  }, [id]);
+
+  // Épingle un participant en plein écran pour TOUS les viewers (identity vide
+  // = désépingler). Optimiste + WS live_spotlight_changed pour les autres clients.
+  const handlePin = useCallback(async (identity: string) => {
+    if (!id) return;
+    setPinnedIdentity(identity || null);
+    try {
+      if (identity) await apiClient.post(Endpoints.lives.spotlight(id, identity));
+      else await apiClient.delete(Endpoints.lives.clearSpotlight(id));
+    } catch { /* silencieux — le WS resynchronisera si besoin */ }
   }, [id]);
 
   if (liveApi.loading) return <PageLoader />;
@@ -1760,9 +1714,14 @@ export default function LiveSimplePage() {
 
               </div>
 
-              {/* Vidéo — hauteur contenue, ne prend plus tout l'écran restant */}
-              <div className="relative bg-black overflow-hidden shrink-0 rounded-2xl mx-2 mt-2 sm:mx-3 sm:mt-3 lg:mx-0 lg:mt-0 lg:rounded-none"
+              {/* Vidéo — hauteur contenue sur mobile (juste assez pour laisser la place
+                  au chat en dessous) ; sur desktop (lg+) occupe tout l'espace vertical
+                  disponible dans la colonne (lg:h-auto lg:flex-1 écrase le style inline
+                  fixe via la cascade CSS : les classes lg: gagnent sur les propriétés
+                  qu'elles définissent, height/max-height ici). */}
+              <div className="relative bg-black overflow-hidden shrink-0 rounded-2xl mx-2 mt-2 sm:mx-3 sm:mt-3 lg:mx-0 lg:mt-0 lg:rounded-none lg:!h-auto lg:!max-h-none lg:flex-1 lg:min-h-0"
                 style={{ height: '42vh', minHeight: 220, maxHeight: 420 }}>
+
                 <LiveKitViewer
                   isHost={isHost} liveId={id!}
                   stageIdentities={stageIdentities}
@@ -1770,6 +1729,8 @@ export default function LiveSimplePage() {
                   onGiftClick={(identity, name) => setGiftTarget({ id: identity, name })}
                   streamerAvatarUrl={live.user?.avatar_url}
                   streamerName={live.user?.display_name ?? live.user?.username}
+                  pinnedIdentity={pinnedIdentity}
+                  onPin={handlePin}
                 />
 
                 {/* Zone tap coeur — comme sur mobile, chaque tap n'importe où sur la
@@ -1854,8 +1815,9 @@ export default function LiveSimplePage() {
               <div className="shrink-0 flex flex-col">
               {/* Barre d'actions unique — contrôles techniques host (Cam/Terminer) et
                   interactions sociales (Like/Cadeau/Participants/Partager) sur la même
-                  ligne, même gabarit de bouton (cercle w-9/sm:w-12 + label en dessous). */}
-              <div className="shrink-0 flex items-center gap-2 sm:gap-4 px-2.5 sm:px-4 py-1.5 border-b"
+                  ligne, même gabarit de bouton compact (cercle w-7/sm:w-8 + label en dessous)
+                  pour laisser le maximum de hauteur à la vidéo au-dessus. */}
+              <div className="shrink-0 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-3 py-1 border-b"
                 style={{ background: 'rgba(0,0,0,0.9)', borderColor: 'rgba(255,255,255,0.08)' }}>
                 <MediaControls
                   isHost={isHost} liveId={id!}
@@ -1881,33 +1843,33 @@ export default function LiveSimplePage() {
                 {!isHost && (
                   <button
                     onClick={() => live?.user?.id && setGiftTarget({ id: live.user.id, name: live.user?.display_name ?? live.user?.username ?? 'Hôte' })}
-                    className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
-                    <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
+                    className="flex flex-col items-center gap-0.5 shrink-0" style={{ minWidth: 32 }}>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all"
                       style={{ background: 'rgba(251,191,36,0.15)', border: '1.5px solid rgba(251,191,36,0.4)' }}>
-                      <Gift size={18} style={{ color: '#fbbf24' }} />
+                      <Gift size={13} style={{ color: '#fbbf24' }} />
                     </div>
-                    <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Cadeau</span>
+                    <span className="text-[8px] sm:text-[9px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Cadeau</span>
                   </button>
                 )}
                 <div
                   role="button" tabIndex={0}
                   onClick={() => { setShowParticipants(v => !v); setShowRequests(false); setShowOnStage(false); setShowGifts(false); setShowSettings(false); }}
-                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0 cursor-pointer" style={{ minWidth: 40 }}>
+                  className="flex flex-col items-center gap-0.5 shrink-0 cursor-pointer" style={{ minWidth: 32 }}>
                   {/* Avatars non-cliquables ici — tout clic dans cette zone ouvre le
                       panel Participants, l'envoi de cadeau se fait depuis le panel. */}
-                  <div className="flex items-center justify-center h-9 sm:h-12">
+                  <div className="flex items-center justify-center h-7 sm:h-8">
                     <ViewerAvatars fallbackButton clickable={false} onGiftClick={() => {}} />
                   </div>
-                  <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Participants</span>
+                  <span className="text-[8px] sm:text-[9px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Participants</span>
                 </div>
                 <button
                   onClick={() => { navigator.clipboard?.writeText(window.location.href); }}
-                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0" style={{ minWidth: 40 }}>
-                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
+                  className="flex flex-col items-center gap-0.5 shrink-0" style={{ minWidth: 32 }}>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
-                    <Send size={17} style={{ color: 'rgba(255,255,255,0.85)' }} />
+                    <Send size={12} style={{ color: 'rgba(255,255,255,0.85)' }} />
                   </div>
-                  <span className="text-[9px] sm:text-[10px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Partager</span>
+                  <span className="text-[8px] sm:text-[9px] font-semibold whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.7)' }}>Partager</span>
                 </button>
                 <div className="ml-auto">
                   <LiveReactionPicker

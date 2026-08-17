@@ -155,6 +155,8 @@ export interface LiveStream {
   started_at:      string;
   ended_at:        string | null;
   user:            User | null;
+  // Spotlight épinglé par le host, synchronisé pour tous les viewers.
+  pinned_identity?: string | null;
   // Monétisation accès
   is_monetized?:          boolean;
   monetization_type?:     string | null;
