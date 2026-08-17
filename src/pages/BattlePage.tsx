@@ -83,21 +83,49 @@ const BATTLE_ROOM_OPTIONS = {
 // aucun des deux ne publie jamais de piste vidéo : chacun voit un écran noir/
 // spinner infini côté adversaire ET côté sa propre vignette — pas un problème
 // réseau, juste un flux jamais démarré. Même pattern que LiveSimplePage.tsx.
+//
+// L'activation automatique (sans clic préalable) peut cependant être bloquée
+// silencieusement par le navigateur — certains exigent un "user gesture"
+// avant d'autoriser getUserMedia(), ou la permission caméra n'a simplement pas
+// encore été accordée pour ce domaine. Dans ce cas la Promise rejette et
+// l'ancien code l'avalait sans aucun recours pour l'utilisateur : la caméra
+// restait éteinte indéfiniment, sans bouton pour réessayer manuellement (un
+// vrai clic, lui, passe le "user gesture" et débloque le prompt de permission).
+// Ce composant affiche donc un bouton de reprise tant que l'activation n'a
+// pas abouti, exactement comme le bouton Cam de LiveSimplePage.tsx.
 function BattleMediaActivator({ isHost }: { isHost: boolean }) {
   const { localParticipant } = useLocalParticipant();
-  useEffect(() => {
+  const [camActive, setCamActive] = useState(false);
+  const [needsRetry, setNeedsRetry] = useState(false);
+
+  const activate = useCallback(async () => {
     if (!isHost) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await localParticipant.setCameraEnabled(true);
-        if (cancelled) return;
-        await localParticipant.setMicrophoneEnabled(true);
-      } catch { /* permission caméra/micro refusée */ }
-    })();
-    return () => { cancelled = true; };
+    try {
+      await localParticipant.setCameraEnabled(true);
+      await localParticipant.setMicrophoneEnabled(true);
+      setCamActive(true);
+      setNeedsRetry(false);
+    } catch {
+      setCamActive(false);
+      setNeedsRetry(true);
+    }
   }, [localParticipant, isHost]);
-  return null;
+
+  useEffect(() => { activate(); }, [activate]);
+
+  if (!isHost || camActive || !needsRetry) return null;
+
+  return (
+    <button onClick={activate}
+      className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-2"
+      style={{ background: 'rgba(0,0,0,0.75)' }}>
+      <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
+        <User size={22} color="#fff" />
+      </div>
+      <p className="text-white text-sm font-bold">Activer ma caméra</p>
+      <p className="text-white/60 text-xs px-8 text-center">Ton adversaire ne te voit pas — appuie pour autoriser caméra et micro</p>
+    </button>
+  );
 }
 
 interface ChatMsg { id: string; side: 'a' | 'b'; user: string; text: string; }
@@ -522,7 +550,16 @@ export default function BattlePage() {
             // Le retrait après 2s est géré par GiftTickItem lui-même (son propre
             // useEffect/setTimeout au montage) — pas ici, cf. commentaire sur
             // GiftTickItem plus haut dans le fichier.
-            (side === 'a' ? setGiftTicksA : setGiftTicksB)(prev => [...prev.slice(-3), tick]);
+            //
+            // UN SEUL badge affiché à la fois (le plus récent remplace le
+            // précédent), pas un empilement — avant ce fix, [...prev.slice(-3),
+            // tick] gardait jusqu'à 4 badges simultanés en colonne ; en cas de
+            // cadeaux rapprochés (moins de 2s d'écart), un nouveau item
+            // apparaissait toujours avant que le précédent ait fini de
+            // disparaître, donnant l'illusion qu'"un badge" restait figé en
+            // continu à l'écran alors qu'il s'agissait d'une succession de
+            // badges différents qui ne se vidait jamais complètement.
+            (side === 'a' ? setGiftTicksA : setGiftTicksB)([tick]);
 
             (side === 'a' ? setCrownA : setCrownB)(tick.id);
             setTimeout(() => (side === 'a' ? setCrownA : setCrownB)(prev => prev === tick.id ? null : prev), 2600);
