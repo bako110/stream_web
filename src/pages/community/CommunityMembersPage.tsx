@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Search, X, Shield, Star, User, Crown, Medal,
-  UserX, Ban, Check, RefreshCw, ChevronDown,
+  UserX, Ban, Check, RefreshCw, ChevronDown, Lock,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { decodeId, encodeId } from '../../utils/slugId';
@@ -192,24 +192,37 @@ export default function CommunityMembersPage() {
   const [query,        setQuery]        = useState('');
   const [filter,       setFilter]       = useState<RoleFilter>('all');
   const [actionTarget, setActionTarget] = useState<Member | null>(null);
+  // Liste masquée par l'admin (members_list_hidden_public/members) — distinct
+  // d'une erreur réseau : le nom/l'entête de la communauté reste affiché,
+  // seule la liste elle-même est remplacée par un message explicite au lieu
+  // d'un échec silencieux qui vidait toute la page (nom compris).
+  const [membersHidden, setMembersHidden] = useState<string | null>(null);
 
   const isAdmin   = myRole === 'admin';
   const isMod     = myRole === 'moderator';
 
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true); else setRefreshing(true);
+    setMembersHidden(null);
     try {
-      const [commRes, membRes] = await Promise.all([
-        apiClient.get<any>(`/api/v1/communities/${id}`),
-        apiClient.get<any>(`/api/v1/communities/${id}/members`),
-      ]);
+      const commRes = await apiClient.get<any>(`/api/v1/communities/${id}`);
       if (!mountedRef.current) return;
       setName((commRes.data?.data ?? commRes.data)?.name ?? '');
+    } catch { /* silencieux */ }
+    try {
+      const membRes = await apiClient.get<any>(`/api/v1/communities/${id}/members`);
+      if (!mountedRef.current) return;
       const list: Member[] = Array.isArray(membRes.data) ? membRes.data : membRes.data?.items ?? membRes.data?.data ?? [];
       setMembers(list);
       const mine = list.find(m => m.user_id === me?.id);
       setMyRole(mine?.role ?? null);
-    } catch { /* silencieux */ }
+    } catch (e: any) {
+      if (!mountedRef.current) return;
+      if (e?.status === 403) {
+        setMembersHidden(extractApiErrorMessage(e, 'Rejoignez la communauté pour voir ses membres.'));
+      }
+      setMembers([]);
+    }
     finally { if (mountedRef.current) { setLoading(false); setRefreshing(false); } }
   }, [id, me?.id]);
 
@@ -318,6 +331,11 @@ export default function CommunityMembersPage() {
 
       {loading ? (
         <PageLoader />
+      ) : membersHidden ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 text-center">
+          <Lock size={28} style={{ color: 'var(--text-tertiary)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>{membersHidden}</p>
+        </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
 
