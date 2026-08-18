@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { X, Send, Award, User, Heart, Users, Gift } from 'lucide-react';
+import { X, Send, Award, User, Heart, Users, Gift, VideoIcon, VideoOff, Mic, MicOff } from 'lucide-react';
 import {
   LiveKitRoom, VideoTrack, useTracks, useParticipants, useLocalParticipant, RoomAudioRenderer,
 } from '@livekit/components-react';
-import { Track, VideoPresets } from 'livekit-client';
+import { Track, VideoPresets, ParticipantEvent } from 'livekit-client';
 import { PageLoader, Spinner } from '../components/ui/Spinner';
 import { useConfirm } from '../components/ui/Dialog';
 import { decodeId } from '../utils/slugId';
@@ -78,24 +78,53 @@ const BATTLE_ROOM_OPTIONS = {
 // Active caméra + micro pour le host côté web dès la connexion à la room de
 // battle — <LiveKitRoom connect> seul ne publie AUCUN flux local par défaut,
 // contrairement au SDK mobile qui active la caméra nativement à l'entrée. Sans
-// ce composant, deux hosts web l'un contre l'autre se connectent bien à la
+// cette activation, deux hosts web l'un contre l'autre se connectent bien à la
 // même room LiveKit (is_publisher=True côté token, cf. battle_service.py) mais
 // aucun des deux ne publie jamais de piste vidéo : chacun voit un écran noir/
 // spinner infini côté adversaire ET côté sa propre vignette — pas un problème
 // réseau, juste un flux jamais démarré. Même pattern que LiveSimplePage.tsx.
 //
-// L'activation automatique (sans clic préalable) peut cependant être bloquée
-// silencieusement par le navigateur — certains exigent un "user gesture"
-// avant d'autoriser getUserMedia(), ou la permission caméra n'a simplement pas
-// encore été accordée pour ce domaine. Dans ce cas la Promise rejette et
-// l'ancien code l'avalait sans aucun recours pour l'utilisateur : la caméra
-// restait éteinte indéfiniment, sans bouton pour réessayer manuellement (un
-// vrai clic, lui, passe le "user gesture" et débloque le prompt de permission).
-// Ce composant affiche donc un bouton de reprise tant que l'activation n'a
-// pas abouti, exactement comme le bouton Cam de LiveSimplePage.tsx.
-function BattleMediaActivator({ isHost }: { isHost: boolean }) {
+// L'activation automatique (sans clic préalable) peut être bloquée
+// silencieusement par le navigateur (permission jamais accordée pour ce
+// domaine, "user gesture" exigé avant getUserMedia()), OU réussir côté
+// Promise mais ne jamais aboutir à un flux réellement publié/vu par
+// l'adversaire (device déconnecté entre-temps, track qui échoue à la
+// négociation WebRTC après coup) — dans ce second cas camActive passe à
+// true sans qu'aucune vidéo ne soit visible, et l'ancien composant
+// (BattleMediaActivator) ne montrait alors plus AUCUN bouton de secours,
+// laissant le host bloqué sans recours visible. Ce composant expose donc un
+// bouton Cam/Mic PERSISTANT dans le header (comme le SideBtn de
+// LiveSimplePage.tsx), pas seulement un écran de blocage transitoire.
+function useLocalMediaEnabled() {
   const { localParticipant } = useLocalParticipant();
-  const [camActive, setCamActive] = useState(false);
+  const [camOn, setCamOn] = useState(false);
+  const [micOn, setMicOn] = useState(false);
+
+  useEffect(() => {
+    const sync = () => {
+      const camPub = localParticipant.getTrackPublication(Track.Source.Camera);
+      const micPub = localParticipant.getTrackPublication(Track.Source.Microphone);
+      setCamOn(camPub ? !camPub.isMuted : false);
+      setMicOn(micPub ? !micPub.isMuted : false);
+    };
+    sync();
+    localParticipant.on(ParticipantEvent.LocalTrackPublished, sync);
+    localParticipant.on(ParticipantEvent.LocalTrackUnpublished, sync);
+    localParticipant.on(ParticipantEvent.TrackMuted, sync);
+    localParticipant.on(ParticipantEvent.TrackUnmuted, sync);
+    return () => {
+      localParticipant.off(ParticipantEvent.LocalTrackPublished, sync);
+      localParticipant.off(ParticipantEvent.LocalTrackUnpublished, sync);
+      localParticipant.off(ParticipantEvent.TrackMuted, sync);
+      localParticipant.off(ParticipantEvent.TrackUnmuted, sync);
+    };
+  }, [localParticipant]);
+
+  return { camOn, micOn, localParticipant };
+}
+
+function BattleMediaControls({ isHost }: { isHost: boolean }) {
+  const { camOn, micOn, localParticipant } = useLocalMediaEnabled();
   const [needsRetry, setNeedsRetry] = useState(false);
 
   const activate = useCallback(async () => {
@@ -103,28 +132,55 @@ function BattleMediaActivator({ isHost }: { isHost: boolean }) {
     try {
       await localParticipant.setCameraEnabled(true);
       await localParticipant.setMicrophoneEnabled(true);
-      setCamActive(true);
       setNeedsRetry(false);
     } catch {
-      setCamActive(false);
       setNeedsRetry(true);
     }
   }, [localParticipant, isHost]);
 
   useEffect(() => { activate(); }, [activate]);
 
-  if (!isHost || camActive || !needsRetry) return null;
+  const toggleCam = useCallback(async () => {
+    try {
+      await localParticipant.setCameraEnabled(!camOn);
+      setNeedsRetry(false);
+    } catch { setNeedsRetry(true); }
+  }, [localParticipant, camOn]);
+
+  const toggleMic = useCallback(async () => {
+    try { await localParticipant.setMicrophoneEnabled(!micOn); } catch { /* ignore */ }
+  }, [localParticipant, micOn]);
+
+  if (!isHost) return null;
 
   return (
-    <button onClick={activate}
-      className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-2"
-      style={{ background: 'rgba(0,0,0,0.75)' }}>
-      <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
-        <User size={22} color="#fff" />
-      </div>
-      <p className="text-white text-sm font-bold">Activer ma caméra</p>
-      <p className="text-white/60 text-xs px-8 text-center">Ton adversaire ne te voit pas — appuie pour autoriser caméra et micro</p>
-    </button>
+    <>
+      {/* Boutons persistants — restent visibles et cliquables en permanence
+          (pas seulement en cas d'échec), pour que l'hôte puisse couper/
+          réactiver sa caméra ou son micro à tout moment pendant le match. */}
+      <button onClick={toggleCam}
+        className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0"
+        style={{ background: camOn ? 'rgba(255,255,255,0.1)' : 'rgba(240,54,90,0.25)' }}>
+        {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#F0365A" />}
+      </button>
+      <button onClick={toggleMic}
+        className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0"
+        style={{ background: micOn ? 'rgba(255,255,255,0.1)' : 'rgba(240,54,90,0.25)' }}>
+        {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#F0365A" />}
+      </button>
+
+      {needsRetry && !camOn && (
+        <button onClick={activate}
+          className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-2"
+          style={{ background: 'rgba(0,0,0,0.75)' }}>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
+            <User size={22} color="#fff" />
+          </div>
+          <p className="text-white text-sm font-bold">Activer ma caméra</p>
+          <p className="text-white/60 text-xs px-8 text-center">Ton adversaire ne te voit pas — appuie pour autoriser caméra et micro</p>
+        </button>
+      )}
+    </>
   );
 }
 
@@ -782,7 +838,6 @@ export default function BattlePage() {
     <>
     <LiveKitRoom serverUrl={wsUrl} token={token} connect options={BATTLE_ROOM_OPTIONS} className="h-[calc(100vh-57px)]">
       <RoomAudioRenderer />
-      <BattleMediaActivator isHost={!!isHost} />
       {/* Desktop (lg+) : chat en colonne fixe à gauche, vidéo à droite prenant tout
           l'espace restant (flex-row-reverse, même pattern que LiveSimplePage) —
           mobile web : empilé verticalement comme avant. */}
@@ -796,6 +851,8 @@ export default function BattlePage() {
               {leaving ? <Spinner size="sm" /> : <X size={18} color="#fff" />}
             </button>
             <ParticipantsCount onClick={() => setShowParticipants(v => !v)} />
+            {/* Cam/Mic — persistants, hôte uniquement (un viewer n'a rien à publier) */}
+            <BattleMediaControls isHost={!!isHost} />
 
             {/* Centré par rapport à TOUT le header (position absolute), pas juste à
                 l'espace restant entre les boutons — sinon le centre visuel dérive dès
