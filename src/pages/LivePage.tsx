@@ -213,6 +213,7 @@ export default function LivePage() {
   const { user, accessToken } = useAuthStore();
 
   const [showChat,       setShowChat]       = useState(true);
+  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [token,          setToken]          = useState<StreamToken | null>(null);
   const [publisherToken, setPublisherToken] = useState<StreamToken | null>(null);
   const [starting,       setStarting]       = useState(false);
@@ -320,11 +321,13 @@ export default function LivePage() {
     <div className="flex h-[calc(100vh-57px)] overflow-hidden bg-black">
 
       {/* ── Zone vidéo ── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
 
-        {/* Header navigation */}
-        <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0">
-          <button onClick={() => navigate(-1)} className="text-white/60 hover:text-white transition-colors">
+        {/* Header navigation — overlay flottant sur mobile (vidéo plein écran), barre fixe sur desktop */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0
+                         absolute inset-x-0 top-0 z-30 lg:relative lg:bg-black/80"
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }}>
+          <button onClick={() => navigate(-1)} className="text-white/80 hover:text-white transition-colors">
             <ChevronLeft size={20} />
           </button>
           <Avatar src={concert.artist?.avatar_url} name={concert.artist?.display_name ?? concert.artist?.username} size="sm" />
@@ -362,12 +365,12 @@ export default function LivePage() {
             ) : null}
           </div>
 
-          <button onClick={() => setShowChat(v => !v)} className="text-white/60 hover:text-white transition-colors ml-1 lg:hidden">
+          <button onClick={() => setShowChat(v => !v)} className="text-white/60 hover:text-white transition-colors ml-1 hidden lg:block">
             <MessageCircle size={18} />
           </button>
         </div>
 
-        {/* ── Lecteur ── */}
+        {/* ── Lecteur — plein écran sur mobile (pas de recadrage par le header/footer) ── */}
         <div className="flex-1 relative bg-black overflow-hidden">
 
           {/* Thumbnail de fond (quand pas encore live) */}
@@ -496,11 +499,42 @@ export default function LivePage() {
               </button>
             </div>
           )}
+
+          {/* Bandeau "démarrer le live" artiste — overlay bas sur mobile plutôt
+              qu'une barre qui rognerait la vidéo (plein écran attendu). */}
+          {isArtist && !isLive && (concert.status === 'draft' || concert.status === 'published') && (
+            <div className="lg:hidden absolute bottom-0 inset-x-0 z-20 px-4 py-3 flex items-center gap-3"
+              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white/70">
+                  Tu es l'artiste de ce concert. Démarre le live quand tu es prêt.
+                </p>
+              </div>
+              <button onClick={handleStart} disabled={starting}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shrink-0 transition-all"
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+                {starting ? <Spinner size="sm" /> : <Radio size={14} />}
+                {starting ? 'Démarrage...' : 'Go Live'}
+              </button>
+            </div>
+          )}
+
+          {/* Bouton flottant commentaires — mobile uniquement, ouvre le tiroir bas
+              (même emplacement/style que les actions sur ReelsPage). */}
+          <div className="lg:hidden absolute z-20 flex flex-col items-center gap-0.5"
+            style={{ right: 12, bottom: 'max(20px, calc(env(safe-area-inset-bottom, 0px) + 20px))' }}>
+            <button onClick={() => setChatDrawerOpen(true)} className="flex flex-col items-center gap-0.5">
+              <div className="w-11 h-11 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
+                <MessageCircle size={20} fill="#fff" />
+              </div>
+            </button>
+          </div>
         </div>
 
-        {/* Info bar artiste */}
+        {/* Info bar artiste — desktop uniquement (mobile : overlay ci-dessus) */}
         {isArtist && !isLive && (concert.status === 'draft' || concert.status === 'published') && (
-          <div className="shrink-0 px-4 py-3 border-t border-white/10 bg-black/80 flex items-center gap-3">
+          <div className="hidden lg:flex shrink-0 px-4 py-3 border-t border-white/10 bg-black/80 items-center gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-xs text-white/50">
                 Tu es l'artiste de ce concert. Démarre le live quand tu es prêt.
@@ -516,9 +550,9 @@ export default function LivePage() {
         )}
       </div>
 
-      {/* ── Chat panel ── */}
+      {/* ── Chat panel — sidebar fixe desktop ── */}
       {showChat && (
-        <div className="w-80 border-l border-white/10 bg-[var(--surface)] flex flex-col hidden lg:flex shrink-0">
+        <div className="w-80 border-l border-white/10 bg-[var(--surface)] hidden lg:flex flex-col shrink-0">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] shrink-0">
             <h3 className="font-semibold text-[var(--text-primary)] text-sm flex items-center gap-2">
               <MessageCircle size={15} className="text-brand-primary" /> Chat en direct
@@ -532,6 +566,41 @@ export default function LivePage() {
           </div>
         </div>
       )}
+
+      {/* ── Chat drawer — tiroir depuis le bas sur mobile (même pattern que ReelsPage) ── */}
+      <div
+        className="lg:hidden fixed inset-0 z-40 transition-opacity duration-300"
+        style={{
+          background: 'rgba(0,0,0,0.6)',
+          pointerEvents: chatDrawerOpen ? 'auto' : 'none',
+          opacity: chatDrawerOpen ? 1 : 0,
+        }}
+        onClick={() => setChatDrawerOpen(false)}
+      />
+      <div
+        className="lg:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl overflow-hidden"
+        style={{
+          height: '72dvh',
+          background: 'var(--bg)',
+          borderTop: '1px solid var(--border)',
+          transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
+          transform: chatDrawerOpen ? 'translateY(0)' : 'translateY(100%)',
+        }}>
+        <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-8 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+        </div>
+        <div className="flex items-center justify-between px-4 pb-2 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <h3 className="font-semibold text-[var(--text-primary)] text-sm flex items-center gap-2">
+            <MessageCircle size={15} className="text-brand-primary" /> Chat en direct
+          </h3>
+          <button onClick={() => setChatDrawerOpen(false)} className="btn-ghost p-1 text-[var(--text-tertiary)]">
+            <X size={15} />
+          </button>
+        </div>
+        <div className="flex-1 min-h-0">
+          {chatDrawerOpen && <LiveChat concertId={id!} accessToken={accessToken} />}
+        </div>
+      </div>
     </div>
   );
 }

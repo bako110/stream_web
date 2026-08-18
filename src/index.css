@@ -86,14 +86,26 @@
        de retomber sur la police emoji système (ex: drapeaux de pays). */
     font-family: 'Inter', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     scroll-behavior: smooth;
+    /* html est le vrai scrolling root sur mobile Safari/Chrome — un
+       overflow-x:hidden posé uniquement sur body (cf. plus bas) ne suffit
+       pas à empêcher le swipe latéral de faire glisser toute la page si un
+       enfant quelconque dépasse légèrement la largeur du viewport. */
+    width: 100%;
+    overflow-x: hidden;
   }
 
   body {
     margin: 0;
+    width: 100%;
     background-color: var(--bg);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    /* Autorise le scroll/swipe vertical normal, bloque uniquement le
+       panning horizontal — complète overflow-x:hidden, qui seul peut encore
+       laisser passer le geste de swipe latéral sur certains navigateurs
+       mobiles (le pinch-to-zoom, lui, est déjà bloqué via la meta viewport). */
+    touch-action: pan-y;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 

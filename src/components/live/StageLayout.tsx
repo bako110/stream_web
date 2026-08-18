@@ -94,7 +94,12 @@ export function StageLayout({
         onMouseLeave={() => setHoveredId(null)}
       >
         {main.track
-          ? <VideoTrack trackRef={main.track} className="w-full h-full object-cover" />
+          // object-contain sur mobile : le cadre plein écran (~9:19) est bien
+          // plus vertical que la caméra source (souvent 16:9/4:3), object-cover
+          // y recadrait/zoomait excessivement (gros plan déformé). Sur desktop
+          // (lg+) le cadre reste proche du ratio vidéo classique, object-cover
+          // y est adapté (pas de bandes noires).
+          ? <VideoTrack trackRef={main.track} className="w-full h-full object-contain lg:object-cover" />
           : <ParticipantAvatarFallback avatarUrl={main.avatarUrl} name={main.name} />}
         {main.isSpeaking && (
           <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 3px #22c55e' }} />

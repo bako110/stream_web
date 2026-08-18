@@ -104,8 +104,14 @@ interface LiveChatHandle { addSysMsg: (text: string) => void; }
 const LiveChat = forwardRef<LiveChatHandle, {
   liveId: string; accessToken: string | null; isHost: boolean; hostId?: string | null;
   mobileInputTarget?: HTMLElement | null;
+  /** Portail mobile pour la liste de messages — rend la variante overlay
+   *  (transparente, bornée à 200px) dans cette cible plutôt que dans le flux
+   *  normal du composant. Une seule instance de LiveChat existe (un seul
+   *  WebSocket) ; sur desktop la liste s'affiche dans son flux normal
+   *  (colonne dédiée) et cette cible n'est pas fournie. */
+  mobileListTarget?: HTMLElement | null;
   onWsEvent: (d: any) => void;
-}>(function LiveChatInner({ liveId, accessToken, isHost, hostId, mobileInputTarget, onWsEvent }, ref) {
+}>(function LiveChatInner({ liveId, accessToken, isHost, hostId, mobileInputTarget, mobileListTarget, onWsEvent }, ref) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input,    setInput]    = useState('');
   const [sending,  setSending]  = useState(false);
@@ -257,43 +263,47 @@ const LiveChat = forwardRef<LiveChatHandle, {
   ];
 
   const inputBar = (
-    <div className="flex flex-col gap-2 pointer-events-auto min-w-0">
+    <div className="flex flex-col gap-1.5 pointer-events-auto min-w-0">
       {/* Réactions rapides — un tap envoie directement le commentaire */}
       <div className="flex items-center gap-1.5 overflow-x-auto min-w-0" style={{ scrollbarWidth: 'none' }}>
         {QUICK_REACTIONS.map(r => (
           <button key={r.label} onClick={() => sendQuick(`${r.emoji} ${r.label}`)}
             className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-transform active:scale-95"
-            style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.15)' }}>
             <span>{r.emoji}</span> {r.label}
           </button>
         ))}
       </div>
       <div className="relative flex gap-2">
         <input
-          className="flex-1 min-w-0 text-white text-sm rounded-full px-3.5 py-2 focus:outline-none focus:ring-1"
-          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', '--tw-ring-color': '#7B3FF2' } as any}
+          className="flex-1 min-w-0 text-white text-sm rounded-full px-3.5 py-2.5 focus:outline-none focus:ring-1"
+          style={{ background: 'rgba(20,20,26,0.75)', border: '1px solid rgba(255,255,255,0.22)', '--tw-ring-color': '#7B3FF2' } as any}
           placeholder="Écris un commentaire..."
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') send(); }}
         />
         <button onClick={send} disabled={sending || !input.trim()}
-          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-          <Send size={14} className="text-white" />
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 2px 10px rgba(123,63,242,0.4)' }}>
+          <Send size={15} className="text-white" />
         </button>
       </div>
     </div>
   );
 
-  // Liste de commentaires en flux normal (fond opaque), plus un overlay flottant
-  // sur la vidéo — chaque message est une ligne avatar + nom + texte, scrollable
-  // indépendamment. La saisie est fournie par le composant parent (LiveCommentBar)
-  // et rendue ici en portail pour rester dans le même flux WS/état que la liste.
-  return (
-    <div className="px-3 py-2 flex flex-col gap-2"
-      style={{ background: 'rgba(15,15,20,0.97)', flex: '1 1 0%', minHeight: 0, overflowY: 'auto' }}>
-      {messages.length === 0 && (
+  // Liste de commentaires rendue deux fois avec le même state (pas de second
+  // WebSocket) : en flux normal opaque pour la colonne desktop, et — quand
+  // mobileListTarget est fourni — en variante overlay (transparente, bornée à
+  // 200px) téléportée par-dessus la vidéo plein écran sur mobile.
+  function renderList(isOverlay: boolean) {
+    return (
+    <div className={isOverlay ? 'px-3 py-2 flex flex-col justify-end gap-1.5 overscroll-contain touch-pan-y' : 'px-3 py-2 flex flex-col gap-2'}
+      style={isOverlay
+        ? { background: 'transparent', height: 130, maxHeight: 130, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 24px)', maskImage: 'linear-gradient(to bottom, transparent, black 24px)' } as React.CSSProperties
+        : { background: 'rgba(15,15,20,0.97)', flex: '1 1 0%', minHeight: 0, overflowY: 'auto' }
+      }>
+      {messages.length === 0 && !isOverlay && (
         <p className="text-xs text-center py-4" style={{ color: 'rgba(255,255,255,0.35)' }}>
           Aucun commentaire pour le moment
         </p>
@@ -304,10 +314,12 @@ const LiveChat = forwardRef<LiveChatHandle, {
             style={{ color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.06)' }}>{m.text}</div>
         );
         if (m.isGift) return (
-          <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs w-fit"
-            style={{ background: 'rgba(80,60,0,0.35)', border: '1px solid rgba(255,215,0,0.3)' }}>
-            <Gift size={13} style={{ color: '#fbbf24', flexShrink: 0 }} />
-            <span className="font-medium" style={{ color: '#fde68a' }}>{m.text}</span>
+          <div key={m.id} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full text-xs w-fit"
+            style={{ background: 'rgba(80,60,0,0.45)', border: '1px solid rgba(255,215,0,0.4)', boxShadow: '0 0 10px rgba(255,215,0,0.15)' }}>
+            <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,215,0,0.2)' }}>
+              <Gift size={13} style={{ color: '#fbbf24' }} />
+            </span>
+            <span className="font-semibold" style={{ color: '#fde68a' }}>{m.text}</span>
           </div>
         );
         const isMe   = m.userId && user && m.userId === user.id;
@@ -318,7 +330,8 @@ const LiveChat = forwardRef<LiveChatHandle, {
             <Avatar src={m.avatar} name={m.user} size="xs" className="shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-bold" style={{ color: isMsgHost ? '#c4b5fd' : '#a78bfa' }}>
+                <span className="text-xs font-bold"
+                  style={{ color: isMsgHost ? '#c4b5fd' : '#a78bfa', textShadow: isOverlay ? '0 1px 3px rgba(0,0,0,0.9)' : 'none' }}>
                   {m.user}
                 </span>
                 {isMsgHost && (
@@ -326,7 +339,8 @@ const LiveChat = forwardRef<LiveChatHandle, {
                     style={{ background: '#7B3FF2' }}>Hôte</span>
                 )}
               </div>
-              <span className="text-sm break-words whitespace-pre-line" style={{ color: 'rgba(255,255,255,0.92)' }}>{m.text}</span>
+              <span className="text-sm break-words whitespace-pre-line"
+                style={{ color: 'rgba(255,255,255,0.92)', textShadow: isOverlay ? '0 1px 3px rgba(0,0,0,0.9)' : 'none' }}>{m.text}</span>
             </div>
             {!m.id.startsWith('local-') && (
               <div className="flex items-center gap-1.5 shrink-0">
@@ -351,13 +365,32 @@ const LiveChat = forwardRef<LiveChatHandle, {
           </div>
         );
       })}
-      <div ref={bottomRef} />
+      {!isOverlay && <div ref={bottomRef} />}
+    </div>
+    );
+  }
 
-      {/* Saisie téléportée depuis le composant parent (LiveCommentBar, tout en bas de page) */}
+  return (
+    <>
+      {/* Liste desktop — flux normal opaque dans la colonne dédiée. */}
+      <div className={mobileListTarget ? 'hidden lg:flex lg:flex-col' : 'flex flex-col'} style={{ flex: '1 1 0%', minHeight: 0 }}>
+        {renderList(false)}
+      </div>
+
+      {/* Liste mobile — téléportée en overlay par-dessus la vidéo. */}
+      {mobileListTarget && createPortal(renderList(true), mobileListTarget)}
+
+      {/* Saisie desktop — inline dans la colonne dédiée. */}
+      <div className="hidden lg:block shrink-0 min-w-0 px-3 py-2 border-t"
+        style={{ background: 'rgba(15,15,20,0.98)', borderColor: 'rgba(255,255,255,0.08)' }}>
+        {inputBar}
+      </div>
+
+      {/* Saisie mobile — téléportée dans le groupe bas overlay. */}
       {mobileInputTarget && createPortal(inputBar, mobileInputTarget)}
 
       {ConfirmChatDialog}
-    </div>
+    </>
   );
 });
 
@@ -1232,6 +1265,10 @@ export default function LiveSimplePage() {
   const chatRef             = useRef<LiveChatHandle>(null);
   const participantNamesRef = useRef<Map<string, string>>(new Map());
   const [mobileChatInputEl, setMobileChatInputEl] = useState<HTMLDivElement | null>(null);
+  // Portail mobile pour la liste de messages — le même LiveChat (une seule
+  // instance, un seul WebSocket) rend sa liste ici en overlay sur mobile, et
+  // dans son flux normal (colonne desktop) au-delà de lg via mobileListTarget=null.
+  const [mobileChatListEl, setMobileChatListEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => { participantNamesRef.current = participantNames; }, [participantNames]);
 
@@ -1693,7 +1730,7 @@ export default function LiveSimplePage() {
               serverUrl={lkUrl}
               connect
               options={isHost ? CREATOR_ROOM_OPTIONS : VIEWER_ROOM_OPTIONS}
-              className="flex flex-col min-w-0 lg:flex-row-reverse"
+              className="relative flex flex-col min-w-0 lg:flex-row-reverse"
               style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}
             >
               <RoomAudioRenderer />
@@ -1702,13 +1739,14 @@ export default function LiveSimplePage() {
                 setTimeout(() => setJoinToast(null), 3000);
               }} />
 
-            <div className="shrink-0 flex flex-col min-w-0 lg:flex-1 lg:h-full lg:min-h-0 lg:justify-between lg:overflow-y-auto">
-              {/* Header mobile — remplacé par le header desktop au-dessus de la carte sur lg+.
-                  Pas de overflow-hidden ici : le menu "..." (Sur scène/Cadeaux/Paramètres)
-                  s'ouvre en absolute et dépasse la hauteur de ce bandeau — il serait
-                  tronqué/invisible sinon. */}
-              <div className="flex lg:hidden items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-b shrink-0 flex-nowrap"
-                style={{ background: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)' }}>
+            <div className="relative flex-1 min-h-0 flex flex-col min-w-0 lg:flex-1 lg:h-full lg:justify-between lg:overflow-y-auto">
+              {/* Header mobile — overlay flottant sur la vidéo plein écran (dégradé,
+                  pas de fond opaque) ; remplacé par le header desktop au-dessus de la
+                  carte sur lg+. Pas de overflow-hidden ici : le menu "..." (Sur
+                  scène/Cadeaux/Paramètres) s'ouvre en absolute et dépasse la hauteur
+                  de ce bandeau — il serait tronqué/invisible sinon. */}
+              <div className="flex lg:hidden items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 shrink-0 flex-nowrap absolute inset-x-0 top-0 z-30 lg:static lg:border-b"
+                style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.75), transparent)', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <button onClick={handleLeave} style={{ color: 'rgba(255,255,255,0.6)' }}
                   className="hover:text-white transition-colors shrink-0">
                   <ChevronLeft size={18} className="sm:hidden" />
@@ -1807,13 +1845,10 @@ export default function LiveSimplePage() {
 
               </div>
 
-              {/* Vidéo — hauteur contenue sur mobile (juste assez pour laisser la place
-                  au chat en dessous) ; sur desktop (lg+) occupe tout l'espace vertical
-                  disponible dans la colonne (lg:h-auto lg:flex-1 écrase le style inline
-                  fixe via la cascade CSS : les classes lg: gagnent sur les propriétés
-                  qu'elles définissent, height/max-height ici). */}
-              <div className="relative bg-black overflow-hidden shrink-0 rounded-2xl mx-2 mt-2 sm:mx-3 sm:mt-3 lg:mx-0 lg:mt-0 lg:rounded-none lg:!h-auto lg:!max-h-none lg:flex-1 lg:min-h-0"
-                style={{ height: '42vh', minHeight: 220, maxHeight: 420 }}>
+              {/* Vidéo — plein écran sur mobile (chat/actions superposés par-dessus,
+                  style app) ; sur desktop (lg+) occupe tout l'espace vertical
+                  disponible dans la colonne. */}
+              <div className="absolute inset-0 bg-black overflow-hidden lg:relative lg:rounded-none lg:flex-1 lg:min-h-0">
 
                 <LiveKitViewer
                   isHost={isHost} liveId={id!}
@@ -1914,15 +1949,25 @@ export default function LiveSimplePage() {
                 )}
               </div>
 
-              {/* Groupe bas — barre d'actions + description, collés ensemble et
-                  poussés en bas de la carte sur desktop (justify-between sur le parent). */}
-              <div className="shrink-0 flex flex-col">
+              {/* Groupe bas — chat (portail mobile) + barre d'actions + description.
+                  Sur mobile : overlay flottant collé au bas de l'écran (par-dessus la
+                  vidéo plein écran, fond dégradé). Sur desktop (lg+) : bandeau opaque
+                  en flux normal, poussé en bas de la carte (justify-between sur le
+                  parent). */}
+              <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-1.5 pt-6 lg:static lg:gap-0 lg:pt-0 lg:shrink-0"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.55) 55%, transparent)' }}>
+
+              {/* Commentaires — portail mobile uniquement : reçoit la liste de messages
+                  (variant overlay, transparent, bornée à 130px) de l'unique instance
+                  LiveChat montée plus bas — pas de second montage/WebSocket. */}
+              <div ref={setMobileChatListEl} className="lg:hidden shrink-0" />
+
               {/* Barre d'actions unique — contrôles techniques host (Cam/Terminer) et
                   interactions sociales (Like/Cadeau/Participants/Partager) sur la même
                   ligne, même gabarit de bouton compact (cercle w-7/sm:w-8 + label en dessous)
                   pour laisser le maximum de hauteur à la vidéo au-dessus. */}
-              <div className="shrink-0 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-3 py-1 border-b"
-                style={{ background: 'rgba(0,0,0,0.9)', borderColor: 'rgba(255,255,255,0.08)' }}>
+              <div className="shrink-0 flex items-center gap-1.5 sm:gap-3 px-2.5 sm:px-3 lg:py-1 lg:border-b"
+                style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
                 <MediaControls
                   isHost={isHost} liveId={id!}
                   onStop={handleStop} stopping={stopping}
@@ -1943,6 +1988,7 @@ export default function LiveSimplePage() {
                   onToggleSettings={() => setShowSettings(v => !v)}
                   onStageDetected={() => setIsOnStage(true)}
                 />
+                <div className="w-px h-7 sm:h-8 shrink-0" style={{ background: 'rgba(255,255,255,0.12)' }} />
                 <LiveLikeButton ref={likeRef} liveId={id!} initialCount={live.likes_count ?? 0} isHost={isHost} />
                 {!isHost && (
                   <button
@@ -1991,6 +2037,10 @@ export default function LiveSimplePage() {
                   <p className="text-xs line-clamp-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{live.description}</p>
                 </div>
               )}
+
+              {/* Saisie — portail mobile uniquement (desktop : voir colonne commentaires). */}
+              <div ref={setMobileChatInputEl} className="lg:hidden shrink-0 px-2.5 sm:px-3 min-w-0"
+                style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))' }} />
               </div>
 
               {/* Paramètres host — à l'intérieur de LiveKitRoom pour accès à useLocalParticipant */}
@@ -2017,36 +2067,41 @@ export default function LiveSimplePage() {
               )}
             </div>
 
-            {/* Colonne commentaires — à gauche du live sur desktop (lg:flex-row-reverse
-                sur LiveKitRoom place cette colonne, déclarée en 2e, visuellement en 1er). */}
-            <div className="flex-1 flex flex-col lg:w-[420px] lg:flex-none lg:shrink-0 lg:border-r"
+            {/* Colonne commentaires — desktop uniquement (lg:flex-row-reverse sur
+                LiveKitRoom la place à gauche du live, visuellement en 1er). Sur
+                mobile la même instance LiveChat téléporte sa liste et sa saisie
+                dans le groupe bas overlay (mobileListTarget/mobileInputTarget) —
+                ce conteneur reste donc monté (hidden, pas démonté) pour garder le
+                WebSocket vivant, mais n'occupe plus de place dans le flux mobile. */}
+            <div className="hidden lg:flex lg:w-[420px] lg:flex-none lg:shrink-0 lg:border-r"
               style={{ borderColor: 'rgba(255,255,255,0.08)', minHeight: 0, height: '100%', overflow: 'hidden' }}>
-              {/* Gift ticker — juste au-dessus des commentaires */}
-              {giftNotifs.length > 0 && (
-                <div className="shrink-0 px-3 py-1.5">
-                  <GiftTicker notifs={giftNotifs} />
-                </div>
-              )}
+              <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
+                {/* Gift ticker — juste au-dessus des commentaires */}
+                {giftNotifs.length > 0 && (
+                  <div className="shrink-0 px-3 py-1.5">
+                    <GiftTicker notifs={giftNotifs} />
+                  </div>
+                )}
 
-              {/* Commentaires — liste opaque en flux, scroll indépendant */}
-              <LiveChat
-                ref={chatRef}
-                liveId={id!} accessToken={accessToken}
-                isHost={isHost} hostId={live.user?.id}
-                mobileInputTarget={mobileChatInputEl}
-                onWsEvent={handleWsEvent}
-              />
+                {/* Commentaires — liste opaque en flux, scroll indépendant. La saisie
+                    (inputBar) est rendue par LiveChat lui-même : inline ici sur
+                    desktop, téléportée dans mobileChatInputEl (groupe bas overlay)
+                    sur mobile. */}
+                <LiveChat
+                  ref={chatRef}
+                  liveId={id!} accessToken={accessToken}
+                  isHost={isHost} hostId={live.user?.id}
+                  mobileInputTarget={mobileChatInputEl}
+                  mobileListTarget={mobileChatListEl}
+                  onWsEvent={handleWsEvent}
+                />
 
-              {/* Réactions rapides + saisie — toujours tout en bas de la colonne */}
-              <div className="shrink-0 min-w-0 px-3 py-2 border-t" style={{ background: 'rgba(15,15,20,0.98)', borderColor: 'rgba(255,255,255,0.08)' }}>
-                <div ref={setMobileChatInputEl} className="min-w-0" />
+                {live.description && (
+                  <div className="lg:hidden shrink-0 px-4 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.8)' }}>
+                    <p className="text-xs line-clamp-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{live.description}</p>
+                  </div>
+                )}
               </div>
-
-              {live.description && (
-                <div className="lg:hidden shrink-0 px-4 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.8)' }}>
-                  <p className="text-xs line-clamp-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{live.description}</p>
-                </div>
-              )}
             </div>
             </LiveKitRoom>
 
