@@ -11,6 +11,7 @@ import { bootstrapAuth, useAuthStore } from './store/authStore';
 import { accountsService } from './services/accountsService';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { PageLoader } from './components/ui/Spinner';
+import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
@@ -349,6 +350,7 @@ export default function App() {
     <BrowserRouter>
       <MobileGate>
         <WebSocketProvider>
+          <RouteProgressBar />
           <Toaster
             position="top-right"
             toastOptions={{
