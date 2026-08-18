@@ -298,7 +298,7 @@ const LiveChat = forwardRef<LiveChatHandle, {
   // 200px) téléportée par-dessus la vidéo plein écran sur mobile.
   function renderList(isOverlay: boolean) {
     return (
-    <div className={isOverlay ? 'px-3 py-2 flex flex-col justify-end gap-1.5 overscroll-contain touch-pan-y' : 'px-3 py-2 flex flex-col gap-2'}
+    <div className={isOverlay ? 'px-3 py-2 flex flex-col justify-end gap-1.5 overscroll-contain touch-pan-y pointer-events-auto' : 'px-3 py-2 flex flex-col gap-2'}
       style={isOverlay
         ? { background: 'transparent', height: 130, maxHeight: 130, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 24px)', maskImage: 'linear-gradient(to bottom, transparent, black 24px)' } as React.CSSProperties
         : { background: 'rgba(15,15,20,0.97)', flex: '1 1 0%', minHeight: 0, overflowY: 'auto' }
