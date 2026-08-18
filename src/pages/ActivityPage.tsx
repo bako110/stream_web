@@ -24,6 +24,7 @@ interface ActivityActor {
   username?: string | null;
   display_name?: string | null;
   avatar_url?: string | null;
+  is_followed?: boolean;
 }
 
 interface ActivityItem {
@@ -210,6 +211,12 @@ export default function ActivityPage() {
     try {
       const r = await apiClient.get<ActivityItem[]>(`${Endpoints.activity.feed}?page=${p}&limit=30`);
       const data = Array.isArray(r.data) ? r.data : [];
+      // Initialise "following" depuis l'état réel renvoyé par le serveur —
+      // avant ce fix, le Set partait toujours vide au chargement, donc le
+      // bouton affichait "Suivre" même pour un acteur déjà suivi, permettant
+      // de le suivre plusieurs fois de suite sans jamais voir "Suivi".
+      const followedNow = data.filter(d => d.actor?.is_followed).map(d => d.actor!.id);
+      if (followedNow.length) setFollowing(prev => new Set([...prev, ...followedNow]));
       if (refresh || p === 1) {
         setItems(data);
         setTimeout(() => setReadIds(new Set(data.map(d => d.id))), 1000);

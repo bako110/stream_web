@@ -105,7 +105,7 @@ export default function NotificationsPage() {
     if (!someSelected) return;
     setDeletingSel(true);
     try {
-      await Promise.all([...selected].map(id => apiClient.delete(Endpoints.notifications.delete(id))));
+      await apiClient.post(Endpoints.notifications.bulkDelete, { ids: [...selected] });
       exitSelectMode();
       refetch();
     } finally {

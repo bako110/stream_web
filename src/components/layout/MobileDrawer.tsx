@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Play, Film, Radio, Video, Zap, Award, MoreHorizontal, X, ChevronRight } from 'lucide-react';
+import { Home, Play, Film, Radio, Video, Zap, Award, Users, MoreHorizontal, X, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../ui/Avatar';
 
@@ -7,6 +7,7 @@ const MAIN_SECTION = {
   label: 'Découvrir',
   items: [
     { to: '/feed',    label: 'Accueil',       icon: Home,   color: '#7B3FF2' },
+    { to: '/communities', label: 'Communautés', icon: Users, color: '#7B3FF2' },
     { to: '/reels',   label: 'Reels',         icon: Play,   color: '#7B3FF2' },
     { to: '/films',   label: 'Films',         icon: Film,   color: '#7B3FF2' },
     { to: '/series',  label: 'Séries',        icon: Film,   color: '#9B65F5' },

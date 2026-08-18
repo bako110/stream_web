@@ -232,6 +232,7 @@ export const Endpoints = {
     unreadCount:`${V1}/notifications/unread-count`,
     readAll:    `${V1}/notifications/read-all`,
     deleteAll:  `${V1}/notifications`,
+    bulkDelete: `${V1}/notifications/bulk-delete`,
     read:       (id: string) => `${V1}/notifications/${id}/read`,
     delete:     (id: string) => `${V1}/notifications/${id}`,
     byRef:      (refId: string) => `${V1}/notifications?ref_id=${refId}&limit=5`,
