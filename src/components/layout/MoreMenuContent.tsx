@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useConfirm } from '../ui/Dialog';
 import {
-  Radio, Users, MessageCircle, Bell, Activity, UserPlus,
+  Radio, MessageCircle, Bell, Activity, UserPlus,
   Music2, Calendar, CalendarDays, Heart, Clock,
   Wallet, TrendingUp, HelpCircle, Settings, LogOut,
   Sun, Moon, Download, BarChart2, ShieldCheck, Edit3,
@@ -17,7 +17,6 @@ export const MORE_SECTIONS = [
   {
     label: 'SOCIAL',
     items: [
-      { to: '/communities',    label: 'Communautés',   desc: 'Rejoins et anime des communautés',         icon: Users,         color: '#7B3FF2' },
       { to: '/messages',       label: 'Messages',      desc: 'Tes conversations privées',                 icon: MessageCircle, color: '#7B3FF2' },
       { to: '/notifications',  label: 'Notifications', desc: 'Toute ton activité récente',                icon: Bell,          color: '#7B3FF2' },
       { to: '/activity',       label: 'Activité',      desc: 'Likes, commentaires et abonnements',        icon: Activity,      color: '#7B3FF2' },

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { Home, Play, Film, Radio, Video, ChevronLeft, Zap, Award, MoreHorizontal, X } from 'lucide-react';
+import { Home, Play, Film, Radio, Video, ChevronLeft, Zap, Award, Users, MoreHorizontal, X } from 'lucide-react';
 import { RoundLogo } from '../ui/RoundLogo';
 import { MoreMenuContent } from './MoreMenuContent';
 import { emitTabReselect } from '../../utils/tabReselect';
@@ -11,6 +11,7 @@ const MAIN_SECTION = {
   label: 'DÉCOUVRIR',
   items: [
     { to: '/feed',    label: 'Accueil',       desc: 'Ton fil d\'actualité',              icon: Home,   color: '#7B3FF2', end: true },
+    { to: '/communities', label: 'Communautés', desc: 'Rejoins et anime des communautés', icon: Users,  color: '#7B3FF2' },
     { to: '/reels',   label: 'Reels',         desc: 'Vidéos courtes à la une',           icon: Play,   color: '#7B3FF2' },
     { to: '/films',   label: 'Films',         desc: 'Le catalogue de films',             icon: Film,   color: '#7B3FF2' },
     { to: '/series',  label: 'Séries',        desc: 'Le catalogue de séries',            icon: Film,   color: '#9B65F5' },

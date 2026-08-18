@@ -855,14 +855,24 @@ function AuthorRow({
   /** Post visible seulement par les abonnés — affiche une icône "Amis" à côté de la date. */
   isPrivate?: boolean;
 }) {
-  const { liveUserIds } = useWs();
+  const { liveUserIds, liveIdByUserId } = useWs();
+  const navigate = useNavigate();
   if (!author && !authorId) return null;
   const name  = author?.display_name ?? author?.username ?? 'Auteur';
   const badge = kind ? KIND_BADGE[kind] : undefined;
   const isLive = !!(author?.is_live || (authorId && liveUserIds.has(authorId)));
+  // ID du live en cours de l'auteur — permet de rejoindre directement le live
+  // au clic sur l'avatar/nom au lieu d'atterrir sur le profil, comme un simple
+  // auteur non-live. Avant ce fix, cliquer sur quelqu'un en direct ouvrait
+  // toujours son profil, sans aucun moyen de rejoindre son live depuis ce clic.
+  const liveId = isLive && authorId ? liveIdByUserId.get(authorId) : undefined;
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    if (liveId) { e.stopPropagation(); navigate(`/lives/${encodeId(liveId)}`); return; }
+    onAuthorClick(e);
+  };
   return (
     <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-      <button onClick={onAuthorClick} className="flex items-center gap-2 min-w-0 flex-1">
+      <button onClick={handleAuthorClick} className="flex items-center gap-2 min-w-0 flex-1">
         <Avatar src={author?.avatar_url} name={name} size="xs" verified={author?.is_verified} isLive={isLive} />
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -1908,12 +1918,23 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
           ci-dessus) plutôt qu'une hauteur en dur : s'adapte automatiquement à
           la largeur de la carte à tout breakpoint. object-cover pour qu'une
           image source très haute (portrait extrême, comme sur mobile
-          PostCard.tsx) ne fasse jamais exploser la hauteur de la carte. */}
-      {post.image_url && !post.video_url && (
+          PostCard.tsx) ne fasse jamais exploser la hauteur de la carte.
+          Fallback sur image_urls[0] quand image_url (singulier) est vide —
+          avant ce fix, un post avec plusieurs images (image_urls rempli mais
+          image_url absent) n'affichait STRICTEMENT AUCUNE image dans le feed,
+          seuls les détails du post (PostDetailPage.tsx) géraient image_urls. */}
+      {(post.image_url || post.image_urls?.[0]) && !post.video_url && (
         <div onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
           className="relative overflow-hidden cursor-pointer group"
           style={{ background: 'var(--bg-secondary)', aspectRatio: '4/3' }}>
-          <img src={post.image_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img src={post.image_url ?? post.image_urls![0]} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          {/* Badge "1/N" — indique qu'il y a d'autres images à voir dans le détail du post */}
+          {(post.image_urls?.length ?? 0) > 1 && (
+            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-white text-xs font-semibold"
+              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+              1/{post.image_urls!.length}
+            </span>
+          )}
         </div>
       )}
 
@@ -2190,7 +2211,14 @@ function UpcomingEventsPanel() {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    apiClient.get<any>(`${Endpoints.events.list}?limit=4&status=published`)
+    // upcoming_only=true — exclut les événements déjà passés côté backend (via
+    // starts_at >= now dans la requête SQL), peu importe leur score de
+    // pertinence (boost/follow/featured peuvent dépasser la pénalité
+    // temporelle d'un événement passé). Avant ce fix, le widget ne triait que
+    // les 4 résultats reçus par date, sans jamais garantir qu'ils étaient
+    // tous dans le futur — un événement passé mais boosté pouvait apparaître
+    // dans un widget intitulé "À venir".
+    apiClient.get<any>(`${Endpoints.events.list}?limit=4&status=published&upcoming_only=true`)
       .then(res => setEvents(
         toArray<any>(res.data)
           .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
