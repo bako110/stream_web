@@ -153,10 +153,15 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   return (
     <>
       <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl overflow-hidden"
+      {/* Bottom-sheet plein écran sur mobile (comportement d'origine), modale
+          centrée avec largeur max sur desktop (sm+) — sans max-w, la feuille
+          s'étirait sur toute la largeur de la fenêtre au lieu de rester une
+          modale de taille raisonnable une fois sur grand écran. */}
+      <div className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl overflow-hidden
+        sm:inset-x-auto sm:left-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl sm:w-full sm:max-w-md"
         style={{ background: 'var(--surface)', maxHeight: '90vh', boxShadow: '0 -16px 64px rgba(0,0,0,0.25)' }}>
 
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
+        <div className="flex justify-center pt-3 pb-1 shrink-0 sm:hidden">
           <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
         </div>
 
