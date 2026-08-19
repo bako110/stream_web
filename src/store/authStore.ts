@@ -20,7 +20,7 @@ interface AuthState {
   login:              (data: LoginRequest)     => Promise<void>;
   loginWithQR:        (accessToken: string, refreshToken?: string) => Promise<void>;
   register:           (data: RegisterRequest)  => Promise<{ needsVerification: boolean; userId?: string }>;
-  logout:             ()                       => Promise<void>;
+  logout:             (opts?: { keepOtherAccounts?: boolean }) => Promise<void>;
   refreshAccessToken: ()                       => Promise<string>;
   fetchMe:            ()                       => Promise<void>;
   updateUser:         (partial: Partial<User>) => void;
@@ -55,7 +55,7 @@ function loadTokens(): { access: string | null; refresh: string | null } {
 // ── Wire API interceptors ─────────────────────────────────────────────────────
 function wireInterceptors() {
   setRefreshTokenFn(() => useAuthStore.getState().refreshAccessToken());
-  setOnUnauthorized(() => { useAuthStore.getState().logout(); });
+  setOnUnauthorized(() => { useAuthStore.getState().logout({ keepOtherAccounts: true }); });
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -145,11 +145,22 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
   },
 
-  logout: async () => {
+  logout: async (opts) => {
     // Appeler l'API avant de supprimer le token (sinon 403)
     try { await apiClient.post(Endpoints.auth.logout); } catch { /* ignore */ }
     setAuthToken(null);
     saveTokens(null, null);
+    // Déconnexion volontaire (bouton "Se déconnecter") = stricte, efface
+    // aussi la liste multi-compte entière. Une expiration de session
+    // automatique (401, refresh token absent) ne doit PAS emporter les
+    // autres comptes stockés, encore valides — d'où keepOtherAccounts.
+    // (import dynamique pour éviter le cycle accountsService <-> authStore)
+    if (!opts?.keepOtherAccounts) {
+      try {
+        const { accountsService } = await import('../services/accountsService');
+        accountsService.clearAll();
+      } catch { /* ignore */ }
+    }
     set({
       user:            null,
       accessToken:     null,
@@ -163,7 +174,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   refreshAccessToken: async () => {
     const { refreshToken } = get();
     if (!refreshToken) {
-      await get().logout();
+      await get().logout({ keepOtherAccounts: true });
       throw new Error('No refresh token');
     }
     set({ isRefreshing: true });

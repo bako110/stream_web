@@ -131,4 +131,15 @@ export const accountsService = {
     _writeAll(remaining);
     return accountsService.getActiveAccount();
   },
+
+  /**
+   * Déconnexion globale stricte — efface TOUS les comptes stockés, pas
+   * seulement le compte actif. Sans ça, `gofolyx-accounts-v1` survivait à
+   * un logout classique (authStore.logout() ne vidait que
+   * `gofolyx-auth-tokens`), donc les autres comptes — avec leurs tokens —
+   * réapparaissaient dans le switcher au retour sur le site.
+   */
+  clearAll(): void {
+    _writeAll([]);
+  },
 };
