@@ -35,6 +35,7 @@ const ExploreReelDetailPage    = lazyWithRetry(() => import('./pages/explore/Exp
 const FeedPage          = lazyWithRetry(() => import('./pages/FeedPage'));
 const ReelsPage         = lazyWithRetry(() => import('./pages/ReelsPage'));
 const AdFullscreenPage  = lazyWithRetry(() => import('./pages/AdFullscreenPage'));
+const RecordViewPage    = lazyWithRetry(() => import('./pages/RecordViewPage'));
 const FilmsPage         = lazyWithRetry(() => import('./pages/FilmsPage'));
 const ConcertsPage      = lazyWithRetry(() => import('./pages/ConcertsPage'));
 const EventsPage        = lazyWithRetry(() => import('./pages/EventsPage'));
@@ -216,6 +217,11 @@ function AppShell() {
 
         {/* Pub plein écran (ouverte depuis la recherche) — page dédiée, pas de sidebar */}
         <Route path="/ads/:id" element={<AdFullscreenPage />} />
+
+        {/* Page d'enregistrement headless — jamais visitée par un utilisateur,
+            uniquement ouverte par le navigateur headless de LiveKit WebEgress
+            (voir livekit_service.py::start_web_egress_recording). */}
+        <Route path="/record/:type/:id" element={<RecordViewPage />} />
 
         {/* Routes protégées */}
         <Route element={<ProtectedRoute />}>
