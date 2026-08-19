@@ -1,15 +1,21 @@
 /**
  * StageLayout — affichage vidéo multi-participants d'un live web, façon TikTok
  * Live multi-guest : un grand bloc principal (l'organisateur, ou la personne
- * épinglée par le host) occupe TOUJOURS tout l'espace disponible. Les autres
- * participants sur scène apparaissent dans un panneau overlay compact
- * "Sur scène (N)" ancré en haut à droite du bloc principal (avatars ronds,
- * pastille verte "actif", scroll horizontal si trop de monde) — jamais une
- * bande qui pousse le layout du bloc principal ou se fait recouvrir par
- * d'autres éléments overlay (chat/actions) sur mobile. Le host peut épingler
- * n'importe qui en plein écran — l'action est synchronisée pour TOUS les
- * viewers (POST/DELETE /lives/{id}/spotlight + WS live_spotlight_changed, cf.
- * LiveSimplePage.tsx), pas un simple changement d'affichage local.
+ * épinglée par le host) occupe TOUJOURS tout l'espace disponible/la majorité
+ * de la largeur. Les autres participants sur scène s'affichent différemment
+ * selon la taille d'écran :
+ * - Mobile (<lg) : panneau overlay compact "Sur scène (N)" ancré en haut à
+ *   droite du bloc principal (avatars ronds, pastille verte "actif", scroll
+ *   horizontal si trop de monde) — la vidéo étant en plein écran absolu sur
+ *   mobile (cf. LiveSimplePage.tsx), une bande en flux normal se ferait
+ *   recouvrir par le header/groupe bas overlay qui flottent par-dessus elle.
+ * - Desktop (lg+) : colonne verticale classique en flux normal à droite du
+ *   bloc principal (petites cases fixes) — le header y est séparé, au-dessus
+ *   de la carte, jamais en overlay, donc pas ce risque de recouvrement.
+ * Le host peut épingler n'importe qui en plein écran — l'action est
+ * synchronisée pour TOUS les viewers (POST/DELETE /lives/{id}/spotlight + WS
+ * live_spotlight_changed, cf. LiveSimplePage.tsx), pas un simple changement
+ * d'affichage local.
  */
 import { useState } from 'react';
 import type { TrackReference } from '@livekit/components-react';
@@ -169,19 +175,18 @@ export function StageLayout({
         )}
       </div>
 
-      {/* ── Panneau "Sur scène" — overlay compact ancré en haut à droite (façon
-          TikTok Live multi-guest), au lieu d'une bande pleine largeur qui
-          poussait le layout et se faisait recouvrir par le groupe bas (chat/
-          actions) sur mobile. Ne touche jamais à la taille du bloc principal :
-          flotte simplement au-dessus de lui, avec son propre scroll horizontal
-          si trop de participants pour tenir sur une ligne. ── */}
+      {/* ── Panneau "Sur scène" — MOBILE UNIQUEMENT (lg:hidden). Overlay compact
+          ancré en haut à droite (façon TikTok Live multi-guest), au lieu d'une
+          bande pleine largeur qui poussait le layout et se faisait recouvrir
+          par le groupe bas (chat/actions). Ne touche jamais à la taille du
+          bloc principal : flotte simplement au-dessus de lui, avec son propre
+          scroll horizontal si trop de participants pour tenir sur une ligne.
+          top-14 réserve la place du header overlay (avatar, nom du live,
+          badge LIVE, timer, viewers — cf. LiveSimplePage.tsx, ~56px) qui
+          flotte par-dessus tout l'écran (le bloc vidéo est en absolute
+          inset-0 sur mobile). ── */}
       {hasOthers && (
-        // top-14 sur mobile : réserve la place du header overlay (avatar, nom
-        // du live, badge LIVE, timer, viewers — cf. LiveSimplePage.tsx, ~56px)
-        // qui flotte par-dessus tout l'écran (le bloc vidéo est en absolute
-        // inset-0 sur mobile) ; top-3 sur desktop (lg:) où le header est séparé,
-        // au-dessus de la carte, donc pas de conflit à cette hauteur.
-        <div className="absolute top-14 sm:top-16 lg:top-3 right-3 z-20 rounded-2xl overflow-hidden max-w-[calc(100%-1.5rem)]"
+        <div className="lg:hidden absolute top-14 sm:top-16 right-3 z-20 rounded-2xl overflow-hidden max-w-[calc(100%-1.5rem)]"
           style={{ background: 'rgba(10,8,20,0.9)', border: '1px solid rgba(155,101,245,0.5)', boxShadow: '0 0 20px rgba(123,63,242,0.35)', backdropFilter: 'blur(8px)' }}>
           <p className="px-3 pt-2 pb-1.5 text-white text-xs font-bold">Sur scène ({others.length})</p>
           <div className="flex items-center gap-2.5 px-3 pb-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
@@ -232,6 +237,65 @@ export function StageLayout({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── Colonne verticale — DESKTOP UNIQUEMENT (lg+). Design d'origine :
+          petites cases fixes empilées à droite du bloc principal, en flux
+          normal (pas d'overlay) puisque le header desktop est séparé,
+          au-dessus de la carte, et ne flotte jamais par-dessus la vidéo. ── */}
+      {hasOthers && (
+        <div className="hidden lg:flex lg:flex-col gap-1 shrink-0 lg:w-[84px] lg:h-full overflow-y-auto">
+          {others.map(p => (
+            <div
+              key={p.identity}
+              className="relative rounded-md overflow-hidden shrink-0 cursor-pointer transition-transform hover:scale-[0.97] w-full h-auto"
+              style={{
+                border: `1.5px solid ${p.isSpeaking ? '#22c55e' : 'rgba(255,255,255,0.12)'}`,
+                aspectRatio: '3 / 4',
+              }}
+              onMouseEnter={() => setHoveredId(p.identity)}
+              onMouseLeave={() => setHoveredId(null)}
+              onClick={() => isHost && onPinClick(p.identity)}
+              title={isHost ? 'Épingler en plein écran pour tous' : undefined}
+            >
+              {p.track
+                ? <VideoTrack trackRef={p.track} className="w-full h-full object-cover" />
+                : <ParticipantAvatarFallback avatarUrl={p.avatarUrl} name={p.name} />}
+              {p.isSpeaking && (
+                <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 2px #22c55e' }} />
+              )}
+
+              <div className="absolute bottom-0.5 left-0.5 right-0.5 flex items-center gap-0.5 text-white text-[8px] font-semibold px-1 py-0.5 rounded-full truncate"
+                style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+                {p.onStage && <span className="w-1 h-1 rounded-full bg-green-400 shrink-0" />}
+                <span className="truncate">{p.isLocal ? 'Toi' : p.name}</span>
+              </div>
+
+              {!p.isLocal && (hoveredId === p.identity || isHost) && (
+                <div className="absolute top-0.5 right-0.5 z-20 flex items-center gap-0.5">
+                  <button
+                    className="w-4 h-4 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(0,0,0,0.6)' }}
+                    onClick={(e) => { e.stopPropagation(); onGiftClick(p.identity, p.name); }}>
+                    <Gift size={8} style={{ color: '#fbbf24' }} />
+                  </button>
+                  {isHost && (
+                    <button
+                      className="w-4 h-4 rounded-full flex items-center justify-center"
+                      style={{ background: 'rgba(0,0,0,0.6)' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const r = e.currentTarget.getBoundingClientRect();
+                        onMenuClick(p.identity, { x: r.right, y: r.bottom, alignRight: true });
+                      }}>
+                      <MoreVertical size={8} color="#fff" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
