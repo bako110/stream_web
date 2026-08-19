@@ -510,7 +510,7 @@ export default function LivePage() {
                   concert={concert}
                   publisherToken={publisherToken}
                   livekitUrl={livekitUrl}
-                  onStart={handleStart}
+                  onStart={() => setShowRecordConfirm(true)}
                   onStop={handleStop}
                   isLive={isLive}
                   starting={starting}
@@ -541,7 +541,7 @@ export default function LivePage() {
                   Tu es l'artiste de ce concert. Démarre le live quand tu es prêt.
                 </p>
               </div>
-              <button onClick={handleStart} disabled={starting}
+              <button onClick={() => setShowRecordConfirm(true)} disabled={starting}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shrink-0 transition-all"
                 style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
                 {starting ? <Spinner size="sm" /> : <Radio size={14} />}
@@ -571,7 +571,7 @@ export default function LivePage() {
                 Tu es l'artiste de ce concert. Démarre le live quand tu es prêt.
               </p>
             </div>
-            <button onClick={handleStart} disabled={starting}
+            <button onClick={() => setShowRecordConfirm(true)} disabled={starting}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shrink-0 transition-all"
               style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               {starting ? <Spinner size="sm" /> : <Radio size={14} />}
