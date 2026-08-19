@@ -1,23 +1,20 @@
 /**
  * StageLayout — affichage vidéo multi-participants d'un live web, façon TikTok
  * Live multi-guest : un grand bloc principal (l'organisateur, ou la personne
- * épinglée par le host) occupe la majorité de la largeur/hauteur, les autres
- * participants s'alignent verticalement en petites cases à côté. Le host peut
- * épingler n'importe qui en plein écran — l'action est synchronisée pour TOUS
- * les viewers (POST/DELETE /lives/{id}/spotlight + WS live_spotlight_changed,
- * cf. LiveSimplePage.tsx), pas un simple changement d'affichage local.
- *
- * Volontairement différent du layout mobile natif (grille adaptative centrée)
- * — sur desktop web (lg+), la largeur disponible permet une colonne latérale
- * verticale fixe (Twitch/TikTok Live desktop). Sur mobile web (<lg, écran
- * étroit), la colonne passe en bande horizontale scrollable sous le bloc
- * principal — même esprit (petites cases fixes, scroll pour en accueillir
- * beaucoup), adapté à la largeur d'un téléphone.
+ * épinglée par le host) occupe TOUJOURS tout l'espace disponible. Les autres
+ * participants sur scène apparaissent dans un panneau overlay compact
+ * "Sur scène (N)" ancré en haut à droite du bloc principal (avatars ronds,
+ * pastille verte "actif", scroll horizontal si trop de monde) — jamais une
+ * bande qui pousse le layout du bloc principal ou se fait recouvrir par
+ * d'autres éléments overlay (chat/actions) sur mobile. Le host peut épingler
+ * n'importe qui en plein écran — l'action est synchronisée pour TOUS les
+ * viewers (POST/DELETE /lives/{id}/spotlight + WS live_spotlight_changed, cf.
+ * LiveSimplePage.tsx), pas un simple changement d'affichage local.
  */
 import { useState } from 'react';
 import type { TrackReference } from '@livekit/components-react';
 import { VideoTrack } from '@livekit/components-react';
-import { Gift, MoreVertical, Pin, PinOff, User } from 'lucide-react';
+import { Gift, Mic, MoreVertical, Pin, PinOff, User } from 'lucide-react';
 
 export interface StageParticipant {
   identity:   string;
@@ -87,15 +84,11 @@ export function StageLayout({
   const hasOthers = others.length > 0;
 
   return (
-    // pt-14 UNIQUEMENT quand une bande de vignettes existe en haut (hasOthers) :
-    // elle réserve alors la place du header overlay (nom du live, LIVE,
-    // participants — cf. LiveSimplePage.tsx, ~56px) qui flotte par-dessus tout
-    // l'écran (StageLayout est en absolute inset-0), sinon la bande remontée en
-    // haut (order-first plus bas) se retrouverait sous ce header. Sans
-    // participant additionnel, ce padding n'a pas lieu d'être — il poussait
-    // sinon inutilement le bloc principal (et sa vidéo) vers le bas, laissant
-    // un vide gris/noir en haut de l'écran.
-    <div className={`w-full h-full flex flex-col lg:flex-row gap-1.5 p-1.5 bg-black overflow-hidden ${hasOthers ? 'pt-14 sm:pt-16 lg:pt-1.5' : ''}`}>
+    // Plus de padding-top ni de bande pleine largeur : le bloc principal
+    // occupe toujours tout l'espace (jamais de vide au-dessus), le panneau
+    // "Sur scène" (ci-dessous) flotte en overlay compact au-dessus de lui,
+    // sans jamais pousser son layout.
+    <div className="relative w-full h-full flex flex-col lg:flex-row gap-1.5 p-1.5 bg-black overflow-hidden">
       {/* ── Bloc principal — organisateur ou personne épinglée ── */}
       <div
         className="relative flex-1 min-w-0 min-h-0 rounded-2xl overflow-hidden"
@@ -176,68 +169,64 @@ export function StageLayout({
         )}
       </div>
 
-      {/* ── Les autres participants en petites cases fixes — colonne verticale à
-          droite sur desktop (lg+), bande horizontale AU-DESSUS de la vidéo sur
-          mobile web (order-first : le groupe bas overlay, chat + actions, flotte
-          par-dessus le bas de l'écran sans jamais réserver d'espace — une bande
-          placée sous la vidéo s'y retrouvait cachée/coupée). Taille constante
-          quel que soit leur nombre (jamais de case géante avec 1 seul
-          participant) : seule la personne en direct/présentée a droit au grand
-          espace. Scroll dès que ça déborde, pour accueillir beaucoup de monde
-          sans jamais agrandir les cases. ── */}
+      {/* ── Panneau "Sur scène" — overlay compact ancré en haut à droite (façon
+          TikTok Live multi-guest), au lieu d'une bande pleine largeur qui
+          poussait le layout et se faisait recouvrir par le groupe bas (chat/
+          actions) sur mobile. Ne touche jamais à la taille du bloc principal :
+          flotte simplement au-dessus de lui, avec son propre scroll horizontal
+          si trop de participants pour tenir sur une ligne. ── */}
       {hasOthers && (
-        <div className="relative z-20 order-first lg:order-none flex flex-row lg:flex-col gap-1 shrink-0 w-full h-[76px] lg:w-[84px] lg:h-full
-          overflow-x-auto lg:overflow-x-visible overflow-y-visible lg:overflow-y-auto">
-          {others.map(p => (
-            <div
-              key={p.identity}
-              className="relative rounded-md overflow-hidden shrink-0 cursor-pointer transition-transform hover:scale-[0.97] w-14 h-[72px] lg:w-full lg:h-auto"
-              style={{
-                border: `1.5px solid ${p.isSpeaking ? '#22c55e' : 'rgba(255,255,255,0.12)'}`,
-                aspectRatio: '3 / 4',
-              }}
-              onMouseEnter={() => setHoveredId(p.identity)}
-              onMouseLeave={() => setHoveredId(null)}
-              onClick={() => isHost && onPinClick(p.identity)}
-              title={isHost ? 'Épingler en plein écran pour tous' : undefined}
-            >
-              {p.track
-                ? <VideoTrack trackRef={p.track} className="w-full h-full object-cover" />
-                : <ParticipantAvatarFallback avatarUrl={p.avatarUrl} name={p.name} />}
-              {p.isSpeaking && (
-                <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 2px #22c55e' }} />
-              )}
-
-              <div className="absolute bottom-0.5 left-0.5 right-0.5 flex items-center gap-0.5 text-white text-[8px] font-semibold px-1 py-0.5 rounded-full truncate"
-                style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-                {p.onStage && <span className="w-1 h-1 rounded-full bg-green-400 shrink-0" />}
-                <span className="truncate">{p.isLocal ? 'Toi' : p.name}</span>
-              </div>
-
-              {!p.isLocal && (hoveredId === p.identity || isHost) && (
-                <div className="absolute top-0.5 right-0.5 z-20 flex items-center gap-0.5">
-                  <button
-                    className="w-4 h-4 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(0,0,0,0.6)' }}
-                    onClick={(e) => { e.stopPropagation(); onGiftClick(p.identity, p.name); }}>
-                    <Gift size={8} style={{ color: '#fbbf24' }} />
-                  </button>
-                  {isHost && (
-                    <button
-                      className="w-4 h-4 rounded-full flex items-center justify-center"
-                      style={{ background: 'rgba(0,0,0,0.6)' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const r = e.currentTarget.getBoundingClientRect();
-                        onMenuClick(p.identity, { x: r.right, y: r.bottom, alignRight: true });
-                      }}>
-                      <MoreVertical size={8} color="#fff" />
-                    </button>
-                  )}
+        <div className="absolute top-3 right-3 z-20 rounded-2xl overflow-hidden max-w-[calc(100%-1.5rem)]"
+          style={{ background: 'rgba(10,8,20,0.9)', border: '1px solid rgba(155,101,245,0.5)', boxShadow: '0 0 20px rgba(123,63,242,0.35)', backdropFilter: 'blur(8px)' }}>
+          <p className="px-3 pt-2 pb-1.5 text-white text-xs font-bold">Sur scène ({others.length})</p>
+          <div className="flex items-center gap-2.5 px-3 pb-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            {others.map(p => (
+              <div
+                key={p.identity}
+                className="relative flex flex-col items-center gap-1 shrink-0 cursor-pointer"
+                onClick={() => isHost && onPinClick(p.identity)}
+                title={isHost ? 'Épingler en plein écran pour tous' : undefined}
+              >
+                <div className="relative w-14 h-14 rounded-full overflow-hidden"
+                  style={{ border: `2px solid ${p.isSpeaking ? '#22c55e' : '#9B65F5'}` }}>
+                  {p.track
+                    ? <VideoTrack trackRef={p.track} className="w-full h-full object-cover" />
+                    : <ParticipantAvatarFallback avatarUrl={p.avatarUrl} name={p.name} />}
+                  {/* Pastille verte "actif" — micro/caméra publiés */}
+                  <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2"
+                    style={{ background: '#22c55e', borderColor: '#0a0814' }} />
                 </div>
-              )}
-            </div>
-          ))}
+                <span className="flex items-center gap-0.5 text-white text-[10px] font-semibold max-w-[60px] truncate">
+                  <Mic size={9} style={{ color: 'rgba(255,255,255,0.6)' }} />
+                  {p.isLocal ? 'Toi' : p.name}
+                </span>
+
+                {!p.isLocal && (hoveredId === p.identity || isHost) && (
+                  <div className="absolute -top-1 -right-1 z-20 flex items-center gap-0.5"
+                    onMouseEnter={() => setHoveredId(p.identity)}>
+                    <button
+                      className="w-5 h-5 rounded-full flex items-center justify-center"
+                      style={{ background: 'rgba(0,0,0,0.7)' }}
+                      onClick={(e) => { e.stopPropagation(); onGiftClick(p.identity, p.name); }}>
+                      <Gift size={9} style={{ color: '#fbbf24' }} />
+                    </button>
+                    {isHost && (
+                      <button
+                        className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: 'rgba(0,0,0,0.7)' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const r = e.currentTarget.getBoundingClientRect();
+                          onMenuClick(p.identity, { x: r.right, y: r.bottom, alignRight: true });
+                        }}>
+                        <MoreVertical size={9} color="#fff" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
