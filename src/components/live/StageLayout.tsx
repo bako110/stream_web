@@ -94,12 +94,23 @@ export function StageLayout({
         onMouseLeave={() => setHoveredId(null)}
       >
         {main.track
-          // object-contain sur mobile : le cadre plein écran (~9:19) est bien
-          // plus vertical que la caméra source (souvent 16:9/4:3), object-cover
-          // y recadrait/zoomait excessivement (gros plan déformé). Sur desktop
-          // (lg+) le cadre reste proche du ratio vidéo classique, object-cover
-          // y est adapté (pas de bandes noires).
-          ? <VideoTrack trackRef={main.track} className="w-full h-full object-contain lg:object-cover" />
+          ? (
+            <>
+              {/* Fond flou — même flux vidéo en arrière-plan, agrandi et flouté
+                  (façon TikTok/Instagram Live), pour remplir les bandes noires
+                  que laisserait object-contain seul sur mobile (cadre ~9:19
+                  bien plus vertical qu'une webcam 16:9/4:3 classique). Masqué
+                  sur desktop (lg+) où le cadre reste proche du ratio vidéo et
+                  object-cover seul suffit, sans bande à combler. */}
+              <VideoTrack trackRef={main.track} aria-hidden
+                className="lg:hidden absolute inset-0 w-full h-full object-cover scale-125"
+                style={{ filter: 'blur(24px) brightness(0.55)' }} />
+              {/* Premier plan — object-contain sur mobile (jamais de rognage de
+                  la caméra source), object-cover sur desktop (cadre proche du
+                  ratio vidéo, pas besoin de fond). */}
+              <VideoTrack trackRef={main.track} className="relative w-full h-full object-contain lg:object-cover" />
+            </>
+          )
           : <ParticipantAvatarFallback avatarUrl={main.avatarUrl} name={main.name} />}
         {main.isSpeaking && (
           <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 3px #22c55e' }} />
