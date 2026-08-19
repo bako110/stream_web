@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
   Radio, Music, Globe, Lock, Coins as GoGold, Gift, X, ChevronDown, ChevronUp,
-  ArrowRight, AlignLeft, Type, Check,
+  ArrowRight, AlignLeft, Type, Check, Video,
 } from 'lucide-react';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -179,6 +179,7 @@ export default function GoLivePage() {
   const [title,       setTitle]       = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate,   setIsPrivate]   = useState(false);
+  const [recordEnabled, setRecordEnabled] = useState(false);
   const [starting,    setStarting]    = useState(false);
   const [error,       setError]       = useState<string | null>(null);
 
@@ -212,10 +213,11 @@ export default function GoLivePage() {
     const t = title.trim() || 'Live en direct';
     try {
       const payload: Record<string, any> = {
-        title:        t,
-        description:  description.trim() || undefined,
-        is_private:   isPrivate,
-        is_monetized: isMonetized,
+        title:          t,
+        description:    description.trim() || undefined,
+        is_private:     isPrivate,
+        is_monetized:   isMonetized,
+        record_enabled: recordEnabled,
       };
       if (monetType === 'gogold') { payload.monetization_type = 'gogold'; payload.monetization_gogold = monetGoGold; }
       if (monetType === 'gift')  { payload.monetization_type = 'gift';  payload.monetization_gift_id = monetGift?.id; }
@@ -369,6 +371,25 @@ export default function GoLivePage() {
               )}
             </button>
           </div>
+
+          {/* Enregistrement — choix fait à ce live précis, indépendant du
+              réglage permanent des Paramètres (cf. lives.py::start_live,
+              payload.record_enabled prime quand fourni). */}
+          <button type="button" onClick={() => setRecordEnabled(v => !v)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left"
+            style={{
+              borderColor: recordEnabled ? '#7B3FF2' : 'transparent',
+              background:  recordEnabled ? 'rgba(123,63,242,0.08)' : 'rgba(255,255,255,0.04)',
+            }}>
+            <Video size={18} style={{ color: recordEnabled ? '#7B3FF2' : 'var(--text-tertiary)', flexShrink: 0 }} />
+            <div className="flex-1">
+              <p className="text-sm font-bold" style={{ color: recordEnabled ? '#7B3FF2' : 'var(--text-primary)' }}>Enregistrer ce live</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Sauvegarde une vidéo complète (vidéo + chat) une fois terminé</p>
+            </div>
+            <div className="relative rounded-full transition-colors shrink-0" style={{ background: recordEnabled ? '#7B3FF2' : 'var(--border)', height: 22, width: 40 }}>
+              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${recordEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </div>
+          </button>
 
           {/* Badge monétisation active */}
           {isMonetized && (

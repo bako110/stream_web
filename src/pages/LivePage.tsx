@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
 import {
   Radio, Users, MessageCircle, Send, X, Zap, StopCircle,
-  Eye, Clock, Ticket, Lock, ChevronLeft,
+  Eye, Clock, Ticket, Lock, ChevronLeft, Video, Check,
 } from 'lucide-react';
 import {
   LiveKitRoom,
@@ -217,6 +217,7 @@ export default function LivePage() {
   const [token,          setToken]          = useState<StreamToken | null>(null);
   const [publisherToken, setPublisherToken] = useState<StreamToken | null>(null);
   const [starting,       setStarting]       = useState(false);
+  const [showRecordConfirm, setShowRecordConfirm] = useState(false);
   const [stopping,       setStopping]       = useState(false);
   const [buying,         setBuying]         = useState(false);
   const [viewers,        setViewers]        = useState(0);
@@ -265,11 +266,13 @@ export default function LivePage() {
       .catch(() => {});
   }, [isArtist, id, isLive]);
 
-  async function handleStart() {
+  async function handleStart(record: boolean) {
     if (!id) return;
+    setShowRecordConfirm(false);
     setStarting(true);
     try {
-      const r = await apiClient.post<StreamToken>(Endpoints.streaming.start(id));
+      const url = `${Endpoints.streaming.start(id)}?record=${record}`;
+      const r = await apiClient.post<StreamToken>(url);
       setPublisherToken(r.data);
       setToken(r.data);
       await concertApi.refetch?.();
@@ -318,6 +321,34 @@ export default function LivePage() {
   const livekitUrl = status?.livekit_url ?? token?.livekit_url ?? '';
 
   return (
+    <>
+    {showRecordConfirm && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setShowRecordConfirm(false)}>
+        <div className="w-full max-w-sm rounded-2xl p-5 space-y-4" onClick={e => e.stopPropagation()}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-2.5">
+            <Video size={20} style={{ color: '#7B3FF2' }} />
+            <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>Enregistrer ce live ?</p>
+          </div>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            Une vidéo complète (image + chat) sera sauvegardée une fois le live terminé.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={() => handleStart(false)}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+              Ne pas enregistrer
+            </button>
+            <button onClick={() => handleStart(true)}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-1.5"
+              style={{ background: '#7B3FF2' }}>
+              <Check size={14} /> Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="flex h-[calc(100vh-57px)] overflow-hidden bg-black">
 
       {/* ── Zone vidéo ── */}
@@ -444,7 +475,7 @@ export default function LivePage() {
                 )}
               </div>
               {isArtist && (
-                <button onClick={handleStart} disabled={starting}
+                <button onClick={() => setShowRecordConfirm(true)} disabled={starting}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all"
                   style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 20px rgba(123,63,242,0.4)' }}>
                   {starting ? <Spinner size="sm" /> : <Radio size={18} />}
@@ -602,5 +633,6 @@ export default function LivePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
