@@ -789,25 +789,10 @@ export function MessagesPopover({ onClose }: { onClose: () => void }) {
     return () => removeListener(handler);
   }, [addListener, removeListener]);
 
-  // Fermeture au clic extérieur
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, [onClose]);
-
-  // Fermeture Escape
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  // Pas de fermeture au clic extérieur ni à Escape — contrairement aux autres
+  // popovers (ex: NotificationsPopover), celui-ci doit rester fixe pendant que
+  // l'utilisateur navigue ailleurs sur le site ; seul le bouton X (ou un
+  // "Voir tout" qui navigue) le ferme explicitement.
 
   function openChat(id: string) {
     setSelectedId(id);
