@@ -85,7 +85,12 @@ export function StageLayout({
   if (!main) return null;
 
   return (
-    <div className="w-full h-full flex flex-col lg:flex-row gap-1.5 p-1.5 bg-black overflow-hidden">
+    // pt-14 sur mobile : réserve la place du header overlay (nom du live, LIVE,
+    // participants — cf. LiveSimplePage.tsx, ~56px) qui flotte par-dessus tout
+    // l'écran (StageLayout est en absolute inset-0) ; sans ça, la bande de
+    // vignettes remontée en haut (order-first ci-dessous) se retrouvait
+    // exactement sous ce header, chevauchée avec lui.
+    <div className="w-full h-full flex flex-col lg:flex-row gap-1.5 pt-14 sm:pt-16 lg:pt-1.5 p-1.5 bg-black overflow-hidden">
       {/* ── Bloc principal — organisateur ou personne épinglée ── */}
       <div
         className="relative flex-1 min-w-0 min-h-0 rounded-xl overflow-hidden"
@@ -167,13 +172,16 @@ export function StageLayout({
       </div>
 
       {/* ── Les autres participants en petites cases fixes — colonne verticale à
-          droite sur desktop (lg+), bande horizontale sous la vidéo sur mobile web.
-          Taille constante quel que soit leur nombre (jamais de case géante avec
-          1 seul participant) : seule la personne en direct/présentée a droit au
-          grand espace. Scroll dès que ça déborde, pour accueillir beaucoup de
-          monde sans jamais agrandir les cases. ── */}
+          droite sur desktop (lg+), bande horizontale AU-DESSUS de la vidéo sur
+          mobile web (order-first : le groupe bas overlay, chat + actions, flotte
+          par-dessus le bas de l'écran sans jamais réserver d'espace — une bande
+          placée sous la vidéo s'y retrouvait cachée/coupée). Taille constante
+          quel que soit leur nombre (jamais de case géante avec 1 seul
+          participant) : seule la personne en direct/présentée a droit au grand
+          espace. Scroll dès que ça déborde, pour accueillir beaucoup de monde
+          sans jamais agrandir les cases. ── */}
       {others.length > 0 && (
-        <div className="relative z-20 flex flex-row lg:flex-col gap-1 shrink-0 w-full h-[76px] lg:w-[84px] lg:h-full
+        <div className="relative z-20 order-first lg:order-none flex flex-row lg:flex-col gap-1 shrink-0 w-full h-[76px] lg:w-[84px] lg:h-full
           overflow-x-auto lg:overflow-x-visible overflow-y-visible lg:overflow-y-auto">
           {others.map(p => (
             <div
