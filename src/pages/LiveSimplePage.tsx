@@ -1893,9 +1893,12 @@ export default function LiveSimplePage() {
                   onClick={() => { likeRef.current?.trigger(); heartsOverlayRef.current?.spawn(1); }}
                 />
 
-                {/* Badge "Tu es sur scène" */}
+                {/* Badge "Tu es sur scène" — décalé sous le header mobile (~56px de
+                    hauteur, overlay absolute lui aussi) pour ne jamais le chevaucher ;
+                    avant ce fix les deux se superposaient en haut de l'écran (nom du
+                    live, "Tu es sur scène" et badge LIVE entassés sur la même zone). */}
                 {!isHost && isOnStage && (
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-full text-white text-xs font-bold"
+                  <div className="absolute top-14 sm:top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-full text-white text-xs font-bold lg:top-3"
                     style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 20px rgba(123,63,242,0.6)' }}>
                     <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                     Tu es sur scène
