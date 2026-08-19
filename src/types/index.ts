@@ -133,6 +133,8 @@ export interface Concert {
   user_reaction?: 'like' | 'dislike' | null;
   category?: string | null;
   ai_analysis_status?: 'pending' | 'done' | null;
+  replay_url?: string | null;
+  replay_expires_at?: string | null;
 }
 
 export interface StreamToken { token: string; room_name: string; livekit_url: string; }

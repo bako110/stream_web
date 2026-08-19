@@ -485,7 +485,7 @@ export default function ConcertDetailPage() {
                   style={{ background: '#7B3FF2' }}>
                   <Radio size={15} /> Regarder en direct
                 </button>
-              ) : isEnded && c.video_url ? (
+              ) : isEnded && (c.video_url || c.replay_url) ? (
                 <button onClick={() => navigate(`/live/${encodeId(c.id)}`)}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
                   style={{ background: 'var(--primary)' }}>
@@ -493,7 +493,10 @@ export default function ConcertDetailPage() {
                 </button>
               ) : isEnded ? (
                 <p className="text-center text-sm py-3 mb-3" style={{ color: 'var(--text-tertiary)' }}>
-                  Ce concert est terminé.
+                  {/* Enregistrement en cours de traitement — le replay
+                      apparaîtra automatiquement une fois prêt (webhook
+                      EgressEnded, quelques minutes après la fin du live). */}
+                  Ce concert est terminé. Le replay sera bientôt disponible.
                 </p>
               ) : c.access_type === 'ticket' || c.access_type === 'ppv' ? (
                 <button onClick={() => setPaySheet(true)}
