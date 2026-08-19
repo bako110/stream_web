@@ -6,6 +6,7 @@ import { RoundLogo } from '../ui/RoundLogo';
 import { useAuthStore } from '../../store/authStore';
 import { useWs } from '../../context/WebSocketContext';
 import { MessagesPopover } from './MessagesPopover';
+import { NotificationsPopover } from './NotificationsPopover';
 import { AccountSwitcherDropdown } from './AccountSwitcherDropdown';
 
 interface Props { onMenuClick: () => void; }
@@ -17,6 +18,7 @@ export function Topbar({ onMenuClick }: Props) {
   const location  = useLocation();
   const [query, setQuery]           = useState('');
   const [msgPopover,   setMsgPopover]   = useState(false);
+  const [notifPopover, setNotifPopover] = useState(false);
 
   // Sync le champ desktop avec le param URL quand on est sur /search
   useEffect(() => {
@@ -136,16 +138,20 @@ export function Topbar({ onMenuClick }: Props) {
 
         {/* Notifications */}
         <button
-          onClick={() => navigate('/notifications')}
+          onClick={() => setNotifPopover(v => !v)}
           className="relative p-1.5 sm:p-2 rounded-xl transition-all shrink-0"
-          style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
-          onMouseLeave={e => { (e.currentTarget.style.background = 'transparent');         (e.currentTarget.style.color = 'var(--text-secondary)'); }}
+          style={{
+            color: notifPopover ? 'var(--primary)' : 'var(--text-secondary)',
+            background: notifPopover ? 'rgba(123,63,242,0.1)' : 'transparent',
+          }}
+          onMouseEnter={e => { if (!notifPopover) { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
+          onMouseLeave={e => { if (!notifPopover) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}
         >
           <Bell size={19} />
           <span className="absolute top-1 right-1 w-2 h-2 rounded-full"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
         </button>
+        {notifPopover && <NotificationsPopover onClose={() => setNotifPopover(false)} />}
 
         {/* Avatar — desktop (flèche → bascule rapide entre comptes) */}
         <AccountSwitcherDropdown />
