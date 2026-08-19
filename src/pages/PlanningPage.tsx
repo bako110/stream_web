@@ -310,7 +310,7 @@ function PlanningModal({
 
       let entry: PlanningEntry;
       if (isEdit && state.editId) {
-        const r = await apiClient.patch<any>(Endpoints.planning.entry(state.editId), payload);
+        const r = await apiClient.put<any>(Endpoints.planning.entry(state.editId), payload);
         entry = r.data?.data ?? r.data;
         toast.success('Rendez-vous mis à jour !');
       } else {
