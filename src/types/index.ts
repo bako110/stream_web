@@ -135,6 +135,7 @@ export interface Concert {
   ai_analysis_status?: 'pending' | 'done' | null;
   replay_url?: string | null;
   replay_expires_at?: string | null;
+  is_recording?: boolean;
 }
 
 export interface StreamToken { token: string; room_name: string; livekit_url: string; }
@@ -173,6 +174,7 @@ export interface LiveStream {
   stage_gift_id?:         string | null;
   stage_gift_name?:       string | null;
   stage_gift_emoji?:      string | null;
+  is_recording?:          boolean;
 }
 export interface LiveStartResponse {
   live:        LiveStream;

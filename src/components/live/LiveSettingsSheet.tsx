@@ -26,6 +26,7 @@ interface LiveData {
   stage_gogold?: number | null;
   stage_gift_id?: string | null;
   stage_gift_name?: string | null;
+  is_recording?: boolean;
 }
 
 interface Props {
@@ -364,6 +365,24 @@ export function LiveSettingsSheet({
 
   const [camOn, setCamOn] = useState(getCamOn);
   const [micOn, setMicOn] = useState(getMicOn);
+  const [isRecording,      setIsRecording]      = useState(!!live?.is_recording);
+  const [recordingLoading, setRecordingLoading] = useState(false);
+
+  useEffect(() => { setIsRecording(!!live?.is_recording); }, [live?.is_recording]);
+
+  // Démarre/arrête l'enregistrement à tout moment pendant le live — même
+  // mécanisme que le panneau Paramètres mobile (LiveSettingsSheet.tsx RN),
+  // cf. PATCH /lives/{id}/recording (lives.py).
+  async function toggleRecording() {
+    if (recordingLoading) return;
+    const next = !isRecording;
+    setRecordingLoading(true);
+    try {
+      await apiClient.patch(Endpoints.lives.recording(liveId), { enabled: next });
+      setIsRecording(next);
+    } catch { /* erreur — état inchangé */ }
+    finally { setRecordingLoading(false); }
+  }
 
   // Re-sync quand les tracks changent
   useEffect(() => {
@@ -505,6 +524,26 @@ export function LiveSettingsSheet({
                 style={{ background: micOn ? '#4ade80' : '#F0365A' }} />
             </button>
           </div>
+
+          {/* ── Enregistrement ── */}
+          <button onClick={toggleRecording} disabled={recordingLoading}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all disabled:opacity-60"
+            style={{
+              borderColor: isRecording ? '#F0365A' : 'var(--border)',
+              background: isRecording ? 'rgba(240,54,90,0.07)' : 'var(--bg-secondary)',
+            }}>
+            {recordingLoading
+              ? <Spinner size="sm" />
+              : isRecording
+                ? <VideoOff size={16} style={{ color: '#F0365A', flexShrink: 0 }} />
+                : <VideoIcon size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />}
+            <span className="text-xs font-bold" style={{ color: isRecording ? '#F0365A' : 'var(--text-primary)' }}>
+              {isRecording ? "Arrêter l'enregistrement" : 'Démarrer l\'enregistrement'}
+            </span>
+            {isRecording && (
+              <span className="ml-auto w-2 h-2 rounded-full shrink-0" style={{ background: '#F0365A' }} />
+            )}
+          </button>
 
           {/* ── Demandes de scène ── */}
           <div>

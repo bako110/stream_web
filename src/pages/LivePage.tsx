@@ -164,6 +164,10 @@ function ArtistControls({
   const { localParticipant } = useLocalParticipant();
   const [camOn, setCamOn] = useState(false);
   const [micOn, setMicOn] = useState(false);
+  const [isRecording,      setIsRecording]      = useState(!!concert.is_recording);
+  const [recordingLoading, setRecordingLoading] = useState(false);
+
+  useEffect(() => { setIsRecording(!!concert.is_recording); }, [concert.is_recording]);
 
   async function toggleCam() {
     await localParticipant.setCameraEnabled(!camOn);
@@ -172,6 +176,20 @@ function ArtistControls({
   async function toggleMic() {
     await localParticipant.setMicrophoneEnabled(!micOn);
     setMicOn(v => !v);
+  }
+
+  // Démarre/arrête l'enregistrement à tout moment pendant le live — pas
+  // seulement le choix fait à la préparation (query param `record` sur
+  // /stream/{id}/start), cf. PATCH /stream/{id}/recording (streaming.py).
+  async function toggleRecording() {
+    if (recordingLoading) return;
+    const next = !isRecording;
+    setRecordingLoading(true);
+    try {
+      await apiClient.patch(Endpoints.streaming.recording(concert.id), { enabled: next });
+      setIsRecording(next);
+    } catch { /* erreur — état inchangé */ }
+    finally { setRecordingLoading(false); }
   }
 
   return (
@@ -192,6 +210,11 @@ function ArtistControls({
           <button onClick={toggleMic}
             className={`btn-ghost text-xs px-3 py-1.5 ${micOn ? 'text-green-400' : 'text-[var(--text-tertiary)]'}`}>
             {micOn ? 'Micro ON' : 'Micro OFF'}
+          </button>
+          <button onClick={toggleRecording} disabled={recordingLoading}
+            className={`btn-ghost flex items-center gap-1.5 text-xs px-3 py-1.5 ${isRecording ? 'text-red-400' : 'text-[var(--text-tertiary)]'}`}>
+            {recordingLoading ? <Spinner size="sm" /> : <Video size={13} />}
+            {isRecording ? 'Arrêter l\'enregistrement' : 'Enregistrer'}
           </button>
           <button onClick={onStop} disabled={stopping}
             className="btn-ghost flex items-center gap-1.5 text-sm text-red-400 border-red-400/30 hover:bg-red-400/10">
