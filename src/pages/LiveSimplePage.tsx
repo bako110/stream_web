@@ -294,13 +294,23 @@ const LiveChat = forwardRef<LiveChatHandle, {
 
   // Liste de commentaires rendue deux fois avec le même state (pas de second
   // WebSocket) : en flux normal opaque pour la colonne desktop, et — quand
-  // mobileListTarget est fourni — en variante overlay (transparente, bornée à
-  // 200px) téléportée par-dessus la vidéo plein écran sur mobile.
+  // mobileListTarget est fourni — en variante overlay transparente sur mobile,
+  // même principe que le mobile natif (SimpleLiveViewerScreen.tsx : FlatList
+  // avec maxHeight fixe + overflow natif + auto-scroll vers le bas, PAS de
+  // justify-end/mask-image/overscroll-contain — ces propriétés combinées à
+  // overflow-y:auto sur le même élément cassaient le scroll tactile sur
+  // certains navigateurs mobiles, sans qu'aucun geste ne fasse jamais rien).
+  const overlayListRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (overlayListRef.current) overlayListRef.current.scrollTop = overlayListRef.current.scrollHeight;
+  }, [messages]);
+
   function renderList(isOverlay: boolean) {
     const list = (
-    <div className={isOverlay ? 'px-3 py-2 flex flex-col justify-end gap-1.5 overscroll-contain touch-pan-y pointer-events-auto' : 'px-3 py-2 flex flex-col gap-2'}
+    <div ref={isOverlay ? overlayListRef : undefined}
+      className={isOverlay ? 'px-3 py-2 flex flex-col gap-1.5' : 'px-3 py-2 flex flex-col gap-2'}
       style={isOverlay
-        ? { background: 'transparent', height: '100%', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties
+        ? { background: 'transparent', maxHeight: 130, overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties
         : { background: 'rgba(15,15,20,0.97)', flex: '1 1 0%', minHeight: 0, overflowY: 'auto' }
       }>
       {messages.length === 0 && !isOverlay && (
@@ -368,25 +378,7 @@ const LiveChat = forwardRef<LiveChatHandle, {
       {!isOverlay && <div ref={bottomRef} />}
     </div>
     );
-
-    if (!isOverlay) return list;
-
-    // Le fondu (mask-image) doit être posé sur un WRAPPER externe non-scrollable,
-    // pas sur l'élément qui a overflow-y:auto lui-même — mask-image + overflow:auto
-    // sur le même élément désactive le scroll tactile natif sur certains
-    // navigateurs mobiles (Safari iOS notamment), qui ne considèrent plus
-    // l'élément comme scrollable une fois masqué. Avant ce fix, aucun geste de
-    // scroll ne faisait quoi que ce soit sur la liste overlay mobile, quel que
-    // soit le nombre de messages débordant du cadre.
-    return (
-      <div style={{
-        height: 130, maxHeight: 130, overflow: 'hidden',
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 24px)',
-        maskImage: 'linear-gradient(to bottom, transparent, black 24px)',
-      }}>
-        {list}
-      </div>
-    );
+    return list;
   }
 
   return (
