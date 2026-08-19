@@ -371,6 +371,7 @@ export const Endpoints = {
     feed:    `${V1}/planning`,
     entries: `${V1}/planning/entries`,
     entry:   (id: string) => `${V1}/planning/entries/${id}`,
+    invite:  (id: string) => `${V1}/planning/invites/${id}`,
   },
   utils: {
     linkPreview: (url: string) => `${V1}/utils/link-preview?url=${encodeURIComponent(url)}`,

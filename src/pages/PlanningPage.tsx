@@ -776,7 +776,7 @@ export default function PlanningPage() {
 
   const handleRespondInvite = async (entry: PlanningEntry, status: 'accepted' | 'declined') => {
     try {
-      await apiClient.patch<any>(`${Endpoints.planning.entry(entry.id)}/respond`, { status });
+      await apiClient.patch<any>(Endpoints.planning.invite(entry.id), { status });
       setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, invite_status: status } : e));
       toast.success(status === 'accepted' ? 'Invitation acceptée !' : 'Invitation refusée');
     } catch { toast.error('Erreur'); }
