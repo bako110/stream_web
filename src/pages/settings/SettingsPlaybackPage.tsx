@@ -1,26 +1,62 @@
-import { useState } from 'react';
-import { ArrowLeft, Play, Shield } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Play, Shield, Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
+import toast from 'react-hot-toast';
+
+interface PlaybackPrefs {
+  autoplay: boolean;
+  hd_streaming: boolean;
+  record_live_enabled: boolean;
+}
+
+const DEFAULT_PREFS: PlaybackPrefs = { autoplay: true, hd_streaming: false, record_live_enabled: false };
 
 export default function SettingsPlaybackPage() {
   const navigate = useNavigate();
-  const [autoPlay, setAutoPlay] = useState(() => localStorage.getItem('pref_autoplay') !== 'false');
-  const [hdStream, setHdStream] = useState(() => localStorage.getItem('pref_hd') !== 'false');
+  const [prefs, setPrefs] = useState<PlaybackPrefs>(DEFAULT_PREFS);
+  const [saving, setSaving] = useState<keyof PlaybackPrefs | null>(null);
 
-  const rows = [
+  useEffect(() => {
+    apiClient.get<PlaybackPrefs>(Endpoints.users.playback)
+      .then(r => setPrefs({ ...DEFAULT_PREFS, ...r.data }))
+      .catch(() => {/* garde les valeurs par défaut */});
+  }, []);
+
+  const toggle = useCallback(async (field: keyof PlaybackPrefs) => {
+    if (saving) return;
+    const updated = { ...prefs, [field]: !prefs[field] };
+    setPrefs(updated);
+    setSaving(field);
+    try {
+      await apiClient.put(Endpoints.users.playback, updated);
+    } catch {
+      setPrefs(prefs);
+      toast.error('Impossible de sauvegarder la préférence.');
+    } finally {
+      setSaving(null);
+    }
+  }, [prefs, saving]);
+
+  const rows: { key: keyof PlaybackPrefs; icon: React.ReactNode; label: string; sub: string }[] = [
     {
+      key: 'autoplay',
       icon: <Play size={16} />,
       label: 'Lecture automatique',
       sub: 'Lance automatiquement la vidéo suivante',
-      value: autoPlay,
-      toggle: () => setAutoPlay(v => { const n = !v; localStorage.setItem('pref_autoplay', String(n)); return n; }),
     },
     {
+      key: 'hd_streaming',
       icon: <Shield size={16} />,
       label: 'Streaming HD',
       sub: 'Utilise plus de données mobiles',
-      value: hdStream,
-      toggle: () => setHdStream(v => { const n = !v; localStorage.setItem('pref_hd', String(n)); return n; }),
+    },
+    {
+      key: 'record_live_enabled',
+      icon: <Video size={16} />,
+      label: 'Enregistrer mes lives',
+      sub: 'Sauvegarde une vidéo complète (vidéo + chat) de tes lives, battles et concerts',
     },
   ];
 
@@ -42,7 +78,7 @@ export default function SettingsPlaybackPage() {
 
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         {rows.map((row, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-4"
+          <div key={row.key} className="flex items-center gap-3 px-4 py-4"
             style={{ borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none' }}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'rgba(123,63,242,0.1)' }}>
@@ -52,10 +88,10 @@ export default function SettingsPlaybackPage() {
               <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{row.label}</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{row.sub}</p>
             </div>
-            <button onClick={row.toggle}
-              className="relative rounded-full transition-colors shrink-0"
-              style={{ background: row.value ? 'var(--primary)' : 'var(--border)', height: 22, width: 40 }}>
-              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${row.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            <button onClick={() => toggle(row.key)} disabled={!!saving}
+              className="relative rounded-full transition-colors shrink-0 disabled:opacity-50"
+              style={{ background: prefs[row.key] ? 'var(--primary)' : 'var(--border)', height: 22, width: 40 }}>
+              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${prefs[row.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
           </div>
         ))}

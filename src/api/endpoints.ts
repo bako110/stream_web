@@ -25,6 +25,7 @@ export const Endpoints = {
     verificationStatus: `${V1}/users/me/verification`,
     verifyRequest:      `${V1}/users/me/verify-request`,
     privacy:            `${V1}/users/me/privacy`,
+    playback:           `${V1}/users/me/playback`,
     publicProfile: (id: string) => `${V1}/users/${id}/profile`,
     userReels:     (id: string) => `${V1}/users/${id}/reels`,
     follow:        (id: string) => `${V1}/users/${id}/follow`,
