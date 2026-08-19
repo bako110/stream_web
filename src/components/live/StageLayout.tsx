@@ -116,7 +116,13 @@ export function StageLayout({
           <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 0 3px #22c55e' }} />
         )}
 
-        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 text-white text-sm font-semibold px-3 py-1 rounded-full"
+        {/* Badge nom — en haut du cadre sur mobile (top-3), en bas sur desktop
+            (lg:bottom-3/lg:top-auto) où il n'y a pas de conflit. Sur mobile, le
+            bloc vidéo occupe tout l'écran (absolute inset-0, cf. LiveSimplePage)
+            et le groupe bas (chat/actions) flotte par-dessus sans jamais
+            réserver d'espace — un badge en bas se retrouvait donc caché sous
+            cette barre au lieu de rester visible dans la zone vidéo. */}
+        <div className="absolute top-3 left-3 lg:top-auto lg:bottom-3 flex items-center gap-1.5 text-white text-sm font-semibold px-3 py-1 rounded-full"
           style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
           {main.onStage && <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />}
           {main.isLocal ? 'Toi' : main.name}
