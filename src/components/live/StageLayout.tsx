@@ -84,16 +84,21 @@ export function StageLayout({
 
   if (!main) return null;
 
+  const hasOthers = others.length > 0;
+
   return (
-    // pt-14 sur mobile : réserve la place du header overlay (nom du live, LIVE,
+    // pt-14 UNIQUEMENT quand une bande de vignettes existe en haut (hasOthers) :
+    // elle réserve alors la place du header overlay (nom du live, LIVE,
     // participants — cf. LiveSimplePage.tsx, ~56px) qui flotte par-dessus tout
-    // l'écran (StageLayout est en absolute inset-0) ; sans ça, la bande de
-    // vignettes remontée en haut (order-first ci-dessous) se retrouvait
-    // exactement sous ce header, chevauchée avec lui.
-    <div className="w-full h-full flex flex-col lg:flex-row gap-1.5 pt-14 sm:pt-16 lg:pt-1.5 p-1.5 bg-black overflow-hidden">
+    // l'écran (StageLayout est en absolute inset-0), sinon la bande remontée en
+    // haut (order-first plus bas) se retrouverait sous ce header. Sans
+    // participant additionnel, ce padding n'a pas lieu d'être — il poussait
+    // sinon inutilement le bloc principal (et sa vidéo) vers le bas, laissant
+    // un vide gris/noir en haut de l'écran.
+    <div className={`w-full h-full flex flex-col lg:flex-row gap-1.5 p-1.5 bg-black overflow-hidden ${hasOthers ? 'pt-14 sm:pt-16 lg:pt-1.5' : ''}`}>
       {/* ── Bloc principal — organisateur ou personne épinglée ── */}
       <div
-        className="relative flex-1 min-w-0 min-h-0 rounded-xl overflow-hidden"
+        className="relative flex-1 min-w-0 min-h-0 rounded-2xl overflow-hidden"
         style={{ border: `1.5px solid ${main.isSpeaking ? '#22c55e' : 'rgba(255,255,255,0.12)'}` }}
         onMouseEnter={() => setHoveredId(main.identity)}
         onMouseLeave={() => setHoveredId(null)}
@@ -180,7 +185,7 @@ export function StageLayout({
           participant) : seule la personne en direct/présentée a droit au grand
           espace. Scroll dès que ça déborde, pour accueillir beaucoup de monde
           sans jamais agrandir les cases. ── */}
-      {others.length > 0 && (
+      {hasOthers && (
         <div className="relative z-20 order-first lg:order-none flex flex-row lg:flex-col gap-1 shrink-0 w-full h-[76px] lg:w-[84px] lg:h-full
           overflow-x-auto lg:overflow-x-visible overflow-y-visible lg:overflow-y-auto">
           {others.map(p => (

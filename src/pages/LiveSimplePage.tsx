@@ -242,38 +242,8 @@ const LiveChat = forwardRef<LiveChatHandle, {
     addSysMsg(`${name} a été exclu du live`);
   }
 
-  async function sendQuick(text: string) {
-    if (sending) return;
-    setMessages(prev => [...prev.slice(-149), {
-      id: `local-${Date.now()}`, user: user?.display_name ?? user?.username ?? 'Moi',
-      userId: user?.id, avatar: user?.avatar_url ?? null, text,
-    }]);
-    setSending(true);
-    try { await apiClient.post(Endpoints.social.comments, { body: text, live_id: liveId }); }
-    catch { /* silencieux */ }
-    finally { setSending(false); }
-  }
-
-  const QUICK_REACTIONS = [
-    { label: 'Salut',    emoji: '👋' },
-    { label: "J'adore",  emoji: '😍' },
-    { label: 'Haha',     emoji: '😂' },
-    { label: 'Wow',      emoji: '😮' },
-    { label: 'Triste',   emoji: '😢' },
-  ];
-
   const inputBar = (
     <div className="flex flex-col gap-1.5 pointer-events-auto min-w-0">
-      {/* Réactions rapides — un tap envoie directement le commentaire */}
-      <div className="flex items-center gap-1.5 overflow-x-auto min-w-0" style={{ scrollbarWidth: 'none' }}>
-        {QUICK_REACTIONS.map(r => (
-          <button key={r.label} onClick={() => sendQuick(`${r.emoji} ${r.label}`)}
-            className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-transform active:scale-95"
-            style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.15)' }}>
-            <span>{r.emoji}</span> {r.label}
-          </button>
-        ))}
-      </div>
       <div className="relative flex gap-2">
         <input
           className="flex-1 min-w-0 text-white text-sm rounded-full px-3.5 py-2.5 focus:outline-none focus:ring-1"
