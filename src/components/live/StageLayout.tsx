@@ -176,7 +176,12 @@ export function StageLayout({
           flotte simplement au-dessus de lui, avec son propre scroll horizontal
           si trop de participants pour tenir sur une ligne. ── */}
       {hasOthers && (
-        <div className="absolute top-3 right-3 z-20 rounded-2xl overflow-hidden max-w-[calc(100%-1.5rem)]"
+        // top-14 sur mobile : réserve la place du header overlay (avatar, nom
+        // du live, badge LIVE, timer, viewers — cf. LiveSimplePage.tsx, ~56px)
+        // qui flotte par-dessus tout l'écran (le bloc vidéo est en absolute
+        // inset-0 sur mobile) ; top-3 sur desktop (lg:) où le header est séparé,
+        // au-dessus de la carte, donc pas de conflit à cette hauteur.
+        <div className="absolute top-14 sm:top-16 lg:top-3 right-3 z-20 rounded-2xl overflow-hidden max-w-[calc(100%-1.5rem)]"
           style={{ background: 'rgba(10,8,20,0.9)', border: '1px solid rgba(155,101,245,0.5)', boxShadow: '0 0 20px rgba(123,63,242,0.35)', backdropFilter: 'blur(8px)' }}>
           <p className="px-3 pt-2 pb-1.5 text-white text-xs font-bold">Sur scène ({others.length})</p>
           <div className="flex items-center gap-2.5 px-3 pb-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
