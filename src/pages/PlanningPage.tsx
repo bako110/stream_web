@@ -667,18 +667,27 @@ function EntryCard({
 
         {/* Invitees avatars */}
         {isPersonal && entry.invites && entry.invites.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2">
-            {entry.invites.slice(0, 5).map(inv => (
-              <div key={inv.id} className="w-5 h-5 rounded-full overflow-hidden"
-                style={{
-                  border: `2px solid ${inv.status === 'accepted' ? '#7B3FF2' : inv.status === 'declined' ? '#EF4444' : 'var(--border)'}`,
-                }}>
-                <Avatar src={inv.invitee?.avatar_url} name={inv.invitee?.display_name ?? inv.invitee?.username ?? '?'} size="xs" />
-              </div>
-            ))}
-            {entry.invites.length > 5 && (
-              <span className="text-[10px] font-bold" style={{ color: 'var(--text-tertiary)' }}>+{entry.invites.length - 5}</span>
-            )}
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5">
+              {entry.invites.slice(0, 5).map(inv => {
+                const name = inv.invitee?.display_name ?? inv.invitee?.username ?? 'Invité';
+                const statusLabel = inv.status === 'accepted' ? 'a accepté' : inv.status === 'declined' ? 'a refusé' : "n'a pas encore répondu";
+                return (
+                  <div key={inv.id} className="w-5 h-5 rounded-full overflow-hidden" title={`${name} ${statusLabel}`}
+                    style={{
+                      border: `2px solid ${inv.status === 'accepted' ? '#7B3FF2' : inv.status === 'declined' ? '#EF4444' : 'var(--border)'}`,
+                    }}>
+                    <Avatar src={inv.invitee?.avatar_url} name={name} size="xs" />
+                  </div>
+                );
+              })}
+              {entry.invites.length > 5 && (
+                <span className="text-[10px] font-bold" style={{ color: 'var(--text-tertiary)' }}>+{entry.invites.length - 5}</span>
+              )}
+            </div>
+            <span className="text-[11px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>
+              {entry.invites.filter(i => i.status === 'accepted').length}/{entry.invites.length} ont accepté
+            </span>
           </div>
         )}
 
