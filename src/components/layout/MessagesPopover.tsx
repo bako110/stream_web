@@ -751,7 +751,7 @@ function MiniNewConvoModal({ onClose, onSelect }: {
         ) : results.length === 0 && !searching ? (
           <p className="text-center py-8 text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucun utilisateur trouvé</p>
         ) : results.map(u => (
-          <button key={u.id} onClick={() => { onSelect(u.id); onClose(); }}
+          <button key={u.id} onClick={() => onSelect(u.id)}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-all"
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
