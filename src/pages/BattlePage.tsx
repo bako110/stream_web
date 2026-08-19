@@ -151,23 +151,56 @@ function BattleMediaControls({ isHost }: { isHost: boolean }) {
     try { await localParticipant.setMicrophoneEnabled(!micOn); } catch { /* ignore */ }
   }, [localParticipant, micOn]);
 
+  const [showMenu, setShowMenu] = useState(false);
+
   if (!isHost) return null;
+
+  const bothOff = !camOn && !micOn;
 
   return (
     <>
-      {/* Boutons persistants — restent visibles et cliquables en permanence
-          (pas seulement en cas d'échec), pour que l'hôte puisse couper/
-          réactiver sa caméra ou son micro à tout moment pendant le match. */}
+      {/* Desktop (lg+) : deux boutons séparés, assez de place dans le header. */}
       <button onClick={toggleCam}
-        className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0"
+        className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
         style={{ background: camOn ? 'rgba(255,255,255,0.1)' : 'rgba(240,54,90,0.25)' }}>
         {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#F0365A" />}
       </button>
       <button onClick={toggleMic}
-        className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0"
+        className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
         style={{ background: micOn ? 'rgba(255,255,255,0.1)' : 'rgba(240,54,90,0.25)' }}>
         {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#F0365A" />}
       </button>
+
+      {/* Mobile (<lg) : un seul bouton compact — la rangée du header est déjà
+          chargée (fermer, participants, titre BATTLE LIVE centré, top-donor),
+          deux boutons séparés écrasaient/chevauchaient le titre. Ouvre un petit
+          menu avec les deux toggles au tap. */}
+      <div className="relative lg:hidden shrink-0">
+        <button onClick={() => setShowMenu(v => !v)}
+          className="w-9 h-9 rounded-full flex items-center justify-center"
+          style={{ background: bothOff ? 'rgba(240,54,90,0.25)' : 'rgba(255,255,255,0.1)' }}>
+          {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#F0365A" />}
+        </button>
+        {showMenu && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-40 rounded-2xl overflow-hidden shadow-2xl"
+              style={{ background: 'rgba(20,20,26,0.97)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 160, backdropFilter: 'blur(12px)' }}>
+              <button onClick={() => { toggleCam(); setShowMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white">
+                {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#F0365A" />}
+                {camOn ? 'Couper la caméra' : 'Activer la caméra'}
+              </button>
+              <button onClick={() => { toggleMic(); setShowMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#F0365A" />}
+                {micOn ? 'Couper le micro' : 'Activer le micro'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       {needsRetry && !camOn && (
         <button onClick={activate}
