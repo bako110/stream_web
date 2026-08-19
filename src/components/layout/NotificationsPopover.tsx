@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, Check, Heart, UserPlus, MessageCircle, Radio, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
@@ -54,7 +54,10 @@ export function NotificationsPopover({ onClose }: { onClose: () => void }) {
   const { data, loading, refetch } = useApi<Notification[]>(
     () => apiClient.get<Notification[]>(`${Endpoints.notifications.list}?limit=20`),
   );
-  const notifications = data ?? [];
+  // Mise à jour optimiste locale — useApi n'expose pas de setter, et refetch()
+  // relance tout l'appel réseau (trop lent pour un simple clic "marquer lue").
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const notifications = (data ?? []).map(n => readIds.has(n.id) ? { ...n, is_read: true } : n);
   const unread = notifications.filter(n => !n.is_read).length;
 
   // Fermeture au clic extérieur — même comportement que MessagesPopover.
@@ -82,10 +85,12 @@ export function NotificationsPopover({ onClose }: { onClose: () => void }) {
     refetch();
   }
 
-  async function handleClickNotif(n: Notification) {
-    if (!n.is_read) {
-      apiClient.patch(Endpoints.notifications.read(n.id)).catch(() => {});
-    }
+  function handleClickNotif(n: Notification) {
+    if (n.is_read) return;
+    setReadIds(prev => new Set(prev).add(n.id));
+    apiClient.patch(Endpoints.notifications.read(n.id)).catch(() => {
+      setReadIds(prev => { const next = new Set(prev); next.delete(n.id); return next; });
+    });
   }
 
   // Portail vers document.body — même raison que MessagesPopover : le header
