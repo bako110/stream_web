@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Play, Film, Radio, Video, Zap, Award, Users, MoreHorizontal, X, ChevronRight } from 'lucide-react';
+import { Home, Play, Film, Radio, Video, Zap, Award, Users, MoreHorizontal, X, ChevronRight, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../ui/Avatar';
+import { accountsService } from '../../services/accountsService';
+import type { StoredAccount } from '../../services/accountsService';
+import { AccountSwitcherMenu } from './AccountSwitcherMenu';
 
 const MAIN_SECTION = {
   label: 'Découvrir',
@@ -23,6 +27,16 @@ interface Props { onClose: () => void }
 export function MobileDrawer({ onClose }: Props) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  // Menu de bascule de compte — pas de dropdown flottant sur mobile (pattern
+  // desktop, cf. AccountSwitcherDropdown.tsx), la liste s'affiche directement
+  // inline dans le drawer, sous le bouton "Changer".
+  const [showAccounts, setShowAccounts] = useState(false);
+  const [accounts, setAccounts] = useState<StoredAccount[]>([]);
+
+  function toggleAccounts() {
+    if (!showAccounts) setAccounts(accountsService.listAccounts());
+    setShowAccounts(v => !v);
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -49,6 +63,14 @@ export function MobileDrawer({ onClose }: Props) {
             <ChevronRight size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
           </button>
         )}
+        {user && (
+          <button onClick={toggleAccounts} title="Changer de compte"
+            className="flex items-center gap-0.5 px-2 py-1.5 rounded-xl shrink-0 text-xs font-semibold"
+            style={{ color: 'var(--text-tertiary)', background: showAccounts ? 'var(--bg-secondary)' : 'transparent' }}>
+            Changer
+            <ChevronDown size={12} style={{ transform: showAccounts ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+          </button>
+        )}
         <button onClick={onClose} className="p-1.5 rounded-xl shrink-0"
           style={{ color: 'var(--text-tertiary)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
@@ -56,6 +78,14 @@ export function MobileDrawer({ onClose }: Props) {
           <X size={18} />
         </button>
       </div>
+
+      {/* ── Liste des comptes — repliée par défaut, affichée inline (pas de
+          dropdown flottant) sous le bouton "Changer". ── */}
+      {showAccounts && (
+        <div className="shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <AccountSwitcherMenu accounts={accounts} onClose={() => { setShowAccounts(false); onClose(); }} />
+        </div>
+      )}
 
       {/* ── Découvrir ── */}
       <div className="flex-1 overflow-y-auto py-2">
