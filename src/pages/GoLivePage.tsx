@@ -389,15 +389,17 @@ export default function GoLivePage() {
             </div>
           )}
 
-          {/* Bouton Go Live */}
+          {/* Bouton Go Live — même gabarit que le reste de la page (rounded-xl,
+              hauteur ~48px) au lieu d'un bouton géant (h-14 + rounded-3xl) qui
+              détonnait visuellement à côté des autres options plus compactes. */}
           <button type="button" onClick={handleStart} disabled={starting}
-            className="w-full h-14 rounded-3xl font-black text-white text-base flex items-center justify-center gap-3 transition-all disabled:opacity-60"
-            style={{ background: starting ? '#555' : 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: starting ? 'none' : '0 6px 24px rgba(240,54,90,0.4)' }}>
+            className="w-full h-12 rounded-xl font-black text-white text-sm flex items-center justify-center gap-2.5 transition-all disabled:opacity-60"
+            style={{ background: starting ? '#555' : 'linear-gradient(135deg,#F0365A,#E0389A)', boxShadow: starting ? 'none' : '0 4px 16px rgba(240,54,90,0.35)' }}>
             {starting ? (
               <Spinner size="sm" />
             ) : (
               <>
-                <span className="w-2.5 h-2.5 rounded-full bg-white opacity-90 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-white opacity-90 animate-pulse" />
                 Go Live maintenant
               </>
             )}
