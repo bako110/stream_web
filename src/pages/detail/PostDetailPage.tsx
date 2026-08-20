@@ -279,15 +279,10 @@ export default function PostDetailPage() {
   const [otherPosts,      setOtherPosts]      = useState<Post[]>([]);
   const [lightbox,           setLightbox]           = useState<number | null>(null);
   const [showCommentsSheet,  setShowCommentsSheet]  = useState(false);
-  const [editingCommentId,   setEditingCommentId]   = useState<string | null>(null);
-  const [editCommentBody,    setEditCommentBody]    = useState('');
-  const [editCommentSaving,  setEditCommentSaving]  = useState(false);
   const [commentLikedIds,    setCommentLikedIds]    = useState<Set<string>>(new Set());
   const [commentLocalLikes,  setCommentLocalLikes]  = useState<Record<string, number>>({});
   const [showAiModal,        setShowAiModal]        = useState(false);
-  const inputRef    = useRef<HTMLInputElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
-  const PREVIEW_COUNT = 3;
 
   useEffect(() => {
     if (!id) return;
@@ -576,7 +571,7 @@ export default function PostDetailPage() {
                   {likes > 0 && <span>{likes}</span>}
                 </button>
                 {/* Commenter */}
-                <button onClick={() => inputRef.current?.focus()}
+                <button onClick={() => setShowCommentsSheet(true)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                   style={{ color: 'var(--text-secondary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
@@ -603,223 +598,25 @@ export default function PostDetailPage() {
               </div>
             </div>
 
-            {/* Section commentaires */}
-            <div className="rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-
-              {/* Titre */}
-              <div className="flex items-center justify-between px-5 py-4"
-                style={{ borderBottom: '1px solid var(--border)' }}>
-                <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-                  Commentaires
-                  {comments.length > 0 && (
-                    <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full"
-                      style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
-                      {comments.length}
-                    </span>
-                  )}
-                </h3>
-                {/* Sur mobile: bouton pour ouvrir le sheet */}
-                {comments.length > PREVIEW_COUNT && (
-                  <button onClick={() => setShowCommentsSheet(true)}
-                    className="lg:hidden flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl"
-                    style={{ background: 'var(--bg-secondary)', color: 'var(--primary)' }}>
-                    Voir tout <ChevronDown size={12} />
-                  </button>
+            {/* Section commentaires — ouvre la modale CommentsSheet (même
+                composant sur desktop et mobile), plus de liste en flux de page. */}
+            <button onClick={() => setShowCommentsSheet(true)}
+              className="rounded-2xl flex items-center justify-between px-5 py-4 text-left transition-colors"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface)')}>
+              <span className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                <MessageCircle size={16} style={{ color: 'var(--primary)' }} />
+                Commentaires
+                {comments.length > 0 && (
+                  <span className="text-xs font-normal px-2 py-0.5 rounded-full"
+                    style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+                    {comments.length}
+                  </span>
                 )}
-              </div>
-
-              {/* Input — desktop toujours visible, mobile toujours visible */}
-              <div className="flex items-center gap-3 px-5 py-3.5"
-                style={{ borderBottom: '1px solid var(--border)' }}>
-                <Avatar src={me?.avatar_url}
-                  name={me?.display_name ?? me?.username ?? '?'} size="sm" />
-                <input ref={inputRef} value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && submitComment()}
-                  placeholder="Écrire un commentaire…"
-                  className="flex-1 text-sm px-4 py-2.5 rounded-xl outline-none"
-                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
-                  onBlur={e => (e.target.style.borderColor = 'var(--border)')} />
-                <button onClick={submitComment} disabled={!input.trim() || sending}
-                  className="p-2 rounded-xl transition-all disabled:opacity-40 shrink-0"
-                  style={{ background: 'var(--primary)', color: '#fff' }}>
-                  {sending ? <Spinner size="sm" /> : <Send size={14} />}
-                </button>
-              </div>
-
-              {/* Liste commentaires */}
-              {commentsLoading ? (
-                <div className="py-10 flex justify-center"><Spinner /></div>
-              ) : comments.length === 0 ? (
-                <div className="flex flex-col items-center py-12 gap-3">
-                  <MessageCircle size={32} style={{ color: 'var(--text-tertiary)', opacity: 0.3 }} />
-                  <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                    Aucun commentaire — soyez le premier !
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  {/* Mobile: aperçu 3 commentaires seulement */}
-                  {comments.slice(0, PREVIEW_COUNT).map((c, i) => (
-                    <div key={c.id ?? i} className="flex gap-3 px-5 py-4 group"
-                      style={{ borderBottom: '1px solid var(--border)' }}>
-                      <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
-                        <Avatar src={c.author?.avatar_url}
-                          name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        {editingCommentId === c.id ? (
-                          <div className="flex flex-col gap-1.5">
-                            <input autoFocus value={editCommentBody} onChange={e => setEditCommentBody(e.target.value)}
-                              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (async () => { if (editCommentBody.trim() && !editCommentSaving) { setEditCommentSaving(true); try { await updateComment(c.id, editCommentBody.trim()); setEditingCommentId(null); } finally { setEditCommentSaving(false); } } })(); } if (e.key === 'Escape') setEditingCommentId(null); }}
-                              className="text-sm px-4 py-3 rounded-2xl w-full outline-none"
-                              style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--primary)', color: 'var(--text-primary)' }} />
-                            <div className="flex gap-2 ml-1">
-                              <button onClick={async () => { if (editCommentBody.trim() && !editCommentSaving) { setEditCommentSaving(true); try { await updateComment(c.id, editCommentBody.trim()); setEditingCommentId(null); } finally { setEditCommentSaving(false); } } }}
-                                disabled={editCommentSaving} className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
-                                style={{ background: 'var(--primary)', color: '#fff', opacity: editCommentSaving ? 0.6 : 1 }}>
-                                {editCommentSaving ? '…' : 'Enregistrer'}
-                              </button>
-                              <button onClick={() => setEditingCommentId(null)}
-                                className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
-                                style={{ color: 'var(--text-tertiary)' }}>Annuler</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-start gap-2">
-                            <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
-                              <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                                {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
-                              </p>
-                              <p className="text-sm leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-secondary)' }}>
-                                {c.body}
-                              </p>
-                            </div>
-                            {me?.id === c.author?.id && (
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 mt-1 shrink-0">
-                                <button onClick={() => { setEditingCommentId(c.id); setEditCommentBody(c.body); }}
-                                  className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
-                                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
-                                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-                                  <Edit3 size={13} />
-                                </button>
-                                <button onClick={() => deleteComment(c.id)}
-                                  className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
-                                  onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-3 mt-1.5 px-1">
-                          <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                            {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
-                          </p>
-                          <button onClick={() => toggleCommentLike(c)}
-                            className="flex items-center gap-1 transition-colors"
-                            style={{ color: commentLikedIds.has(c.id) ? 'var(--primary)' : 'var(--text-tertiary)' }}>
-                            <Heart size={11} fill={commentLikedIds.has(c.id) ? 'currentColor' : 'none'} />
-                            {(commentLocalLikes[c.id] ?? c.like_count ?? 0) > 0 && (
-                              <span className="text-[10px] font-medium">{commentLocalLikes[c.id] ?? c.like_count}</span>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Desktop: affiche le reste inline. Mobile: bouton "Voir les X restants" */}
-                  {comments.length > PREVIEW_COUNT && (
-                    <>
-                      {/* Desktop uniquement — les commentaires restants */}
-                      <div className="hidden lg:block">
-                        {comments.slice(PREVIEW_COUNT).map((c, i) => (
-                          <div key={c.id ?? i} className="flex gap-3 px-5 py-4 group"
-                            style={{ borderBottom: i < comments.length - PREVIEW_COUNT - 1 ? '1px solid var(--border)' : 'none' }}>
-                            <button onClick={() => c.author?.id && navigate(`/user/${encodeId(c.author.id)}`)}>
-                              <Avatar src={c.author?.avatar_url}
-                                name={c.author?.display_name ?? c.author?.username ?? '?'} size="sm" />
-                            </button>
-                            <div className="flex-1 min-w-0">
-                              {editingCommentId === c.id ? (
-                                <div className="flex flex-col gap-1.5">
-                                  <input autoFocus value={editCommentBody} onChange={e => setEditCommentBody(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (async () => { if (editCommentBody.trim() && !editCommentSaving) { setEditCommentSaving(true); try { await updateComment(c.id, editCommentBody.trim()); setEditingCommentId(null); } finally { setEditCommentSaving(false); } } })(); } if (e.key === 'Escape') setEditingCommentId(null); }}
-                                    className="text-sm px-4 py-3 rounded-2xl w-full outline-none"
-                                    style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--primary)', color: 'var(--text-primary)' }} />
-                                  <div className="flex gap-2 ml-1">
-                                    <button onClick={async () => { if (editCommentBody.trim() && !editCommentSaving) { setEditCommentSaving(true); try { await updateComment(c.id, editCommentBody.trim()); setEditingCommentId(null); } finally { setEditCommentSaving(false); } } }}
-                                      disabled={editCommentSaving} className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
-                                      style={{ background: 'var(--primary)', color: '#fff', opacity: editCommentSaving ? 0.6 : 1 }}>
-                                      {editCommentSaving ? '…' : 'Enregistrer'}
-                                    </button>
-                                    <button onClick={() => setEditingCommentId(null)}
-                                      className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
-                                      style={{ color: 'var(--text-tertiary)' }}>Annuler</button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-start gap-2">
-                                  <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
-                                    <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                                      {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
-                                    </p>
-                                    <p className="text-sm leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-secondary)' }}>
-                                      {c.body}
-                                    </p>
-                                  </div>
-                                  {me?.id === c.author?.id && (
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 mt-1 shrink-0">
-                                      <button onClick={() => { setEditingCommentId(c.id); setEditCommentBody(c.body); }}
-                                        className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
-                                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
-                                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-                                        <Edit3 size={13} />
-                                      </button>
-                                      <button onClick={() => deleteComment(c.id)}
-                                        className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
-                                        onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
-                                        <Trash2 size={13} />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              <div className="flex items-center gap-3 mt-1.5 px-1">
-                                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                                  {c.created_at ? format(new Date(c.created_at), "d MMM 'à' HH:mm", { locale: fr }) : ''}
-                                </p>
-                                <button onClick={() => toggleCommentLike(c)}
-                                  className="flex items-center gap-1 transition-colors"
-                                  style={{ color: commentLikedIds.has(c.id) ? 'var(--primary)' : 'var(--text-tertiary)' }}>
-                                  <Heart size={11} fill={commentLikedIds.has(c.id) ? 'currentColor' : 'none'} />
-                                  {(commentLocalLikes[c.id] ?? c.like_count ?? 0) > 0 && (
-                                    <span className="text-[10px] font-medium">{commentLocalLikes[c.id] ?? c.like_count}</span>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {/* Mobile uniquement — bouton voir tout */}
-                      <button onClick={() => setShowCommentsSheet(true)}
-                        className="lg:hidden w-full flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-colors"
-                        style={{ color: 'var(--primary)', borderTop: '1px solid var(--border)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                        <MessageCircle size={15} />
-                        Voir les {comments.length - PREVIEW_COUNT} autres commentaires
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+              </span>
+              <ChevronDown size={16} style={{ color: 'var(--text-tertiary)', transform: 'rotate(-90deg)' }} />
+            </button>
           </div>
 
           {/* ══ Colonne droite ══════════════════════════════════════════════════ */}
