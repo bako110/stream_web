@@ -2214,7 +2214,7 @@ function UpcomingEventsPanel() {
   const [page,     setPage]     = useState(1);
   const [hasMore,  setHasMore]  = useState(true);
   const [loading,  setLoading]  = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadPage = useCallback((p: number) => {
     setLoading(true);
@@ -2241,18 +2241,19 @@ function UpcomingEventsPanel() {
 
   useEffect(() => { loadPage(1); }, [loadPage]);
 
-  // Scroll infini — charge la page suivante en approchant du bas du container.
+  // Scroll infini via IntersectionObserver sur un sentinel — se déclenche
+  // aussi bien au scroll qu'immédiatement si le premier lot ne remplit pas
+  // encore le container (sinon un listener "scroll" classique ne se
+  // déclenche jamais quand il n'y a physiquement rien à scroller).
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    function onScroll() {
-      if (loading || !hasMore) return;
-      if (el!.scrollTop + el!.clientHeight >= el!.scrollHeight - 40) {
-        loadPage(page + 1);
-      }
-    }
-    el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadPage(page + 1); },
+      { root: node.parentElement, rootMargin: '80px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
   }, [loading, hasMore, page, loadPage]);
 
   if (events.length === 0 && !loading) return null;
@@ -2266,7 +2267,7 @@ function UpcomingEventsPanel() {
         </div>
         <button onClick={() => navigate('/events')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
       </div>
-      <div ref={scrollRef} className="divide-y overflow-y-auto" style={{ borderColor: 'var(--border)', maxHeight: 340, scrollbarWidth: 'thin' }}>
+      <div className="divide-y overflow-y-auto" style={{ borderColor: 'var(--border)', maxHeight: 340, scrollbarWidth: 'thin' }}>
         {events.map((e: any) => {
           const color = EVENT_COLORS[e.event_type ?? 'other'] ?? EVENT_COLORS.other;
           return (
@@ -2289,6 +2290,7 @@ function UpcomingEventsPanel() {
             </div>
           );
         })}
+        <div ref={sentinelRef} />
         {loading && (
           <div className="flex justify-center py-3"><Spinner size="sm" /></div>
         )}
@@ -2519,7 +2521,7 @@ function SuggestionsPanel() {
   const [hasMore,    setHasMore]    = useState(true);
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadMore = useCallback(() => {
     setLoadingMore(true);
@@ -2544,19 +2546,20 @@ function SuggestionsPanel() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Scroll infini — charge la page suivante en approchant du bas du container.
+  // Scroll infini via IntersectionObserver sur un sentinel — se déclenche
+  // aussi bien au scroll qu'immédiatement si le premier lot ne remplit pas
+  // encore le container (sinon un listener "scroll" classique ne se
+  // déclenche jamais quand il n'y a physiquement rien à scroller).
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    function onScroll() {
-      if (loadingMore || !hasMore) return;
-      if (el!.scrollTop + el!.clientHeight >= el!.scrollHeight - 40) {
-        loadMore();
-      }
-    }
-    el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
-  }, [loadingMore, hasMore, loadMore]);
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting && !loadingMore) loadMore(); },
+      { root: node.parentElement, rootMargin: '80px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, hasMore, loadingMore, loadMore]);
 
   async function follow(userId: string) {
     if (followingIds.has(userId)) return;
@@ -2597,7 +2600,7 @@ function SuggestionsPanel() {
       ) : users.length === 0 ? (
         <p className="text-center py-8 text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucune suggestion</p>
       ) : (
-        <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
+        <div className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
           {users.map((u: any, i: number) => {
             const isFollowed  = followedIds.has(u.id);
             const isFollowing = followingIds.has(u.id);
@@ -2636,6 +2639,7 @@ function SuggestionsPanel() {
             </div>
             );
           })}
+          <div ref={sentinelRef} />
           {loadingMore && (
             <div className="flex justify-center py-3"><Spinner size="sm" /></div>
           )}
@@ -2655,7 +2659,7 @@ function CommunitiesSidePanel() {
   const [loadingMore,   setLoadingMore]  = useState(false);
   const [page,          setPage]         = useState(1);
   const [hasMore,        setHasMore]      = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadMore = useCallback(() => {
     const nextPage = page + 1;
@@ -2682,19 +2686,20 @@ function CommunitiesSidePanel() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Scroll infini — charge la page suivante en approchant du bas du container.
+  // Scroll infini via IntersectionObserver sur un sentinel — se déclenche
+  // aussi bien au scroll qu'immédiatement si le premier lot ne remplit pas
+  // encore le container (sinon un listener "scroll" classique ne se
+  // déclenche jamais quand il n'y a physiquement rien à scroller).
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    function onScroll() {
-      if (loadingMore || !hasMore) return;
-      if (el!.scrollTop + el!.clientHeight >= el!.scrollHeight - 40) {
-        loadMore();
-      }
-    }
-    el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
-  }, [loadingMore, hasMore, loadMore]);
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting && !loadingMore) loadMore(); },
+      { root: node.parentElement, rootMargin: '80px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, loadingMore, hasMore, loadMore]);
 
   return (
     <div className="rounded-2xl overflow-hidden"
@@ -2722,7 +2727,7 @@ function CommunitiesSidePanel() {
           </button>
         </div>
       ) : (
-        <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
+        <div className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
           {communities.map((c, i) => {
             const [g1, g2] = commGradient(c.name);
             const count    = c.members_count ?? c.member_count ?? 0;
@@ -2750,6 +2755,7 @@ function CommunitiesSidePanel() {
               </button>
             );
           })}
+          <div ref={sentinelRef} />
           {loadingMore && (
             <div className="flex justify-center py-3"><Spinner size="sm" /></div>
           )}
