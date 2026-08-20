@@ -3121,7 +3121,8 @@ export default function FeedPage() {
       <div className="flex gap-4 items-start justify-center">
 
         {/* ── Left panel (lg+) ── */}
-        <div className="w-56 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4">
+        <div className="w-56 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4"
+          style={{ maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto', scrollbarWidth: 'none' }}>
           <UpcomingEventsPanel />
           <TrendingPanel />
         </div>
