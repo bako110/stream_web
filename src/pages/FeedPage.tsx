@@ -2646,20 +2646,55 @@ function SuggestionsPanel() {
 }
 
 // ── Communities sidebar panel ─────────────────────────────────────────────────
+const COMMUNITIES_PAGE_SIZE = 5;
+
 function CommunitiesSidePanel() {
   const navigate = useNavigate();
-  const [communities, setCommunities] = useState<Community[]>([]);
-  const [loading,     setLoading]     = useState(true);
+  const [communities,  setCommunities]  = useState<Community[]>([]);
+  const [loading,       setLoading]      = useState(true);
+  const [loadingMore,   setLoadingMore]  = useState(false);
+  const [page,          setPage]         = useState(1);
+  const [hasMore,        setHasMore]      = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    apiClient.get<any>(`${Endpoints.communities.discover}?limit=10`)
+  const loadMore = useCallback(() => {
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    apiClient.get<any>(`${Endpoints.communities.discover}?page=${nextPage}&limit=${COMMUNITIES_PAGE_SIZE}`)
       .then(res => {
         const raw: Community[] = Array.isArray(res.data) ? res.data : res.data?.items ?? res.data?.data ?? [];
-        setCommunities([...raw].sort(() => Math.random() - 0.5).slice(0, 5));
+        setCommunities(prev => [...prev, ...raw]);
+        setHasMore(raw.length === COMMUNITIES_PAGE_SIZE);
+        setPage(nextPage);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [page]);
+
+  useEffect(() => {
+    apiClient.get<any>(`${Endpoints.communities.discover}?page=1&limit=${COMMUNITIES_PAGE_SIZE}`)
+      .then(res => {
+        const raw: Community[] = Array.isArray(res.data) ? res.data : res.data?.items ?? res.data?.data ?? [];
+        setCommunities(raw);
+        setHasMore(raw.length === COMMUNITIES_PAGE_SIZE);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Scroll infini — charge la page suivante en approchant du bas du container.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function onScroll() {
+      if (loadingMore || !hasMore) return;
+      if (el!.scrollTop + el!.clientHeight >= el!.scrollHeight - 40) {
+        loadMore();
+      }
+    }
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [loadingMore, hasMore, loadMore]);
 
   return (
     <div className="rounded-2xl overflow-hidden"
@@ -2687,7 +2722,7 @@ function CommunitiesSidePanel() {
           </button>
         </div>
       ) : (
-        <div className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
+        <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
           {communities.map((c, i) => {
             const [g1, g2] = commGradient(c.name);
             const count    = c.members_count ?? c.member_count ?? 0;
@@ -2715,6 +2750,9 @@ function CommunitiesSidePanel() {
               </button>
             );
           })}
+          {loadingMore && (
+            <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+          )}
         </div>
       )}
     </div>
