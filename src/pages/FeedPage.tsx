@@ -3117,20 +3117,29 @@ export default function FeedPage() {
   }, [loadMoreFeed]);
 
   return (
-    <div className="px-2 sm:px-4 py-2 lg:py-6 w-full mx-auto">
-      <div className="flex gap-4 items-start justify-center">
+    <div className="px-2 sm:px-4 py-2 lg:py-6 w-full mx-auto lg:h-full lg:overflow-hidden">
+      {/* Sur desktop (lg+) : hauteur contrainte au viewport visible, chaque
+          colonne gère son propre scroll indépendamment — les sidebars
+          gauche/droite restent totalement statiques (aucun scroll, aucun
+          mouvement), seule la colonne centrale défile. Sans ce découpage,
+          les trois colonnes partageaient le scroll unique de <main> (le
+          seul ancêtre scrollable), donc "sticky" sur les sidebars les
+          gardait visibles mais ne les empêchait pas de suivre le scroll
+          global de la page — impossible de les isoler du feed. */}
+      <div className="flex gap-4 items-start justify-center lg:h-full lg:items-stretch">
 
-        {/* ── Left panel (lg+) ── */}
-        <div className="w-56 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4"
-          style={{ maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto', scrollbarWidth: 'none' }}>
+        {/* ── Left panel (lg+) — statique, ne scrolle jamais ── */}
+        <div className="w-56 shrink-0 hidden lg:flex flex-col gap-4">
           <UpcomingEventsPanel />
           <TrendingPanel />
         </div>
 
         {/* ── Feed column — largeur de lecture confortable, comme Facebook, pour que
              les images de post (souvent portrait) ne flottent pas dans un vide immense
-             maintenant que la page occupe toute la largeur d'écran. ── */}
-        <div className="flex-1 min-w-0 max-w-2xl space-y-3 lg:space-y-5">
+             maintenant que la page occupe toute la largeur d'écran.
+             lg+ : seule cette colonne scrolle, indépendamment des sidebars. ── */}
+        <div className="flex-1 min-w-0 max-w-2xl space-y-3 lg:space-y-5 lg:h-full lg:overflow-y-auto lg:pr-1"
+          style={{ scrollbarWidth: 'thin' }}>
 
           {/* Greeting — desktop uniquement, superflu sur mobile */}
           <div className="hidden lg:block animate-reveal-up">
@@ -3262,9 +3271,8 @@ export default function FeedPage() {
           )}
         </div>
 
-        {/* ── Right sidebar (lg+) ── */}
-        <div className="w-60 shrink-0 hidden lg:flex flex-col gap-4 sticky top-4"
-          style={{ height: 'calc(100vh - 2rem)', overflowY: 'auto', scrollbarWidth: 'none' }}>
+        {/* ── Right sidebar (lg+) — statique, ne scrolle jamais ── */}
+        <div className="w-60 shrink-0 hidden lg:flex flex-col gap-4">
           <SuggestionsPanel />
           <CommunitiesSidePanel />
         </div>
