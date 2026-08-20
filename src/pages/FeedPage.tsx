@@ -2300,17 +2300,47 @@ function UpcomingEventsPanel() {
 }
 
 // ── Trending panel ────────────────────────────────────────────────────────────
+const TRENDING_PAGE_SIZE = 4;
+
 function TrendingPanel() {
   const navigate = useNavigate();
   const [concerts, setConcerts] = useState<any[]>([]);
+  const [page,     setPage]     = useState(1);
+  const [hasMore,  setHasMore]  = useState(true);
+  const [loading,  setLoading]  = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    apiClient.get<any>(`${Endpoints.concerts.list}?limit=4&status=published`)
-      .then(res => setConcerts(toArray<any>(res.data).slice(0, 4)))
-      .catch(() => {});
+  const loadPage = useCallback((p: number) => {
+    setLoading(true);
+    apiClient.get<any>(`${Endpoints.concerts.list}?page=${p}&limit=${TRENDING_PAGE_SIZE}&status=published`)
+      .then(res => {
+        const list = toArray<any>(res.data);
+        setConcerts(prev => p === 1 ? list : [...prev, ...list]);
+        setHasMore(list.length === TRENDING_PAGE_SIZE);
+        setPage(p);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (concerts.length === 0) return null;
+  useEffect(() => { loadPage(1); }, [loadPage]);
+
+  // Scroll infini via IntersectionObserver sur un sentinel — se déclenche
+  // aussi bien au scroll qu'immédiatement si le premier lot ne remplit pas
+  // encore le container (sinon un listener "scroll" classique ne se
+  // déclenche jamais quand il n'y a physiquement rien à scroller).
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadPage(page + 1); },
+      { root: node.parentElement, rootMargin: '80px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, hasMore, page, loadPage]);
+
+  if (concerts.length === 0 && !loading) return null;
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -2321,7 +2351,7 @@ function TrendingPanel() {
         </div>
         <button onClick={() => navigate('/concerts')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
       </div>
-      <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+      <div className="divide-y overflow-y-auto" style={{ borderColor: 'var(--border)', maxHeight: 340, scrollbarWidth: 'thin' }}>
         {concerts.map((c: any, i: number) => (
           <div key={c.id}
             onClick={() => navigate(`/concerts/${encodeId(c.id)}`)}
@@ -2340,6 +2370,10 @@ function TrendingPanel() {
             </div>
           </div>
         ))}
+        <div ref={sentinelRef} />
+        {loading && (
+          <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+        )}
       </div>
     </div>
   );
