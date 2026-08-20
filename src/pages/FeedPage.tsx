@@ -2206,28 +2206,56 @@ function SuggestionsInline({ users, loading }: { users: any[]; loading: boolean 
 }
 
 // ── Upcoming events panel ─────────────────────────────────────────────────────
+const UPCOMING_PAGE_SIZE = 4;
+
 function UpcomingEventsPanel() {
   const navigate = useNavigate();
-  const [events, setEvents] = useState<any[]>([]);
+  const [events,   setEvents]   = useState<any[]>([]);
+  const [page,     setPage]     = useState(1);
+  const [hasMore,  setHasMore]  = useState(true);
+  const [loading,  setLoading]  = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const loadPage = useCallback((p: number) => {
+    setLoading(true);
     // upcoming_only=true — exclut les événements déjà passés côté backend (via
     // starts_at >= now dans la requête SQL), peu importe leur score de
     // pertinence (boost/follow/featured peuvent dépasser la pénalité
-    // temporelle d'un événement passé). Avant ce fix, le widget ne triait que
-    // les 4 résultats reçus par date, sans jamais garantir qu'ils étaient
-    // tous dans le futur — un événement passé mais boosté pouvait apparaître
-    // dans un widget intitulé "À venir".
-    apiClient.get<any>(`${Endpoints.events.list}?limit=4&status=published&upcoming_only=true`)
-      .then(res => setEvents(
-        toArray<any>(res.data)
-          .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
-          .slice(0, 4)
-      ))
-      .catch(() => {});
+    // temporelle d'un événement passé).
+    apiClient.get<any>(`${Endpoints.events.list}?page=${p}&limit=${UPCOMING_PAGE_SIZE}&status=published&upcoming_only=true`)
+      .then(res => {
+        // Le backend trie par score de pertinence (pas par date) — on retrie
+        // l'ensemble cumulé à chaque page pour garder un ordre chronologique
+        // cohérent à l'écran malgré la pagination par score.
+        const list = toArray<any>(res.data);
+        setEvents(prev => {
+          const combined = p === 1 ? list : [...prev, ...list];
+          return combined.sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+        });
+        setHasMore(list.length === UPCOMING_PAGE_SIZE);
+        setPage(p);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (events.length === 0) return null;
+  useEffect(() => { loadPage(1); }, [loadPage]);
+
+  // Scroll infini — charge la page suivante en approchant du bas du container.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function onScroll() {
+      if (loading || !hasMore) return;
+      if (el!.scrollTop + el!.clientHeight >= el!.scrollHeight - 40) {
+        loadPage(page + 1);
+      }
+    }
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [loading, hasMore, page, loadPage]);
+
+  if (events.length === 0 && !loading) return null;
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -2238,7 +2266,7 @@ function UpcomingEventsPanel() {
         </div>
         <button onClick={() => navigate('/events')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
       </div>
-      <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+      <div ref={scrollRef} className="divide-y overflow-y-auto" style={{ borderColor: 'var(--border)', maxHeight: 340, scrollbarWidth: 'thin' }}>
         {events.map((e: any) => {
           const color = EVENT_COLORS[e.event_type ?? 'other'] ?? EVENT_COLORS.other;
           return (
@@ -2261,6 +2289,9 @@ function UpcomingEventsPanel() {
             </div>
           );
         })}
+        {loading && (
+          <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+        )}
       </div>
     </div>
   );
@@ -2478,19 +2509,54 @@ function CommunitiesInline({ communities }: { communities: Community[] }) {
 }
 
 // ── Suggestions sidebar ───────────────────────────────────────────────────────
+const SUGGESTIONS_PAGE_SIZE = 5;
+
 function SuggestionsPanel() {
   const navigate = useNavigate();
   const [users,      setUsers]      = useState<any[]>([]);
   const [loading,    setLoading]    = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore,    setHasMore]    = useState(true);
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const loadMore = useCallback(() => {
+    setLoadingMore(true);
+    apiClient.get<any>(`${Endpoints.users.suggestions}?limit=${SUGGESTIONS_PAGE_SIZE}&offset=${users.length}`)
+      .then(res => {
+        const list = toArray<any>(res.data);
+        setUsers(prev => [...prev, ...list]);
+        setHasMore(list.length === SUGGESTIONS_PAGE_SIZE);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [users.length]);
 
   useEffect(() => {
-    apiClient.get<any>(`${Endpoints.users.suggestions}?limit=5`)
-      .then(res => setUsers(toArray(res.data)))
+    apiClient.get<any>(`${Endpoints.users.suggestions}?limit=${SUGGESTIONS_PAGE_SIZE}&offset=0`)
+      .then(res => {
+        const list = toArray<any>(res.data);
+        setUsers(list);
+        setHasMore(list.length === SUGGESTIONS_PAGE_SIZE);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Scroll infini — charge la page suivante en approchant du bas du container.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function onScroll() {
+      if (loadingMore || !hasMore) return;
+      if (el!.scrollTop + el!.clientHeight >= el!.scrollHeight - 40) {
+        loadMore();
+      }
+    }
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [loadingMore, hasMore, loadMore]);
 
   async function follow(userId: string) {
     if (followingIds.has(userId)) return;
@@ -2531,7 +2597,7 @@ function SuggestionsPanel() {
       ) : users.length === 0 ? (
         <p className="text-center py-8 text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucune suggestion</p>
       ) : (
-        <div className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
+        <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: 340, scrollbarWidth: 'thin' }}>
           {users.map((u: any, i: number) => {
             const isFollowed  = followedIds.has(u.id);
             const isFollowing = followingIds.has(u.id);
@@ -2570,6 +2636,9 @@ function SuggestionsPanel() {
             </div>
             );
           })}
+          {loadingMore && (
+            <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+          )}
         </div>
       )}
     </div>
