@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Zap, Globe, Lock, Search, X, Plus } from 'lucide-react';
 import { apiClient } from '../../api';
@@ -108,6 +108,19 @@ export default function DiscoverCommunitiesPage() {
 
   useEffect(() => { load(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Scroll infini via IntersectionObserver sur un sentinel en fin de liste.
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || loadingMore || !hasMore || query) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) load(false); },
+      { rootMargin: '200px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, loadingMore, hasMore, query, load]);
+
   async function join(id: string) {
     try { await apiClient.post(Endpoints.communities.join(id)); setJoinedIds(s => new Set(s).add(id)); }
     catch { /**/ }
@@ -200,14 +213,8 @@ export default function DiscoverCommunitiesPage() {
           {renderSection(rest,    <Globe size={14} style={{ color: 'var(--primary)' }} />, 'Toutes les communautés', 'Découvre et rejoins des communautés')}
 
           {hasMore && !query && (
-            <div className="flex justify-center py-6">
-              <button onClick={() => load(false)} disabled={loadingMore}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all"
-                style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(123,63,242,0.1)'; e.currentTarget.style.color = 'var(--primary)'; }}>
-                {loadingMore ? <Spinner size="sm" /> : 'Charger plus'}
-              </button>
+            <div ref={sentinelRef} className="flex justify-center py-6">
+              {loadingMore && <Spinner size="sm" />}
             </div>
           )}
         </div>
