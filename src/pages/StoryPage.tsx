@@ -6,10 +6,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { decodeId } from '../utils/slugId';
+import { decodeId, encodeId } from '../utils/slugId';
 import {
-  X, ChevronLeft, ChevronRight, Eye, MoreHorizontal,
-  Edit3, Trash2, Zap, ExternalLink, Heart,
+  X, ChevronRight, Eye, MoreHorizontal,
+  Edit3, Trash2, Zap, ExternalLink, Heart, Send, Bookmark,
+  MessageCircle,
 } from 'lucide-react';
 import Hls from 'hls.js';
 import { apiClient } from '../api';
@@ -20,6 +21,7 @@ import { Spinner , PageLoader} from '../components/ui/Spinner';
 import { HeartRain, LikeNamesFeed } from '../components/ui/HeartRain';
 import { formatTimeAgo } from '../utils/date';
 import { useAuthStore } from '../store/authStore';
+import { useWs } from '../context/WebSocketContext';
 import type { StoryGroup } from '../types';
 import { StoryOverlaysRenderer } from '../utils/reelFilters.tsx';
 
@@ -159,6 +161,9 @@ function StoryViewer({
   onClose: () => void;
   onReload: () => void;
 }) {
+  const navigate = useNavigate();
+  const { addListener, removeListener } = useWs();
+
   const [groupIdx,     setGroupIdx]     = useState(initialIndex);
   const [storyIdx,     setStoryIdx]     = useState(initialStoryIndex);
   const [progress,     setProgress]     = useState(0);
@@ -168,12 +173,24 @@ function StoryViewer({
   const [editText,     setEditText]     = useState('');
   const [localGroups,  setLocalGroups]  = useState(groups);
   const [viewers,      setViewers]      = useState<any[]>([]);
+  const [replies,      setReplies]      = useState<any[]>([]);
   const [viewersOpen,    setViewersOpen]    = useState(false);
   const [viewersLoading, setViewersLoading] = useState(false);
+  const [viewersTab,     setViewersTab]     = useState<'views' | 'replies'>('views');
   const [showAd,       setShowAd]       = useState(false);
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [adProgress,   setAdProgress]   = useState(0);
   const [containerSize, setContainerSize] = useState({ w: 500, h: window.innerHeight });
+  // Répondre à une story (input façon WhatsApp)
+  const [replyText,    setReplyText]    = useState('');
+  const [replySending, setReplySending] = useState(false);
+  const [replySent,    setReplySent]    = useState(false);
+  // Double-tap pour liker (mobile-like) + animation cœur
+  const [showHeartAnim, setShowHeartAnim] = useState(false);
+  const lastTapRef = useRef<{ time: number; x: number } | null>(null);
+  // Sauvegarder une story (favoris backend, target_type="story")
+  const [saved,        setSaved]        = useState(false);
+  const [saving,        setSaving]      = useState(false);
   const containerRef   = useRef<HTMLDivElement>(null);
   const storyAudioRef  = useRef<HTMLAudioElement | null>(null);
   const nextGroupRef   = useRef(0);
@@ -215,6 +232,107 @@ function StoryViewer({
       })
       .finally(() => { likeInFlight.current = false; });
   }, [story, isOwn, liked]);
+
+  // Swipe tactile — pertinent pour les visiteurs web sur mobile/tablette
+  // (navigateur), pas seulement l'app native. Vertical vers le bas -> ferme,
+  // horizontal -> change de groupe (comme les avatars latéraux/flèches).
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const t = e.touches[0];
+    const dy = t.clientY - touchStartRef.current.y;
+    if (dy > 0) setSwipeOffset(dy); // feedback visuel seulement pour le swipe vertical (fermeture)
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    setSwipeOffset(0);
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const SWIPE_THRESHOLD = 80;
+    if (Math.abs(dy) > Math.abs(dx) && dy > SWIPE_THRESHOLD) {
+      onClose();
+    } else if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
+      if (dx > 0 && groupIdx > 0) { setGroupIdx(g => g - 1); setStoryIdx(0); }
+      else if (dx < 0 && groupIdx < localGroups.length - 1) { setGroupIdx(g => g + 1); setStoryIdx(0); }
+    }
+  }, [onClose, groupIdx, localGroups.length]);
+
+  // Double-tap (zone média) pour liker, identique mobile — sans dupliquer un
+  // like déjà posé par le simple tap sur le bouton cœur.
+  const handleMediaTap = useCallback((clientX: number) => {
+    const now = Date.now();
+    const last = lastTapRef.current;
+    lastTapRef.current = { time: now, x: clientX };
+    if (last && now - last.time < 300 && Math.abs(clientX - last.x) < 40) {
+      if (!isOwn && !liked) handleToggleLike();
+      setShowHeartAnim(true);
+      setTimeout(() => setShowHeartAnim(false), 800);
+    }
+  }, [isOwn, liked, handleToggleLike]);
+
+  // Resync `saved` à chaque changement de story — pas de vérification serveur
+  // au chargement (même pattern que PostDetailPage.tsx), état optimiste pur.
+  useEffect(() => { setSaved(false); }, [story?.id]);
+
+  const handleToggleSave = useCallback(async () => {
+    if (!story || saving) return;
+    setSaving(true);
+    try {
+      if (saved) {
+        await apiClient.delete(Endpoints.favorites.remove('story', story.id));
+        setSaved(false);
+      } else {
+        await apiClient.post(Endpoints.favorites.add, { target_type: 'story', target_id: story.id });
+        setSaved(true);
+      }
+    } catch { toast.error('Erreur'); }
+    finally { setSaving(false); }
+  }, [story, saved, saving]);
+
+  const handleSendReply = useCallback(async () => {
+    if (!story || !replyText.trim() || replySending) return;
+    setReplySending(true);
+    try {
+      await apiClient.post(Endpoints.stories.reply(story.id), { text: replyText.trim() });
+      setReplyText('');
+      setReplySent(true);
+      setPaused(false);
+      setTimeout(() => setReplySent(false), 2500);
+    } catch { toast.error('Erreur envoi'); }
+    finally { setReplySending(false); }
+  }, [story, replyText, replySending]);
+
+  const handleQuickHeartReply = useCallback(() => {
+    if (!story || replySending) return;
+    setReplySending(true);
+    apiClient.post(Endpoints.stories.reply(story.id), { text: '❤️' })
+      .then(() => { setReplySent(true); setTimeout(() => setReplySent(false), 2500); })
+      .catch(() => toast.error('Erreur envoi'))
+      .finally(() => setReplySending(false));
+  }, [story, replySending]);
+
+  // Notification temps réel WS quand quelqu'un like une propre story —
+  // évite d'avoir à recharger la page pour voir un like arriver.
+  useEffect(() => {
+    const handler = (payload: any) => {
+      if (payload.type !== 'story_liked' || payload.story_id !== story?.id) return;
+      toast.success(`${payload.liker_display_name ?? payload.liker_username} a aimé ta story`);
+      setLikeCount(payload.like_count ?? 0);
+    };
+    addListener(handler);
+    return () => removeListener(handler);
+  }, [story?.id, addListener, removeListener]);
 
   const adIsVideo = !!(storyAd?.format === 'video' || (storyAd?.creative_url && (
     storyAd.creative_url.includes('.m3u8') ||
@@ -351,12 +469,17 @@ function StoryViewer({
   }, [storyIdx, groupIdx]);
 
   async function openViewers() {
-    setPaused(true); setViewersOpen(true); setViewersLoading(true);
+    setPaused(true); setViewersOpen(true); setViewersTab('views'); setViewersLoading(true);
     try {
-      const vRes = await apiClient.get<any>(Endpoints.stories.viewers(story!.id));
+      const [vRes, rRes] = await Promise.all([
+        apiClient.get<any>(Endpoints.stories.viewers(story!.id)),
+        apiClient.get<any>(Endpoints.stories.replies(story!.id)).catch(() => ({ data: [] })),
+      ]);
       const raw = vRes.data;
       setViewers(Array.isArray(raw) ? raw : raw?.items ?? []);
-    } catch { setViewers([]); }
+      const rawReplies = rRes.data;
+      setReplies(Array.isArray(rawReplies) ? rawReplies : rawReplies?.items ?? []);
+    } catch { setViewers([]); setReplies([]); }
     setViewersLoading(false);
   }
 
@@ -483,8 +606,16 @@ function StoryViewer({
       <div
         ref={containerRef}
         className="relative z-10 w-full max-w-[500px] bg-black"
-        style={{ height: '100dvh', maxHeight: '100dvh' }}
+        style={{
+          height: '100dvh', maxHeight: '100dvh',
+          transform: swipeOffset ? `translateY(${swipeOffset}px)` : undefined,
+          opacity: swipeOffset ? Math.max(1 - swipeOffset / 400, 0.3) : 1,
+          transition: swipeOffset ? 'none' : 'transform 0.2s ease, opacity 0.2s ease',
+        }}
         onClick={e => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Progress bars */}
         <div className="absolute top-0 inset-x-0 z-30 flex gap-1 px-3 pt-3">
@@ -520,7 +651,8 @@ function StoryViewer({
         {/* Media */}
         <div className="absolute inset-0"
           onMouseDown={() => setPaused(true)} onMouseUp={() => setPaused(false)}
-          onTouchStart={() => setPaused(true)} onTouchEnd={() => setPaused(false)}>
+          onTouchStart={() => setPaused(true)} onTouchEnd={() => setPaused(false)}
+          onClick={e => handleMediaTap(e.clientX)}>
           {story.media_type === 'video' && story.media_url ? (
             <>
               {/* Fond flouté agrandi — comble l'espace autour d'une vidéo dont le
@@ -613,39 +745,114 @@ function StoryViewer({
           </button>
         )}
 
-        {/* Like — visible pour les non-propriétaires */}
+        {/* Like + Sauvegarder — visibles pour les non-propriétaires, au-dessus
+            de l'input de réponse (voir plus bas) au lieu de bottom-5 fixe. */}
         {!isOwn && (
-          <button onClick={handleToggleLike}
-            className="absolute bottom-5 right-5 z-20 flex items-center gap-1.5 px-3 py-2 rounded-full transition-all"
-            style={{ background: liked ? 'rgba(224,56,154,0.3)' : 'rgba(0,0,0,0.55)' }}>
-            <Heart size={16} fill={liked ? '#E0389A' : 'none'} className={liked ? '' : 'text-white'} style={liked ? { color: '#E0389A' } : undefined} />
-            {likeCount > 0 && <span className="text-white text-xs font-bold">{likeCount}</span>}
-          </button>
+          <div className="absolute right-5 z-20 flex items-center gap-2" style={{ bottom: 74 }}>
+            <button onClick={handleToggleSave} disabled={saving}
+              className="flex items-center justify-center p-2 rounded-full transition-all"
+              style={{ background: saved ? 'rgba(123,63,242,0.3)' : 'rgba(0,0,0,0.55)' }}>
+              <Bookmark size={16} fill={saved ? '#a78bfa' : 'none'} style={{ color: saved ? '#a78bfa' : '#fff' }} />
+            </button>
+            <button onClick={handleToggleLike}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full transition-all"
+              style={{ background: liked ? 'rgba(224,56,154,0.3)' : 'rgba(0,0,0,0.55)' }}>
+              <Heart size={16} fill={liked ? '#E0389A' : 'none'} className={liked ? '' : 'text-white'} style={liked ? { color: '#E0389A' } : undefined} />
+              {likeCount > 0 && <span className="text-white text-xs font-bold">{likeCount}</span>}
+            </button>
+          </div>
         )}
 
         {/* Pluie de cœurs + avatars des derniers likers — story très aimée (≥1000 likes) */}
         <HeartRain active={!paused} likeCount={likeCount} contentId={story.id} />
         <LikeNamesFeed active={!paused} likeCount={likeCount} contentId={story.id} kind="story" />
 
-        {/* Tap zones */}
-        <button className="absolute left-0 top-0 w-1/3 h-full z-10 opacity-0" onClick={goPrev} />
-        <button className="absolute right-0 top-0 w-1/3 h-full z-10 opacity-0" onClick={goNext} />
+        {/* Double-tap heart — animation ponctuelle, identique mobile */}
+        {showHeartAnim && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+            <Heart size={96} fill="#E0389A" style={{ color: '#E0389A', animation: 'story-heart-pop 0.8s ease-out' }} />
+            <style>{`
+              @keyframes story-heart-pop {
+                0%   { transform: scale(0.4); opacity: 0; }
+                30%  { transform: scale(1.15); opacity: 1; }
+                50%  { transform: scale(1); opacity: 1; }
+                100% { transform: scale(1); opacity: 0; }
+              }
+            `}</style>
+          </div>
+        )}
 
-        {/* Flèches groupes */}
+        {/* Tap zones — laisse une bande basse libre pour l'input de réponse */}
+        <button className="absolute left-0 top-0 w-1/3 z-10 opacity-0" style={{ bottom: 64 }} onClick={goPrev} />
+        <button className="absolute right-0 top-0 w-1/3 z-10 opacity-0" style={{ bottom: 64 }} onClick={goNext} />
+
+        {/* Répondre à une story — input façon WhatsApp, identique mobile */}
+        {!isOwn && (
+          <div className="absolute bottom-0 inset-x-0 z-30 flex items-center gap-2 px-4 pb-4"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex-1 flex items-center gap-2 rounded-full px-4 py-2.5"
+              style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <input
+                value={replyText}
+                onChange={e => setReplyText(e.target.value)}
+                onFocus={() => setPaused(true)}
+                onBlur={() => setPaused(false)}
+                onKeyDown={e => e.key === 'Enter' && handleSendReply()}
+                placeholder={`Répondre à ${author.display_name ?? author.username}…`}
+                className="flex-1 bg-transparent outline-none text-white text-sm placeholder-white/50"
+              />
+            </div>
+            {replyText.trim() ? (
+              <button onClick={handleSendReply} disabled={replySending}
+                className="w-10 h-10 flex items-center justify-center rounded-full shrink-0"
+                style={{ background: '#7B3FF2' }}>
+                {replySending ? <Spinner size="sm" /> : <Send size={16} className="text-white" />}
+              </button>
+            ) : (
+              <button onClick={handleQuickHeartReply} disabled={replySending}
+                className="w-10 h-10 flex items-center justify-center rounded-full shrink-0"
+                style={{ background: 'rgba(255,255,255,0.12)' }}>
+                <Heart size={18} className="text-white" />
+              </button>
+            )}
+          </div>
+        )}
+        {replySent && (
+          <div className="absolute bottom-16 inset-x-0 z-30 flex justify-center pointer-events-none">
+            <span className="text-white text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: 'rgba(0,0,0,0.7)' }}>
+              Message envoyé
+            </span>
+          </div>
+        )}
+
+        {/* Groupe précédent — avatar nommé (identique mobile), avec flèche
+            de secours pour le clic direct (le viewer, centré et étroit sur
+            desktop, laisse peu de place à côté du cadre pour un vrai rail
+            d'avatars comme sur mobile plein écran). */}
         {groupIdx > 0 && (
           <button
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.18)' }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1"
             onClick={() => { setGroupIdx(g => g - 1); setStoryIdx(0); }}>
-            <ChevronLeft size={18} className="text-white" />
+            <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <Avatar src={localGroups[groupIdx - 1].user.avatar_url}
+                name={localGroups[groupIdx - 1].user.display_name ?? localGroups[groupIdx - 1].user.username ?? ''} size="sm" />
+            </div>
+            <span className="text-white text-[10px] font-semibold max-w-[64px] truncate" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+              {localGroups[groupIdx - 1].user.display_name ?? localGroups[groupIdx - 1].user.username}
+            </span>
           </button>
         )}
         {groupIdx < localGroups.length - 1 && (
           <button
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.18)' }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1"
             onClick={() => { setGroupIdx(g => g + 1); setStoryIdx(0); }}>
-            <ChevronRight size={18} className="text-white" />
+            <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <Avatar src={localGroups[groupIdx + 1].user.avatar_url}
+                name={localGroups[groupIdx + 1].user.display_name ?? localGroups[groupIdx + 1].user.username ?? ''} size="sm" />
+            </div>
+            <span className="text-white text-[10px] font-semibold max-w-[64px] truncate" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+              {localGroups[groupIdx + 1].user.display_name ?? localGroups[groupIdx + 1].user.username}
+            </span>
           </button>
         )}
 
@@ -708,7 +915,7 @@ function StoryViewer({
           </div>
         )}
 
-        {/* Viewers */}
+        {/* Viewers + Réponses (propriétaire uniquement pour l'onglet Réponses) */}
         {viewersOpen && (
           <div className="absolute inset-0 z-40" style={{ background: 'rgba(0,0,0,0.6)' }}
             onClick={() => { setViewersOpen(false); setPaused(false); }}>
@@ -716,27 +923,64 @@ function StoryViewer({
               style={{ background: '#12121E', maxHeight: '65%' }}
               onClick={e => e.stopPropagation()}>
               <div className="w-9 h-1 rounded-full mx-auto mt-3 mb-2" style={{ background: 'rgba(255,255,255,0.2)' }} />
-              <div className="flex items-center gap-2 px-5 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                <Eye size={15} style={{ color: '#7B3FF2' }} />
-                <p className="text-white font-black">{viewers.length} vue{viewers.length !== 1 ? 's' : ''}</p>
+              <div className="flex items-center gap-4 px-5 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <button onClick={() => setViewersTab('views')}
+                  className="flex items-center gap-1.5 pb-2 text-sm font-bold"
+                  style={{ color: viewersTab === 'views' ? '#fff' : 'rgba(255,255,255,0.4)',
+                    borderBottom: viewersTab === 'views' ? '2px solid #7B3FF2' : '2px solid transparent' }}>
+                  <Eye size={14} /> {viewers.length} vue{viewers.length !== 1 ? 's' : ''}
+                </button>
+                <button onClick={() => setViewersTab('replies')}
+                  className="flex items-center gap-1.5 pb-2 text-sm font-bold"
+                  style={{ color: viewersTab === 'replies' ? '#fff' : 'rgba(255,255,255,0.4)',
+                    borderBottom: viewersTab === 'replies' ? '2px solid #7B3FF2' : '2px solid transparent' }}>
+                  <MessageCircle size={14} /> {replies.length} réponse{replies.length !== 1 ? 's' : ''}
+                </button>
               </div>
               <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
                 {viewersLoading ? (
                   <div className="flex justify-center py-8"><Spinner size="sm" /></div>
-                ) : viewers.length === 0 ? (
-                  <div className="flex flex-col items-center py-10 gap-2 opacity-40">
-                    <Eye size={32} className="text-white" />
-                    <p className="text-white text-sm">Aucune vue pour l'instant</p>
-                  </div>
-                ) : viewers.map((v: any) => (
-                  <div key={v.id} className="flex items-center gap-3 px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <Avatar src={v.avatar_url} name={v.display_name ?? v.username ?? '?'} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-semibold truncate">{v.display_name ?? v.username}</p>
-                      <p className="text-white/40 text-xs">@{v.username}</p>
+                ) : viewersTab === 'views' ? (
+                  viewers.length === 0 ? (
+                    <div className="flex flex-col items-center py-10 gap-2 opacity-40">
+                      <Eye size={32} className="text-white" />
+                      <p className="text-white text-sm">Aucune vue pour l'instant</p>
                     </div>
-                  </div>
-                ))}
+                  ) : viewers.map((v: any) => (
+                    <div key={v.id} className="flex items-center gap-3 px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <Avatar src={v.avatar_url} name={v.display_name ?? v.username ?? '?'} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">{v.display_name ?? v.username}</p>
+                        <p className="text-white/40 text-xs">@{v.username}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  replies.length === 0 ? (
+                    <div className="flex flex-col items-center py-10 gap-2 opacity-40">
+                      <MessageCircle size={32} className="text-white" />
+                      <p className="text-white text-sm">Aucune réponse pour l'instant</p>
+                    </div>
+                  ) : replies.map((r: any) => (
+                    <div key={r.id} className="flex items-center gap-3 px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <button onClick={() => navigate(`/user/${encodeId(r.sender.id)}`)} className="shrink-0">
+                        <Avatar src={r.sender?.avatar_url} name={r.sender?.display_name ?? r.sender?.username ?? '?'} size="sm" />
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">{r.sender?.display_name ?? r.sender?.username}</p>
+                        <p className="text-white/60 text-xs truncate">{r.content}</p>
+                      </div>
+                      {/* Pas de bouton appel audio/vidéo — le web n'a pas
+                          (encore) de système d'appel, contrairement au
+                          mobile. Seul le chat (route /messages réelle)
+                          est proposé pour éviter un bouton mort. */}
+                      <button onClick={() => navigate(`/messages/${encodeId(r.sender.id)}`)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                        <MessageCircle size={14} className="text-white" />
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

@@ -130,6 +130,8 @@ export const Endpoints = {
     likers:  (id: string) => `${V1}/stories/${id}/likers`,
     viewers: (id: string) => `${V1}/stories/${id}/viewers`,
     delete:  (id: string) => `${V1}/stories/${id}`,
+    reply:   (id: string) => `${V1}/stories/${id}/reply`,
+    replies: (id: string) => `${V1}/stories/${id}/replies`,
   },
   messages: {
     conversations:      `${V1}/messages/conversations`,
@@ -297,6 +299,7 @@ export const Endpoints = {
     ranking:       (id: string) => `${V1}/battles/${id}/ranking`,
     createGoal:    (id: string) => `${V1}/battles/${id}/goals`,
     activeGoal:    (id: string) => `${V1}/battles/${id}/goals/active`,
+    recording:     (id: string) => `${V1}/battles/${id}/recording`,
   },
   tournaments: {
     open:               `${V1}/tournaments/open`,
