@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import { Spinner } from './Spinner';
 
 export type ShareTargetType = 'post' | 'event' | 'concert' | 'reel' | 'content' | 'live' | 'tournament';
 
@@ -102,49 +103,113 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
   // MessagesPopover.tsx.
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConvos, setLoadingConvos] = useState(false);
+  const [convosPage,        setConvosPage]        = useState(1);
+  const [convosHasMore,     setConvosHasMore]     = useState(true);
+  const [convosLoadingMore, setConvosLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState<ContactUser[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchPage,        setSearchPage]        = useState(1);
+  const [searchHasMore,     setSearchHasMore]     = useState(true);
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
   const [sendingTo, setSendingTo] = useState<Set<string>>(new Set());
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
   const fetchedConvos = useRef(false);
+  const contactsScrollRef = useRef<HTMLDivElement>(null);
+  const contactsSentinelRef = useRef<HTMLDivElement>(null);
   const canSendInternally = INTERNAL_SHARE_TYPES.has(targetType);
+  const CONTACTS_PAGE_SIZE = 15;
 
   useEffect(() => {
     if (!open || !canSendInternally || fetchedConvos.current) return;
     fetchedConvos.current = true;
     setLoadingConvos(true);
-    apiClient.get<unknown>(Endpoints.messages.conversations)
+    apiClient.get<unknown>(`${Endpoints.messages.conversations}?page=1&limit=${CONTACTS_PAGE_SIZE}`)
       .then(res => {
         const raw = res.data as any;
         const list: any[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
-        setConversations(list.filter(c => c?.user?.id));
+        const filtered = list.filter(c => c?.user?.id);
+        setConversations(filtered);
+        setConvosHasMore(filtered.length === CONTACTS_PAGE_SIZE);
       })
       .catch(() => {})
       .finally(() => setLoadingConvos(false));
   }, [open, canSendInternally]);
 
+  const loadMoreConvos = useCallback(() => {
+    if (convosLoadingMore || !convosHasMore) return;
+    setConvosLoadingMore(true);
+    const nextPage = convosPage + 1;
+    apiClient.get<unknown>(`${Endpoints.messages.conversations}?page=${nextPage}&limit=${CONTACTS_PAGE_SIZE}`)
+      .then(res => {
+        const raw = res.data as any;
+        const list: any[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
+        const filtered = list.filter(c => c?.user?.id);
+        setConversations(prev => [...prev, ...filtered]);
+        setConvosHasMore(filtered.length === CONTACTS_PAGE_SIZE);
+        setConvosPage(nextPage);
+      })
+      .catch(() => setConvosHasMore(false))
+      .finally(() => setConvosLoadingMore(false));
+  }, [convosPage, convosHasMore, convosLoadingMore]);
+
   useEffect(() => {
     if (!open || !canSendInternally) return;
     const q = search.trim();
-    if (!q) { setSearchResults([]); return; }
+    if (!q) { setSearchResults([]); setSearchHasMore(true); return; }
     const t = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await apiClient.get<unknown>(`${Endpoints.search.query}?q=${encodeURIComponent(q)}&type=users&limit=15`);
+        const res = await apiClient.get<unknown>(`${Endpoints.search.query}?q=${encodeURIComponent(q)}&type=users&page=1&limit=${CONTACTS_PAGE_SIZE}`);
         const raw = res.data as any;
         const list: ContactUser[] = Array.isArray(raw?.users) ? raw.users : Array.isArray(raw) ? raw : [];
-        setSearchResults(list.filter(u => u?.id));
+        const filtered = list.filter(u => u?.id);
+        setSearchResults(filtered);
+        setSearchPage(1);
+        setSearchHasMore(filtered.length === CONTACTS_PAGE_SIZE);
       } catch { setSearchResults([]); }
       finally { setSearching(false); }
     }, 350);
     return () => clearTimeout(t);
   }, [search, open, canSendInternally]);
 
+  const loadMoreSearch = useCallback(() => {
+    if (searchLoadingMore || !searchHasMore || !search.trim()) return;
+    setSearchLoadingMore(true);
+    const nextPage = searchPage + 1;
+    apiClient.get<unknown>(`${Endpoints.search.query}?q=${encodeURIComponent(search.trim())}&type=users&page=${nextPage}&limit=${CONTACTS_PAGE_SIZE}`)
+      .then(res => {
+        const raw = res.data as any;
+        const list: ContactUser[] = Array.isArray(raw?.users) ? raw.users : Array.isArray(raw) ? raw : [];
+        const filtered = list.filter(u => u?.id);
+        setSearchResults(prev => [...prev, ...filtered]);
+        setSearchHasMore(filtered.length === CONTACTS_PAGE_SIZE);
+        setSearchPage(nextPage);
+      })
+      .catch(() => setSearchHasMore(false))
+      .finally(() => setSearchLoadingMore(false));
+  }, [search, searchPage, searchHasMore, searchLoadingMore]);
+
   // Reset à la fermeture — rouvrir sur un autre contenu doit repartir propre
   useEffect(() => {
     if (!open) { setSentTo(new Set()); setSendingTo(new Set()); setSearch(''); setSearchResults([]); }
   }, [open]);
+
+  // Scroll infini HORIZONTAL — la liste de contacts défile en x, pas en y
+  // comme les autres listes de l'app (voir overflow-x-auto dans le JSX).
+  const isSearchingActive = search.trim().length > 0;
+  useEffect(() => {
+    const node = contactsSentinelRef.current;
+    const hasMore = isSearchingActive ? searchHasMore : convosHasMore;
+    const loading = isSearchingActive ? searching : loadingConvos;
+    if (!node || !canSendInternally || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) (isSearchingActive ? loadMoreSearch() : loadMoreConvos()); },
+      { root: contactsScrollRef.current, rootMargin: '80px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [canSendInternally, isSearchingActive, searchHasMore, convosHasMore, searching, loadingConvos, loadMoreSearch, loadMoreConvos]);
 
   const sendToUser = useCallback(async (userId: string) => {
     if (sendingTo.has(userId) || sentTo.has(userId)) return;
@@ -297,7 +362,7 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
                   {isSearching ? 'Aucun utilisateur trouvé' : 'Aucune conversation récente'}
                 </p>
               ) : (
-                <div className="flex gap-3 px-4 pb-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                <div ref={contactsScrollRef} className="flex gap-3 px-4 pb-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                   {contactList.map(u => {
                     const sending = sendingTo.has(u.id);
                     const sent = sentTo.has(u.id);
@@ -322,6 +387,12 @@ export function ShareModal({ open, onClose, url, title, desc, image, targetType,
                       </button>
                     );
                   })}
+                  <div ref={contactsSentinelRef} className="shrink-0" style={{ width: 1 }} />
+                  {(isSearchingActive ? searchLoadingMore : convosLoadingMore) && (
+                    <div className="shrink-0 flex items-center justify-center" style={{ width: 56 }}>
+                      <Spinner size="sm" />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

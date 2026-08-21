@@ -800,29 +800,65 @@ function MiniConvoList({
 
 // ── NewConvoModal (mini) ──────────────────────────────────────────────────────
 
+const NEW_CONVO_PAGE_SIZE = 10;
+
 function MiniNewConvoModal({ onClose, onSelect }: {
   onClose: () => void; onSelect: (id: string) => void;
 }) {
   const [query,    setQuery]    = useState('');
   const [results,  setResults]  = useState<UserPublic[]>([]);
   const [searching,setSearching]= useState(false);
+  const [searchPage,       setSearchPage]       = useState(1);
+  const [searchHasMore,    setSearchHasMore]    = useState(true);
+  const [searchLoadingMore,setSearchLoadingMore]= useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   useEffect(() => {
-    if (!query.trim()) { setResults([]); return; }
+    if (!query.trim()) { setResults([]); setSearchHasMore(true); return; }
     const t = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await apiClient.get<unknown>(`${Endpoints.search.query}?q=${encodeURIComponent(query.trim())}&limit=10`);
+        const res = await apiClient.get<unknown>(`${Endpoints.search.query}?q=${encodeURIComponent(query.trim())}&page=1&limit=${NEW_CONVO_PAGE_SIZE}`);
         const raw = res.data as any;
-        setResults(Array.isArray(raw?.users) ? raw.users : norm<UserPublic>(raw));
+        const list = Array.isArray(raw?.users) ? raw.users : norm<UserPublic>(raw);
+        setResults(list);
+        setSearchPage(1);
+        setSearchHasMore(list.length === NEW_CONVO_PAGE_SIZE);
       } catch { setResults([]); }
       finally { setSearching(false); }
     }, 350);
     return () => clearTimeout(t);
   }, [query]);
+
+  const loadMoreResults = useCallback(() => {
+    if (searchLoadingMore || !searchHasMore || !query.trim()) return;
+    setSearchLoadingMore(true);
+    const nextPage = searchPage + 1;
+    apiClient.get<unknown>(`${Endpoints.search.query}?q=${encodeURIComponent(query.trim())}&page=${nextPage}&limit=${NEW_CONVO_PAGE_SIZE}`)
+      .then(res => {
+        const raw = res.data as any;
+        const list = Array.isArray(raw?.users) ? raw.users : norm<UserPublic>(raw);
+        setResults(prev => [...prev, ...list]);
+        setSearchHasMore(list.length === NEW_CONVO_PAGE_SIZE);
+        setSearchPage(nextPage);
+      })
+      .catch(() => setSearchHasMore(false))
+      .finally(() => setSearchLoadingMore(false));
+  }, [query, searchPage, searchHasMore, searchLoadingMore]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || searching || !searchHasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreResults(); },
+      { rootMargin: '80px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [searching, searchHasMore, loadMoreResults]);
 
   return (
     <div className="flex flex-col h-full">
@@ -867,6 +903,8 @@ function MiniNewConvoModal({ onClose, onSelect }: {
             </div>
           </button>
         ))}
+        {query.trim() && <div ref={sentinelRef} />}
+        {searchLoadingMore && <div className="flex justify-center py-2"><Spinner size="sm" /></div>}
       </div>
     </div>
   );
