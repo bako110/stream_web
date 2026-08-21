@@ -803,7 +803,10 @@ export default function StoryEditorPage() {
   // ── RENDER ────────────────────────────────────────────────────────────────
 
   if (showCrop && rawSrc) {
-    return <CropTool imgSrc={rawSrc} onDone={onCropDone} onCancel={() => { setShowCrop(false); setMode('pick'); }} />;
+    // Rouvrir "Recadrer" doit repartir du dernier résultat déjà recadré
+    // (mediaSrc), pas de l'image brute d'origine (rawSrc) — sinon toute
+    // révision précédente est silencieusement perdue à chaque réouverture.
+    return <CropTool imgSrc={mediaSrc ?? rawSrc} onDone={onCropDone} onCancel={() => { setShowCrop(false); setMode('pick'); }} />;
   }
 
   if (success) {
