@@ -149,7 +149,7 @@ function ToolbarBtn({
 
 interface CropToolProps {
   imgSrc: string;
-  onDone: (cropped: string) => void;
+  onDone: (cropped: string, landscape: boolean) => void;
   onCancel: () => void;
 }
 
@@ -328,7 +328,7 @@ function CropTool({ imgSrc, onDone, onCancel }: CropToolProps) {
       sx + crop.x * scale, sy + crop.y * scale, crop.w * scale, crop.h * scale,
       0, 0, out.width, out.height,
     );
-    onDone(out.toDataURL('image/jpeg', 0.92));
+    onDone(out.toDataURL('image/jpeg', 0.92), canvasSize.w > canvasSize.h);
   }
 
   return (
@@ -374,6 +374,12 @@ export default function StoryEditorPage() {
   const [mediaSrc, setMediaSrc] = useState<string | null>(null); // after crop
   const [rawSrc, setRawSrc] = useState<string | null>(null);     // before crop
   const [showCrop, setShowCrop] = useState(false);
+  // Format du stage (canvas + zone d'édition) — 9:16 par défaut, passe en
+  // 16:9 pour un média manifestement paysage (photo recadrée en 16:9, ou
+  // vidéo dont les métadonnées indiquent une largeur > hauteur). Sans ça la
+  // zone d'édition restait figée en 9:16 quel que soit le format réel du
+  // média, écrasant/rognant fortement un contenu paysage.
+  const [stageLandscape, setStageLandscape] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // ── Text mode bg ──
@@ -470,14 +476,22 @@ export default function StoryEditorPage() {
     } else {
       setMediaSrc(url);
       setMode('video');
+      // Détecte l'orientation via les métadonnées vidéo (videoWidth/Height
+      // ne sont dispo qu'après leur chargement) pour adapter le stage —
+      // sans ça une vidéo paysage restait figée dans un cadre 9:16.
+      const probe = document.createElement('video');
+      probe.preload = 'metadata';
+      probe.onloadedmetadata = () => setStageLandscape(probe.videoWidth > probe.videoHeight);
+      probe.src = url;
     }
     e.target.value = '';
   }
 
   // ── Crop done ────────────────────────────────────────────────────────────
 
-  function onCropDone(dataUrl: string) {
+  function onCropDone(dataUrl: string, landscape: boolean) {
     setMediaSrc(dataUrl);
+    setStageLandscape(landscape);
     setShowCrop(false);
   }
 
@@ -497,8 +511,9 @@ export default function StoryEditorPage() {
     const el = canvasAreaRef.current;
     if (!el) return [0, 0];
     const rect = el.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width * CANVAS_W;
-    const py = (e.clientY - rect.top) / rect.height * CANVAS_H;
+    const [stageW, stageH] = stageLandscape ? [CANVAS_H, CANVAS_W] : [CANVAS_W, CANVAS_H];
+    const px = (e.clientX - rect.left) / rect.width * stageW;
+    const py = (e.clientY - rect.top) / rect.height * stageH;
     return [px, py];
   }
 
@@ -940,8 +955,8 @@ export default function StoryEditorPage() {
           className="relative rounded-2xl overflow-hidden"
           style={{
             width: '100%',
-            maxWidth: 420,
-            aspectRatio: '9/16',
+            maxWidth: stageLandscape && !isTextMode ? 640 : 420,
+            aspectRatio: stageLandscape && !isTextMode ? '16/9' : '9/16',
             cursor: tool === 'draw' ? 'crosshair' : tool === 'mask' ? 'crosshair' : 'default',
             touchAction: 'none',
           }}
@@ -960,7 +975,8 @@ export default function StoryEditorPage() {
 
           {/* Draw SVG */}
           <svg ref={overlayRef} className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}
-            viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} preserveAspectRatio="none">
+            viewBox={stageLandscape && !isTextMode ? `0 0 ${CANVAS_H} ${CANVAS_W}` : `0 0 ${CANVAS_W} ${CANVAS_H}`}
+            preserveAspectRatio="none">
             {drawPaths.map(p => (
               <path key={p.id} d={p.d} fill="none" stroke={p.color} strokeWidth={p.width}
                 strokeLinecap="round" strokeLinejoin="round" />
