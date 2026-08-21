@@ -822,39 +822,58 @@ export default function StoryEditorPage() {
     );
   }
 
-  // ── MODE PICK ──────────────────────────────────────────────────────────────
+  // ── MODE PICK — bottom sheet ─────────────────────────────────────────────
   if (mode === 'pick') {
     return (
-      <div className="fixed inset-0 z-[110] flex flex-col"
-        style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}>
+      <div className="fixed inset-0 z-[110] flex flex-col justify-end"
+        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+        onClick={() => navigate(-1)}>
         <input ref={fileRef} type="file" className="hidden" onChange={onFileChange} />
-        <div className="flex items-center gap-3 px-4 py-4 shrink-0"
-          style={{ borderBottom: '1px solid var(--border)' }}>
-          <button onClick={() => navigate(-1)} className="p-2 rounded-xl"
-            style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
-            <X size={16} />
-          </button>
-          <p className="font-black text-base flex-1">Nouvelle story</p>
-        </div>
-        <div className="flex flex-col gap-3 px-4 py-6 max-w-sm mx-auto w-full">
-          {[
-            { key: 'text' as const, icon: <Type size={22} />, label: 'Texte', sub: 'Message sur fond colore', grad: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', action: () => setMode('text') },
-            { key: 'image' as const, icon: <ImageIcon size={22} />, label: 'Photo', sub: 'Depuis votre galerie', grad: 'linear-gradient(135deg,#1565C0,#2196F3)', action: () => pickFile('image') },
-            { key: 'video' as const, icon: <Video size={22} />, label: 'Video', sub: 'Clip jusqu\'a 90 secondes', grad: 'linear-gradient(135deg,#AD1457,#E91E63)', action: () => pickFile('video') },
-          ].map(m => (
-            <button key={m.key} onClick={m.action}
-              className="flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = '#7B3FF2')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ background: m.grad }}>{m.icon}</div>
-              <div>
-                <p className="font-bold text-sm">{m.label}</p>
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{m.sub}</p>
-              </div>
+        <div
+          onClick={e => e.stopPropagation()}
+          className="flex flex-col rounded-t-3xl w-full max-w-sm mx-auto"
+          style={{
+            background: 'var(--bg)', color: 'var(--text-primary)',
+            animation: 'story-pick-sheet-in 0.28s cubic-bezier(0.32,0.72,0,1)',
+          }}>
+          <style>{`
+            @keyframes story-pick-sheet-in {
+              from { transform: translateY(100%); }
+              to   { transform: translateY(0); }
+            }
+          `}</style>
+          <div className="flex justify-center pt-3 pb-1 shrink-0">
+            <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+          </div>
+          <div className="flex items-center gap-3 px-4 pb-3 shrink-0"
+            style={{ borderBottom: '1px solid var(--border)' }}>
+            <p className="font-black text-base flex-1">Nouvelle story</p>
+            <button onClick={() => navigate(-1)} className="p-2 rounded-xl"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+              <X size={16} />
             </button>
-          ))}
-          <p className="text-xs text-center pt-2" style={{ color: 'var(--text-tertiary)' }}>Les stories disparaissent automatiquement apres 24h</p>
+          </div>
+          <div className="flex flex-col gap-3 px-4 py-6 w-full"
+            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+            {[
+              { key: 'text' as const, icon: <Type size={22} />, label: 'Texte', sub: 'Message sur fond colore', grad: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', action: () => setMode('text') },
+              { key: 'image' as const, icon: <ImageIcon size={22} />, label: 'Photo', sub: 'Depuis votre galerie', grad: 'linear-gradient(135deg,#1565C0,#2196F3)', action: () => pickFile('image') },
+              { key: 'video' as const, icon: <Video size={22} />, label: 'Video', sub: 'Clip jusqu\'a 90 secondes', grad: 'linear-gradient(135deg,#AD1457,#E91E63)', action: () => pickFile('video') },
+            ].map(m => (
+              <button key={m.key} onClick={m.action}
+                className="flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = '#7B3FF2')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ background: m.grad }}>{m.icon}</div>
+                <div>
+                  <p className="font-bold text-sm">{m.label}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{m.sub}</p>
+                </div>
+              </button>
+            ))}
+            <p className="text-xs text-center pt-2" style={{ color: 'var(--text-tertiary)' }}>Les stories disparaissent automatiquement apres 24h</p>
+          </div>
         </div>
       </div>
     );
