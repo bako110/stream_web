@@ -698,22 +698,61 @@ function StoryCard({ group, onClick }: { group: StoryGroup; onClick: () => void 
 }
 
 // ── Stories bar ───────────────────────────────────────────────────────────────
+const STORIES_PAGE_SIZE = 20;
+
 function StoriesBar() {
   const { user }               = useAuthStore();
   const navigate               = useNavigate();
   const [groups,   setGroups]  = useState<StoryGroup[]>([]);
   const [loading,  setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   function load() {
-    apiClient.get<StoryGroup[]>(Endpoints.stories.feed)
+    setLoading(true);
+    apiClient.get<StoryGroup[]>(`${Endpoints.stories.feed}?page=1&limit=${STORIES_PAGE_SIZE}`)
       .then(res => {
         const raw = res.data;
-        setGroups(Array.isArray(raw) ? raw : (raw as any)?.items ?? []);
+        const list = Array.isArray(raw) ? raw : (raw as any)?.items ?? [];
+        setGroups(list);
+        setPage(1);
+        setHasMore(list.length === STORIES_PAGE_SIZE);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }
   useEffect(() => { load(); }, []);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    apiClient.get<StoryGroup[]>(`${Endpoints.stories.feed}?page=${nextPage}&limit=${STORIES_PAGE_SIZE}`)
+      .then(res => {
+        const raw = res.data;
+        const list = Array.isArray(raw) ? raw : (raw as any)?.items ?? [];
+        setGroups(prev => [...prev, ...list]);
+        setHasMore(list.length === STORIES_PAGE_SIZE);
+        setPage(nextPage);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [page, hasMore, loadingMore]);
+
+  // Scroll infini HORIZONTAL — la barre de stories défile en x, pas en y.
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { root: scrollRef.current, rootMargin: '150px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, hasMore, loadMore]);
 
   const myGroup     = groups.find(g => g.user.id === user?.id);
   const otherGroups = groups.filter(g => g.user.id !== user?.id);
@@ -723,7 +762,7 @@ function StoriesBar() {
     <>
       <div className="rounded-2xl overflow-hidden animate-reveal-up"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-        <div className="flex gap-2.5 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div ref={scrollRef} className="flex gap-2.5 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
 
           {/* Ma story / ajouter — navigue vers page dédiée */}
           <MyStoryCard
@@ -747,6 +786,13 @@ function StoriesBar() {
             <div key={i} className="shrink-0 rounded-2xl overflow-hidden animate-pulse"
               style={{ width: 100, height: 160, background: 'var(--bg-tertiary)' }} />
           ))}
+
+          <div ref={sentinelRef} className="shrink-0" style={{ width: 1 }} />
+          {loadingMore && (
+            <div className="shrink-0 flex items-center justify-center" style={{ width: 100, height: 160 }}>
+              <Spinner size="sm" />
+            </div>
+          )}
         </div>
       </div>
 
