@@ -106,6 +106,12 @@ export function SoundPickerSheet({ open, onClose, onSelect, selected }: Props) {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pagination — seule la recherche supporte offset côté backend (populaires
+  // et mes sons n'en ont pas : catalogues finis/petits).
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
+  const [searchHasMore,     setSearchHasMore]     = useState(true);
+  const searchSentinelRef  = useRef<HTMLDivElement>(null);
+  const SOUNDS_PAGE_SIZE = 20;
 
   // Load popular on open
   useEffect(() => {
@@ -131,16 +137,45 @@ export function SoundPickerSheet({ open, onClose, onSelect, selected }: Props) {
   useEffect(() => {
     if (tab !== 'search') return;
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (!query.trim()) { setSearchResults([]); return; }
+    if (!query.trim()) { setSearchResults([]); setSearchHasMore(true); return; }
     setLoadingSearch(true);
     searchTimer.current = setTimeout(() => {
-      apiClient.get<Sound[]>(`${Endpoints.sounds.list}?q=${encodeURIComponent(query.trim())}`)
-        .then(r => setSearchResults(r.data ?? []))
+      apiClient.get<Sound[]>(`${Endpoints.sounds.list}?q=${encodeURIComponent(query.trim())}&offset=0&limit=${SOUNDS_PAGE_SIZE}`)
+        .then(r => {
+          const list = r.data ?? [];
+          setSearchResults(list);
+          setSearchHasMore(list.length === SOUNDS_PAGE_SIZE);
+        })
         .catch(() => setSearchResults([]))
         .finally(() => setLoadingSearch(false));
     }, 350);
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
   }, [query, tab]);
+
+  const loadMoreSearch = useCallback(() => {
+    if (searchLoadingMore || !searchHasMore || !query.trim()) return;
+    setSearchLoadingMore(true);
+    apiClient.get<Sound[]>(`${Endpoints.sounds.list}?q=${encodeURIComponent(query.trim())}&offset=${searchResults.length}&limit=${SOUNDS_PAGE_SIZE}`)
+      .then(r => {
+        const list = r.data ?? [];
+        setSearchResults(prev => [...prev, ...list]);
+        setSearchHasMore(list.length === SOUNDS_PAGE_SIZE);
+      })
+      .catch(() => setSearchHasMore(false))
+      .finally(() => setSearchLoadingMore(false));
+  }, [query, searchResults.length, searchHasMore, searchLoadingMore]);
+
+  useEffect(() => {
+    if (tab !== 'search') return;
+    const node = searchSentinelRef.current;
+    if (!node || loadingSearch || !searchHasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreSearch(); },
+      { rootMargin: '100px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [tab, loadingSearch, searchHasMore, loadMoreSearch]);
 
   const stopAudio = useCallback(() => {
     audioRef.current?.pause();
@@ -328,16 +363,27 @@ export function SoundPickerSheet({ open, onClose, onSelect, selected }: Props) {
                 </p>
               </div>
             ) : (
-              activeList.map(sound => (
-                <SoundRow
-                  key={sound.id}
-                  sound={sound}
-                  isSelected={selected?.id === sound.id}
-                  isPlaying={playingId === sound.id}
-                  onPlay={() => togglePlay(sound)}
-                  onSelect={() => handleSelect(sound)}
-                />
-              ))
+              <>
+                {activeList.map(sound => (
+                  <SoundRow
+                    key={sound.id}
+                    sound={sound}
+                    isSelected={selected?.id === sound.id}
+                    isPlaying={playingId === sound.id}
+                    onPlay={() => togglePlay(sound)}
+                    onSelect={() => handleSelect(sound)}
+                  />
+                ))}
+                {tab === 'search' && (
+                  <div ref={searchSentinelRef} />
+                )}
+                {tab === 'search' && searchLoadingMore && (
+                  <div className="flex justify-center py-3">
+                    <div className="w-5 h-5 border-2 rounded-full animate-spin"
+                      style={{ borderColor: 'var(--border)', borderTopColor: 'var(--primary)' }} />
+                  </div>
+                )}
+              </>
             )}
           </div>
 

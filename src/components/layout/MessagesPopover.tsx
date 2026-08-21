@@ -102,22 +102,70 @@ function MiniChatWindow({
   const [uploading,setUploading]= useState(false);
   const [emojiFor, setEmojiFor] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  // Pagination — les messages plus anciens se chargent en scrollant vers le
+  // HAUT (contrairement aux autres listes de l'app qui chargent vers le bas),
+  // puisque les plus récents sont affichés en bas comme dans toute messagerie.
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const bottomRef    = useRef<HTMLDivElement>(null);
+  const listRef      = useRef<HTMLDivElement>(null);
+  const sentinelRef  = useRef<HTMLDivElement>(null);
+  const skipNextAutoScroll = useRef(false);
   const inputRef  = useRef<HTMLInputElement>(null);
   const fileRef   = useRef<HTMLInputElement>(null);
 
   const loadMessages = useCallback(async (spinner = true) => {
     if (spinner) setLoading(true);
     try {
-      const res = await apiClient.get<unknown>(Endpoints.messages.conversation(userId));
+      const res = await apiClient.get<unknown>(`${Endpoints.messages.conversation(userId)}?page=1&limit=30`);
       const msgs = norm<any>(res.data)
         .map((m: any) => ({ ...m, body: m.body ?? m.content ?? '' }))
         .reverse();
       setMessages(msgs);
+      setPage(1);
+      setHasMore(msgs.length === 30);
       setError(null);
     } catch (e: any) { setError(e?.message ?? 'Erreur'); }
     finally { setLoading(false); }
   }, [userId]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    const el = listRef.current;
+    const prevScrollHeight = el?.scrollHeight ?? 0;
+    try {
+      const res = await apiClient.get<unknown>(`${Endpoints.messages.conversation(userId)}?page=${nextPage}&limit=30`);
+      const older = norm<any>(res.data)
+        .map((m: any) => ({ ...m, body: m.body ?? m.content ?? '' }))
+        .reverse();
+      skipNextAutoScroll.current = true;
+      setMessages(prev => [...older, ...prev]);
+      setHasMore(older.length === 30);
+      setPage(nextPage);
+      // Préserve la position de lecture — sans ça, ajouter des messages en
+      // haut de la liste fait "sauter" visuellement le contenu déjà lu.
+      requestAnimationFrame(() => {
+        if (el) el.scrollTop = el.scrollHeight - prevScrollHeight;
+      });
+    } catch { setHasMore(false); }
+    finally { setLoadingMore(false); }
+  }, [userId, page, hasMore, loadingMore]);
+
+  // Scroll infini vers le haut via IntersectionObserver sur un sentinel en
+  // tête de liste.
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadOlderMessages(); },
+      { root: listRef.current, rootMargin: '80px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, hasMore, loadOlderMessages]);
 
   useEffect(() => {
     setMessages([]); setPeer(null); setReplyTo(null); setInput(''); setRequestStatus('none');
@@ -166,7 +214,11 @@ function MiniChatWindow({
     }
   }, [wsPayload, userId, me?.id]);
 
+  // Ne scrolle vers le bas que pour un nouveau message — jamais quand on
+  // vient de charger des messages plus anciens en tête de liste (déjà géré
+  // par loadOlderMessages qui préserve la position de lecture).
   useEffect(() => {
+    if (skipNextAutoScroll.current) { skipNextAutoScroll.current = false; return; }
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -299,7 +351,7 @@ function MiniChatWindow({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2" style={{ background: 'var(--bg)' }}>
+      <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2" style={{ background: 'var(--bg)' }}>
         {loading ? (
           <div className="flex items-center justify-center h-full"><Spinner size="sm" /></div>
         ) : error ? (
@@ -315,7 +367,10 @@ function MiniChatWindow({
             <MessageCircle size={22} style={{ color: 'var(--text-tertiary)' }} />
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Démarrez la conversation</p>
           </div>
-        ) : messages.map(msg => {
+        ) : <>
+          <div ref={sentinelRef} />
+          {loadingMore && <div className="flex justify-center py-2"><Spinner size="sm" /></div>}
+          {messages.map(msg => {
           const isMe = msg.sender_id === me?.id;
           const isTemp = msg.id.startsWith('temp-');
           const body = msg.body ?? '';
@@ -451,6 +506,7 @@ function MiniChatWindow({
             </div>
           );
         })}
+        </>}
         {uploading && (
           <div className="flex justify-center items-center gap-1.5 py-1">
             <Spinner size="sm" />
@@ -548,25 +604,64 @@ function MiniConvoList({
 }) {
   const [convos,  setConvos]  = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
   const [search,  setSearch]  = useState('');
   const [error,   setError]   = useState<string | null>(null);
   const { user: me } = useAuthStore();
+  const listContainerRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const CONVOS_PAGE_SIZE = 30;
 
   const load = useCallback(async (spinner = true) => {
     if (spinner) setLoading(true);
     try {
-      const res = await apiClient.get<unknown>(Endpoints.messages.conversations);
+      const res = await apiClient.get<unknown>(`${Endpoints.messages.conversations}?page=1&limit=${CONVOS_PAGE_SIZE}`);
       const raw = norm<any>(res.data);
       const list = raw
         .filter((c: any) => c?.partner_id ?? c?.user?.id)
         .map((c: any) => ({ ...c, user: c.user ?? c.partner }));
       setConvos(list);
+      setPage(1);
+      setHasMore(list.length === CONVOS_PAGE_SIZE);
       setError(null);
     } catch (e: any) { setError(e?.message ?? 'Erreur'); }
     finally { setLoading(false); }
   }, []);
 
+  const loadMoreConvos = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    apiClient.get<unknown>(`${Endpoints.messages.conversations}?page=${nextPage}&limit=${CONVOS_PAGE_SIZE}`)
+      .then(res => {
+        const raw = norm<any>(res.data);
+        const list = raw
+          .filter((c: any) => c?.partner_id ?? c?.user?.id)
+          .map((c: any) => ({ ...c, user: c.user ?? c.partner }));
+        setConvos(prev => [...prev, ...list]);
+        setHasMore(list.length === CONVOS_PAGE_SIZE);
+        setPage(nextPage);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [page, hasMore, loadingMore]);
+
   useEffect(() => { load(); }, [load]);
+
+  // Scroll infini — désactivé pendant une recherche active (le filtre local
+  // ne porte que sur les conversations déjà chargées).
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore || search.trim()) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreConvos(); },
+      { root: listContainerRef.current, rootMargin: '100px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, hasMore, search, loadMoreConvos]);
 
   // Mise à jour preview WS
   useEffect(() => {
@@ -613,7 +708,7 @@ function MiniConvoList({
         </div>
       </div>
 
-      <div className="overflow-y-auto flex-1">
+      <div ref={listContainerRef} className="overflow-y-auto flex-1">
         {loading ? (
           <div className="flex items-center justify-center h-32"><Spinner size="sm" /></div>
         ) : error ? (
@@ -638,7 +733,8 @@ function MiniConvoList({
               </button>
             )}
           </div>
-        ) : filtered.map(c => (
+        ) : <>
+          {filtered.map(c => (
           <button key={c.user.id} onClick={() => onSelect(c.user.id)}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-all"
             style={{
@@ -689,7 +785,14 @@ function MiniConvoList({
               </span>
             )}
           </button>
-        ))}
+          ))}
+          {!search.trim() && (
+            <div ref={sentinelRef} />
+          )}
+          {loadingMore && (
+            <div className="flex justify-center py-2"><Spinner size="sm" /></div>
+          )}
+        </>}
       </div>
     </div>
   );

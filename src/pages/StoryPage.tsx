@@ -177,6 +177,14 @@ function StoryViewer({
   const [viewersOpen,    setViewersOpen]    = useState(false);
   const [viewersLoading, setViewersLoading] = useState(false);
   const [viewersTab,     setViewersTab]     = useState<'views' | 'replies'>('views');
+  // Pagination — pages/hasMore séparées par onglet (views/replies).
+  const [viewersPage,    setViewersPage]    = useState(1);
+  const [viewersHasMore, setViewersHasMore] = useState(true);
+  const [repliesPage,    setRepliesPage]    = useState(1);
+  const [repliesHasMore, setRepliesHasMore] = useState(true);
+  const [viewersLoadingMore, setViewersLoadingMore] = useState(false);
+  const viewersSentinelRef = useRef<HTMLDivElement>(null);
+  const VIEWERS_PAGE_SIZE = 50;
   const [showAd,       setShowAd]       = useState(false);
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [adProgress,   setAdProgress]   = useState(0);
@@ -470,18 +478,71 @@ function StoryViewer({
 
   async function openViewers() {
     setPaused(true); setViewersOpen(true); setViewersTab('views'); setViewersLoading(true);
+    setViewersPage(1); setRepliesPage(1);
     try {
       const [vRes, rRes] = await Promise.all([
-        apiClient.get<any>(Endpoints.stories.viewers(story!.id)),
-        apiClient.get<any>(Endpoints.stories.replies(story!.id)).catch(() => ({ data: [] })),
+        apiClient.get<any>(`${Endpoints.stories.viewers(story!.id)}?page=1&limit=${VIEWERS_PAGE_SIZE}`),
+        apiClient.get<any>(`${Endpoints.stories.replies(story!.id)}?page=1&limit=${VIEWERS_PAGE_SIZE}`).catch(() => ({ data: [] })),
       ]);
       const raw = vRes.data;
-      setViewers(Array.isArray(raw) ? raw : raw?.items ?? []);
+      const viewersList = Array.isArray(raw) ? raw : raw?.items ?? [];
+      setViewers(viewersList);
+      setViewersHasMore(viewersList.length === VIEWERS_PAGE_SIZE);
       const rawReplies = rRes.data;
-      setReplies(Array.isArray(rawReplies) ? rawReplies : rawReplies?.items ?? []);
+      const repliesList = Array.isArray(rawReplies) ? rawReplies : rawReplies?.items ?? [];
+      setReplies(repliesList);
+      setRepliesHasMore(repliesList.length === VIEWERS_PAGE_SIZE);
     } catch { setViewers([]); setReplies([]); }
     setViewersLoading(false);
   }
+
+  // Charge la page suivante de l'onglet actif (views ou replies) — pages
+  // indépendantes puisque chaque onglet a son propre endpoint/curseur.
+  const loadMoreViewersOrReplies = useCallback(() => {
+    if (!story || viewersLoadingMore) return;
+    if (viewersTab === 'views') {
+      if (!viewersHasMore) return;
+      setViewersLoadingMore(true);
+      const nextPage = viewersPage + 1;
+      apiClient.get<any>(`${Endpoints.stories.viewers(story.id)}?page=${nextPage}&limit=${VIEWERS_PAGE_SIZE}`)
+        .then(res => {
+          const raw = res.data;
+          const list = Array.isArray(raw) ? raw : raw?.items ?? [];
+          setViewers(prev => [...prev, ...list]);
+          setViewersHasMore(list.length === VIEWERS_PAGE_SIZE);
+          setViewersPage(nextPage);
+        })
+        .catch(() => setViewersHasMore(false))
+        .finally(() => setViewersLoadingMore(false));
+    } else {
+      if (!repliesHasMore) return;
+      setViewersLoadingMore(true);
+      const nextPage = repliesPage + 1;
+      apiClient.get<any>(`${Endpoints.stories.replies(story.id)}?page=${nextPage}&limit=${VIEWERS_PAGE_SIZE}`)
+        .then(res => {
+          const raw = res.data;
+          const list = Array.isArray(raw) ? raw : raw?.items ?? [];
+          setReplies(prev => [...prev, ...list]);
+          setRepliesHasMore(list.length === VIEWERS_PAGE_SIZE);
+          setRepliesPage(nextPage);
+        })
+        .catch(() => setRepliesHasMore(false))
+        .finally(() => setViewersLoadingMore(false));
+    }
+  }, [story, viewersTab, viewersPage, viewersHasMore, repliesPage, repliesHasMore, viewersLoadingMore]);
+
+  useEffect(() => {
+    if (!viewersOpen) return;
+    const node = viewersSentinelRef.current;
+    const hasMore = viewersTab === 'views' ? viewersHasMore : repliesHasMore;
+    if (!node || viewersLoading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreViewersOrReplies(); },
+      { rootMargin: '100px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [viewersOpen, viewersTab, viewersLoading, viewersHasMore, repliesHasMore, loadMoreViewersOrReplies]);
 
   async function deleteStory() {
     if (!story) return;
@@ -982,6 +1043,10 @@ function StoryViewer({
                       </button>
                     </div>
                   ))
+                )}
+                <div ref={viewersSentinelRef} />
+                {viewersLoadingMore && (
+                  <div className="flex justify-center py-3"><Spinner size="sm" /></div>
                 )}
               </div>
             </div>

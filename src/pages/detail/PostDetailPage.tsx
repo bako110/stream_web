@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
 import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Edit3, Play, X, ChevronDown, Users } from 'lucide-react';
@@ -86,6 +86,7 @@ function MiniPostCard({ post }: { post: Post }) {
 /* ── Comments bottom sheet (mobile) ─────────────────────────────────────────── */
 function CommentsSheet({
   comments, me, input, setInput, sending, onSubmit, onClose, inputRef, onDelete, onEdit, onToggleLike, likedIds, localLikes,
+  loadingMore, sentinelRef,
 }: {
   comments: any[]; me: any; input: string; setInput: (v: string) => void;
   sending: boolean; onSubmit: () => void; onClose: () => void;
@@ -95,6 +96,8 @@ function CommentsSheet({
   onToggleLike: (c: any) => void;
   likedIds: Set<string>;
   localLikes: Record<string, number>;
+  loadingMore: boolean;
+  sentinelRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const navigate = useNavigate();
   const [visible,     setVisible]     = useState(false);
@@ -229,6 +232,8 @@ function CommentsSheet({
                   </div>
                 </div>
               ))}
+              <div ref={sentinelRef} />
+              {loadingMore && <div className="flex justify-center py-2"><Spinner size="sm" /></div>}
             </div>
           )}
         </div>
@@ -273,6 +278,11 @@ export default function PostDetailPage() {
   const [showShare,       setShowShare]       = useState(false);
   const [comments,        setComments]        = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentsLoadingMore, setCommentsLoadingMore] = useState(false);
+  const [commentsPage,       setCommentsPage]       = useState(1);
+  const [commentsHasMore,    setCommentsHasMore]    = useState(true);
+  const commentsSentinelRef = useRef<HTMLDivElement>(null);
+  const COMMENTS_PAGE_SIZE = 50;
   const [input,           setInput]           = useState('');
   const [sending,         setSending]         = useState(false);
   const [menuOpen,        setMenuOpen]        = useState(false);
@@ -300,16 +310,52 @@ export default function PostDetailPage() {
   useEffect(() => {
     if (!id || !me) return;
     setCommentsLoading(true);
-    apiClient.get<any>(`${Endpoints.social.comments}?post_id=${id}&limit=50`)
+    setCommentsPage(1);
+    apiClient.get<any>(`${Endpoints.social.comments}?post_id=${id}&page=1&limit=${COMMENTS_PAGE_SIZE}`)
       .then(res => {
         const raw = res.data;
         const list = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
         setComments(list);
+        setCommentsHasMore(list.length === COMMENTS_PAGE_SIZE);
         setCommentLikedIds(new Set(list.filter((c: any) => c.user_reaction === 'like').map((c: any) => c.id)));
       })
       .catch(() => {})
       .finally(() => setCommentsLoading(false));
   }, [id, me]);
+
+  // Le backend trie par created_at DESC (plus récent en premier) — "charger
+  // plus" ramène des commentaires plus anciens, ajoutés en fin de liste.
+  const loadMoreComments = useCallback(() => {
+    if (!id || commentsLoadingMore || !commentsHasMore) return;
+    setCommentsLoadingMore(true);
+    const nextPage = commentsPage + 1;
+    apiClient.get<any>(`${Endpoints.social.comments}?post_id=${id}&page=${nextPage}&limit=${COMMENTS_PAGE_SIZE}`)
+      .then(res => {
+        const raw = res.data;
+        const list = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
+        setComments(prev => [...prev, ...list]);
+        setCommentLikedIds(prev => {
+          const next = new Set(prev);
+          list.filter((c: any) => c.user_reaction === 'like').forEach((c: any) => next.add(c.id));
+          return next;
+        });
+        setCommentsHasMore(list.length === COMMENTS_PAGE_SIZE);
+        setCommentsPage(nextPage);
+      })
+      .catch(() => setCommentsHasMore(false))
+      .finally(() => setCommentsLoadingMore(false));
+  }, [id, commentsPage, commentsHasMore, commentsLoadingMore]);
+
+  useEffect(() => {
+    const node = commentsSentinelRef.current;
+    if (!node || commentsLoading || !commentsHasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreComments(); },
+      { rootMargin: '150px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [commentsLoading, commentsHasMore, loadMoreComments]);
 
   useEffect(() => {
     if (!post?.author?.id || !me) return;
@@ -686,6 +732,8 @@ export default function PostDetailPage() {
           onToggleLike={toggleCommentLike}
           likedIds={commentLikedIds}
           localLikes={commentLocalLikes}
+          loadingMore={commentsLoadingMore}
+          sentinelRef={commentsSentinelRef}
         />
       )}
 

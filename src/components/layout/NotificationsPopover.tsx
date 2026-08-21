@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, Check, Heart, UserPlus, MessageCircle, Radio, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import type { Notification } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import { useApi } from '../../hooks/useApi';
 import { Spinner } from '../ui/Spinner';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+const NOTIF_PAGE_SIZE = 20;
 
 const NOTIF_ICONS: Record<string, React.ReactNode> = {
   follow:       <UserPlus size={13} />,
@@ -51,13 +52,57 @@ function NotifIcon({ type }: { type: string }) {
 export function NotificationsPopover({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const panelRef = useRef<HTMLDivElement>(null);
-  const { data, loading, refetch } = useApi<Notification[]>(
-    () => apiClient.get<Notification[]>(`${Endpoints.notifications.list}?limit=20`),
-  );
-  // Mise à jour optimiste locale — useApi n'expose pas de setter, et refetch()
-  // relance tout l'appel réseau (trop lent pour un simple clic "marquer lue").
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [data,        setData]        = useState<Notification[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
+
+  const refetch = useCallback(() => {
+    setLoading(true);
+    apiClient.get<Notification[]>(`${Endpoints.notifications.list}?page=1&limit=${NOTIF_PAGE_SIZE}`)
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setData(list);
+        setPage(1);
+        setHasMore(list.length === NOTIF_PAGE_SIZE);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { refetch(); }, [refetch]);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    apiClient.get<Notification[]>(`${Endpoints.notifications.list}?page=${nextPage}&limit=${NOTIF_PAGE_SIZE}`)
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setData(prev => [...prev, ...list]);
+        setHasMore(list.length === NOTIF_PAGE_SIZE);
+        setPage(nextPage);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [page, hasMore, loadingMore]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: '80px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, hasMore, loadMore]);
+
+  // Mise à jour optimiste locale pour "marquer lue" au clic.
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const notifications = (data ?? []).map(n => readIds.has(n.id) ? { ...n, is_read: true } : n);
+  const notifications = data.map(n => readIds.has(n.id) ? { ...n, is_read: true } : n);
   const unread = notifications.filter(n => !n.is_read).length;
 
   // Fermeture au clic extérieur — même comportement que MessagesPopover.
@@ -201,6 +246,8 @@ export function NotificationsPopover({ onClose }: { onClose: () => void }) {
                 )}
               </div>
             ))}
+            <div ref={sentinelRef} />
+            {loadingMore && <div className="flex justify-center py-2"><Spinner size="sm" /></div>}
           </div>
         )}
       </div>

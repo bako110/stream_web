@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   X, VideoIcon, VideoOff, Mic, MicOff, UserCheck,
   Lock, Unlock, Edit2, Coins as GoGold, Gift, ChevronLeft, Check, Radio, ShieldOff, Zap,
@@ -210,16 +210,53 @@ interface BlockedUser {
   created_at:   string;
 }
 
+const LIVE_LIST_PAGE_SIZE = 30;
+
 function BlockedUsersSection() {
   const { confirm, ConfirmDialog } = useConfirm();
   const [blocked,   setBlocked]   = useState<BlockedUser[] | null>(null);
   const [unblocking, setUnblocking] = useState<string | null>(null);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    apiClient.get<BlockedUser[]>(Endpoints.lives.listBlocks)
-      .then(r => setBlocked(Array.isArray(r.data) ? r.data : []))
+    apiClient.get<BlockedUser[]>(`${Endpoints.lives.listBlocks}?page=1&limit=${LIVE_LIST_PAGE_SIZE}`)
+      .then(r => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setBlocked(list);
+        setHasMore(list.length === LIVE_LIST_PAGE_SIZE);
+      })
       .catch(() => setBlocked([]));
   }, []);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    apiClient.get<BlockedUser[]>(`${Endpoints.lives.listBlocks}?page=${nextPage}&limit=${LIVE_LIST_PAGE_SIZE}`)
+      .then(r => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setBlocked(prev => [...(prev ?? []), ...list]);
+        setHasMore(list.length === LIVE_LIST_PAGE_SIZE);
+        setPage(nextPage);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [page, hasMore, loadingMore]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || blocked === null || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { root: containerRef.current, rootMargin: '40px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [blocked, hasMore, loadMore]);
 
   async function unblock(userId: string, name: string) {
     const ok = await confirm({ title: `Débloquer ${name} ?`, message: 'Cette personne pourra à nouveau voir tes lives.', danger: false, confirmLabel: 'Débloquer' });
@@ -247,7 +284,7 @@ function BlockedUsersSection() {
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucun utilisateur bloqué</p>
         </div>
       ) : (
-        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+        <div ref={containerRef} className="space-y-1.5 max-h-40 overflow-y-auto">
           {blocked.map(b => {
             const name = b.display_name ?? b.username ?? 'Utilisateur';
             return (
@@ -265,6 +302,8 @@ function BlockedUsersSection() {
               </div>
             );
           })}
+          <div ref={sentinelRef} />
+          {loadingMore && <div className="flex justify-center py-1.5"><Spinner size="sm" /></div>}
         </div>
       )}
     </div>
@@ -285,12 +324,47 @@ function BannedUsersSection() {
   const { confirm, ConfirmDialog } = useConfirm();
   const [banned,     setBanned]     = useState<BannedUser[] | null>(null);
   const [unbanning,  setUnbanning]  = useState<string | null>(null);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    apiClient.get<BannedUser[]>(Endpoints.lives.listBans)
-      .then(r => setBanned(Array.isArray(r.data) ? r.data : []))
+    apiClient.get<BannedUser[]>(`${Endpoints.lives.listBans}?page=1&limit=${LIVE_LIST_PAGE_SIZE}`)
+      .then(r => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setBanned(list);
+        setHasMore(list.length === LIVE_LIST_PAGE_SIZE);
+      })
       .catch(() => setBanned([]));
   }, []);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    apiClient.get<BannedUser[]>(`${Endpoints.lives.listBans}?page=${nextPage}&limit=${LIVE_LIST_PAGE_SIZE}`)
+      .then(r => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setBanned(prev => [...(prev ?? []), ...list]);
+        setHasMore(list.length === LIVE_LIST_PAGE_SIZE);
+        setPage(nextPage);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [page, hasMore, loadingMore]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || banned === null || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { root: containerRef.current, rootMargin: '40px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [banned, hasMore, loadMore]);
 
   async function unban(userId: string, name: string) {
     const ok = await confirm({ title: `Annuler l'éjection de ${name} ?`, message: 'Cette personne pourra à nouveau rejoindre tes lives.', danger: false, confirmLabel: 'Annuler l\'éjection' });
@@ -318,7 +392,7 @@ function BannedUsersSection() {
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucun utilisateur éjecté</p>
         </div>
       ) : (
-        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+        <div ref={containerRef} className="space-y-1.5 max-h-40 overflow-y-auto">
           {banned.map(b => {
             const name = b.display_name ?? b.username ?? 'Utilisateur';
             return (
@@ -336,6 +410,8 @@ function BannedUsersSection() {
               </div>
             );
           })}
+          <div ref={sentinelRef} />
+          {loadingMore && <div className="flex justify-center py-1.5"><Spinner size="sm" /></div>}
         </div>
       )}
     </div>

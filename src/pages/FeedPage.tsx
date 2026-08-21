@@ -937,12 +937,17 @@ function CommentsModal({
   const { user } = useAuthStore();
   const [comments,   setComments]   = useState<any[]>([]);
   const [loading,    setLoading]    = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
   const [body,       setBody]       = useState('');
   const [sending,    setSending]    = useState(false);
   const [likedIds,   setLikedIds]   = useState<Set<string>>(new Set());
   const [localLikes, setLocalLikes] = useState<Record<string, number>>({});
   const inputRef  = useRef<HTMLInputElement>(null);
   const listRef   = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const COMMENTS_PAGE_SIZE = 50;
 
   const qParam = targetKind === 'post'    ? `post_id=${targetId}`
                : targetKind === 'reel'    ? `reel_id=${targetId}`
@@ -955,16 +960,52 @@ function CommentsModal({
     setLikedIds(new Set());
     setLocalLikes({});
     setLoading(true);
-    apiClient.get<any>(`${Endpoints.social.comments}?${qParam}&limit=50`)
+    setPage(1);
+    apiClient.get<any>(`${Endpoints.social.comments}?${qParam}&page=1&limit=${COMMENTS_PAGE_SIZE}`)
       .then(res => {
         const list = Array.isArray(res.data) ? res.data : [];
         setComments(list);
+        setHasMore(list.length === COMMENTS_PAGE_SIZE);
         setLikedIds(new Set(list.filter((c: any) => c.user_reaction === 'like').map((c: any) => c.id)));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
     setTimeout(() => inputRef.current?.focus(), 300);
   }, [open, targetId]);
+
+  // Le backend trie par created_at DESC (plus récent en premier) — "charger
+  // plus" ramène donc des commentaires plus anciens, ajoutés en fin de liste.
+  const loadMoreComments = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    apiClient.get<any>(`${Endpoints.social.comments}?${qParam}&page=${nextPage}&limit=${COMMENTS_PAGE_SIZE}`)
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setComments(prev => [...prev, ...list]);
+        setLikedIds(prev => {
+          const next = new Set(prev);
+          list.filter((c: any) => c.user_reaction === 'like').forEach((c: any) => next.add(c.id));
+          return next;
+        });
+        setHasMore(list.length === COMMENTS_PAGE_SIZE);
+        setPage(nextPage);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [qParam, page, hasMore, loadingMore]);
+
+  useEffect(() => {
+    if (!open) return;
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreComments(); },
+      { root: listRef.current, rootMargin: '120px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [open, loading, hasMore, loadMoreComments]);
 
   useEffect(() => {
     if (!open) return;
@@ -1170,6 +1211,8 @@ function CommentsModal({
               </div>
             ))
           )}
+          <div ref={sentinelRef} />
+          {loadingMore && <div className="flex justify-center py-2"><Spinner size="sm" /></div>}
         </div>
 
         {/* Input */}
