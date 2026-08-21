@@ -153,6 +153,21 @@ interface CropToolProps {
   onCancel: () => void;
 }
 
+/** Rectangle source à extraire de l'image pour un rendu "object-fit: cover"
+ * dans un cadre de dimensions (dw, dh) — respecte le ratio, rogne le débord. */
+function coverSourceRect(sw: number, sh: number, dw: number, dh: number) {
+  const srcRatio = sw / sh;
+  const dstRatio = dw / dh;
+  if (srcRatio > dstRatio) {
+    // Image plus large que le cadre — rogne les côtés.
+    const cropW = sh * dstRatio;
+    return { sx: (sw - cropW) / 2, sy: 0, sw: cropW, sh };
+  }
+  // Image plus haute (ou même ratio) que le cadre — rogne haut/bas.
+  const cropH = sw / dstRatio;
+  return { sx: 0, sy: (sh - cropH) / 2, sw, sh: cropH };
+}
+
 function CropTool({ imgSrc, onDone, onCancel }: CropToolProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -189,7 +204,11 @@ function CropTool({ imgSrc, onDone, onCancel }: CropToolProps) {
 
   function drawCrop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, c: CropRect, w: number, h: number) {
     ctx.clearRect(0, 0, w, h);
-    ctx.drawImage(img, 0, 0, w, h);
+    // object-fit: cover — sans ça drawImage(img, 0, 0, w, h) étire l'image
+    // brute sur tout le canvas quel que soit son ratio d'origine, la
+    // déformant visiblement (une image 16:9 ou carrée écrasée en 9:16).
+    const { sx, sy, sw, sh } = coverSourceRect(img.naturalWidth, img.naturalHeight, w, h);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
     // dark overlay outside crop
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, w, c.y);
@@ -288,14 +307,22 @@ function CropTool({ imgSrc, onDone, onCancel }: CropToolProps) {
     const canvas = canvasRef.current;
     const img = imgRef.current;
     if (!canvas || !img) return;
-    const scaleX = img.naturalWidth / canvas.width;
-    const scaleY = img.naturalHeight / canvas.height;
+    // Le canvas affiche coverSourceRect(img) mappé sur tout le canvas — il
+    // faut composer ce mapping avec le rectangle de crop (coordonnées
+    // canvas) pour retrouver la zone réelle correspondante dans l'image
+    // source, sinon le crop exporté ne correspond plus à ce qui est affiché.
+    const { sx, sy, sw, sh } = coverSourceRect(img.naturalWidth, img.naturalHeight, canvas.width, canvas.height);
+    const scale = sw / canvas.width; // === sh / canvas.height
     const out = document.createElement('canvas');
-    out.width = Math.round(crop.w * scaleX);
-    out.height = Math.round(crop.h * scaleY);
+    out.width = Math.round(crop.w * scale);
+    out.height = Math.round(crop.h * scale);
     const ctx = out.getContext('2d');
     if (!ctx) return;
-    ctx.drawImage(img, crop.x * scaleX, crop.y * scaleY, crop.w * scaleX, crop.h * scaleY, 0, 0, out.width, out.height);
+    ctx.drawImage(
+      img,
+      sx + crop.x * scale, sy + crop.y * scale, crop.w * scale, crop.h * scale,
+      0, 0, out.width, out.height,
+    );
     onDone(out.toDataURL('image/jpeg', 0.92));
   }
 
