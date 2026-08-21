@@ -173,25 +173,30 @@ function CropTool({ imgSrc, onDone, onCancel }: CropToolProps) {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Dimensions du canvas — 9:16 par défaut tant que l'image n'est pas encore
+  // chargée, puis adaptées à son orientation réelle (paysage -> 16:9,
+  // portrait/carré -> 9:16) une fois connue.
+  const [canvasSize, setCanvasSize] = useState({ w: CANVAS_W, h: CANVAS_H });
   // crop rect in display pixels
   const [crop, setCrop] = useState<CropRect>({ x: 40, y: 80, w: CANVAS_W - 80, h: CANVAS_H - 160 });
   const dragState = useRef<{ corner: string; startX: number; startY: number; startCrop: CropRect } | null>(null);
 
   // draw image + overlay
   useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       imgRef.current = img;
-      drawCrop(ctx, img, crop, canvas.width, canvas.height);
+      // Paysage (plus large que haut) -> cadre 16:9, sinon (portrait/carré)
+      // -> cadre 9:16 — évite de forcer un format vertical sur une image
+      // manifestement horizontale (et vice-versa).
+      const landscape = img.naturalWidth > img.naturalHeight;
+      const w = landscape ? CANVAS_H : CANVAS_W;
+      const h = landscape ? CANVAS_W : CANVAS_H;
+      setCanvasSize({ w, h });
+      setCrop({ x: w * 0.1, y: h * 0.1, w: w * 0.8, h: h * 0.8 });
     };
     img.src = imgSrc;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imgSrc]);
 
   useEffect(() => {
@@ -200,7 +205,7 @@ function CropTool({ imgSrc, onDone, onCancel }: CropToolProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawCrop(ctx, imgRef.current, crop, canvas.width, canvas.height);
-  }, [crop]);
+  }, [crop, canvasSize]);
 
   function drawCrop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, c: CropRect, w: number, h: number) {
     ctx.clearRect(0, 0, w, h);
@@ -342,8 +347,8 @@ function CropTool({ imgSrc, onDone, onCancel }: CropToolProps) {
       <div ref={containerRef} className="relative flex-1 w-full flex items-center justify-center overflow-hidden">
         <canvas
           ref={canvasRef}
-          width={CANVAS_W}
-          height={CANVAS_H}
+          width={canvasSize.w}
+          height={canvasSize.h}
           style={{ maxWidth: '100%', maxHeight: '100%', touchAction: 'none', cursor: 'crosshair' }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
