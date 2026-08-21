@@ -828,7 +828,6 @@ export default function StoryEditorPage() {
       <div className="fixed inset-0 z-[110] flex flex-col justify-end"
         style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
         onClick={() => navigate(-1)}>
-        <input ref={fileRef} type="file" className="hidden" onChange={onFileChange} />
         <div
           onClick={e => e.stopPropagation()}
           className="flex flex-col rounded-t-3xl w-full max-w-sm mx-auto"
@@ -836,6 +835,12 @@ export default function StoryEditorPage() {
             background: 'var(--bg)', color: 'var(--text-primary)',
             animation: 'story-pick-sheet-in 0.28s cubic-bezier(0.32,0.72,0,1)',
           }}>
+          {/* L'input file doit rester DANS le panneau protégé par
+              stopPropagation — sinon fileRef.current.click() (pickFile)
+              déclenche un événement "click" qui remonte (bubble) jusqu'au
+              backdrop et ferme le bottom sheet (navigate(-1)) au moment
+              même où le sélecteur de fichier natif s'ouvre. */}
+          <input ref={fileRef} type="file" className="hidden" onChange={onFileChange} />
           <style>{`
             @keyframes story-pick-sheet-in {
               from { transform: translateY(100%); }
