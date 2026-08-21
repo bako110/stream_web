@@ -746,9 +746,11 @@ function StoryViewer({
         )}
 
         {/* Like + Sauvegarder — visibles pour les non-propriétaires, au-dessus
-            de l'input de réponse (voir plus bas) au lieu de bottom-5 fixe. */}
+            de l'input de réponse (voir plus bas). z-40 (> z-30 de l'input)
+            + marge de 96px pour ne jamais être recouverts par sa zone de
+            clic, qui s'étend physiquement au-delà de son ancrage bottom-0. */}
         {!isOwn && (
-          <div className="absolute right-5 z-20 flex items-center gap-2" style={{ bottom: 74 }}>
+          <div className="absolute right-5 z-40 flex items-center gap-2" style={{ bottom: 96 }}>
             <button onClick={handleToggleSave} disabled={saving}
               className="flex items-center justify-center p-2 rounded-full transition-all"
               style={{ background: saved ? 'rgba(123,63,242,0.3)' : 'rgba(0,0,0,0.55)' }}>
