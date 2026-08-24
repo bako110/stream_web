@@ -24,6 +24,9 @@ export interface Battle {
    * uniquement sur la réponse de GET /battles/{id} (pas sur ActiveBattle ni les WS). */
   win_count_a?:     number;
   win_count_b?:     number;
+  is_recording?:    boolean;
+  replay_url?:      string | null;
+  replay_expires_at?: string | null;
 }
 
 export interface EligibleCreator {

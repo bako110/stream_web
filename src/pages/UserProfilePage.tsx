@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
 import {
   MapPin, Globe, Phone, Calendar, UserPlus, UserCheck,
   MessageCircle, Play, Eye, Heart, Grid3x3, FileText,
-  Info, ShieldOff, Shield,
+  Info, ShieldOff, Shield, ImagePlus, Download,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,8 +17,9 @@ import { useWs } from '../context/WebSocketContext';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { HoverVideoPreview } from '../components/ui/HoverVideoPreview';
+import { downloadImage } from '../components/ui/Lightbox';
 
-type Tab = 'publications' | 'reels' | 'about';
+type Tab = 'publications' | 'gallery' | 'reels' | 'about';
 
 const ROLE_LABEL: Record<string, string> = {
   artist: 'Artiste',
@@ -142,6 +143,121 @@ function PublicationsTab({ userId }: { userId: string }) {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// ── Gallery tab (images de posts + events + concerts, avec pagination) ──────────
+interface GalleryImage { id: string; kind: 'post' | 'event' | 'concert'; url: string }
+
+function GalleryTab({ userId }: { userId: string }) {
+  const navigate = useNavigate();
+  const [postImages, setPostImages] = useState<GalleryImage[]>([]);
+  const [otherImages, setOtherImages] = useState<GalleryImage[]>([]);
+  const [page, setPage]       = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const GALLERY_LIMIT = 30;
+
+  // Events + concerts n'ont pas de pagination exploitable côté backend
+  // aujourd'hui (même limitation que PublicationsTab) — chargés une seule
+  // fois avec une limite large. Seuls les posts (potentiellement nombreux)
+  // sont paginés via "Charger plus".
+  useEffect(() => {
+    setOtherImages([]);
+    Promise.all([
+      apiClient.get<any>(`${Endpoints.events.byUser(userId)}?limit=100`).catch(() => ({ data: [] })),
+      apiClient.get<any>(`${Endpoints.concerts.byUser(userId)}?limit=100`).catch(() => ({ data: [] })),
+    ]).then(([eventsRes, concertsRes]) => {
+      const events:   any[] = eventsRes.data?.items   ?? (Array.isArray(eventsRes.data)   ? eventsRes.data   : []);
+      const concerts: any[] = concertsRes.data?.items ?? (Array.isArray(concertsRes.data) ? concertsRes.data : []);
+      setOtherImages([
+        ...events.filter(e => e.banner_url || e.thumbnail_url).map(e => ({ id: e.id, kind: 'event' as const, url: e.banner_url ?? e.thumbnail_url })),
+        ...concerts.filter(c => c.banner_url || c.thumbnail_url).map(c => ({ id: c.id, kind: 'concert' as const, url: c.banner_url ?? c.thumbnail_url })),
+      ]);
+    });
+  }, [userId]);
+
+  const load = useCallback((p: number, replace: boolean) => {
+    setLoading(true);
+    apiClient.get<any[]>(`${Endpoints.posts.byUserFull(userId)}?page=${p}&limit=${GALLERY_LIMIT}`)
+      .then(r => {
+        const posts = Array.isArray(r.data) ? r.data : [];
+        const extracted = posts
+          .filter(post => !post.video_url && !post.hls_url)
+          .flatMap(post => {
+            const urls: string[] = post.image_urls?.length ? post.image_urls : (post.image_url ? [post.image_url] : []);
+            return urls.map(url => ({ id: post.id, kind: 'post' as const, url }));
+          });
+        setPostImages(prev => replace ? extracted : [...prev, ...extracted]);
+        setHasMore(posts.length === GALLERY_LIMIT);
+        setPage(p);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [userId]);
+
+  useEffect(() => { setPostImages([]); setPage(1); setHasMore(true); load(1, true); }, [userId, load]);
+
+  const images = [...otherImages, ...postImages];
+
+  const goTo = (img: GalleryImage) => navigate(
+    img.kind === 'event' ? `/events/${encodeId(img.id)}` :
+    img.kind === 'concert' ? `/concerts/${encodeId(img.id)}` :
+    `/posts/${encodeId(img.id)}`
+  );
+
+  if (loading && images.length === 0) {
+    return (
+      <div className="grid grid-cols-3 gap-1 p-1">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className="rounded-lg animate-pulse" style={{ aspectRatio: '1/1', background: 'var(--bg-tertiary)' }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (images.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-20" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
+          <ImagePlus size={26} strokeWidth={1.5} />
+        </div>
+        <p className="text-sm font-medium">Aucune image publiée</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-1">
+      <div className="grid grid-cols-3 gap-1">
+        {images.map((img, i) => (
+          <div key={`${img.kind}-${img.id}-${i}`}
+            role="button" tabIndex={0}
+            onClick={() => goTo(img)}
+            className="relative overflow-hidden group cursor-pointer"
+            style={{ aspectRatio: '1/1', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
+            <img src={img.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            <button
+              onClick={(e) => { e.stopPropagation(); downloadImage(img.url); }}
+              className="absolute top-1 right-1 w-7 h-7 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', color: '#fff' }}
+              title="Télécharger l'image"
+              aria-label="Télécharger l'image">
+              <Download size={13} />
+            </button>
+          </div>
+        ))}
+      </div>
+      {hasMore && (
+        <div className="flex justify-center py-5">
+          <button onClick={() => load(page + 1, false)} disabled={loading}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
+            {loading ? <Spinner size="sm" /> : 'Charger plus'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -326,9 +442,10 @@ export default function UserProfilePage() {
   }
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'publications', label: 'Publications', icon: <Grid3x3 size={15} /> },
-    { id: 'reels',        label: 'Reels',        icon: <Play size={15} />    },
-    { id: 'about',        label: 'À propos',     icon: <Info size={15} />    },
+    { id: 'publications', label: 'Publications', icon: <Grid3x3 size={15} />   },
+    { id: 'reels',        label: 'Reels',        icon: <Play size={15} />      },
+    { id: 'gallery',      label: 'Galerie',       icon: <ImagePlus size={15} />},
+    { id: 'about',        label: 'À propos',     icon: <Info size={15} />      },
   ];
 
   const name = profile.display_name ?? profile.username ?? 'Utilisateur';
@@ -490,6 +607,7 @@ export default function UserProfilePage() {
       {/* ── Tab content ── */}
       {tab === 'publications' && <PublicationsTab userId={id!} />}
       {tab === 'reels'        && <ReelsTab        userId={id!} />}
+      {tab === 'gallery'      && <GalleryTab      userId={id!} />}
       {tab === 'about'        && <AboutTab        profile={profile} />}
     </div>
   );

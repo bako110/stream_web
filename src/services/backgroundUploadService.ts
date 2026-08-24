@@ -11,6 +11,7 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls, uploadImageAsReel } from '../api/uploadVideo';
 import { extractApiErrorMessage } from '../utils/apiError';
+import type { ReelEditState } from '../components/reel-editor/types';
 
 async function uploadImageFile(file: File, folder: string): Promise<string> {
   const contentType = file.type || 'image/jpeg';
@@ -99,17 +100,7 @@ export interface EnqueueReelArgs {
   mediaFile: File;
   isPhoto: boolean;
   caption: string;
-  edit: {
-    filter: string;
-    layers: unknown[];
-    stickers: unknown[];
-    drawings: unknown[];
-    adjust: Record<string, number>;
-    musicUrl?: string;
-    musicName?: string;
-    musicStartSec?: number;
-    musicEndSec?: number;
-  };
+  edit: ReelEditState;
   sourceReelId?: string;
 }
 

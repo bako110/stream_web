@@ -115,7 +115,10 @@ export const Endpoints = {
     shareCounts:    `${V1}/social/shares/counts`,
   },
   posts: {
-    byUser: (userId: string) => `${V1}/users/${userId}/posts`,
+    byUser:     (userId: string) => `${V1}/users/${userId}/posts`,
+    // Sérialisation complète (image_urls carrousel inclus) — utilisé par la
+    // Galerie de photos du profil, cf. GalleryTab dans ProfilePage.tsx.
+    byUserFull: (userId: string) => `${V1}/posts/user/${userId}`,
     create: `${V1}/posts`,
     byId:   (id: string) => `${V1}/posts/${id}`,
     react:  (id: string) => `${V1}/posts/${id}/react`,

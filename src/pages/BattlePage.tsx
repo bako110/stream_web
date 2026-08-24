@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { X, Send, Award, User, Heart, Users, Gift, VideoIcon, VideoOff, Mic, MicOff } from 'lucide-react';
+import { X, Send, Award, User, Heart, Users, Gift, VideoIcon, VideoOff, Mic, MicOff, Video, Check } from 'lucide-react';
 import {
   LiveKitRoom, VideoTrack, useTracks, useParticipants, useLocalParticipant, RoomAudioRenderer,
 } from '@livekit/components-react';
@@ -123,7 +123,9 @@ function useLocalMediaEnabled() {
   return { camOn, micOn, localParticipant };
 }
 
-function BattleMediaControls({ isHost }: { isHost: boolean }) {
+function BattleMediaControls({ isHost, isRecording, onToggleRecording, recordingLoading }: {
+  isHost: boolean; isRecording: boolean; onToggleRecording: () => void; recordingLoading: boolean;
+}) {
   const { camOn, micOn, localParticipant } = useLocalMediaEnabled();
   const [needsRetry, setNeedsRetry] = useState(false);
 
@@ -159,7 +161,7 @@ function BattleMediaControls({ isHost }: { isHost: boolean }) {
 
   return (
     <>
-      {/* Desktop (lg+) : deux boutons séparés, assez de place dans le header. */}
+      {/* Desktop (lg+) : trois boutons séparés, assez de place dans le header. */}
       <button onClick={toggleCam}
         className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
         style={{ background: camOn ? 'rgba(255,255,255,0.1)' : 'rgba(240,54,90,0.25)' }}>
@@ -169,6 +171,12 @@ function BattleMediaControls({ isHost }: { isHost: boolean }) {
         className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
         style={{ background: micOn ? 'rgba(255,255,255,0.1)' : 'rgba(240,54,90,0.25)' }}>
         {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#F0365A" />}
+      </button>
+      <button onClick={onToggleRecording} disabled={recordingLoading}
+        className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
+        style={{ background: isRecording ? 'rgba(240,54,90,0.25)' : 'rgba(255,255,255,0.1)' }}
+        title={isRecording ? "Arrêter l'enregistrement" : "Démarrer l'enregistrement"}>
+        {recordingLoading ? <Spinner size="sm" /> : isRecording ? <Check size={16} color="#F0365A" /> : <Video size={16} color="#fff" />}
       </button>
 
       {/* Mobile (<lg) : un seul bouton compact — la rangée du header est déjà
@@ -196,6 +204,12 @@ function BattleMediaControls({ isHost }: { isHost: boolean }) {
                 style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                 {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#F0365A" />}
                 {micOn ? 'Couper le micro' : 'Activer le micro'}
+              </button>
+              <button onClick={() => { onToggleRecording(); setShowMenu(false); }} disabled={recordingLoading}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                {isRecording ? <Check size={16} color="#F0365A" /> : <Video size={16} color="#fff" />}
+                {isRecording ? "Arrêter l'enregistrement" : "Démarrer l'enregistrement"}
               </button>
             </div>
           </>
@@ -520,6 +534,26 @@ export default function BattlePage() {
   const myHostSide: 'a' | 'b' | null = !battle || !user
     ? null
     : user.id === battle.host_a_id ? 'a' : user.id === battle.host_b_id ? 'b' : null;
+
+  // Enregistrement — n'importe lequel des deux hosts peut démarrer/arrêter
+  // pendant le match (PATCH /battles/{id}/recording), même pattern que
+  // ArtistControls sur LivePage.tsx (concert).
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingLoading, setRecordingLoading] = useState(false);
+  useEffect(() => { setIsRecording(!!battle?.is_recording); }, [battle?.is_recording]);
+  const toggleRecording = useCallback(async () => {
+    if (recordingLoading || !battleId) return;
+    setRecordingLoading(true);
+    const next = !isRecording;
+    try {
+      const r = await apiClient.patch<{ recording: boolean }>(Endpoints.battles.recording(battleId), { enabled: next });
+      setIsRecording(r.data.recording);
+    } catch {
+      // 503 = quota d'enregistrement épuisé côté LiveKit, ou autre échec — l'état reste inchangé
+    } finally {
+      setRecordingLoading(false);
+    }
+  }, [battleId, isRecording, recordingLoading]);
 
   useEffect(() => {
     let mounted = true;
@@ -885,7 +919,7 @@ export default function BattlePage() {
             </button>
             <ParticipantsCount onClick={() => setShowParticipants(v => !v)} />
             {/* Cam/Mic — persistants, hôte uniquement (un viewer n'a rien à publier) */}
-            <BattleMediaControls isHost={!!isHost} />
+            <BattleMediaControls isHost={!!isHost} isRecording={isRecording} onToggleRecording={toggleRecording} recordingLoading={recordingLoading} />
 
             {/* Centré par rapport à TOUT le header (position absolute), pas juste à
                 l'espace restant entre les boutons — sinon le centre visuel dérive dès

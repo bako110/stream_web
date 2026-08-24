@@ -34,7 +34,7 @@ async function fetchImageBlob(url: string): Promise<Blob> {
   }
 }
 
-async function downloadImage(url: string) {
+export async function downloadImage(url: string) {
   try {
     const blob = await fetchImageBlob(url);
     const objectUrl = URL.createObjectURL(blob);
