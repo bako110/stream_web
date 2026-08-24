@@ -6,13 +6,9 @@ import {
   Pencil, Smile, Square, Undo2, Trash2, Bold, AlignCenter,
   AlignLeft, AlignRight, Users, Lock, UserX, Check, ZoomIn,
 } from 'lucide-react';
-import { apiClient } from '../api';
-import { Endpoints } from '../api/endpoints';
-import { uploadVideoHls } from '../api/uploadVideo';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
-import { Spinner } from '../components/ui/Spinner';
-import { extractApiErrorMessage } from '../utils/apiError';
+import { backgroundUploadService } from '../services/backgroundUploadService';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -437,10 +433,6 @@ export default function StoryEditorPage() {
   // ── Caption ──
   const [caption, setCaption] = useState('');
 
-  // ── Publishing ──
-  const [uploading, setUploading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
   // ── Canvas ref for overlay rendering ──
   const overlayRef = useRef<SVGSVGElement>(null);
   const canvasAreaRef = useRef<HTMLDivElement>(null);
@@ -677,106 +669,23 @@ export default function StoryEditorPage() {
   }
 
   // ── Publish ──────────────────────────────────────────────────────────────
+  // Upload en arrière-plan, découplé du cycle de vie de cette page — comme
+  // le mobile (backgroundUploadService) : on enfile le job et on navigue
+  // immédiatement, la confirmation (succès/échec) arrive en toast une fois
+  // l'upload terminé.
 
-  async function publish() {
-    setUploading(true);
-    try {
-      let media_url: string | undefined;
-      let thumbnail_url: string | undefined;
-      let duration_sec = 5;
-      const overlays_json = buildOverlaysJson();
-
-      if (mode === 'text') {
-        // render canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = 1080; canvas.height = 1920;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          // draw gradient bg
-          const grad = ctx.createLinearGradient(0, 0, 1080, 1920);
-          // simple fallback solid
-          ctx.fillStyle = '#7B3FF2';
-          ctx.fillRect(0, 0, 1080, 1920);
-        }
-        // upload as image
-        const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.9));
-        if (blob) {
-          const fd = new FormData();
-          fd.append('file', blob, 'story_text.jpg');
-          const res = await apiClient.upload<any>(Endpoints.upload.images('stories'), fd);
-          const uploaded = res.data?.uploaded?.[0] ?? res.data;
-          media_url = uploaded?.url ?? uploaded;
-          thumbnail_url = media_url;
-        }
-        await apiClient.post(Endpoints.stories.create, {
-          media_url,
-          media_type: 'text',
-          thumbnail_url,
-          caption: caption.trim() || undefined,
-          duration_sec: 5,
-          background_color: typeof bgGrad === 'string' && bgGrad.startsWith('#') ? bgGrad : '#7B3FF2',
-          audio_url: sound?.file_url,
-          audio_name: sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
-          overlays_json,
-          audience_type: audience,
-        });
-      } else if (mode === 'image' && mediaSrc) {
-        // mediaSrc may be a dataURL (after crop) or object URL
-        const isDataUrl = mediaSrc.startsWith('data:');
-        if (isDataUrl) {
-          const res = await fetch(mediaSrc);
-          const blob = await res.blob();
-          const fd = new FormData();
-          fd.append('file', blob, 'story.jpg');
-          const up = await apiClient.upload<any>(Endpoints.upload.images('stories'), fd);
-          const uploaded = up.data?.uploaded?.[0] ?? up.data;
-          media_url = uploaded?.url ?? uploaded;
-          thumbnail_url = media_url;
-        } else if (mediaFile) {
-          const fd = new FormData();
-          fd.append('file', mediaFile);
-          const up = await apiClient.upload<any>(Endpoints.upload.images('stories'), fd);
-          const uploaded = up.data?.uploaded?.[0] ?? up.data;
-          media_url = uploaded?.url ?? uploaded;
-          thumbnail_url = media_url;
-        }
-        await apiClient.post(Endpoints.stories.create, {
-          media_url,
-          media_type: 'image',
-          thumbnail_url,
-          caption: caption.trim() || undefined,
-          duration_sec: 5,
-          audio_url: sound?.file_url,
-          audio_name: sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
-          overlays_json,
-          audience_type: audience,
-        });
-      } else if (mode === 'video' && mediaFile) {
-        const uploaded = await uploadVideoHls(mediaFile, 'stories');
-        media_url = uploaded.hls_url ?? uploaded.url;
-        thumbnail_url = uploaded.thumbnail_url;
-        duration_sec = uploaded.duration ? Math.min(Math.ceil(uploaded.duration), 90) : 10;
-        await apiClient.post(Endpoints.stories.create, {
-          media_url,
-          media_type: 'video',
-          thumbnail_url,
-          caption: caption.trim() || undefined,
-          duration_sec,
-          audio_url: sound?.file_url,
-          audio_name: sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
-          overlays_json,
-          audience_type: audience,
-        });
-      }
-
-      if (sound) apiClient.post(Endpoints.sounds.use(sound.id)).catch(() => {});
-      setSuccess(true);
-      setTimeout(() => navigate(-1), 2000);
-    } catch (err: any) {
-      toast.error(extractApiErrorMessage(err, 'Erreur lors de la publication'));
-    } finally {
-      setUploading(false);
-    }
+  function publish() {
+    const overlays_json = buildOverlaysJson();
+    toast('Publication en cours…', { icon: '📤' });
+    backgroundUploadService.enqueueStory({
+      mode, mediaSrc, mediaFile, bgGrad, caption,
+      overlaysJson: overlays_json,
+      audience,
+      soundId: sound?.id,
+      soundFileUrl: sound?.file_url,
+      soundName: sound ? `${sound.title}${sound.artist_name ? ` — ${sound.artist_name}` : ''}` : undefined,
+    });
+    navigate(-1);
   }
 
   const canPublish = mode === 'text' ? caption.trim().length > 0 : !!mediaSrc;
@@ -822,19 +731,6 @@ export default function StoryEditorPage() {
     // (mediaSrc), pas de l'image brute d'origine (rawSrc) — sinon toute
     // révision précédente est silencieusement perdue à chaque réouverture.
     return <CropTool imgSrc={mediaSrc ?? rawSrc} onDone={onCropDone} onCancel={() => { setShowCrop(false); setMode('pick'); }} />;
-  }
-
-  if (success) {
-    return (
-      <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center gap-4 bg-black">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-          <Check size={28} className="text-white" />
-        </div>
-        <p className="font-black text-xl text-white">Story publiee !</p>
-        <p className="text-sm text-white/50">Visible 24h</p>
-      </div>
-    );
   }
 
   // ── MODE PICK — bottom sheet ─────────────────────────────────────────────
@@ -1227,10 +1123,10 @@ export default function StoryEditorPage() {
             )}
           </div>
           {/* Publish */}
-          <button onClick={publish} disabled={uploading || !canPublish}
+          <button onClick={publish} disabled={!canPublish}
             className="w-10 h-10 flex items-center justify-center rounded-xl disabled:opacity-40 transition-opacity"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
-            {uploading ? <Spinner size="sm" /> : <Send size={16} />}
+            <Send size={16} />
           </button>
         </div>
       </div>

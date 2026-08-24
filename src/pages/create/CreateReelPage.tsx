@@ -1,14 +1,12 @@
 import { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Video, Upload, Repeat2 } from 'lucide-react';
-import { apiClient } from '../../api';
-import { Endpoints } from '../../api/endpoints'; // used for reels.feed
 import { Spinner } from '../../components/ui/Spinner';
-import { uploadVideoHls, uploadImageAsReel } from '../../api/uploadVideo';
 import { ReelEditor } from '../../components/reel-editor/ReelEditor';
 import { createDefaultEditState } from '../../components/reel-editor/types';
 import type { ReelEditState } from '../../components/reel-editor/types';
 import toast from 'react-hot-toast';
+import { backgroundUploadService } from '../../services/backgroundUploadService';
 
 // Alignée sur MAX_VIDEO_DURATION_SEC côté mobile (CreateReelScreen.tsx) — un
 // reel vidéo ne peut pas dépasser 10 minutes.
@@ -35,7 +33,6 @@ export default function CreateReelPage() {
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [isPhoto,      setIsPhoto]      = useState(false);
   const [publishing,   setPublishing]   = useState(false);
-  const [uploadPct,    setUploadPct]    = useState(0);
   const [edit,         setEdit]         = useState<ReelEditState>(createDefaultEditState());
 
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -69,47 +66,18 @@ export default function CreateReelPage() {
     setMediaPreview(null);
   };
 
-  const handlePublish = async () => {
+  // Upload en arrière-plan, découplé du cycle de vie de cette page — comme
+  // le mobile (backgroundUploadService) : on enfile le job et on navigue
+  // immédiatement, la confirmation (succès/échec) arrive en toast une fois
+  // l'upload terminé.
+  const handlePublish = () => {
     if (!mediaFile || publishing) return;
     setPublishing(true);
-    setUploadPct(0);
-    try {
-      const uploaded = isPhoto
-        ? await uploadImageAsReel(mediaFile, 5, setUploadPct)
-        : await uploadVideoHls(mediaFile, 'reels', setUploadPct);
-
-      // Noms de champs POST (ReelCreate) : "filter" (pas "filter_name", réservé
-      // à la lecture/ReelResponse). Trim vidéo/vitesse non envoyés — comportement
-      // de preview uniquement côté web (pas de ré-encodage client), cohérent avec
-      // le mobile qui ne les envoie pas non plus (le trim y est déjà "brûlé" dans
-      // le fichier avant upload).
-      await apiClient.post(Endpoints.reels.feed, {
-        hls_url:        uploaded.hls_url,
-        thumbnail_url:  uploaded.thumbnail_url,
-        duration_sec:   isPhoto ? 5 : (uploaded.duration ? Math.round(uploaded.duration) : undefined),
-        caption:        caption.trim() || undefined,
-        ...(edit.filter !== 'original' ? { filter: edit.filter } : {}),
-        ...(edit.layers.length ? { text_layers: JSON.stringify(edit.layers) } : {}),
-        ...(edit.stickers.length ? { sticker_layers: JSON.stringify(edit.stickers) } : {}),
-        ...(edit.drawings.length ? { draw_layers: JSON.stringify(edit.drawings) } : {}),
-        ...(Object.values(edit.adjust).some(v => v !== 0) ? { video_adjust: JSON.stringify(edit.adjust) } : {}),
-        ...(edit.musicUrl ? {
-          music_url:       edit.musicUrl,
-          music_name:      edit.musicName,
-          music_start_sec: edit.musicStartSec,
-          music_end_sec:   edit.musicEndSec,
-        } : {}),
-        source_reel_id: sourceReelId,
-        remix_type:     sourceReelId ? 'remix' : undefined,
-      });
-
-      toast.success('Reel publié !');
-      navigate(-1);
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Erreur lors de la publication');
-    } finally {
-      setPublishing(false);
-    }
+    toast('Publication en cours…', { icon: '📤' });
+    backgroundUploadService.enqueueReel({
+      mediaFile, isPhoto, caption, edit, sourceReelId,
+    });
+    navigate(-1);
   };
 
   return (
@@ -133,31 +101,6 @@ export default function CreateReelPage() {
           Envoyer
         </button>
       </div>
-
-      {/* Upload hint */}
-      {mediaFile && !publishing && (
-        <div className="flex items-center gap-2 px-4 py-2"
-          style={{ background: 'rgba(123,63,242,0.08)', borderBottom: '1px solid rgba(123,63,242,0.15)' }}>
-          <Upload size={13} style={{ color: 'var(--primary)' }} />
-          <span className="text-xs" style={{ color: 'var(--primary)' }}>
-            Upload en cours après "Envoyer"
-          </span>
-        </div>
-      )}
-
-      {/* Progress bar */}
-      {publishing && (
-        <div className="px-4 py-2 flex items-center gap-3"
-          style={{ background: 'rgba(123,63,242,0.08)', borderBottom: '1px solid rgba(123,63,242,0.15)' }}>
-          <Spinner size="sm" />
-          <div className="flex-1">
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-              <div className="h-full rounded-full transition-all" style={{ width: `${uploadPct}%`, background: 'var(--primary)' }} />
-            </div>
-          </div>
-          <span className="text-xs font-bold" style={{ color: 'var(--primary)' }}>{uploadPct}%</span>
-        </div>
-      )}
 
       {/* Media zone / éditeur */}
       {mediaPreview ? (

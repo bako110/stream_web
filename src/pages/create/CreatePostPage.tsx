@@ -1,13 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Image, Video, Smile, X, Globe, Upload, Users, ChevronDown, Check } from 'lucide-react';
+import { ArrowLeft, Image, Video, Smile, X, Globe, Users, ChevronDown, Check } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
-import { uploadVideoHls } from '../../api/uploadVideo';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import { extractApiErrorMessage } from '../../utils/apiError';
+import { backgroundUploadService } from '../../services/backgroundUploadService';
 
 const FEELINGS = [
   'Content', 'Triste', 'Heureux', 'Motivé',
@@ -16,21 +15,6 @@ const FEELINGS = [
 ];
 
 const MAX_IMAGES = 6;
-
-async function uploadFile(file: File, folder: string): Promise<string> {
-  const contentType = file.type || 'image/jpeg';
-  const filename    = file.name || `photo_${Date.now()}.jpg`;
-  const r = await apiClient.post<{ upload_url: string; public_url: string }>(
-    '/api/v1/upload/presigned',
-    { folder, filename, content_type: contentType },
-  );
-  await fetch(r.data.upload_url, {
-    method: 'PUT',
-    headers: { 'Content-Type': contentType },
-    body: file,
-  });
-  return r.data.public_url;
-}
 
 export default function CreatePostPage() {
   const navigate   = useNavigate();
@@ -123,61 +107,20 @@ export default function CreatePostPage() {
     if (existingVideoUrl) { setExistingVideoUrl(null); setMediaCleared(true); }
   };
 
-  const handlePublish = async () => {
+  // Upload en arrière-plan, découplé du cycle de vie de cette page — comme
+  // le mobile (backgroundUploadService), on enfile le job puis on navigue
+  // immédiatement, la confirmation (succès/échec) arrive en toast une fois
+  // l'upload terminé, que l'utilisateur soit resté ici ou soit déjà parti.
+  const handlePublish = () => {
     if (!canPost || publishing) return;
     setPublishing(true);
-    try {
-      let image_url: string | undefined;
-      let image_urls: string[] | undefined;
-      let video_url: string | undefined;
-
-      if (images.length === 1) {
-        image_url = await uploadFile(images[0], 'posts');
-      } else if (images.length > 1) {
-        image_urls = await Promise.all(images.map(f => uploadFile(f, 'posts')));
-        image_url  = image_urls[0];
-      }
-      if (video) {
-        const uploaded = await uploadVideoHls(video, 'posts');
-        video_url = uploaded.hls_url ?? uploaded.url;
-      }
-
-      if (isEdit && editId) {
-        const noNewMedia = !image_url && !image_urls && !video_url;
-        await apiClient.put(Endpoints.posts.byId(editId), {
-          body:        body.trim() || undefined,
-          feeling:     feeling ?? undefined,
-          is_private:  isPrivate,
-          image_url,
-          image_urls,
-          video_url,
-          clear_media: noNewMedia && mediaCleared ? true : undefined,
-        });
-        toast.success('Post mis à jour !');
-      } else {
-        const res = await apiClient.post<{ status?: string }>(Endpoints.posts.create, {
-          body:      body.trim() || undefined,
-          feeling:   feeling ?? undefined,
-          is_private: isPrivate,
-          image_url,
-          image_urls,
-          video_url,
-        });
-        // pending_review (2026-08bis) : media present -> invisible tant que
-        // l'IA n'a pas confirme "cleared" -- message different du succes
-        // immediat habituel, cf. MyVerificationQueuePage.tsx pour le suivi.
-        if (res.data?.status === 'pending_review') {
-          toast.success('Publication envoyée, en cours de vérification. Elle sera visible une fois confirmée.');
-        } else {
-          toast.success('Post publié !');
-        }
-      }
-      navigate(-1);
-    } catch (e: any) {
-      toast.error(extractApiErrorMessage(e, (isEdit ? 'Erreur lors de la mise à jour' : 'Erreur lors de la publication')));
-    } finally {
-      setPublishing(false);
-    }
+    toast('Publication en cours…', { icon: '📤' });
+    backgroundUploadService.enqueuePost({
+      body, feeling, isPrivate, images, video,
+      editId: isEdit ? editId! : undefined,
+      existingImageUrls, existingVideoUrl, mediaCleared,
+    });
+    navigate(-1);
   };
 
   if (loadingEdit) return <PageLoader />;
@@ -202,15 +145,6 @@ export default function CreatePostPage() {
           {isEdit ? 'Enregistrer' : 'Publier'}
         </button>
       </div>
-
-      {/* Upload hint */}
-      {publishing && (
-        <div className="flex items-center gap-2 px-4 py-2"
-          style={{ background: 'rgba(123,63,242,0.1)', borderBottom: '1px solid rgba(123,63,242,0.2)' }}>
-          <Upload size={13} style={{ color: 'var(--primary)' }} />
-          <span className="text-xs" style={{ color: 'var(--primary)' }}>Upload en cours...</span>
-        </div>
-      )}
 
       {/* Author row */}
       <div className="flex items-center gap-3 px-4 py-3"
