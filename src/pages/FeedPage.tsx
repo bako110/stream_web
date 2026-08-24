@@ -3284,17 +3284,23 @@ export default function FeedPage() {
     loadFeed(tab);
   }, [tab]));
 
-  // Infinite scroll — sentinel observé en bas de liste
+  // Infinite scroll — sentinel observé en bas de liste. `loading` doit être
+  // dans les deps : le sentinel n'est monté dans le DOM qu'une fois le
+  // chargement initial terminé (items.length > 0), et loadMoreFeed ne change
+  // pas forcément d'identité à ce moment-là (ses propres deps tab/hasMoreFeed/
+  // feedAd ne bougent pas systématiquement) — sans ça l'effet peut tourner
+  // une seule fois avec sentinelRef.current encore null et ne jamais
+  // ré-observer le sentinel une fois réellement monté.
   useEffect(() => {
     const node = sentinelRef.current;
-    if (!node) return;
+    if (!node || loading || !hasMoreFeed) return;
     const obs = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMoreFeed(); },
       { rootMargin: '600px' },
     );
     obs.observe(node);
     return () => obs.disconnect();
-  }, [loadMoreFeed]);
+  }, [loading, hasMoreFeed, loadMoreFeed]);
 
   return (
     <div className="px-2 sm:px-4 py-2 lg:py-6 w-full mx-auto lg:h-full lg:overflow-hidden">
