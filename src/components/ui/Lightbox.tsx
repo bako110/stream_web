@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Download, Copy, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Endpoints } from '../../api/endpoints';
+import { API_BASE_URL } from '../../utils/constants';
 
 interface LightboxProps {
   urls: string[];
@@ -19,24 +21,14 @@ function filenameFromUrl(url: string): string {
   return `image-${Date.now()}.jpg`;
 }
 
-// fetch() est soumis a CORS (contrairement a <img> qui l'ignore pour un
-// simple affichage) -- si le CDN qui sert l'image n'a pas de politique CORS
-// autorisant l'origine du site, le fetch echoue avant meme d'atteindre le
-// clipboard/telechargement. On distingue ce cas pour donner un message
-// utile plutot qu'un "impossible" generique qui ne dit rien du probleme reel.
 async function fetchImageBlob(url: string): Promise<Blob> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`http_${res.status}`);
-    return await res.blob();
-  } catch (e) {
-    throw new Error('cors_or_network');
-  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`http_${res.status}`);
+  return await res.blob();
 }
 
 export async function downloadImage(url: string) {
-  try {
-    const blob = await fetchImageBlob(url);
+  const saveBlob = (blob: Blob) => {
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objectUrl;
@@ -45,10 +37,27 @@ export async function downloadImage(url: string) {
     a.click();
     a.remove();
     URL.revokeObjectURL(objectUrl);
-  } catch {
-    // Repli : ouvrir l'image dans un nouvel onglet — l'utilisateur peut
-    // toujours faire "Enregistrer sous" manuellement meme si le CDN bloque
-    // le fetch() cross-origin necessaire pour un telechargement direct.
+  };
+
+  // Le fetch() direct navigateur -> CDN depend de CORS et se comporte
+  // differemment d'un test curl (constate en prod avec Cloudflare R2) --
+  // on passe donc par le backend (jamais soumis a CORS) en methode
+  // principale, avec le fetch direct puis l'ouverture d'onglet comme replis.
+  try {
+    const blob = await fetchImageBlob(`${API_BASE_URL}${Endpoints.utils.downloadImage(url)}`);
+    saveBlob(blob);
+    return;
+  } catch (e) {
+    console.error('[downloadImage] backend proxy failed for', url, e);
+  }
+
+  try {
+    const blob = await fetchImageBlob(url);
+    saveBlob(blob);
+  } catch (e) {
+    // Dernier repli : ouvrir l'image dans un nouvel onglet — l'utilisateur
+    // peut toujours faire "Enregistrer sous" manuellement.
+    console.error('[downloadImage] direct fetch failed for', url, e);
     window.open(url, '_blank', 'noopener,noreferrer');
     toast.error('Téléchargement direct indisponible — image ouverte dans un nouvel onglet, clic droit → Enregistrer sous.');
   }

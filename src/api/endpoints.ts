@@ -383,7 +383,8 @@ export const Endpoints = {
     invite:  (id: string) => `${V1}/planning/invites/${id}`,
   },
   utils: {
-    linkPreview: (url: string) => `${V1}/utils/link-preview?url=${encodeURIComponent(url)}`,
+    linkPreview:   (url: string) => `${V1}/utils/link-preview?url=${encodeURIComponent(url)}`,
+    downloadImage: (url: string) => `${V1}/utils/download-image?url=${encodeURIComponent(url)}`,
   },
   social_ext: {
     friendsWhoLiked: (entityType: string, entityId: string) => {
