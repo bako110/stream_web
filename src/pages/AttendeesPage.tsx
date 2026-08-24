@@ -84,7 +84,12 @@ export default function AttendeesPage() {
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
-      a.href = url; a.download = `inscrits_${id}.pdf`; a.click();
+      const slug = eventTitle
+        .toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      a.href = url; a.download = `inscrits_gofolyx_${slug || id}.pdf`; a.click();
       URL.revokeObjectURL(url);
     } catch {
       toast.error('Export impossible pour le moment');
