@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, Copy, Check } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Endpoints } from '../../api/endpoints';
 import { API_BASE_URL } from '../../utils/constants';
@@ -66,50 +66,8 @@ export async function downloadImage(url: string) {
   }
 }
 
-async function copyImage(url: string): Promise<boolean> {
-  try {
-    if (!navigator.clipboard || !window.ClipboardItem) {
-      toast.error('Copie non supportée par ce navigateur.');
-      return false;
-    }
-    const blob = await fetchImageBlob(url);
-    // Clipboard API n'accepte que quelques types image (png/jpeg/webp selon
-    // navigateur) — reconvertir en PNG via canvas si le blob source est dans
-    // un format non supporte (ex: certains CDN servent du webp).
-    const pngBlob = blob.type === 'image/png' ? blob : await toPng(blob);
-    await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
-    return true;
-  } catch (e: any) {
-    if (e?.message === 'cors_or_network') {
-      toast.error("Copie impossible : le serveur d'images bloque cette action (CORS).");
-    } else {
-      toast.error('Copie impossible sur ce navigateur.');
-    }
-    return false;
-  }
-}
-
-function toPng(blob: Blob): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(blob);
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('canvas unsupported')); return; }
-      ctx.drawImage(img, 0, 0);
-      canvas.toBlob(b => { URL.revokeObjectURL(objectUrl); b ? resolve(b) : reject(new Error('toBlob failed')); }, 'image/png');
-    };
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('image load failed')); };
-    img.src = objectUrl;
-  });
-}
-
 export function Lightbox({ urls, index, onClose }: LightboxProps) {
   const [current, setCurrent] = useState(index);
-  const [copied, setCopied]   = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -121,27 +79,14 @@ export function Lightbox({ urls, index, onClose }: LightboxProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [urls.length, onClose]);
 
-  async function handleCopy() {
-    const ok = await copyImage(urls[current]);
-    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1500); }
-  }
-
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(10px)' }}
       onClick={onClose}
     >
-      {/* Actions (telecharger / copier / fermer) */}
+      {/* Actions (telecharger / fermer) */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-        <button
-          className="p-2.5 rounded-full transition-all hover:bg-white/20"
-          style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
-          onClick={e => { e.stopPropagation(); handleCopy(); }}
-          title="Copier l'image"
-        >
-          {copied ? <Check size={20} /> : <Copy size={20} />}
-        </button>
         <button
           className="p-2.5 rounded-full transition-all hover:bg-white/20"
           style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
