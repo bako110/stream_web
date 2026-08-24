@@ -77,7 +77,7 @@ export default function AttendeesPage() {
     try {
       const raw   = localStorage.getItem('gofolyx-auth-tokens');
       const token = raw ? (JSON.parse(raw)?.access ?? JSON.parse(raw)?.access_token ?? null) : null;
-      const res   = await fetch(`${API_BASE_URL}/api/v1/events/${id}/attendees/pdf`, {
+      const res   = await fetch(`${API_BASE_URL}/api/v1/events/${id}/attendees/export/pdf`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error();
