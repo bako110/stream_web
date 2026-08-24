@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
 import { UserPlus, UserCheck, Users } from 'lucide-react';
@@ -8,6 +8,8 @@ import { Endpoints } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
 
 type Tab = 'followers' | 'following';
+
+const PAGE_SIZE = 30;
 
 interface UserCard {
   id:            string;
@@ -176,50 +178,79 @@ export default function FollowingPage() {
   const [loadingFg,    setLoadingFg]    = useState(false);
   const [loadedF,      setLoadedF]      = useState(false);
   const [loadedFg,     setLoadedFg]     = useState(false);
+  const [pageF,        setPageF]        = useState(1);
+  const [pageFg,       setPageFg]       = useState(1);
+  const [hasMoreF,     setHasMoreF]     = useState(true);
+  const [hasMoreFg,    setHasMoreFg]    = useState(true);
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
 
-  const fetchFollowers = useCallback(async () => {
-    if (loadedF || !targetId) return;
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const fetchFollowers = useCallback(async (page: number) => {
+    if (!targetId) return;
     setLoadingF(true);
     try {
-      const res = await apiClient.get<unknown>(Endpoints.users.followers(targetId));
+      const res = await apiClient.get<unknown>(`${Endpoints.users.followers(targetId)}?page=${page}&limit=${PAGE_SIZE}`);
       const raw = res.data as any;
       const list: UserCard[] = Array.isArray(raw) ? raw
         : Array.isArray(raw?.items) ? raw.items
         : Array.isArray(raw?.data)  ? raw.data
         : [];
-      setFollowers(list);
+      setFollowers(prev => page === 1 ? list : [...prev, ...list]);
+      setHasMoreF(list.length >= PAGE_SIZE);
+      setPageF(page);
       setLoadedF(true);
     } catch {
       setLoadedF(true);
+      setHasMoreF(false);
     } finally {
       setLoadingF(false);
     }
-  }, [targetId, loadedF]);
+  }, [targetId]);
 
-  const fetchFollowing = useCallback(async () => {
-    if (loadedFg || !targetId) return;
+  const fetchFollowing = useCallback(async (page: number) => {
+    if (!targetId) return;
     setLoadingFg(true);
     try {
-      const res = await apiClient.get<unknown>(Endpoints.users.following(targetId));
+      const res = await apiClient.get<unknown>(`${Endpoints.users.following(targetId)}?page=${page}&limit=${PAGE_SIZE}`);
       const raw = res.data as any;
       const list: UserCard[] = Array.isArray(raw) ? raw
         : Array.isArray(raw?.items) ? raw.items
         : Array.isArray(raw?.data)  ? raw.data
         : [];
-      setFollowing(list);
+      setFollowing(prev => page === 1 ? list : [...prev, ...list]);
+      setHasMoreFg(list.length >= PAGE_SIZE);
+      setPageFg(page);
       setLoadedFg(true);
     } catch {
       setLoadedFg(true);
+      setHasMoreFg(false);
     } finally {
       setLoadingFg(false);
     }
-  }, [targetId, loadedFg]);
+  }, [targetId]);
 
   useEffect(() => {
-    if (tab === 'followers') fetchFollowers();
-    else                     fetchFollowing();
+    if (tab === 'followers') { if (!loadedF)  fetchFollowers(1); }
+    else                     { if (!loadedFg) fetchFollowing(1); }
   }, [tab]); // eslint-disable-line
+
+  const isLoading   = tab === 'followers' ? loadingF  : loadingFg;
+  const hasMore     = tab === 'followers' ? hasMoreF  : hasMoreFg;
+  const currentPage = tab === 'followers' ? pageF     : pageFg;
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || isLoading) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        if (tab === 'followers') fetchFollowers(currentPage + 1);
+        else                     fetchFollowing(currentPage + 1);
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [tab, hasMore, isLoading, currentPage, fetchFollowers, fetchFollowing]);
 
   async function handleFollow(id: string) {
     setFollowingMap(prev => ({ ...prev, [id]: true }));
@@ -239,7 +270,6 @@ export default function FollowingPage() {
     }
   }
 
-  const isLoading   = tab === 'followers' ? loadingF  : loadingFg;
   const currentList = tab === 'followers' ? followers : following;
 
   const TABS: { id: Tab; label: string; count: number }[] = [
@@ -287,7 +317,7 @@ export default function FollowingPage() {
       </div>
 
       {/* Grid */}
-      {isLoading ? (
+      {isLoading && currentList.length === 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
@@ -299,18 +329,30 @@ export default function FollowingPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {currentList.map(user => (
-            <UserCardItem
-              key={user.id}
-              user={user}
-              isMe={user.id === me?.id}
-              onFollow={handleFollow}
-              onUnfollow={handleUnfollow}
-              followingMap={followingMap}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {currentList.map(user => (
+              <UserCardItem
+                key={user.id}
+                user={user}
+                isMe={user.id === me?.id}
+                onFollow={handleFollow}
+                onUnfollow={handleUnfollow}
+                followingMap={followingMap}
+              />
+            ))}
+          </div>
+          {hasMore && (
+            <div ref={sentinelRef} className="flex justify-center py-6">
+              {isLoading && (
+                <div
+                  className="w-5 h-5 rounded-full border-2 animate-spin"
+                  style={{ borderColor: 'var(--border)', borderTopColor: 'var(--primary)' }}
+                />
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
