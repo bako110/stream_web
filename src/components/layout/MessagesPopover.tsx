@@ -776,7 +776,7 @@ function MiniConvoList({
                   color: (c.unread_count ?? 0) > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
                   fontWeight: (c.unread_count ?? 0) > 0 ? 600 : 400,
                 }}>
-                  {formatLastMessagePreview(c.last_message, c.last_type)}
+                  {formatLastMessagePreview(c.last_message, c.last_type, c.last_encrypted)}
                 </p>
               )}
             </div>

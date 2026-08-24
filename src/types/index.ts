@@ -332,6 +332,7 @@ export type MessageType = 'text' | 'voice' | 'image' | 'video' | 'file' | 'stick
 export interface Conversation {
   user: UserPublic; last_message: string | null; last_message_at: string | null; unread_count: number;
   last_type?: MessageType;
+  last_encrypted?: boolean;
   request_status?: ConversationRequestStatus;
 }
 export interface Message {

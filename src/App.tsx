@@ -171,6 +171,16 @@ function AppShell() {
     if (user) accountsService.migrateIfNeeded();
   }, [user]);
 
+  // Chiffrement de bout en bout des messages — enregistre cet appareil
+  // (navigateur) auprès du serveur dès l'authentification, condition pour
+  // pouvoir recevoir des messages chiffrés.
+  useEffect(() => {
+    if (!user) return;
+    import('./crypto/sessionManager').then(({ ensureDeviceRegistered, refillOneTimePrekeysIfLow }) => {
+      ensureDeviceRegistered().then(() => refillOneTimePrekeysIfLow()).catch(() => {});
+    });
+  }, [user]);
+
   // Bloquer tout rendu de route tant que l'état auth n'est pas résolu
   if (isInitializing) return <GlobalLoader />;
 

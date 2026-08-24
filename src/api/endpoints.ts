@@ -154,6 +154,14 @@ export const Endpoints = {
     acceptConversation: (userId: string) => `${V1}/messages/conversations/${userId}/accept`,
     blockConversation:  (userId: string) => `${V1}/messages/conversations/${userId}/block`,
   },
+  devices: {
+    registerKeys:  `${V1}/devices/keys`,
+    addPrekeys:    `${V1}/devices/keys/one-time-prekeys`,
+    myKeysCount:   `${V1}/devices/me/keys-count`,
+    bundles:       (userId: string) => `${V1}/devices/${userId}/bundles`,
+    listDevices:   (userId: string) => `${V1}/devices/${userId}`,
+    revokeKeys:    (deviceId: string) => `${V1}/devices/${deviceId}/keys`,
+  },
   communities: {
     list:     `${V1}/communities`,
     mine:     `${V1}/communities/me`,

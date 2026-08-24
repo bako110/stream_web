@@ -6,7 +6,7 @@ import {
   Send, ArrowLeft, MessageCircle, X, SquarePen, Search, RefreshCw,
   Wifi, WifiOff, MoreVertical, Reply, Pencil, Trash2, Forward, Pin,
   PinOff, Smile, Image as ImageIcon, Check, CheckCheck, Trash,
-  Mic, MicOff, Play, Square, Paperclip,
+  Mic, MicOff, Play, Square, Paperclip, Lock,
 } from 'lucide-react';
 import type { Conversation, ConversationRequestStatus, Message, UserPublic, MessageType } from '../types';
 import { formatLastMessagePreview } from '../utils/messagePreview';
@@ -61,6 +61,30 @@ interface ExtMessage extends Message {
   edited_at?: string | null;
   deleted?: boolean;
   pinned?: boolean;
+  encrypted?: boolean;
+  // true une fois `content`/`body` remplacé par le texte déchiffré (voir
+  // decryptMessageIfNeeded ci-dessous) — avant ça, sur un message
+  // encrypted=true, le contenu est encore le blob JSON chiffré et ne doit
+  // jamais être affiché tel quel.
+  decrypted?: boolean;
+  decryptFailed?: boolean;
+}
+
+/** Déchiffre un message reçu si nécessaire — no-op si déjà en clair ou déjà
+ * déchiffré. Remplace `body`/`content` par le texte en clair. Ne lève
+ * jamais : en cas d'échec, un texte d'erreur explicite est utilisé. */
+async function decryptMessageIfNeeded(msg: ExtMessage): Promise<ExtMessage> {
+  if (!msg.encrypted || msg.decrypted) return msg;
+  try {
+    const { decryptMessageFromUser } = await import('../crypto/sessionManager');
+    const raw = msg.body ?? msg.content ?? '';
+    const payload = JSON.parse(raw);
+    const plain = await decryptMessageFromUser(msg.sender_id, payload);
+    return { ...msg, body: plain, content: plain, decrypted: true };
+  } catch {
+    const errText = '🔒 Message chiffré indéchiffrable';
+    return { ...msg, body: errText, content: errText, decrypted: true, decryptFailed: true };
+  }
 }
 
 // ── ConvoListHandle ───────────────────────────────────────────────────────────
@@ -286,7 +310,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
                 </div>
                 {c.last_message && (
                   <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                    {formatLastMessagePreview(c.last_message, c.last_type)}
+                    {formatLastMessagePreview(c.last_message, c.last_type, c.last_encrypted)}
                   </p>
                 )}
               </div>
@@ -682,10 +706,11 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     try {
       const res = await apiClient.get<unknown>(Endpoints.messages.conversation(userId));
       // Backend retourne du plus récent au plus ancien → inverser pour afficher chronologiquement
-      const msgs = norm<Message>(res.data)
+      const rawMsgs = norm<Message>(res.data)
         .map((m: any) => ({ ...m, body: m.body ?? m.content ?? '' }))
-        .reverse();
-      setMessages(msgs as ExtMessage[]);
+        .reverse() as ExtMessage[];
+      const msgs = await Promise.all(rawMsgs.map(decryptMessageIfNeeded));
+      setMessages(msgs);
       setError(null);
     } catch (e: any) { setError(e?.message ?? 'Erreur'); }
     finally { setLoading(false); }
@@ -712,10 +737,16 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       const msg = wsPayload as any;
       const partnerId = msg.sender_id === me?.id ? msg.receiver_id : msg.sender_id;
       if (partnerId !== userId && msg.sender_id !== me?.id) return;
+      const incoming: ExtMessage = { ...msg, body: msg.body ?? msg.content ?? '' };
       setMessages(prev => {
-        if (prev.some(m => m.id === msg.id)) return prev;
-        return [...prev, { ...msg, body: msg.body ?? msg.content ?? '' }];
+        if (prev.some(m => m.id === incoming.id)) return prev;
+        return [...prev, incoming];
       });
+      if (incoming.encrypted) {
+        decryptMessageIfNeeded(incoming).then(decrypted => {
+          setMessages(prev => prev.map(m => m.id === decrypted.id ? decrypted : m));
+        });
+      }
       if (msg.sender_id !== me?.id) apiClient.put(Endpoints.messages.markRead(userId)).catch(() => {});
     }
     if (wsPayload.type === 'read') {
@@ -808,11 +839,26 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     try {
       const payload: any = { content: body, message_type: 'text' };
       if (tempMsg.reply_to) payload.reply_to_id = tempMsg.reply_to.id;
+      // Chiffrement de bout en bout — repli silencieux sur l'envoi en clair
+      // si le destinataire n'a aucun appareil E2EE enregistré (ne jamais
+      // bloquer l'envoi pour cette raison).
+      try {
+        const { encryptMessageForUser } = await import('../crypto/sessionManager');
+        const encPayload = await encryptMessageForUser(userId, body);
+        payload.content = JSON.stringify(encPayload);
+        payload.encrypted = true;
+      } catch { /* silencieux */ }
       const res = await apiClient.post<unknown>(Endpoints.messages.conversation(userId), payload);
       const raw = res.data as any;
       const msg = raw?.id ? raw : (raw?.message ?? raw?.data);
       if (msg?.id) {
-        setMessages(prev => prev.map(m => m.id === tempId ? { ...msg, body: msg.body ?? msg.content ?? body } : m));
+        // Le serveur renvoie le blob chiffré tel que stocké si encrypted=true
+        // — on conserve le texte en clair déjà connu localement plutôt que
+        // d'afficher le JSON brut.
+        const resolved = payload.encrypted
+          ? { ...msg, body, content: body, decrypted: true }
+          : { ...msg, body: msg.body ?? msg.content ?? body };
+        setMessages(prev => prev.map(m => m.id === tempId ? resolved : m));
       } else { await loadMessages(false); }
       onMessageSent(body);
     } catch (e: any) {
@@ -1061,6 +1107,16 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
+  const encryptionBadge = (
+    <div className="flex items-center gap-1.5 mx-auto max-w-[85%] px-3 py-2 rounded-xl text-center"
+      style={{ background: 'var(--surface)' }}>
+      <Lock size={12} style={{ color: 'var(--text-tertiary)' }} className="shrink-0" />
+      <p className="text-[11px] leading-snug" style={{ color: 'var(--text-tertiary)' }}>
+        Les messages sont chiffrés de bout en bout. Personne d'autre, pas même GoFoliX, ne peut les lire.
+      </p>
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-full">
 
@@ -1140,8 +1196,9 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
               )}
             </div>
             <div className="min-w-0">
-              <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                {peer.display_name ?? peer.username}
+              <p className="font-bold text-sm truncate flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                <span className="truncate">{peer.display_name ?? peer.username}</span>
+                <Lock size={11} style={{ color: 'var(--text-tertiary)' }} className="shrink-0" />
               </p>
               <p className="text-[11px]" style={{ color: peer.is_online ? '#22c55e' : 'var(--text-tertiary)' }}>
                 {peer.is_online === true
@@ -1217,11 +1274,16 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
             </button>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-60">
-            <MessageCircle size={30} style={{ color: 'var(--text-tertiary)' }} />
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Démarrez la conversation</p>
+          <div className="flex flex-col h-full">
+            {encryptionBadge}
+            <div className="flex flex-col items-center justify-center flex-1 gap-3 opacity-60">
+              <MessageCircle size={30} style={{ color: 'var(--text-tertiary)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Démarrez la conversation</p>
+            </div>
           </div>
-        ) : messages.map(msg => {
+        ) : (<>
+          {encryptionBadge}
+          {messages.map(msg => {
           const isMe = msg.sender_id === me?.id;
           const isTemp = msg.id?.startsWith('temp-');
           if (isTemp) return (
@@ -1264,7 +1326,8 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
               )}
             </div>
           );
-        })}
+          })}
+        </>)}
         {uploading && (
           <div className="flex justify-center items-center gap-2 py-2">
             <Spinner size="sm" />

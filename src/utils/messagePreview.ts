@@ -7,6 +7,7 @@ import type { MessageType } from '../types';
 export function formatLastMessagePreview(
   lastMessage: string | null | undefined,
   lastType: MessageType | undefined,
+  lastEncrypted?: boolean,
 ): string {
   switch (lastType) {
     case 'voice':    return 'Message vocal';
@@ -16,6 +17,8 @@ export function formatLastMessagePreview(
     case 'sticker':  return 'Sticker';
     case 'location': return 'Position';
     case 'share':    return 'Publication partagée';
-    default:         return lastMessage || '…';
+    default:
+      if (lastEncrypted) return 'Message';
+      return lastMessage || '…';
   }
 }
