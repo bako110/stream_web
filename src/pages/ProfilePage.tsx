@@ -484,59 +484,90 @@ function PublicationsTab({ userId }: { userId: string }) {
   );
 }
 
-// ── Gallery tab (images de posts + events + concerts, avec pagination) ──────────
+// ── Gallery tab (images de posts + events + concerts, scroll infini) ────────────
 interface GalleryImage { id: string; kind: 'post' | 'event' | 'concert'; url: string }
+const GALLERY_LIMIT = 30;
+
+// Posts/events/concerts sont 3 sources paginées indépendamment (pages/hasMore
+// séparés) — chacune avance tant qu'elle a encore une page, permettant un seul
+// scroll infini fusionné sans devoir attendre que toutes les sources soient
+// épuisées avant de charger la suivante.
+function useGallerySource(url: string, extract: (item: any) => GalleryImage[]) {
+  const [images, setImages]   = useState<GalleryImage[]>([]);
+  const [page, setPage]       = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  const loadNext = useCallback(() => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    const nextPage = page + 1;
+    apiClient.get<any[]>(`${url}?page=${nextPage}&limit=${GALLERY_LIMIT}`)
+      .then(r => {
+        const items = Array.isArray(r.data) ? r.data : [];
+        setImages(prev => [...prev, ...items.flatMap(extract)]);
+        setHasMore(items.length === GALLERY_LIMIT);
+        setPage(nextPage);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoading(false));
+  }, [url, page, loading, hasMore]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reset = useCallback(() => {
+    setImages([]); setPage(0); setHasMore(true); setLoading(false);
+  }, []);
+
+  return { images, hasMore, loading, loadNext, reset };
+}
 
 function GalleryTab({ userId }: { userId: string }) {
   const navigate = useNavigate();
-  const [postImages, setPostImages] = useState<GalleryImage[]>([]);
-  const [otherImages, setOtherImages] = useState<GalleryImage[]>([]);
-  const [page, setPage]       = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const GALLERY_LIMIT = 30;
 
-  // Events + concerts n'ont pas de pagination exploitable côté backend
-  // aujourd'hui (même limitation que PublicationsTab) — chargés une seule
-  // fois avec une limite large. Seuls les posts (potentiellement nombreux)
-  // sont paginés via "Charger plus".
+  const posts = useGallerySource(Endpoints.posts.byUserFull(userId), (post: any) => {
+    if (post.video_url || post.hls_url) return [];
+    const urls: string[] = post.image_urls?.length ? post.image_urls : (post.image_url ? [post.image_url] : []);
+    return urls.map(url => ({ id: post.id, kind: 'post' as const, url }));
+  });
+  const events = useGallerySource(Endpoints.events.byUser(userId), (e: any) => {
+    const url = e.banner_url ?? e.thumbnail_url;
+    return url ? [{ id: e.id, kind: 'event' as const, url }] : [];
+  });
+  const concerts = useGallerySource(Endpoints.concerts.byUser(userId), (c: any) => {
+    const url = c.banner_url ?? c.thumbnail_url;
+    return url ? [{ id: c.id, kind: 'concert' as const, url }] : [];
+  });
+
+  const sources = [posts, events, concerts];
+  const loading = sources.some(s => s.loading);
+  const hasMore = sources.some(s => s.hasMore);
+  const initialLoading = loading && sources.every(s => s.images.length === 0);
+
   useEffect(() => {
-    setOtherImages([]);
-    Promise.all([
-      apiClient.get<any>(`${Endpoints.events.byUser(userId)}?limit=100`).catch(() => ({ data: [] })),
-      apiClient.get<any>(`${Endpoints.concerts.byUser(userId)}?limit=100`).catch(() => ({ data: [] })),
-    ]).then(([eventsRes, concertsRes]) => {
-      const events:   any[] = eventsRes.data?.items   ?? (Array.isArray(eventsRes.data)   ? eventsRes.data   : []);
-      const concerts: any[] = concertsRes.data?.items ?? (Array.isArray(concertsRes.data) ? concertsRes.data : []);
-      setOtherImages([
-        ...events.filter(e => e.banner_url || e.thumbnail_url).map(e => ({ id: e.id, kind: 'event' as const, url: e.banner_url ?? e.thumbnail_url })),
-        ...concerts.filter(c => c.banner_url || c.thumbnail_url).map(c => ({ id: c.id, kind: 'concert' as const, url: c.banner_url ?? c.thumbnail_url })),
-      ]);
-    });
+    posts.reset(); events.reset(); concerts.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const load = useCallback((p: number, replace: boolean) => {
-    setLoading(true);
-    apiClient.get<any[]>(`${Endpoints.posts.byUserFull(userId)}?page=${p}&limit=${GALLERY_LIMIT}`)
-      .then(r => {
-        const posts = Array.isArray(r.data) ? r.data : [];
-        const extracted = posts
-          .filter(post => !post.video_url && !post.hls_url)
-          .flatMap(post => {
-            const urls: string[] = post.image_urls?.length ? post.image_urls : (post.image_url ? [post.image_url] : []);
-            return urls.map(url => ({ id: post.id, kind: 'post' as const, url }));
-          });
-        setPostImages(prev => replace ? extracted : [...prev, ...extracted]);
-        setHasMore(posts.length === GALLERY_LIMIT);
-        setPage(p);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  // Premier chargement + relance de chaque source tant qu'elle a encore une
+  // page et qu'aucune requête n'est déjà en vol pour elle.
+  useEffect(() => {
+    sources.forEach(s => { if (s.hasMore && !s.loading && s.images.length === 0) s.loadNext(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  useEffect(() => { setPostImages([]); setPage(1); setHasMore(true); load(1, true); }, [userId, load]);
+  const images = [...events.images, ...concerts.images, ...posts.images];
 
-  const images = [...otherImages, ...postImages];
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) sources.forEach(s => { if (s.hasMore && !s.loading) s.loadNext(); }); },
+      { rootMargin: '300px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, hasMore]);
 
   const goTo = (img: GalleryImage) => navigate(
     img.kind === 'event' ? `/events/${encodeId(img.id)}` :
@@ -544,7 +575,7 @@ function GalleryTab({ userId }: { userId: string }) {
     `/posts/${encodeId(img.id)}`
   );
 
-  if (loading && images.length === 0) {
+  if (initialLoading) {
     return (
       <div className="grid grid-cols-3 gap-1 p-1">
         {Array.from({ length: 9 }).map((_, i) => (
@@ -588,12 +619,8 @@ function GalleryTab({ userId }: { userId: string }) {
         ))}
       </div>
       {hasMore && (
-        <div className="flex justify-center py-5">
-          <button onClick={() => load(page + 1, false)} disabled={loading}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
-            {loading ? <Spinner size="sm" /> : 'Charger plus'}
-          </button>
+        <div ref={sentinelRef} className="flex justify-center py-5">
+          {loading && <Spinner size="sm" />}
         </div>
       )}
     </div>
