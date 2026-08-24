@@ -2947,6 +2947,15 @@ export default function FeedPage() {
   const feedPageRef      = useRef(1);
   const feedHasMoreRef   = useRef(true);
   const reelsHasMoreRef  = useRef(true);
+  // Compte les pages consécutives entièrement recoupées (déjà vues) — le
+  // backend re-trie par score(temps) à chaque page, donc `rawIsEmpty` seul
+  // ne suffit pas : il peut renvoyer indéfiniment de petites pages non-vides
+  // mais 100% déjà vues (le pool tourne sur lui-même) sans jamais se vider
+  // réellement, empêchant hasMoreFeed de passer à false et le sentinel de
+  // scroll infini de re-déclencher en boucle sans jamais atteindre "Vous avez
+  // tout vu". Après N pages recoupées d'affilée, on considère le flux fini.
+  const emptyStreakRef   = useRef(0);
+  const MAX_EMPTY_STREAK = 3;
   const nonReelCountRef  = useRef(0);
   const suggestCountRef  = useRef(0);
   const commCountRef     = useRef(0);
@@ -2987,6 +2996,7 @@ export default function FeedPage() {
     feedPageRef.current     = 1;
     feedHasMoreRef.current  = true;
     reelsHasMoreRef.current = true;
+    emptyStreakRef.current  = 0;
     nonReelCountRef.current = 0;
     suggestCountRef.current = 0;
     commCountRef.current    = 0;
@@ -3186,10 +3196,12 @@ export default function FeedPage() {
       feedPageRef.current = nextPage;
 
       if (freshNonReel.length === 0 && freshReels.length === 0) {
-        // Page entierement recoupee (deja vue) : le flux n'est fini que si le
-        // backend n'a lui-meme plus rien a offrir, sinon la page suivante sera
-        // tentee au prochain scroll (feedPageRef a deja avance ci-dessus).
-        if (rawIsEmpty) setHasMoreFeed(false);
+        // Page entierement recoupee (deja vue) : le flux n'est fini si le
+        // backend n'a lui-meme plus rien a offrir, OU si trop de pages
+        // d'affilee n'ont ramene que du deja-vu (pool qui tourne sur
+        // lui-meme sans jamais se vider vraiment).
+        emptyStreakRef.current += 1;
+        if (rawIsEmpty || emptyStreakRef.current >= MAX_EMPTY_STREAK) setHasMoreFeed(false);
         return;
       }
 
@@ -3246,6 +3258,7 @@ export default function FeedPage() {
       }
       // Une page a ramené du contenu neuf → il peut y en avoir encore ; la vraie fin
       // est détectée au prochain appel si la page suivante ne ramène plus rien (ci-dessus).
+      emptyStreakRef.current = 0;
       setHasMoreFeed(true);
     } catch { /* silencieux */ }
     finally {
@@ -3470,7 +3483,7 @@ export default function FeedPage() {
             open
             onClose={() => setShareTarget(null)}
             url={url}
-            title={shareTarget.title ?? 'GoFolyX'}
+            title={shareTarget.title ?? 'Gofolyx'}
             desc={shareTarget.desc}
             image={shareTarget.image}
             targetType={shareTarget.kind}
