@@ -40,7 +40,7 @@ export const MORE_SECTIONS = [
     items: [
       { to: '/wallet',           label: 'Portefeuille', desc: 'Ton solde GoGold et tes transactions',       icon: Wallet,     color: '#22C55E' },
       { to: '/wallet/referral',  label: 'Parrainage',   desc: 'Invite tes amis et gagne des récompenses',   icon: UserPlus,   color: '#10B981' },
-      { to: '/trending',         label: 'Tendances',    desc: 'Ce qui buzz en ce moment sur GoFoliX',       icon: TrendingUp,  color: '#7B3FF2' },
+      { to: '/trending',         label: 'Tendances',    desc: 'Ce qui buzz en ce moment sur Gofolyx',       icon: TrendingUp,  color: '#7B3FF2' },
     ],
   },
 ];

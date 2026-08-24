@@ -109,7 +109,7 @@ export default function WalletRevenuePage() {
         </button>
         <div>
           <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Revenus</h1>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Historique complet de tes gains sur GoFoliX</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Historique complet de tes gains sur Gofolyx</p>
         </div>
       </div>
 

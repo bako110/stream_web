@@ -1115,7 +1115,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
       style={{ background: 'var(--surface)' }}>
       <Lock size={12} style={{ color: 'var(--text-tertiary)' }} className="shrink-0" />
       <p className="text-[11px] leading-snug text-left" style={{ color: 'var(--text-tertiary)' }}>
-        Les messages sont chiffrés de bout en bout. Personne d'autre, pas même GoFoliX, ne peut les lire.
+        Les messages sont chiffrés de bout en bout. Personne d'autre, pas même Gofolyx, ne peut les lire.
         <span style={{ color: 'var(--primary)', fontWeight: 600 }}> En savoir plus.</span>
       </p>
     </button>
@@ -1506,14 +1506,14 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
               Les messages texte échangés avec {peer?.display_name ?? peer?.username ?? 'cette personne'} sont
               protégés par un chiffrement de bout en bout : ils sont chiffrés sur votre appareil avant l'envoi,
               et seul l'appareil du destinataire peut les déchiffrer. Personne d'autre ne peut les lire en clair
-              — ni un tiers qui intercepterait la connexion, ni GoFoliX lui-même.
+              — ni un tiers qui intercepterait la connexion, ni Gofolyx lui-même.
             </p>
 
             {[
               {
                 icon: <ShieldCheck size={16} style={{ color: 'var(--text-secondary)' }} />,
                 title: 'Comment ça marche',
-                text: "GoFoliX utilise le Signal Protocol (X3DH + Double Ratchet), un standard ouvert et reconnu de chiffrement de bout en bout. Chaque message est chiffré avec une clé unique qui change automatiquement à chaque échange.",
+                text: "Gofolyx utilise le Signal Protocol (X3DH + Double Ratchet), un standard ouvert et reconnu de chiffrement de bout en bout. Chaque message est chiffré avec une clé unique qui change automatiquement à chaque échange.",
               },
               {
                 icon: <RefreshCw size={16} style={{ color: 'var(--text-secondary)' }} />,

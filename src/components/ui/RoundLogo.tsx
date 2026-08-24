@@ -30,7 +30,7 @@ export function RoundLogo({ size = 40 }: { size?: number }) {
         }}>
           <img
             src={isDark ? Images.logoDark : Images.logoLight}
-            alt="GoFoliX"
+            alt="Gofolyx"
             style={{ width: '78%', height: '78%', objectFit: 'contain', display: 'block' }}
           />
         </div>
