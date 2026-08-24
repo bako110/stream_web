@@ -13,6 +13,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { useWs } from '../../context/WebSocketContext';
+import { formatLastMessagePreview } from '../../utils/messagePreview';
 import type { WsPayload } from '../../context/WebSocketContext';
 import { encodeId } from '../../utils/slugId';
 import type { Conversation, ConversationRequestStatus, UserPublic } from '../../types';
@@ -676,6 +677,7 @@ function MiniConvoList({
       updated[idx] = {
         ...updated[idx],
         last_message: preview,
+        last_type: msg.message_type,
         unread_count: partnerId !== selected ? (updated[idx].unread_count ?? 0) + 1 : 0,
       };
       updated.unshift(...updated.splice(idx, 1));
@@ -774,7 +776,7 @@ function MiniConvoList({
                   color: (c.unread_count ?? 0) > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
                   fontWeight: (c.unread_count ?? 0) > 0 ? 600 : 400,
                 }}>
-                  {c.last_message}
+                  {formatLastMessagePreview(c.last_message, c.last_type)}
                 </p>
               )}
             </div>

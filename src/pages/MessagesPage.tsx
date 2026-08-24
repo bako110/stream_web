@@ -8,7 +8,8 @@ import {
   PinOff, Smile, Image as ImageIcon, Check, CheckCheck, Trash,
   Mic, MicOff, Play, Square, Paperclip,
 } from 'lucide-react';
-import type { Conversation, ConversationRequestStatus, Message, UserPublic } from '../types';
+import type { Conversation, ConversationRequestStatus, Message, UserPublic, MessageType } from '../types';
+import { formatLastMessagePreview } from '../utils/messagePreview';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { uploadVideoHls } from '../api/uploadVideo';
@@ -65,7 +66,7 @@ interface ExtMessage extends Message {
 // ── ConvoListHandle ───────────────────────────────────────────────────────────
 
 export interface ConvoListHandle {
-  updatePreview: (senderId: string, preview: string) => void;
+  updatePreview: (senderId: string, preview: string, messageType?: MessageType) => void;
   reload: () => void;
 }
 
@@ -175,7 +176,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
 
   useEffect(() => { load(); }, [load]);
 
-  const updatePreview = useCallback((senderId: string, preview: string) => {
+  const updatePreview = useCallback((senderId: string, preview: string, messageType?: MessageType) => {
     setConvos(prev => {
       const idx = prev.findIndex(c => c.user.id === senderId);
       if (idx === -1) { load(false); return prev; }
@@ -183,6 +184,7 @@ const ConversationList = forwardRef<ConvoListHandle, {
       updated[idx] = {
         ...updated[idx],
         last_message: preview,
+        last_type: messageType,
         unread_count: senderId !== selected ? (updated[idx].unread_count ?? 0) + 1 : 0,
       };
       updated.unshift(...updated.splice(idx, 1));
@@ -283,7 +285,9 @@ const ConversationList = forwardRef<ConvoListHandle, {
                   )}
                 </div>
                 {c.last_message && (
-                  <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>{c.last_message}</p>
+                  <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                    {formatLastMessagePreview(c.last_message, c.last_type)}
+                  </p>
                 )}
               </div>
               {(c.unread_count ?? 0) > 0 && (
@@ -1431,7 +1435,7 @@ export default function MessagesPage() {
         const msg = payload as any;
         const partnerId = msg.sender_id === me?.id ? msg.receiver_id : msg.sender_id;
         const preview = msg.body ?? msg.content ?? '';
-        convoListRef.current?.updatePreview(partnerId, preview);
+        convoListRef.current?.updatePreview(partnerId, preview, msg.message_type);
       }
     };
     addListener(handler);

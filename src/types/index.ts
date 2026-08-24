@@ -328,8 +328,10 @@ export interface Notification {
 // ── Message ───────────────────────────────────────────────────────────────
 export type ConversationRequestStatus =
   | 'none' | 'pending_incoming' | 'pending_outgoing' | 'accepted' | 'blocked' | 'blocked_by_me';
+export type MessageType = 'text' | 'voice' | 'image' | 'video' | 'file' | 'sticker' | 'location' | 'share';
 export interface Conversation {
   user: UserPublic; last_message: string | null; last_message_at: string | null; unread_count: number;
+  last_type?: MessageType;
   request_status?: ConversationRequestStatus;
 }
 export interface Message {
