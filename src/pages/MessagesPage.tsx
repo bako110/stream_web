@@ -7,6 +7,7 @@ import {
   Wifi, WifiOff, MoreVertical, Reply, Pencil, Trash2, Forward, Pin,
   PinOff, Smile, Image as ImageIcon, Check, CheckCheck, Trash,
   Mic, MicOff, Play, Square, Paperclip, Lock,
+  ShieldCheck, Server, Laptop, ExternalLink,
 } from 'lucide-react';
 import type { Conversation, ConversationRequestStatus, Message, UserPublic, MessageType } from '../types';
 import { formatLastMessagePreview } from '../utils/messagePreview';
@@ -684,6 +685,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   const [editingId,setEditingId]= useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [searchOpen,setSearchOpen]= useState(false);
+  const [showE2EEInfo, setShowE2EEInfo] = useState(false);
   const [searchQuery,setSearchQuery]= useState('');
   const [searchResults,setSearchResults]= useState<ExtMessage[]>([]);
   const [forwardMsg,setForwardMsg]= useState<ExtMessage | null>(null);
@@ -1108,13 +1110,15 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
   }
 
   const encryptionBadge = (
-    <div className="flex items-center gap-1.5 mx-auto max-w-[85%] px-3 py-2 rounded-xl text-center"
+    <button type="button" onClick={() => setShowE2EEInfo(true)}
+      className="flex items-center gap-1.5 mx-auto max-w-[85%] px-3 py-2 rounded-xl text-center transition-opacity hover:opacity-80"
       style={{ background: 'var(--surface)' }}>
       <Lock size={12} style={{ color: 'var(--text-tertiary)' }} className="shrink-0" />
-      <p className="text-[11px] leading-snug" style={{ color: 'var(--text-tertiary)' }}>
+      <p className="text-[11px] leading-snug text-left" style={{ color: 'var(--text-tertiary)' }}>
         Les messages sont chiffrés de bout en bout. Personne d'autre, pas même GoFoliX, ne peut les lire.
+        <span style={{ color: 'var(--primary)', fontWeight: 600 }}> En savoir plus.</span>
       </p>
-    </div>
+    </button>
   );
 
   return (
@@ -1198,7 +1202,14 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
             <div className="min-w-0">
               <p className="font-bold text-sm truncate flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
                 <span className="truncate">{peer.display_name ?? peer.username}</span>
-                <Lock size={11} style={{ color: 'var(--text-tertiary)' }} className="shrink-0" />
+                <span
+                  role="button"
+                  onClick={e => { e.stopPropagation(); setShowE2EEInfo(true); }}
+                  className="shrink-0 inline-flex"
+                  title="Chiffrement de bout en bout"
+                >
+                  <Lock size={11} style={{ color: 'var(--text-tertiary)' }} />
+                </span>
               </p>
               <p className="text-[11px]" style={{ color: peer.is_online ? '#22c55e' : 'var(--text-tertiary)' }}>
                 {peer.is_online === true
@@ -1473,6 +1484,75 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
         <Lightbox urls={[lightboxUrl]} index={0} onClose={() => setLightboxUrl(null)} />
       )}
       {MsgConfirmDialog}
+
+      {showE2EEInfo && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+          onClick={() => setShowE2EEInfo(false)}>
+          <div className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[85vh] overflow-y-auto"
+            style={{ background: 'var(--surface)' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-4">
+              <div className="w-13 h-13 rounded-full flex items-center justify-center mb-2.5"
+                style={{ width: 52, height: 52, background: 'color-mix(in srgb, var(--primary) 12%, transparent)' }}>
+                <Lock size={24} style={{ color: 'var(--primary)' }} />
+              </div>
+              <h3 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
+                Chiffrement de bout en bout
+              </h3>
+            </div>
+
+            <p className="text-[13px] leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
+              Les messages texte échangés avec {peer?.display_name ?? peer?.username ?? 'cette personne'} sont
+              protégés par un chiffrement de bout en bout : ils sont chiffrés sur votre appareil avant l'envoi,
+              et seul l'appareil du destinataire peut les déchiffrer. Personne d'autre ne peut les lire en clair
+              — ni un tiers qui intercepterait la connexion, ni GoFoliX lui-même.
+            </p>
+
+            {[
+              {
+                icon: <ShieldCheck size={16} style={{ color: 'var(--text-secondary)' }} />,
+                title: 'Comment ça marche',
+                text: "GoFoliX utilise le Signal Protocol (X3DH + Double Ratchet), un standard ouvert et reconnu de chiffrement de bout en bout. Chaque message est chiffré avec une clé unique qui change automatiquement à chaque échange.",
+              },
+              {
+                icon: <RefreshCw size={16} style={{ color: 'var(--text-secondary)' }} />,
+                title: 'Clés à usage unique',
+                text: "Même si une clé de chiffrement venait à être compromise, elle ne permettrait de déchiffrer que les messages passés ou futurs les plus proches — jamais l'intégralité de l'historique (forward secrecy).",
+              },
+              {
+                icon: <Server size={16} style={{ color: 'var(--text-secondary)' }} />,
+                title: 'Le serveur ne voit rien',
+                text: "Le contenu chiffré transite par nos serveurs pour être acheminé, mais il y reste illisible : nous ne stockons et ne pouvons lire que des données chiffrées, jamais le texte en clair.",
+              },
+              {
+                icon: <Laptop size={16} style={{ color: 'var(--text-secondary)' }} />,
+                title: 'Limite actuelle',
+                text: "La protection s'applique par appareil. Si vous vous connectez depuis un nouvel appareil ou un autre navigateur, une nouvelle clé y est générée — l'historique déchiffré ailleurs ne s'y retrouve pas automatiquement.",
+              },
+            ].map(item => (
+              <div key={item.title} className="flex items-start gap-3 mb-4">
+                <div className="w-8.5 h-8.5 rounded-[10px] flex items-center justify-center shrink-0"
+                  style={{ width: 34, height: 34, background: 'var(--bg-secondary)' }}>
+                  {item.icon}
+                </div>
+                <div>
+                  <p className="text-[13.5px] font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>{item.title}</p>
+                  <p className="text-[12.5px] leading-snug" style={{ color: 'var(--text-tertiary)' }}>{item.text}</p>
+                </div>
+              </div>
+            ))}
+
+            <button
+              onClick={() => { setShowE2EEInfo(false); navigate('/politique-confidentialite'); }}
+              className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl mt-1 text-[13.5px] font-bold transition-opacity hover:opacity-80"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--primary)' }}>
+              En savoir plus sur la confidentialité
+              <ExternalLink size={13} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
