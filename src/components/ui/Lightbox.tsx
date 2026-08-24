@@ -10,15 +10,18 @@ interface LightboxProps {
   onClose: () => void;
 }
 
-// Nom de fichier propose au telechargement — extrait de l'URL si possible,
-// sinon un nom generique avec l'extension detectee dans le content-type.
+// Nom de fichier propose au telechargement — "gofolyx-<horodatage>.<ext>"
+// plutot que l'ID brut du fichier stocke sur R2 (illisible pour l'utilisateur).
+// N'a d'effet que pour le replis fetch direct (sans proxy) : quand le proxy
+// backend repond, son Content-Disposition prime sur cet attribut.
 function filenameFromUrl(url: string): string {
+  let ext = 'jpg';
   try {
     const path = new URL(url, window.location.origin).pathname;
-    const last = path.split('/').pop();
-    if (last && last.includes('.')) return last;
+    const last = path.split('/').pop() ?? '';
+    if (last.includes('.')) ext = last.split('.').pop() || 'jpg';
   } catch { /* URL relative ou invalide */ }
-  return `image-${Date.now()}.jpg`;
+  return `gofolyx-${Date.now()}.${ext}`;
 }
 
 async function fetchImageBlob(url: string): Promise<Blob> {
