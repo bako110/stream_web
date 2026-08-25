@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Award, Radio } from 'lucide-react';
 import { PageLoader, Spinner } from '../components/ui/Spinner';
@@ -11,17 +11,53 @@ export default function TournamentListPage() {
 
   const [tournaments, setTournaments] = useState<OpenTournament[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore]         = useState(true);
+  const [page, setPage]               = useState(1);
   const [joining, setJoining]         = useState<string | null>(null);
   const [showCreate, setShowCreate]   = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await tournamentsApi.listOpen();
-      setTournaments(data);
+      const res = await tournamentsApi.listOpen(1);
+      setTournaments(res.items);
+      setPage(1);
+      setHasMore(res.has_more);
     } catch { /* silencieux */ } finally { setLoading(false); }
   }, []);
 
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const res = await tournamentsApi.listOpen(nextPage);
+      setTournaments(prev => [...prev, ...res.items]);
+      setPage(nextPage);
+      setHasMore(res.has_more);
+    } catch { /* silencieux */ } finally { setLoadingMore(false); }
+  }, [page, hasMore, loadingMore]);
+
   useEffect(() => { load(); }, [load]);
+
+  // Scroll infini via IntersectionObserver sur un sentinel — `loading` dans
+  // les deps est nécessaire : le sentinel n'est monté qu'une fois le
+  // chargement initial terminé, sinon l'effet peut tourner une fois avec
+  // sentinelRef.current encore null et ne jamais re-observer le sentinel une
+  // fois réellement présent (bug déjà rencontré/corrigé sur FeedPage.tsx et
+  // ExploreReelsPage.tsx).
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: '400px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, hasMore, loadMore]);
 
   async function handleJoin(t: OpenTournament) {
     if (joining) return;
@@ -104,6 +140,12 @@ export default function TournamentListPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {hasMore && tournaments.length > 0 && (
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            {loadingMore && <Spinner size="sm" />}
           </div>
         )}
       </div>

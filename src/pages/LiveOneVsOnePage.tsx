@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap, Eye, ChevronLeft, User } from 'lucide-react';
-import { PageLoader } from '../components/ui/Spinner';
+import { PageLoader, Spinner } from '../components/ui/Spinner';
 import { battlesApi, type ActiveBattle } from '../api/battles';
 import { useWs } from '../context/WebSocketContext';
 import { useAuthStore } from '../store/authStore';
@@ -82,6 +82,7 @@ export default function LiveOneVsOnePage() {
   const [matchResult, setMatchResult] = useState<MatchResultData | null>(null);
   const battlesRef = useRef(battles);
   battlesRef.current = battles;
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadBattles = useCallback(async () => {
     try {
@@ -147,6 +148,22 @@ export default function LiveOneVsOnePage() {
     } catch { /* silencieux */ } finally { setLoadingMore(false); }
   }, [loading, loadingMore, hasMore, page]);
 
+  // Scroll infini via IntersectionObserver — `loading` dans les deps est
+  // nécessaire : le sentinel n'est monté qu'une fois le chargement initial
+  // terminé, sinon l'effet peut tourner une fois avec sentinelRef.current
+  // encore null et ne jamais re-observer le sentinel une fois réellement
+  // présent (même pattern que FeedPage.tsx / ExploreReelsPage.tsx).
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || !hasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: '400px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, hasMore, loadMore]);
+
   const totalViewers = battles.reduce((sum, b) => sum + (b.viewer_count ?? 0), 0);
 
   if (loading) return <PageLoader />;
@@ -196,12 +213,9 @@ export default function LiveOneVsOnePage() {
           </div>
         )}
 
-        {hasMore && (
-          <div className="flex justify-center mt-6">
-            <button onClick={loadMore} disabled={loadingMore}
-              className="btn-ghost text-sm px-5 py-2 text-white/70 border-white/20 hover:bg-white/10">
-              {loadingMore ? 'Chargement...' : 'Voir plus'}
-            </button>
+        {hasMore && battles.length > 0 && (
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            {loadingMore && <Spinner size="sm" />}
           </div>
         )}
       </div>
