@@ -376,7 +376,7 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
           <Avatar src={senderAvatar} name={senderName} size="xs" />
         </button>
       )}
-      <div className={`max-w-[72%] sm:max-w-[420px] min-w-0 flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+      <div className={`max-w-[85%] sm:max-w-[560px] min-w-0 flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
         {/* Nom de l'expéditeur pour les messages reçus */}
         {!isMe && senderName && (
           <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>
@@ -1299,7 +1299,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
           const isTemp = msg.id?.startsWith('temp-');
           if (isTemp) return (
             <div key={msg.id} className="flex justify-end">
-              <div className="max-w-[72%] sm:max-w-[420px] px-3.5 py-2.5 rounded-2xl rounded-br-sm text-sm opacity-60"
+              <div className="max-w-[85%] sm:max-w-[560px] px-3.5 py-2.5 rounded-2xl rounded-br-sm text-sm opacity-60"
                 style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
                 <p className="whitespace-pre-line break-words">{msg.body}</p>
                 <p className="text-[10px] mt-1 text-right opacity-70">Envoi…</p>

@@ -392,7 +392,7 @@ function MiniChatWindow({
                   <Avatar src={peer?.avatar_url} name={peer?.display_name ?? peer?.username ?? '?'} size="xs" />
                 </div>
               )}
-              <div className={`max-w-[78%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+              <div className={`max-w-[85%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
                 {/* Reply preview */}
                 {msg.reply_to && (
                   <div className={`text-[10px] px-2 py-1 rounded-lg mb-0.5 max-w-full truncate opacity-70`}

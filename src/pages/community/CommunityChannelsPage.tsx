@@ -241,7 +241,7 @@ function ChannelChat({ communityId, channel, myRole, onBack, onChannelUpdated }:
           return (
             <div key={msg.id} className={`flex gap-2 group ${isMe ? 'flex-row-reverse' : ''}`}>
               {!isMe && <Avatar src={msg.sender_avatar_url} name={authorName} size="xs" className="mt-1 shrink-0" />}
-              <div className={`max-w-[72%] sm:max-w-[420px] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+              <div className={`max-w-[85%] sm:max-w-[560px] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
                 {!isMe && <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>{authorName}</span>}
                 <div className="flex items-end gap-1.5">
                   <div className={`rounded-2xl px-3.5 py-2 text-sm whitespace-pre-line break-words ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
