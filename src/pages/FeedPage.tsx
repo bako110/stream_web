@@ -851,12 +851,28 @@ function useFollow() {
 
   useEffect(() => {
     if (!user?.id) return;
-    apiClient.get<any>(`${Endpoints.users.following(user.id)}?limit=500`)
-      .then(res => {
-        const list: any[] = Array.isArray(res.data) ? res.data : res.data?.items ?? res.data?.data ?? [];
-        setFollowedIds(new Set(list.map((u: any) => String(u.id))));
-      })
-      .catch(() => {});
+    let cancelled = false;
+    // Le serveur plafonne `limit` à 50 (422 au-delà) — on pagine côté
+    // client jusqu'à une page incomplète pour récupérer tous les
+    // abonnements sans dépasser cette limite.
+    const PAGE_LIMIT = 50;
+    (async () => {
+      const ids = new Set<string>();
+      let page = 1;
+      for (;;) {
+        let list: any[];
+        try {
+          const res = await apiClient.get<any>(`${Endpoints.users.following(user.id)}?page=${page}&limit=${PAGE_LIMIT}`);
+          list = Array.isArray(res.data) ? res.data : res.data?.items ?? res.data?.data ?? [];
+        } catch { break; }
+        if (cancelled) return;
+        list.forEach((u: any) => ids.add(String(u.id)));
+        if (list.length < PAGE_LIMIT) break;
+        page += 1;
+      }
+      if (!cancelled) setFollowedIds(ids);
+    })();
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   const toggle = useCallback(async (id: string, e: React.MouseEvent) => {
