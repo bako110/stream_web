@@ -32,6 +32,7 @@ function notificationTargetUrl(n: Notification): string | null {
     case 'event':     return `/events/${encodeId(n.ref_id)}`;
     case 'reel':      return `/reels?id=${encodeId(n.ref_id)}`;
     case 'post':      return `/posts/${encodeId(n.ref_id)}`;
+    case 'live':      return `/lives/${encodeId(n.ref_id)}`;
     case 'community': return `/communities/${encodeId(n.ref_id)}`;
     case 'user':      return `/user/${encodeId(n.ref_id)}`;
     case 'story':     return n.actor?.id ? `/user/${encodeId(n.actor.id)}` : null;
