@@ -173,7 +173,7 @@ export default function LoginPage() {
             <h1 className="text-4xl font-black text-white leading-tight mb-3">
               Tout l'univers<br />
               <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                GoFolyX
+                Gofolyx
               </span>
             </h1>
             <p className="text-white/60 text-base leading-relaxed">
@@ -194,7 +194,7 @@ export default function LoginPage() {
         </div>
         <div className="relative z-10 space-y-4">
           <AppDownloadBar variant="card" />
-          <p className="text-white/30 text-xs">© 2026 GoFolyX · Tous droits réservés</p>
+          <p className="text-white/30 text-xs">© 2026 Gofolyx · Tous droits réservés</p>
         </div>
       </div>
 
@@ -216,7 +216,7 @@ export default function LoginPage() {
 
           <div className="mb-7">
             <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Bon retour</h2>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte GoFolyX</p>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte Gofolyx</p>
           </div>
 
           {/* Google */}

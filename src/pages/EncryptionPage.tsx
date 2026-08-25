@@ -15,11 +15,11 @@ const SECTIONS: Section[] = [
     key: 'principe', Icon: Lock, title: 'Comment ça fonctionne',
     body: `Le chiffrement de bout en bout garantit que seuls vous et votre correspondant pouvez lire le contenu échangé — messages, appels et statuts concernés. Le contenu est chiffré sur votre appareil avant même de quitter votre téléphone, et n'est déchiffré que sur l'appareil du destinataire.
 
-Personne d'autre ne peut lire ce contenu en clair à aucun moment du trajet — ni les serveurs de GoFolyX, ni un opérateur réseau, ni un tiers qui intercepterait le trafic.`,
+Personne d'autre ne peut lire ce contenu en clair à aucun moment du trajet — ni les serveurs de Gofolyx, ni un opérateur réseau, ni un tiers qui intercepterait le trafic.`,
   },
   {
     key: 'cles', Icon: KeyRound, title: 'Des clés qui ne quittent jamais votre appareil',
-    body: `Chaque appareil génère une paire de clés cryptographiques uniques : une clé publique, partagée pour permettre le chiffrement, et une clé privée, qui ne quitte jamais votre appareil et n'est jamais transmise à GoFolyX.
+    body: `Chaque appareil génère une paire de clés cryptographiques uniques : une clé publique, partagée pour permettre le chiffrement, et une clé privée, qui ne quitte jamais votre appareil et n'est jamais transmise à Gofolyx.
 
 Seule la clé privée du destinataire peut déchiffrer un contenu chiffré avec sa clé publique. Sans elle, le contenu intercepté reste illisible.`,
   },
@@ -39,7 +39,7 @@ Les contenus publics (posts, reels, lives, commentaires publics) ne sont pas con
     key: 'garanties', Icon: ShieldCheck, title: 'Vérification et confiance',
     body: `Le chiffrement s'applique automatiquement, sans action requise de votre part. Chaque nouvelle session ou nouvel appareil génère ses propres clés, invalidant les anciennes en cas de perte ou de changement de téléphone.
 
-GoFolyX ne peut pas restaurer un contenu chiffré perdu : en l'absence d'accès aux clés privées, aucune récupération n'est possible depuis nos serveurs.`,
+Gofolyx ne peut pas restaurer un contenu chiffré perdu : en l'absence d'accès aux clés privées, aucune récupération n'est possible depuis nos serveurs.`,
   },
 ];
 
@@ -81,7 +81,7 @@ export default function EncryptionPage() {
               Vos statuts sont chiffrés de bout en bout
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Personne d'autre que vous et vos destinataires — pas même GoFolyX — ne peut lire le contenu de vos statuts pendant leur transmission.
+              Personne d'autre que vous et vos destinataires — pas même Gofolyx — ne peut lire le contenu de vos statuts pendant leur transmission.
             </p>
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function EncryptionPage() {
         </div>
 
         <p className="text-center text-xs py-2 flex items-center justify-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
-          <Mail size={12} /> GoFolyX SAS · © 2026 · Tous droits réservés
+          <Mail size={12} /> Gofolyx SAS · © 2026 · Tous droits réservés
         </p>
       </div>
     </div>

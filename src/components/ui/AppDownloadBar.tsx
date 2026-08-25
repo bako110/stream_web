@@ -36,7 +36,7 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
         <div className="flex items-center gap-3 mb-4">
           <RoundLogo size={40} />
           <div>
-            <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Télécharger GoFolyX</p>
+            <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Télécharger Gofolyx</p>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
               Disponible sur Android{version ? ` · v${version}` : ''}
             </p>
@@ -71,7 +71,7 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
       <div className="flex items-center gap-2 min-w-0">
         <RoundLogo size={24} />
         <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-          Télécharger l'app GoFolyX
+          Télécharger l'app Gofolyx
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">

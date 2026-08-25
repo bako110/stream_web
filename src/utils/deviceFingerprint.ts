@@ -21,7 +21,7 @@ function canvasSignature(): string {
     ctx.fillStyle = '#f60';
     ctx.fillRect(0, 0, 100, 20);
     ctx.fillStyle = '#069';
-    ctx.fillText('GoFolyX-fp', 2, 2);
+    ctx.fillText('Gofolyx-fp', 2, 2);
     return canvas.toDataURL();
   } catch {
     return '';

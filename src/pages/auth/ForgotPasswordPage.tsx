@@ -207,7 +207,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="relative z-10">
-          <p className="text-white/30 text-xs">© 2026 GoFolyX</p>
+          <p className="text-white/30 text-xs">© 2026 Gofolyx</p>
         </div>
       </div>
 

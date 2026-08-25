@@ -438,7 +438,7 @@ function MiniChatWindow({
                           {msg.attachment_meta.author_name && (
                             <p className="text-[10px] font-semibold opacity-70 truncate">{msg.attachment_meta.author_name}</p>
                           )}
-                          <p className="text-[11px] font-medium truncate">{msg.attachment_meta.title ?? 'Contenu GoFolyX'}</p>
+                          <p className="text-[11px] font-medium truncate">{msg.attachment_meta.title ?? 'Contenu Gofolyx'}</p>
                         </div>
                       </button>
                     )}

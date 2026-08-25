@@ -18,7 +18,7 @@ export function toProxiedUrl(url: string): string {
   return url;
 }
 
-export const APP_NAME    = 'GoFolyX';
+export const APP_NAME    = 'Gofolyx';
 export const APP_VERSION = '1.0.0.7';
 
 export const DEFAULT_PAGE_LIMIT = 20;

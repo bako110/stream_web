@@ -14,7 +14,7 @@ export default function SettingsAboutPage() {
     {
       icon: <FileText size={16} />,
       label: "Conditions d'utilisation",
-      value: 'CGU v2.0 · GoFolyX',
+      value: 'CGU v2.0 · Gofolyx',
       onClick: () => navigate('/cgu'),
     },
     {
@@ -37,7 +37,7 @@ export default function SettingsAboutPage() {
     },
     {
       icon: <ExternalLink size={16} />,
-      label: 'Site web GoFolyX',
+      label: 'Site web Gofolyx',
       value: 'gofolyx.app',
       onClick: () => window.open('https://gofolyx.app', '_blank'),
     },
@@ -69,7 +69,7 @@ export default function SettingsAboutPage() {
           GX
         </div>
         <div>
-          <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>GoFolyX</p>
+          <p className="font-black text-base" style={{ color: 'var(--text-primary)' }}>Gofolyx</p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Version 1.0.0 (web) · © 2026</p>
         </div>
       </div>

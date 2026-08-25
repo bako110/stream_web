@@ -27,7 +27,7 @@ const OFFRES: Offre[] = [
     lieu:   'Abidjan ou Remote',
     type:   'CDI',
     remote: true,
-    desc:   "Rejoignez l'équipe core pour développer les nouvelles fonctionnalités de GoFolyX — du feed en temps réel aux outils créateurs.",
+    desc:   "Rejoignez l'équipe core pour développer les nouvelles fonctionnalités de Gofolyx — du feed en temps réel aux outils créateurs.",
     missions: [
       'Développer de nouvelles features frontend (React + TypeScript)',
       'Concevoir et maintenir les API FastAPI/PostgreSQL',
@@ -69,7 +69,7 @@ const OFFRES: Offre[] = [
     lieu:   'Dakar ou Remote',
     type:   'CDI',
     remote: true,
-    desc:   "Vous animez notre présence sur les réseaux sociaux, gérez les relations avec les créateurs et construisez la communauté GoFolyX.",
+    desc:   "Vous animez notre présence sur les réseaux sociaux, gérez les relations avec les créateurs et construisez la communauté Gofolyx.",
     missions: [
       'Créer et publier du contenu sur Instagram, TikTok, X',
       'Animer la communauté et répondre aux messages',
@@ -87,10 +87,10 @@ const OFFRES: Offre[] = [
     id:     'stage-design',
     titre:  'Stage UI/UX Design (6 mois)',
     dept:   'Design',
-    lieu:   'Paris ou Remote',
+    lieu:   'Remote',
     type:   'Stage',
     remote: true,
-    desc:   "Un stage concret où vous travaillerez sur l'interface mobile et web de GoFolyX, avec de vraies responsabilités dès le premier jour.",
+    desc:   "Un stage concret où vous travaillerez sur l'interface mobile et web de Gofolyx, avec de vraies responsabilités dès le premier jour.",
     missions: [
       'Concevoir des maquettes et prototypes Figma',
       'Réaliser des tests utilisateurs et analyser les retours',
@@ -142,7 +142,7 @@ export default function CarrieresPage() {
           Retour
         </button>
         <div className="flex-1" />
-        <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-7 w-auto" />
+        <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-7 w-auto" />
       </nav>
 
       {/* Hero */}
@@ -294,7 +294,7 @@ export default function CarrieresPage() {
       </section>
 
       <footer className="py-8 text-center text-xs" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-        © 2025 GoFolyX. Tous droits réservés.
+        © 2025 Gofolyx. Tous droits réservés.
       </footer>
     </div>
   );

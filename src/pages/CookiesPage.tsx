@@ -20,7 +20,7 @@ Les cookies permettent au site de mémoriser vos actions et préférences (langu
   {
     Icon:  Shield,
     title: '2. Cookies strictement nécessaires',
-    body:  `Ces cookies sont indispensables au bon fonctionnement de la plateforme GoFolyX. Ils ne peuvent pas être désactivés.
+    body:  `Ces cookies sont indispensables au bon fonctionnement de la plateforme Gofolyx. Ils ne peuvent pas être désactivés.
 
 • Session d'authentification (token JWT)
 • Préférences de thème (dark/light mode)
@@ -32,7 +32,7 @@ Sans ces cookies, certaines fonctionnalités essentielles ne seraient pas dispon
   {
     Icon:  BarChart2,
     title: '3. Cookies analytiques',
-    body:  `Ces cookies nous aident à comprendre comment vous utilisez GoFolyX afin d'améliorer l'expérience utilisateur. Les données collectées sont agrégées et anonymisées.
+    body:  `Ces cookies nous aident à comprendre comment vous utilisez Gofolyx afin d'améliorer l'expérience utilisateur. Les données collectées sont agrégées et anonymisées.
 
 • Nombre de visites et pages vues
 • Durée de session
@@ -57,7 +57,7 @@ Outil utilisé : Mixpanel (données hébergées en Europe).`,
     body:  `Vous pouvez à tout moment modifier vos préférences de cookies via :
 
 • Les paramètres de votre navigateur (Chrome, Firefox, Safari, Edge)
-• Le panneau de gestion des cookies accessible dans les Paramètres de l'application GoFolyX > Confidentialité
+• Le panneau de gestion des cookies accessible dans les Paramètres de l'application Gofolyx > Confidentialité
 
 Notez que la désactivation des cookies strictement nécessaires pourrait empêcher l'accès à certaines fonctionnalités de la plateforme.
 
@@ -81,7 +81,7 @@ export default function CookiesPage() {
           Retour
         </button>
         <div className="flex-1" />
-        <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-7 w-auto" />
+        <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-7 w-auto" />
       </nav>
 
       {/* Hero */}
@@ -95,7 +95,7 @@ export default function CookiesPage() {
           Dernière mise à jour : juin 2025
         </p>
         <p className="max-w-xl mx-auto mt-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          GoFolyX utilise des cookies et technologies similaires pour faire fonctionner la plateforme, analyser son utilisation et personnaliser votre expérience.
+          Gofolyx utilise des cookies et technologies similaires pour faire fonctionner la plateforme, analyser son utilisation et personnaliser votre expérience.
         </p>
       </section>
 
@@ -134,7 +134,7 @@ export default function CookiesPage() {
       </div>
 
       <footer className="py-8 text-center text-xs" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-        © 2025 GoFolyX. Tous droits réservés.
+        © 2025 Gofolyx. Tous droits réservés.
       </footer>
     </div>
   );

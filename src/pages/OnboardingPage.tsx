@@ -154,7 +154,7 @@ const STEPS = [
         <div className="rounded-3xl overflow-hidden p-5"
           style={{ background: 'linear-gradient(135deg,#1a0533,#0d0118)', border: '1px solid rgba(123,63,242,0.3)' }}>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>Solde GoFolyX GoGold</p>
+            <p className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>Solde Gofolyx GoGold</p>
             <Wallet size={16} color="#7B3FF2" />
           </div>
           <p className="text-3xl font-black text-white mb-1">2,450 <span className="text-lg">FXC</span></p>
@@ -203,7 +203,7 @@ export default function OnboardingPage() {
 
       {/* Header */}
       <div className="w-full flex items-center justify-between px-6 pt-6">
-        <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
+        <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-8 w-auto" />
         {!isLast && (
           <button onClick={skip} className="text-sm font-semibold px-3 py-1.5 rounded-xl transition-all"
             style={{ color: 'var(--text-tertiary)' }}

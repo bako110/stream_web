@@ -111,7 +111,7 @@ export default function ExploreEventsPage() {
           <Link to="/auth/register"
             className="inline-flex items-center gap-2 font-bold px-8 py-3.5 rounded-full text-base transition-transform hover:scale-105"
             style={{ background: 'var(--ex-amber)', color: 'var(--ex-ink)' }}>
-            Rejoindre GoFolyX
+            Rejoindre Gofolyx
           </Link>
         </div>
       </div>

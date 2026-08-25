@@ -89,7 +89,7 @@ export default function CommunityInvitePage() {
     if (!code) return;
     if (navigator.share) {
       navigator.share({
-        title: `Rejoins "${name}" sur GoFolyX`,
+        title: `Rejoins "${name}" sur Gofolyx`,
         text:  `Utilise ce code pour rejoindre la communauté : ${code}`,
         url:   inviteLink,
       }).catch(() => {});

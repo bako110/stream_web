@@ -490,7 +490,7 @@ export default function FilmDetailPage() {
         open={showShareModal}
         onClose={() => setShowShareModal(false)}
         url={`${window.location.origin}/films/${encodeId(f.id)}`}
-        title={`${f.title} — GoFolyX`}
+        title={`${f.title} — Gofolyx`}
         image={f.banner_url ?? f.thumbnail_url ?? undefined}
         targetType="content"
         targetId={f.id}

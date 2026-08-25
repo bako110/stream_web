@@ -37,8 +37,8 @@ export function ExploreLayout() {
         }}>
         <div className="w-full mx-auto px-4 h-16 flex items-center gap-3">
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
-            <span className="ex-display text-base hidden sm:block" style={{ color: 'var(--ex-text)' }}>GoFolyX</span>
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-8 w-auto" />
+            <span className="ex-display text-base hidden sm:block" style={{ color: 'var(--ex-text)' }}>Gofolyx</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-0.5 ml-2">
@@ -86,8 +86,8 @@ export function ExploreLayout() {
         <div className="md:hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--ex-bg)' }}>
           <div className="flex items-center justify-between px-4 h-16 shrink-0" style={{ borderBottom: '1px solid var(--ex-line)' }}>
             <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2">
-              <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
-              <span className="ex-display text-base" style={{ color: 'var(--ex-text)' }}>GoFolyX</span>
+              <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-8 w-auto" />
+              <span className="ex-display text-base" style={{ color: 'var(--ex-text)' }}>Gofolyx</span>
             </Link>
             <button onClick={() => setMenuOpen(false)} style={{ color: 'var(--ex-text)' }}><X size={24} /></button>
           </div>
@@ -119,7 +119,7 @@ export function ExploreLayout() {
       <footer className="mt-20 pt-10 pb-8 px-4" style={{ borderTop: '1px solid var(--ex-line)' }}>
         <div className="w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-8 w-auto" />
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-8 w-auto" />
             <span className="text-sm" style={{ color: 'var(--ex-text-3)' }}>© 2026 Tous droits réservés</span>
           </div>
           <nav className="flex items-center gap-5 text-sm flex-wrap justify-center">

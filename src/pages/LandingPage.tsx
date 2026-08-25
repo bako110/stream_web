@@ -44,7 +44,7 @@ function RoundLogo({ size = 40 }: { size?: number }) {
         }}>
           <img
             src={isDark ? Images.logoDark : Images.logoLight}
-            alt="GoFolyX"
+            alt="Gofolyx"
             style={{ width: '78%', height: '78%', objectFit: 'contain', display: 'block' }}
           />
         </div>
@@ -71,7 +71,7 @@ function Navbar() {
     { label: 'Films & Séries', href: '/explore/films'    },
     { label: 'Concerts',       href: '/explore/concerts' },
     { label: 'Événements',     href: '/explore/events'   },
-    { label: 'Pourquoi GoFolyX', href: '#features'        },
+    { label: 'Pourquoi Gofolyx', href: '#features'        },
   ];
 
   return (
@@ -86,7 +86,7 @@ function Navbar() {
         <div className="w-full mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 shrink-0">
             <RoundLogo size={38} />
-            <span className="lp-display text-lg" style={{ color: 'var(--lp-ink-text)' }}>GoFolyX</span>
+            <span className="lp-display text-lg" style={{ color: 'var(--lp-ink-text)' }}>Gofolyx</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -152,7 +152,7 @@ function Navbar() {
           <div className="flex items-center justify-between px-5 h-16 shrink-0" style={{ borderBottom: '1px solid var(--lp-line)' }}>
             <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5">
               <RoundLogo size={34} />
-              <span className="lp-display text-base" style={{ color: 'var(--lp-ink-text)' }}>GoFolyX</span>
+              <span className="lp-display text-base" style={{ color: 'var(--lp-ink-text)' }}>Gofolyx</span>
             </Link>
             <button onClick={() => setMenuOpen(false)} style={{ color: 'var(--lp-ink-text)' }}><X size={24} /></button>
           </div>
@@ -237,7 +237,7 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
                 <Link to="/auth/register"
                   className="inline-flex items-center gap-2.5 text-white font-bold px-7 py-4 rounded-full text-base"
                   style={{ background: 'var(--lp-violet)', boxShadow: '0 12px 32px rgba(123,63,242,0.35)' }}>
-                  Rejoindre GoFolyX <ArrowRight size={18} />
+                  Rejoindre Gofolyx <ArrowRight size={18} />
                 </Link>
                 <a href="#discover"
                   className="inline-flex items-center gap-2.5 font-bold px-7 py-4 rounded-full text-base"
@@ -503,7 +503,7 @@ function FeaturesSection() {
     <section id="features" className="py-24 px-6">
       <div className="w-full mx-auto">
         <div className="mb-16 lp-rise">
-          <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Pourquoi GoFolyX</span></div>
+          <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Pourquoi Gofolyx</span></div>
           <h2 className="lp-display text-4xl md:text-5xl" style={{ color: 'var(--lp-ink-text)' }}>Une scène, un écran,<br />une seule adresse.</h2>
         </div>
 
@@ -544,7 +544,7 @@ function SocialProof() {
       <div className="w-full mx-auto">
         <div className="mb-12 lp-rise">
           <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Communauté</span></div>
-          <h2 className="lp-display text-3xl md:text-4xl" style={{ color: 'var(--lp-ink-text)' }}>Déjà sur GoFolyX</h2>
+          <h2 className="lp-display text-3xl md:text-4xl" style={{ color: 'var(--lp-ink-text)' }}>Déjà sur Gofolyx</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((r, i) => (
@@ -636,7 +636,7 @@ function Footer() {
       { label: 'Se connecter', href: '/auth/login'    },
       { label: "S'inscrire",   href: '/auth/register' },
     ]},
-    { title: 'GoFolyX', links: [
+    { title: 'Gofolyx', links: [
       { label: 'À propos', href: '/a-propos' },
       { label: 'Blog',     href: '/blog'     },
     ]},
@@ -649,7 +649,7 @@ function Footer() {
           <div>
             <div className="flex items-center gap-2.5 mb-4">
               <RoundLogo size={34} />
-              <span className="lp-display text-base" style={{ color: 'var(--lp-ink-text)' }}>GoFolyX</span>
+              <span className="lp-display text-base" style={{ color: 'var(--lp-ink-text)' }}>Gofolyx</span>
             </div>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--lp-ink-text-3)' }}>
               La scène, l'écran et le direct — réunis en un seul endroit.
@@ -674,7 +674,7 @@ function Footer() {
         </div>
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs"
           style={{ borderTop: '1px solid var(--lp-line)', color: 'var(--lp-ink-text-3)' }}>
-          <p>© 2026 GoFolyX. Tous droits réservés.</p>
+          <p>© 2026 Gofolyx. Tous droits réservés.</p>
           <div className="flex gap-6">
             {[
               { label: 'Confidentialité', href: '/politique-confidentialite' },

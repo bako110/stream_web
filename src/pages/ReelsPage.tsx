@@ -1132,7 +1132,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
     e.stopPropagation();
     onShareRequest(
       reel.id,
-      caption ? `${caption} — ${authorName} sur GoFolyX` : `${authorName} sur GoFolyX`,
+      caption ? `${caption} — ${authorName} sur Gofolyx` : `${authorName} sur Gofolyx`,
       reel.thumbnail_url ?? undefined,
     );
   }

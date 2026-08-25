@@ -895,7 +895,7 @@ export default function EventDetailPage() {
         open={showShareModal}
         onClose={() => setShowShareModal(false)}
         url={`${window.location.origin}/events/${encodeId(id!)}`}
-        title={event.title ?? 'Événement GoFolyX'}
+        title={event.title ?? 'Événement Gofolyx'}
         desc={event.venue_city ?? undefined}
         image={event.banner_url ?? event.thumbnail_url ?? undefined}
         targetType="event"

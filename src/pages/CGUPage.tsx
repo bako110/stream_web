@@ -16,7 +16,7 @@ interface Section {
 const SECTIONS: Section[] = [
   {
     key: 'objet', Icon: FileText, title: "1. Objet et champ d'application",
-    body: `Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme GoFolyX (application mobile et site web gofolyx.app), éditée par GoFolyX SAS.
+    body: `Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Gofolyx (application mobile et site web gofolyx.app), éditée par Gofolyx SAS.
 
 En créant un compte ou en accédant à l'application, vous acceptez sans réserve les présentes CGU dans leur intégralité. Si vous n'acceptez pas ces conditions, vous devez cesser immédiatement d'utiliser la plateforme.
 
@@ -24,20 +24,20 @@ Les CGU peuvent évoluer à tout moment. La version en vigueur est celle publié
   },
   {
     key: 'eligibilite', Icon: UserCheck, title: "2. Éligibilité et inscription",
-    body: `Pour utiliser GoFolyX, vous devez :
+    body: `Pour utiliser Gofolyx, vous devez :
 • Avoir au moins 13 ans (ou l'âge légal de majorité numérique dans votre pays si supérieur)
 • Fournir des informations exactes, complètes et à jour lors de votre inscription
 • Ne pas avoir été précédemment banni de la plateforme
 
 Vous êtes seul responsable de la confidentialité de vos identifiants (email/téléphone et mot de passe). Toute action réalisée depuis votre compte vous est réputée imputable. En cas d'accès non autorisé, contactez-nous immédiatement à support@gofolyx.com.
 
-GoFolyX se réserve le droit de refuser l'inscription ou de suspendre un compte sans justification préalable, notamment en cas de suspicion de fraude ou de comportement contraire aux présentes CGU.`,
+Gofolyx se réserve le droit de refuser l'inscription ou de suspendre un compte sans justification préalable, notamment en cas de suspicion de fraude ou de comportement contraire aux présentes CGU.`,
   },
   {
     key: 'contenu', Icon: Edit3, title: "3. Contenu publié par les utilisateurs",
     body: `Vous conservez l'intégralité des droits de propriété intellectuelle sur les contenus que vous créez et publiez (posts, reels, stories, commentaires, sons, vidéos en direct, etc.).
 
-En publiant du contenu sur GoFolyX, vous accordez à GoFolyX une licence mondiale, non exclusive, gratuite, sous-licenciable et transférable pour héberger, afficher, reproduire, distribuer, adapter et promouvoir ces contenus dans le cadre de la fourniture et de la promotion du service.
+En publiant du contenu sur Gofolyx, vous accordez à Gofolyx une licence mondiale, non exclusive, gratuite, sous-licenciable et transférable pour héberger, afficher, reproduire, distribuer, adapter et promouvoir ces contenus dans le cadre de la fourniture et de la promotion du service.
 
 Sont strictement interdits :
 • Les contenus illicites, haineux, discriminatoires, racistes ou incitant à la violence
@@ -46,11 +46,11 @@ Sont strictement interdits :
 • Le spam, les arnaques, le phishing, la désinformation délibérée et les théories du complot dangereuses
 • Les contenus promouvant des activités illégales (trafic, terrorisme, drogues, armes)
 
-GoFolyX utilise des systèmes automatisés et des équipes de modération pour détecter et retirer les contenus non conformes.`,
+Gofolyx utilise des systèmes automatisés et des équipes de modération pour détecter et retirer les contenus non conformes.`,
   },
   {
     key: 'confidentialite', Icon: Shield, title: "4. Confidentialité et données personnelles",
-    body: `GoFolyX collecte et traite vos données personnelles conformément à sa Politique de Confidentialité, disponible dans l'application et consultable à tout moment.
+    body: `Gofolyx collecte et traite vos données personnelles conformément à sa Politique de Confidentialité, disponible dans l'application et consultable à tout moment.
 
 Points clés :
 • Vos données sont hébergées en Europe (Union européenne)
@@ -59,28 +59,28 @@ Points clés :
 • Vous pouvez exercer vos droits à l'adresse : privacy@gofolyx.com
 • Vous pouvez également saisir la CNIL (www.cnil.fr) en cas de litige
 
-GoFolyX ne vend jamais vos données personnelles à des tiers.`,
+Gofolyx ne vend jamais vos données personnelles à des tiers.`,
   },
   {
     key: 'monetisation', Icon: Zap, title: "5. GoGold, monétisation et paiements",
-    body: `GoFolyX propose un système de GoGold (monnaie virtuelle interne) permettant d'accéder à des fonctionnalités premium, d'envoyer des cadeaux virtuels à des créateurs ou d'acheter des contenus exclusifs.
+    body: `Gofolyx propose un système de GoGold (monnaie virtuelle interne) permettant d'accéder à des fonctionnalités premium, d'envoyer des cadeaux virtuels à des créateurs ou d'acheter des contenus exclusifs.
 
 Conditions d'achat et d'utilisation :
 • Les GoGold s'achètent via les stores officiels (Apple App Store, Google Play) ou sur gofolyx.app
 • Les GoGold achetés sont définitifs et non remboursables, sauf obligation légale contraire
-• Les GoGold n'ont aucune valeur monétaire réelle en dehors du programme de monétisation GoFolyX
-• Ils ne peuvent pas être échangés contre de l'argent réel, sauf dans le cadre du Programme Créateur GoFolyX sous réserve d'éligibilité
+• Les GoGold n'ont aucune valeur monétaire réelle en dehors du programme de monétisation Gofolyx
+• Ils ne peuvent pas être échangés contre de l'argent réel, sauf dans le cadre du Programme Créateur Gofolyx sous réserve d'éligibilité
 
 Programme Créateur :
 • Les créateurs éligibles peuvent convertir leurs GoGold reçus en revenus réels
-• GoFolyX retient une commission définie dans les conditions du Programme Créateur
+• Gofolyx retient une commission définie dans les conditions du Programme Créateur
 • Les revenus sont soumis aux obligations fiscales applicables dans votre pays
 
-GoFolyX se réserve le droit de modifier les tarifs, les taux de conversion et les conditions du programme à tout moment, avec préavis de 15 jours.`,
+Gofolyx se réserve le droit de modifier les tarifs, les taux de conversion et les conditions du programme à tout moment, avec préavis de 15 jours.`,
   },
   {
     key: 'comportement', Icon: AlertTriangle, title: "6. Comportements interdits",
-    body: `En utilisant GoFolyX, vous vous engagez à ne pas :
+    body: `En utilisant Gofolyx, vous vous engagez à ne pas :
 
 Harcèlement et violence :
 • Harceler, intimider, menacer, stalker ou abuser verbalement d'autres utilisateurs
@@ -100,25 +100,25 @@ Tout manquement grave peut entraîner la suspension temporaire ou la suppression
   },
   {
     key: 'ip', Icon: Tv, title: "7. Propriété intellectuelle",
-    body: `L'application GoFolyX, son nom, ses logos, son design, son code source, ses algorithmes, ses bases de données et l'ensemble de ses composants sont la propriété exclusive de GoFolyX SAS et/ou de ses licenciés, protégés par le droit applicable et international de la propriété intellectuelle.
+    body: `L'application Gofolyx, son nom, ses logos, son design, son code source, ses algorithmes, ses bases de données et l'ensemble de ses composants sont la propriété exclusive de Gofolyx SAS et/ou de ses licenciés, protégés par le droit applicable et international de la propriété intellectuelle.
 
 Toute reproduction, modification, adaptation, traduction, distribution ou exploitation commerciale non autorisée est strictement interdite et passible de poursuites civiles et pénales.
 
 Les marques, noms commerciaux et logos des partenaires ou tiers présents sur la plateforme restent la propriété de leurs détenteurs respectifs.
 
-Si vous pensez qu'un contenu publié sur GoFolyX porte atteinte à vos droits d'auteur, contactez notre équipe à : dmca@gofolyx.com`,
+Si vous pensez qu'un contenu publié sur Gofolyx porte atteinte à vos droits d'auteur, contactez notre équipe à : dmca@gofolyx.com`,
   },
   {
     key: 'services-tiers', Icon: Link2, title: "8. Services tiers et liens externes",
-    body: `GoFolyX peut contenir des liens vers des sites ou services tiers (réseaux sociaux, services de paiement, partenaires, etc.). Ces liens sont fournis à titre informatif uniquement.
+    body: `Gofolyx peut contenir des liens vers des sites ou services tiers (réseaux sociaux, services de paiement, partenaires, etc.). Ces liens sont fournis à titre informatif uniquement.
 
-GoFolyX n'exerce aucun contrôle sur le contenu, les politiques de confidentialité ou les pratiques des sites tiers et décline toute responsabilité à leur égard.
+Gofolyx n'exerce aucun contrôle sur le contenu, les politiques de confidentialité ou les pratiques des sites tiers et décline toute responsabilité à leur égard.
 
 L'utilisation de fonctionnalités d'authentification ou de partage vers des plateformes tierces (Google, Apple, etc.) est soumise aux conditions générales de ces plateformes.`,
   },
   {
     key: 'resiliation', Icon: XCircle, title: "9. Résiliation et suppression de compte",
-    body: `Vous pouvez supprimer votre compte GoFolyX à tout moment depuis :
+    body: `Vous pouvez supprimer votre compte Gofolyx à tout moment depuis :
 Paramètres > Compte > Zone dangereuse > Supprimer mon compte
 
 Effets de la suppression :
@@ -127,26 +127,26 @@ Effets de la suppression :
 • Les GoGold non utilisés sont définitivement perdus sans remboursement
 • Les abonnements actifs ne sont pas automatiquement annulés — gérez-les depuis votre store
 
-GoFolyX se réserve le droit de suspendre ou supprimer tout compte :
+Gofolyx se réserve le droit de suspendre ou supprimer tout compte :
 • En cas de violation grave ou répétée des CGU
 • En cas d'inactivité prolongée (compte inactif depuis plus de 24 mois)
 • Sur décision judiciaire ou administrative`,
   },
   {
     key: 'responsabilite', Icon: Info, title: "10. Limitation de responsabilité",
-    body: `GoFolyX est fourni "en l'état" et "selon disponibilité", sans garantie d'aucune sorte, expresse ou implicite.
+    body: `Gofolyx est fourni "en l'état" et "selon disponibilité", sans garantie d'aucune sorte, expresse ou implicite.
 
-GoFolyX ne peut être tenu responsable :
+Gofolyx ne peut être tenu responsable :
 • Des interruptions de service, pannes, erreurs ou pertes de données, même temporaires
 • Des dommages directs ou indirects résultant de l'utilisation ou de l'impossibilité d'utiliser la plateforme
 • Du contenu publié par les utilisateurs tiers
-• Des actes malveillants de tiers (piratage, phishing, etc.) non imputables à GoFolyX
+• Des actes malveillants de tiers (piratage, phishing, etc.) non imputables à Gofolyx
 
-La responsabilité totale de GoFolyX, quelle qu'en soit la cause, est limitée au montant payé par l'utilisateur à GoFolyX au cours des 12 derniers mois précédant le dommage.`,
+La responsabilité totale de Gofolyx, quelle qu'en soit la cause, est limitée au montant payé par l'utilisateur à Gofolyx au cours des 12 derniers mois précédant le dommage.`,
   },
   {
     key: 'modifications', Icon: RefreshCw, title: "11. Modifications des CGU",
-    body: `GoFolyX se réserve le droit de modifier les présentes CGU à tout moment, notamment pour s'adapter aux évolutions légales, réglementaires ou fonctionnelles de la plateforme.
+    body: `Gofolyx se réserve le droit de modifier les présentes CGU à tout moment, notamment pour s'adapter aux évolutions légales, réglementaires ou fonctionnelles de la plateforme.
 
 En cas de modification substantielle :
 • Vous serez notifié par une alerte dans l'application et/ou par email au moins 15 jours avant l'entrée en vigueur
@@ -157,7 +157,7 @@ La date de dernière mise à jour est toujours indiquée en haut de ce document.
   },
   {
     key: 'droit', Icon: Globe, title: "12. Droit applicable et juridiction",
-    body: `Les présentes CGU sont régies par le droit applicable au lieu d'établissement de GoFolyX SAS.
+    body: `Les présentes CGU sont régies par le droit applicable au lieu d'établissement de Gofolyx SAS.
 
 En cas de litige :
 • Nous vous encourageons à nous contacter d'abord à legal@gofolyx.com pour tenter une résolution amiable
@@ -257,11 +257,11 @@ export default function CGUPage() {
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>
-              CGU GoFolyX
+              CGU Gofolyx
             </h2>
-            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>Éditée par GoFolyX SAS</p>
+            <p className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>Éditée par Gofolyx SAS</p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Ces conditions régissent votre accès et l'utilisation de la plateforme GoFolyX. En utilisant GoFolyX, vous acceptez l'intégralité des présentes conditions.
+              Ces conditions régissent votre accès et l'utilisation de la plateforme Gofolyx. En utilisant Gofolyx, vous acceptez l'intégralité des présentes conditions.
             </p>
           </div>
         </div>
@@ -331,7 +331,7 @@ export default function CGUPage() {
 
             {/* Footer */}
             <p className="text-center text-xs py-2" style={{ color: 'var(--text-tertiary)' }}>
-              CGU version 2.0 · GoFolyX SAS · © 2026 · Tous droits réservés
+              CGU version 2.0 · Gofolyx SAS · © 2026 · Tous droits réservés
             </p>
           </div>
         </div>

@@ -74,7 +74,7 @@ export default function FeedbackPage() {
         </div>
         <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Ton avis compte</h1>
         <p className="text-sm mt-1.5 max-w-sm" style={{ color: 'var(--text-tertiary)' }}>
-          Un bug à signaler ? Une idée pour améliorer GoFolyX ? Dis-nous tout.
+          Un bug à signaler ? Une idée pour améliorer Gofolyx ? Dis-nous tout.
         </p>
       </div>
 

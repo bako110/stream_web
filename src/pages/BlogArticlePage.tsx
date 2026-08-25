@@ -149,7 +149,7 @@ export default function BlogArticlePage() {
               <Share2 size={12} />
               {copied ? 'Copié !' : 'Partager'}
             </button>
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-6 w-auto hidden md:block" />
+            <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-6 w-auto hidden md:block" />
           </div>
         </nav>
       </div>
@@ -255,7 +255,7 @@ export default function BlogArticlePage() {
         )}
 
         <div className="text-center py-8 text-xs" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-          © 2026 GoFolyX. Tous droits réservés.
+          © 2026 Gofolyx. Tous droits réservés.
         </div>
       </div>
     </div>

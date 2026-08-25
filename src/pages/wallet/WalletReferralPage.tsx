@@ -75,9 +75,9 @@ export default function WalletReferralPage() {
 
   const handleShare = useCallback(async () => {
     if (!stats?.referral_code) return;
-    const text = `Rejoins-moi sur GoFolyX ! Utilise mon code de parrainage ${stats.referral_code} lors de ton inscription et gagne 20 GoGold bonus.`;
+    const text = `Rejoins-moi sur Gofolyx ! Utilise mon code de parrainage ${stats.referral_code} lors de ton inscription et gagne 20 GoGold bonus.`;
     if (navigator.share) {
-      await navigator.share({ title: 'Invite un ami sur GoFolyX', text }).catch(() => {});
+      await navigator.share({ title: 'Invite un ami sur Gofolyx', text }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text).catch(() => {});
       setCopied(true);
@@ -139,7 +139,7 @@ export default function WalletReferralPage() {
               Invitez vos amis
             </h2>
             <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-              Gagnez des GoGold pour chaque ami qui rejoint GoFolyX et chaque achat qu'il effectue.
+              Gagnez des GoGold pour chaque ami qui rejoint Gofolyx et chaque achat qu'il effectue.
             </p>
 
             {/* Reward pills */}

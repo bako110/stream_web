@@ -81,7 +81,7 @@ export default function BlogPage() {
           Retour
         </button>
         <div className="flex-1" />
-        <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-7 w-auto" />
+        <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-7 w-auto" />
       </nav>
 
       {/* Hero */}
@@ -94,7 +94,7 @@ export default function BlogPage() {
         </div>
         <h1 className="text-4xl md:text-5xl font-black mb-4">Actualités &amp; insights</h1>
         <p className="max-w-xl mx-auto text-base" style={{ color: 'var(--text-secondary)' }}>
-          Conseils, nouveautés produit, culture — tout ce qui se passe dans l'univers GoFolyX.
+          Conseils, nouveautés produit, culture — tout ce qui se passe dans l'univers Gofolyx.
         </p>
 
         {/* Recherche */}
@@ -194,7 +194,7 @@ export default function BlogPage() {
       </div>
 
       <footer className="py-8 text-center text-xs" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-        © 2026 GoFolyX. Tous droits réservés.
+        © 2026 Gofolyx. Tous droits réservés.
       </footer>
     </div>
   );

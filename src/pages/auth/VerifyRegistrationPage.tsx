@@ -152,7 +152,7 @@ export default function VerifyRegistrationPage() {
         </div>
 
         <div className="relative z-10">
-          <p className="text-white/30 text-xs">© 2026 GoFolyX</p>
+          <p className="text-white/30 text-xs">© 2026 Gofolyx</p>
         </div>
       </div>
 
@@ -244,7 +244,7 @@ export default function VerifyRegistrationPage() {
                 Compte vérifié !
               </h2>
               <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
-                Votre compte est prêt. Bienvenue sur GoFolyX.
+                Votre compte est prêt. Bienvenue sur Gofolyx.
               </p>
               <Link to="/auth/login" className="btn-primary px-8" style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}>
                 Se connecter

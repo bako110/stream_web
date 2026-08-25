@@ -6,26 +6,26 @@ import { Images } from '../components/assets';
 const COMMUNIQUES = [
   {
     date:  'Mai 2025',
-    title: 'GoFolyX franchit le cap des 50 000 créateurs actifs',
-    desc:  'La plateforme culturelle africaine annonce une croissance de 300% en 12 mois et l\'ouverture de son bureau parisien.',
+    title: 'Gofolyx franchit le cap des 50 000 créateurs actifs',
+    desc:  'La plateforme culturelle africaine annonce une croissance de 300% en 12 mois.',
   },
   {
     date:  'Mars 2025',
-    title: 'Levée de fonds seed : GoFolyX sécurise 2 M€ pour accélérer',
-    desc:  'Avec cette levée, GoFolyX renforce son infrastructure technique, son équipe et son expansion vers 5 nouveaux pays d\'Afrique de l\'Ouest.',
+    title: 'Levée de fonds seed : Gofolyx sécurise 2 M€ pour accélérer',
+    desc:  'Avec cette levée, Gofolyx renforce son infrastructure technique, son équipe et son expansion vers 5 nouveaux pays d\'Afrique de l\'Ouest.',
   },
   {
     date:  'Janvier 2025',
-    title: 'Lancement officiel de GoFolyX en Côte d\'Ivoire, Sénégal et Mali',
+    title: 'Lancement officiel de Gofolyx en Côte d\'Ivoire, Sénégal et Mali',
     desc:  'Après 6 mois de bêta, la plateforme s\'ouvre au grand public avec déjà 10 000 utilisateurs inscrits et 200 artistes partenaires.',
   },
 ];
 
 const RETOMBEES = [
-  { media: 'Jeune Afrique', type: 'Article', date: 'Juin 2025', title: '"GoFolyX, le Netflix africain qui mise sur les créateurs"' },
+  { media: 'Jeune Afrique', type: 'Article', date: 'Juin 2025', title: '"Gofolyx, le Netflix africain qui mise sur les créateurs"' },
   { media: 'Le Monde',      type: 'Article', date: 'Avril 2025',title: '"Start-up : les plateformes qui réinventent le divertissement en Afrique"' },
   { media: 'RFI',           type: 'Radio',   date: 'Mars 2025', title: 'Interview CEO — "La culture africaine a enfin sa scène numérique"' },
-  { media: 'Forbes Afrique',type: 'Article', date: 'Fév. 2025', title: '"GoFolyX dans les 10 start-up africaines à suivre en 2025"' },
+  { media: 'Forbes Afrique',type: 'Article', date: 'Fév. 2025', title: '"Gofolyx dans les 10 start-up africaines à suivre en 2025"' },
 ];
 
 const KIT_ITEMS = [
@@ -51,14 +51,14 @@ export default function PressePage() {
           Retour
         </button>
         <div className="flex-1" />
-        <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-7 w-auto" />
+        <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-7 w-auto" />
       </nav>
 
       {/* Hero */}
       <section className="py-20 px-6 text-center">
         <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--primary)' }}>Presse & Médias</p>
         <h1 className="text-4xl md:text-5xl font-black mb-4">
-          Espace presse GoFolyX
+          Espace presse Gofolyx
         </h1>
         <p className="max-w-xl mx-auto text-base" style={{ color: 'var(--text-secondary)' }}>
           Retrouvez ici tous nos communiqués, retombées médias et ressources pour journalistes.
@@ -74,7 +74,7 @@ export default function PressePage() {
       <div className="max-w-5xl mx-auto px-6 pb-20 space-y-16">
         {/* Chiffres clés */}
         <section>
-          <h2 className="text-2xl font-black mb-6">GoFolyX en chiffres</h2>
+          <h2 className="text-2xl font-black mb-6">Gofolyx en chiffres</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { v: '50k+', l: 'Créateurs actifs' },
@@ -193,7 +193,7 @@ export default function PressePage() {
       </div>
 
       <footer className="py-8 text-center text-xs" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-        © 2025 GoFolyX. Tous droits réservés.
+        © 2025 Gofolyx. Tous droits réservés.
       </footer>
     </div>
   );

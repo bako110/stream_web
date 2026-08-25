@@ -12,7 +12,7 @@
  * d'authentification de l'app côté web).
  */
 import {
-  randomBytes, toBase64, fromBase64, generateX25519KeyPair, type KeyPair,
+  randomBytes, randomId, toBase64, fromBase64, generateX25519KeyPair, type KeyPair,
 } from './primitives';
 import { generateEd25519KeyPair, sign as ed25519Sign } from './primitives';
 import { signPrekey } from './x3dh';
@@ -157,10 +157,15 @@ export async function getSignedPrekeyPrivate(): Promise<KeyPair | null> {
  * privées localement pour pouvoir répondre à un X3DH entrant plus tard. */
 export async function generateOneTimePrekeys(count: number): Promise<{ prekey_id: number; public_key: string }[]> {
   const out: { prekey_id: number; public_key: string }[] = [];
-  const base = Date.now();
+  // randomId() reste dans la plage int32 (colonne Postgres `prekey_id`,
+  // Date.now() la dépasse largement — bug corrigé ici) ; Set pour garantir
+  // l'unicité au sein du lot malgré le tirage aléatoire.
+  const usedIds = new Set<number>();
   for (let i = 0; i < count; i++) {
     const keyPair = generateX25519KeyPair();
-    const id = base + i;
+    let id = randomId();
+    while (usedIds.has(id)) id = randomId();
+    usedIds.add(id);
     await idbSet(`${OTPK_PREFIX}${id}`, JSON.stringify({
       id, publicKey: toBase64(keyPair.publicKey), privateKey: toBase64(keyPair.privateKey),
     }));

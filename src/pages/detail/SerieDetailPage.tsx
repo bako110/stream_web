@@ -619,7 +619,7 @@ export default function SerieDetailPage() {
         open={showShareModal}
         onClose={() => setShowShareModal(false)}
         url={`${window.location.origin}/series/${encodeId(s.id)}`}
-        title={`${s.title} — GoFolyX`}
+        title={`${s.title} — Gofolyx`}
         image={s.banner_url ?? s.thumbnail_url ?? undefined}
         targetType="content"
         targetId={s.id}

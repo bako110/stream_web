@@ -5,7 +5,7 @@ export interface Country {
   name: string;
 }
 
-// Indicatifs mis en avant en tête de liste (marché principal de GoFolyX) —
+// Indicatifs mis en avant en tête de liste (marché principal de Gofolyx) —
 // le reste des pays suit en ordre alphabétique.
 export const FREQUENT_COUNTRY_CODES = ['SN', 'CI', 'ML', 'BF', 'GN', 'CM', 'FR', 'BE'];
 

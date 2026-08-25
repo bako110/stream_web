@@ -272,7 +272,7 @@ export default function RegisterPage() {
             <h1 className="text-4xl font-black text-white leading-tight mb-3">
               Bienvenue sur<br />
               <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                GoFolyX
+                Gofolyx
               </span>
             </h1>
             <p className="text-white/60 text-base leading-relaxed">
@@ -295,7 +295,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="relative z-10">
-          <p className="text-white/30 text-xs">© 2026 GoFolyX · Tous droits réservés</p>
+          <p className="text-white/30 text-xs">© 2026 Gofolyx · Tous droits réservés</p>
         </div>
       </div>
 

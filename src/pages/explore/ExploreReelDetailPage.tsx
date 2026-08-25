@@ -253,7 +253,7 @@ function ReelStage({ reel, locked }: { reel: Reel; locked: boolean }) {
             La suite t'attend
           </h2>
           <p className="text-white/65 text-sm max-w-xs mb-7 leading-relaxed">
-            Connecte-toi pour continuer à regarder ce reel et débloquer tout GoFolyX.
+            Connecte-toi pour continuer à regarder ce reel et débloquer tout Gofolyx.
           </p>
           <div className="flex flex-col gap-3 w-full max-w-xs">
             <button onClick={() => goAuth('register')}

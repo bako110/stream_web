@@ -758,7 +758,7 @@ export default function PostDetailPage() {
           open
           onClose={() => setShowShare(false)}
           url={`${window.location.origin}/posts/${encodeId(post.id)}`}
-          title={author?.display_name ?? author?.username ?? 'GoFolyX'}
+          title={author?.display_name ?? author?.username ?? 'Gofolyx'}
           desc={post.body ?? undefined}
           image={post.image_url ?? post.image_urls?.[0]}
           targetType="post"

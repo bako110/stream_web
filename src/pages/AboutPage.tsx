@@ -6,7 +6,7 @@ import { Images } from '../components/assets';
 const VALEURS = [
   { Icon: Heart,  title: 'Passion culturelle',  desc: "Nous croyons que la culture est un vecteur d'identité et de lien social. Chaque concert, film ou événement est une opportunité de partager quelque chose d'universel." },
   { Icon: Globe,  title: 'Portée mondiale',       desc: "Pensés pour tous, ouverts sur le monde. Nous mettons les créateurs sous les projecteurs et les connectons à une audience globale." },
-  { Icon: Zap,    title: 'Innovation concrète',  desc: "GoFolyX est conçu pour les réalités du terrain, avec des solutions adaptées à chaque utilisateur, pas pour un profil hypothétique." },
+  { Icon: Zap,    title: 'Innovation concrète',  desc: "Gofolyx est conçu pour les réalités du terrain, avec des solutions adaptées à chaque utilisateur, pas pour un profil hypothétique." },
   { Icon: Users,  title: 'Communauté avant tout',desc: "La plateforme n'est pas juste un catalogue — c'est un espace de vie où fans, artistes et créateurs se retrouvent, discutent et grandissent ensemble." },
 ];
 
@@ -40,7 +40,7 @@ export default function AboutPage() {
           Retour
         </button>
         <div className="flex-1" />
-        <img src={isDark ? Images.logoDark : Images.logoLight} alt="GoFolyX" className="h-7 w-auto" />
+        <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-7 w-auto" />
       </nav>
 
       {/* Hero */}
@@ -56,7 +56,7 @@ export default function AboutPage() {
           </span>
         </h1>
         <p className="max-w-2xl mx-auto text-lg leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          GoFolyX est né d'un constat simple : les créateurs manquent de visibilité et les fans manquent d'accès. Nous avons construit la plateforme qui change ça.
+          Gofolyx est né d'un constat simple : les créateurs manquent de visibilité et les fans manquent d'accès. Nous avons construit la plateforme qui change ça.
         </p>
       </section>
 
@@ -88,7 +88,7 @@ export default function AboutPage() {
               Connecter les talents et les audiences sans frontières
             </h2>
             <p className="leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-              GoFolyX est une plateforme de streaming culturel fondée en 2026. Nous combinons divertissement vidéo, billetterie événementielle, concerts en live et communautés pour offrir une expérience complète — accessible partout dans le monde.
+              Gofolyx est une plateforme de streaming culturel fondée en 2026. Nous combinons divertissement vidéo, billetterie événementielle, concerts en live et communautés pour offrir une expérience complète — accessible partout dans le monde.
             </p>
             <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Nous collaborons avec des artistes, labels, promoteurs d'événements et studios pour rendre la culture accessible à tous, même avec une connexion limitée.
@@ -98,7 +98,7 @@ export default function AboutPage() {
             style={{ background: 'linear-gradient(135deg,#7B3FF215,#9B65F510)', border: '1px solid var(--border)' }}>
             <div className="text-center p-8">
               <Globe size={48} style={{ color: 'var(--primary)', margin: '0 auto 16px' }} />
-              <p className="font-bold text-lg mb-2">GoFolyX</p>
+              <p className="font-bold text-lg mb-2">Gofolyx</p>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 Une plateforme mondiale<br />au service des créateurs
               </p>
@@ -179,7 +179,7 @@ export default function AboutPage() {
 
       {/* Footer minimal */}
       <footer className="py-8 text-center text-xs" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
-        © 2025 GoFolyX. Tous droits réservés.
+        © 2025 Gofolyx. Tous droits réservés.
       </footer>
     </div>
   );

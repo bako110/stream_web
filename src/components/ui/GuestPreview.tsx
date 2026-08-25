@@ -891,7 +891,7 @@ export function GuestPreview({
         <div className="gp-topbar">
           <div className="gp-logo">
             <RoundLogo size={36} />
-            <span className="gp-logo-text">GoFolyX</span>
+            <span className="gp-logo-text">Gofolyx</span>
           </div>
           <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-topbar-login">
             Se connecter
@@ -1068,7 +1068,7 @@ export function GuestPreview({
               {previewEnded && type === 'reel' ? 'La suite t\'attend' : cfg.cta}
             </h2>
             <p className="gp-lock-sub">
-              Rejoins GoFolyX gratuitement pour regarder la vidéo en entier, avec le son, et profiter de tout le reste.
+              Rejoins Gofolyx gratuitement pour regarder la vidéo en entier, avec le son, et profiter de tout le reste.
             </p>
 
             <div className="gp-lock-btns">
@@ -1103,7 +1103,7 @@ export function GuestPreview({
         {/* CTA bar fixe */}
         <div className="gp-cta">
           <p className="gp-cta-headline">{cfg.cta}</p>
-          <p className="gp-cta-sub">Rejoins GoFolyX · concerts, events, reels et bien plus. Gratuit.</p>
+          <p className="gp-cta-sub">Rejoins Gofolyx · concerts, events, reels et bien plus. Gratuit.</p>
           <div className="gp-btns">
             <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-btn gp-btn-primary">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">

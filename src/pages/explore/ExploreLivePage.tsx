@@ -43,7 +43,7 @@ export default function ExploreLivePage() {
           </span>
         </div>
         <h1 className="ex-display text-5xl md:text-6xl mb-2" style={{ color: 'var(--ex-text)' }}>Live</h1>
-        <p className="text-base" style={{ color: 'var(--ex-text-2)' }}>Les concerts diffusés en direct sur GoFolyX, à cet instant</p>
+        <p className="text-base" style={{ color: 'var(--ex-text-2)' }}>Les concerts diffusés en direct sur Gofolyx, à cet instant</p>
       </div>
 
       {loading ? (

@@ -111,7 +111,7 @@ export default function SettingsVerificationPage() {
   const renderStatus = () => {
     const CFG = {
       pending:  { icon: <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(123,63,242,0.15)' }}><Spinner /></div>, color: '#7B3FF2', title: "En cours d'examen", sub: 'Notre équipe examine votre dossier. Cela peut prendre quelques jours.' },
-      approved: { icon: <CheckCircle size={48} color={BLUE} />, color: BLUE, title: 'Compte vérifié', sub: 'Votre compte est certifié GoFolyX.' },
+      approved: { icon: <CheckCircle size={48} color={BLUE} />, color: BLUE, title: 'Compte vérifié', sub: 'Votre compte est certifié Gofolyx.' },
     } as Record<string, any>;
     const cfg = CFG[status];
     return (
@@ -165,7 +165,7 @@ export default function SettingsVerificationPage() {
             <Check size={10} color="#fff" />
           </div>
         </div>
-        <p className="font-black text-lg" style={{ color: 'var(--text-primary)' }}>Badge vérifié GoFolyX</p>
+        <p className="font-black text-lg" style={{ color: 'var(--text-primary)' }}>Badge vérifié Gofolyx</p>
         <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           Le badge bleu confirme que ce compte est le vrai compte d'une personnalité, créateur ou marque notable.
         </p>
@@ -412,7 +412,7 @@ export default function SettingsVerificationPage() {
           <ArrowLeft size={16} style={{ color: 'var(--text-primary)' }} />
         </button>
         <div>
-          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Vérification GoFolyX</h1>
+          <h1 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Vérification Gofolyx</h1>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Badge bleu de compte certifié</p>
         </div>
       </div>
