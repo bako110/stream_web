@@ -1567,6 +1567,12 @@ function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean;
         v.muted = globalMuted; v.loop = true;
         if (active) v.play().catch(() => {});
       });
+      // Sans ça, une erreur fatale (buffer HLS périmé après une longue pause,
+      // reel resté monté hors-écran) laisse le flux mort en silence — le
+      // prochain v.play() échoue indéfiniment sans jamais rejouer la pub.
+      hls.on(Hls.Events.ERROR, (_e, data) => {
+        if (data.fatal) { hls.loadSource(src); }
+      });
     } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
       v.src = src; v.loop = true; v.muted = globalMuted;
       if (active) v.play().catch(() => {});
@@ -1582,13 +1588,21 @@ function ReelAdSlide({ ad, active, globalMuted }: { ad: ReelAd; active: boolean;
     };
   }, [ad.creative_url, isVideo]); // eslint-disable-line
 
-  // Play/Pause selon active (identique mobile)
+  // Play/Pause selon active (identique mobile). Repart toujours de 0 en
+  // redevenant active — sans ça, une pub restée en pause longtemps (buffer
+  // HLS qui a pu expirer/devenir invalide entre-temps) peut rester bloquée
+  // sur son dernier currentTime au lieu de rejouer, contrairement à
+  // ReelPlayer qui fait déjà ce reset pour les vrais reels.
   useEffect(() => {
     if (!isVideo) return;
     const v = videoRef.current;
     if (!v) return;
-    if (active) v.play().catch(() => {});
-    else v.pause();
+    if (active) {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+    }
   }, [active, isVideo]);
 
   // Mute sync (identique mobile)
