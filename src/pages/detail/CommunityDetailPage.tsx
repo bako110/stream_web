@@ -933,7 +933,7 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
           <Avatar src={msg.sender_avatar_url} name={msg.sender_display_name ?? msg.sender_username ?? '?'} size="xs" />
         </button>
       )}
-      <div className={`max-w-[72%] min-w-0 flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+      <div className={`max-w-[72%] sm:max-w-[420px] min-w-0 flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
         {!isMe && (
           <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>
             {msg.sender_display_name ?? msg.sender_username}
