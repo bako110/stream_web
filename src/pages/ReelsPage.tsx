@@ -2320,32 +2320,54 @@ export default function ReelsPage() {
   useEffect(() => {
     if (reels.length === 0) return;
     const observer = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) {
-          if (isJumpingRef.current) return;
-          const idx = Number((e.target as HTMLElement).dataset.index);
-          setActiveIndex(idx);
-          savedIndexRef.current = idx;
-          // Sauvegarder position (module-level, survit à une navigation interne)
-          const reelId = reels[idx]?.id ?? '';
-          _reelPosition = { idx, reelId };
-          // Reflète le reel actif dans l'URL — seul moyen de le retrouver après un F5
-          // (le module-level state ci-dessus est perdu au rechargement de page).
-          if (reelId) {
-            const nextUrl = `/reels?id=${encodeId(reelId)}`;
-            if (window.location.pathname + window.location.search !== nextUrl) {
-              navigate(nextUrl, { replace: true });
-            }
+      entries => {
+        if (isJumpingRef.current) return;
+        // Un même batch peut contenir plusieurs entrées franchissant le seuil
+        // simultanément pendant un scroll rapide (reel sortant ET entrant tous
+        // deux >= 60% visibles au même frame) — ne traiter QUE la plus visible
+        // du lot, sinon chaque entrée appelle setActiveIndex tour à tour et
+        // fait passer plusieurs ReelPlayer par active=true, laissant parfois
+        // une vidéo continuer de jouer après le scroll (son qui persiste).
+        const visible = entries.filter(e => e.isIntersecting);
+        if (visible.length === 0) return;
+        const best = visible.reduce((a, b) => (b.intersectionRatio > a.intersectionRatio ? b : a));
+        const idx = Number((best.target as HTMLElement).dataset.index);
+        setActiveIndex(idx);
+        savedIndexRef.current = idx;
+        // Sauvegarder position (module-level, survit à une navigation interne)
+        const reelId = reels[idx]?.id ?? '';
+        _reelPosition = { idx, reelId };
+        // Reflète le reel actif dans l'URL — seul moyen de le retrouver après un F5
+        // (le module-level state ci-dessus est perdu au rechargement de page).
+        if (reelId) {
+          const nextUrl = `/reels?id=${encodeId(reelId)}`;
+          if (window.location.pathname + window.location.search !== nextUrl) {
+            navigate(nextUrl, { replace: true });
           }
-          // Charger plus quand on approche des 3 derniers (identique mobile)
-          if (idx >= reels.length - 3) loadMore();
         }
-      }),
+        // Charger plus quand on approche des 3 derniers (identique mobile)
+        if (idx >= reels.length - 3) loadMore();
+      },
       { threshold: 0.6 },
     );
     document.querySelectorAll('[data-reel-item]').forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, [reels, loadMore]);
+
+  // Filet de sécurité — à chaque changement d'item actif, force la pause de
+  // toute <video> hors de l'élément actif. Chaque ReelPlayer gère déjà son
+  // propre play/pause via la prop `active`, mais avec l'HLS et les race
+  // conditions possibles pendant un scroll rapide (voir commentaires
+  // isJumpingRef plus haut), un signal manqué peut laisser une vidéo
+  // continuer de jouer en arrière-plan après être sortie de vue.
+  useEffect(() => {
+    const items = document.querySelectorAll<HTMLElement>('[data-reel-item]');
+    items.forEach(el => {
+      const idx = Number(el.dataset.index);
+      if (idx === activeIndex) return;
+      el.querySelectorAll('video').forEach(v => { if (!v.paused) v.pause(); });
+    });
+  }, [activeIndex]);
 
   // Injection pub toutes les 5 reels — chaque slot a sa propre ad, rechargée
   // indépendamment (rotation, pas la même pub partout comme avant).
