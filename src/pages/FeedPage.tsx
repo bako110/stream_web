@@ -20,7 +20,7 @@ import { formatTimeAgo } from '../utils/date';
 import { ShareModal } from '../components/ui/ShareModal';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
-import type { Concert, Event, Post, Reel, StoryGroup, Community } from '../types';
+import type { Concert, Event, Post, Reel, StoryGroup, Community, UserPublic } from '../types';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useConfirm } from '../components/ui/Dialog';
@@ -820,7 +820,7 @@ type FeedItem =
   | { kind: 'post';         id: string; data: Post }
   | { kind: 'reel';         id: string; data: Reel }
   | { kind: 'reel_row';     id: string; data: Reel[] }
-  | { kind: 'suggestions';  id: string; data: null }
+  | { kind: 'suggestions';  id: string; data: UserPublic[] }
   | { kind: 'communities';  id: string; data: Community[] }
   | { kind: 'ad';           id: string; data: FeedAd | null };
 
@@ -2959,10 +2959,12 @@ export default function FeedPage() {
   const openAiStatus = useCallback((type: AiContentType, id: string, status?: 'pending' | 'done' | null) => setAiStatusTarget({ type, id, status }), []);
 
   // ── Pagination infinie (tab "all") ──────────────────────────────────────────
+  // L'entrelacement reel_row/suggestions/communities vit désormais côté
+  // backend (FeedService.get_feed, rotation stricte page%3) — le frontend ne
+  // fait plus que mapper la séquence reçue et injecter la pub à part.
   const seenIdsRef       = useRef<Set<string>>(new Set());
   const feedPageRef      = useRef(1);
   const feedHasMoreRef   = useRef(true);
-  const reelsHasMoreRef  = useRef(true);
   // Compte les pages consécutives entièrement recoupées (déjà vues) — le
   // backend re-trie par score(temps) à chaque page, donc `rawIsEmpty` seul
   // ne suffit pas : il peut renvoyer indéfiniment de petites pages non-vides
@@ -2973,16 +2975,7 @@ export default function FeedPage() {
   const emptyStreakRef   = useRef(0);
   const MAX_EMPTY_STREAK = 3;
   const nonReelCountRef  = useRef(0);
-  const suggestCountRef  = useRef(0);
-  const commCountRef     = useRef(0);
   const adCountRef       = useRef(0);
-  const reelRowIdxRef    = useRef(0);
-  // Reels chargés (chargement initial ou pages suivantes) mais pas encore
-  // casés dans un créneau naturel du contenu normal — jamais empilés en
-  // bloc, ils patientent ici jusqu'à ce qu'assez de posts/events/concerts
-  // arrivent pour les espacer correctement (voir loadFeed/loadMoreFeed).
-  const pendingReelsRef  = useRef<Reel[]>([]);
-  const commDataRef      = useRef<Community[]>([]);
   const loadingMoreRef   = useRef(false);
   const sentinelRef      = useRef<HTMLDivElement | null>(null);
   const seenAdIdsRef     = useRef<string[]>([]);
@@ -2992,16 +2985,6 @@ export default function FeedPage() {
   // écrasant un fil déjà chargé par une réponse vide/obsolète ("le contenu
   // apparaît puis disparaît"). Seul le run le plus récent a le droit d'écrire.
   const loadFeedRunRef   = useRef(0);
-
-  // Suggestions fetched once — shared across all SuggestionsInline instances
-  const [suggestUsers,   setSuggestUsers]   = useState<any[]>([]);
-  const [suggestLoading, setSuggestLoading] = useState(true);
-  useEffect(() => {
-    apiClient.get<any>(`${Endpoints.users.suggestions}?limit=6`)
-      .then(res => setSuggestUsers(toArray(res.data)))
-      .catch(() => {})
-      .finally(() => setSuggestLoading(false));
-  }, []);
 
   function openComments(id: string, kind: 'event'|'concert'|'post'|'reel', count: number) {
     setCommentTarget({ id, kind, count });
@@ -3016,129 +2999,58 @@ export default function FeedPage() {
     seenIdsRef.current      = new Set();
     feedPageRef.current     = 1;
     feedHasMoreRef.current  = true;
-    reelsHasMoreRef.current = true;
     emptyStreakRef.current  = 0;
     nonReelCountRef.current = 0;
-    suggestCountRef.current = 0;
-    commCountRef.current    = 0;
     adCountRef.current      = 0;
-    reelRowIdxRef.current   = 0;
-    pendingReelsRef.current = [];
     seenAdIdsRef.current    = [];
     setHasMoreFeed(true);
     try {
       if (filter === 'all') {
-        // Parallel load — apiClient.get returns { data, status }
-        // /search/feed → { items: [{kind, ...fields}], total, page, limit } — events + concerts + posts
-        // /reels       → flat array  OR  { items: [...] } — feed dédié, reste séparé
-        const [feedRes, reelsRes, commRes, adRes] = await Promise.all([
+        // /search/feed renvoie désormais directement la séquence entrelacée :
+        // events/concerts/posts triés par score, avec au plus UN encart
+        // spécial par page (reel_row, suggestions ou communities — rotation
+        // stricte page%3 décidée côté backend, cf. FeedService.get_feed).
+        // Le frontend n'a plus qu'à afficher tel quel — plus de shuffle, plus
+        // de calcul d'intervalles, plus de risque d'empilement ou de
+        // chevauchement entre types (ancien système, retiré).
+        const [feedRes, adRes] = await Promise.all([
           apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=40`).catch(() => null),
-          apiClient.get<any>(`${Endpoints.reels.feed}?page=1&limit=20`).catch(() => null),
-          apiClient.get<any>(`${Endpoints.communities.discover}?limit=8`).catch(() => null),
           apiClient.get<any>(Endpoints.ads.feedNext('feed')).catch(() => null),
         ]);
         if (adRes?.data) { setFeedAd(adRes.data); seenAdIdsRef.current = [adRes.data.id]; }
 
-        // /search/feed: events + concerts + posts (exclude reels — they have their own feed)
         const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
-        const feedItems: FeedItem[] = feedRaw
-          .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post'))
-          .map((d: any) => ({ kind: d.kind as 'event' | 'concert' | 'post', id: String(d.id), data: d }));
         feedHasMoreRef.current = feedRaw.length >= 40;
 
-        // /reels: flat array or { items: [...] }
-        const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
-        const reelItems: FeedItem[] = reelsRaw
-          .filter((d: any) => d.id)
-          .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
-        reelsHasMoreRef.current = !!(reelsRes?.data?.has_more ?? (reelsRaw.length >= 20));
-
-        // Communities for inline injection
-        const commRaw: Community[] = commRes
-          ? (Array.isArray(commRes.data) ? commRes.data : commRes.data?.items ?? commRes.data?.data ?? [])
-          : [];
-        const commData = [...commRaw].sort(() => Math.random() - 0.5);
-        commDataRef.current = commData;
-
-        // Deduplicate by composite key (events/concerts/posts already merged into feedItems)
         const seen = seenIdsRef.current;
-        const merged = feedItems.filter(item => {
-          const key = `${item.kind}-${item.id}`;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-
-        // Also deduplicate reels
-        const mergedReels = reelItems.filter(item => {
-          const key = `reel-${item.id}`;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-
-        // Fisher-Yates shuffle on non-reel items
-        for (let i = merged.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [merged[i], merged[j]] = [merged[j], merged[i]];
+        const mapped: FeedItem[] = [];
+        let nonSpecialCount = 0;
+        for (const d of feedRaw) {
+          if (!d || !d.id) continue;
+          if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post') {
+            const key = `${d.kind}-${d.id}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            mapped.push({ kind: d.kind, id: String(d.id), data: d });
+            nonSpecialCount++;
+            // Pub injectée côté client, indépendamment de la rotation backend
+            // (pas demandée dans la migration reel/suggestion/communauté).
+            if (adRes?.data && nonSpecialCount > 0 && nonSpecialCount % 8 === 0) {
+              mapped.push({ kind: 'ad', id: `__ad__${++adCountRef.current}`, data: adRes.data });
+            }
+          } else if (d.kind === 'reel_row') {
+            mapped.push({ kind: 'reel_row', id: String(d.id), data: (d.reels ?? []) as Reel[] });
+          } else if (d.kind === 'suggestions') {
+            mapped.push({ kind: 'suggestions', id: String(d.id), data: (d.users ?? []) as UserPublic[] });
+          } else if (d.kind === 'communities') {
+            mapped.push({ kind: 'communities', id: String(d.id), data: (d.communities ?? []) as Community[] });
+          }
         }
 
-        // Group reels into rows of 5
-        const REELS_PER_ROW = 5;
-        const reelRows: FeedItem[] = [];
-        for (let r = 0; r < mergedReels.length; r += REELS_PER_ROW) {
-          const chunk = mergedReels.slice(r, r + REELS_PER_ROW).map(ri => ri.data as Reel);
-          reelRows.push({ kind: 'reel_row', id: `__reel_row__${r}`, data: chunk });
-        }
-
-        // Deterministic injection — same pattern as mobile
-        const REEL_ROW_EVERY = 5;
-        const SUGGEST_EVERY  = 8;
-        const COMM_EVERY     = 12;
-        const AD_EVERY       = 8; // identique mobile
-
-        const result: FeedItem[] = [];
-
-        // Principe (comme Instagram/Facebook) : le feed n'est PAS un écran de
-        // reels — reels, suggestions, communautés et pubs ne sont que des
-        // encarts occasionnels intercalés dans le contenu normal (posts/
-        // events/concerts), jamais l'inverse. Chaque type ne s'insère QUE
-        // quand son créneau naturel se présente dans la boucle sur `merged`.
-        // Si `merged` est trop court pour caser tout ce qui est disponible
-        // (ex: peu de posts ce jour-là mais beaucoup de reels), le surplus
-        // n'est PAS empilé en bloc à la fin — il reste simplement non
-        // consommé (les refs ne sont pas avancées) et sera repris à la page
-        // suivante quand un nouveau lot de contenu normal arrivera pour
-        // l'espacer correctement. Aucun `while` de rattrapage ici, par choix.
-        merged.forEach((item, i) => {
-          result.push(item);
-
-          // reel_row: first at i===2, then every 5
-          if (reelRowIdxRef.current < reelRows.length && (i === 2 || (i > 2 && (i - 2) % REEL_ROW_EVERY === 0))) {
-            result.push(reelRows[reelRowIdxRef.current++]);
-          }
-          // suggestions: first at i===4, then every 8
-          if (i === 4 || (i > 4 && (i - 4) % SUGGEST_EVERY === 0)) {
-            result.push({ kind: 'suggestions', id: `__suggestions__${++suggestCountRef.current}`, data: null });
-          }
-          // communities: first at i===9, then every 12
-          if (commData.length > 0 && (i === 9 || (i > 9 && (i - 9) % COMM_EVERY === 0))) {
-            result.push({ kind: 'communities', id: `__communities__${++commCountRef.current}`, data: commData });
-          }
-          // ad: toutes les 8 cartes (placement=feed, identique mobile)
-          if (adRes?.data && i > 0 && i % AD_EVERY === 0) {
-            result.push({ kind: 'ad', id: `__ad__${++adCountRef.current}`, data: adRes.data });
-          }
-        });
-
-        // reelRows non casées cette page-ci (créneaux insuffisants dans
-        // merged) — reportées, jamais perdues ni empilées de force.
-        pendingReelsRef.current = reelRows.slice(reelRowIdxRef.current).flatMap(rr => rr.data as Reel[]);
-
-        nonReelCountRef.current = merged.length;
+        nonReelCountRef.current = nonSpecialCount;
         if (runId !== loadFeedRunRef.current) return;
-        setItems(result);
-        setHasMoreFeed(feedHasMoreRef.current || reelsHasMoreRef.current);
+        setItems(mapped);
+        setHasMoreFeed(feedHasMoreRef.current);
       } else if (filter === 'friends') {
         // Uniquement le contenu des comptes suivis — posts + events/concerts + reels,
         // triés chronologiquement, sans pub/suggestions/communautés (même pattern mobile).
@@ -3186,48 +3098,47 @@ export default function FeedPage() {
     setLoadingMore(true);
     try {
       const nextPage = feedPageRef.current + 1;
-      // Comme le mobile : on interroge toujours les 3 sources à chaque page (pas de
-      // hasMore par source qui coupe une source trop tôt) — seul le dédoublonnage
-      // global décide si la page ramène quelque chose de neuf.
-      const [feedRes, reelsRes] = await Promise.all([
-        apiClient.get<any>(`${Endpoints.search.feed}?page=${nextPage}&limit=20`).catch(() => null),
-        apiClient.get<any>(`${Endpoints.reels.feed}?page=${nextPage}&limit=20`).catch(() => null),
-      ]);
+      // /search/feed renvoie déjà la séquence entrelacée pour cette page
+      // (au plus un encart spécial reel_row/suggestions/communities, rotation
+      // décidée côté backend) — voir loadFeed ci-dessus pour le détail.
+      const feedRes = await apiClient.get<any>(`${Endpoints.search.feed}?page=${nextPage}&limit=20`).catch(() => null);
 
       const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
-      const reelsRaw: any[] = reelsRes ? toArray<any>(reelsRes.data) : [];
       feedHasMoreRef.current = feedRaw.length >= 20;
       // Le pool se retrie a chaque page (score = f(temps)) -- une page BRUTE non vide
       // peut ne contenir QUE des items deja vus sur une page precedente (recoupement),
       // sans que le catalogue soit pour autant epuise. Ne conclure a la fin du flux que
       // si le backend lui-meme ne renvoie plus rien, jamais seulement sur la dedup —
       // sinon le scroll s'arretait prematurement des la 1ere page entierement recoupee.
-      const rawIsEmpty = feedRaw.length === 0 && reelsRaw.length === 0;
-
-      const feedItems: FeedItem[] = feedRaw
-        .filter((d: any) => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post'))
-        .map((d: any) => ({ kind: d.kind as 'event' | 'concert' | 'post', id: String(d.id), data: d }));
-      const reelItems: FeedItem[] = reelsRaw
-        .filter((d: any) => d.id)
-        .map((d: any) => ({ kind: 'reel' as const, id: String(d.id), data: d as Reel }));
+      const rawIsEmpty = feedRaw.length === 0;
 
       const seen = seenIdsRef.current;
-      const freshNonReel = feedItems.filter(item => {
-        const key = `${item.kind}-${item.id}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      const freshReels = reelItems.filter(item => {
-        const key = `reel-${item.id}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      const appended: FeedItem[] = [];
+      let freshNonSpecialCount = 0;
+      for (const d of feedRaw) {
+        if (!d || !d.id) continue;
+        if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post') {
+          const key = `${d.kind}-${d.id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          appended.push({ kind: d.kind, id: String(d.id), data: d });
+          freshNonSpecialCount++;
+          if (feedAd && freshNonSpecialCount > 0 && freshNonSpecialCount % 8 === 0) {
+            const slotId = `__ad__${++adCountRef.current}`;
+            appended.push({ kind: 'ad', id: slotId, data: null });
+          }
+        } else if (d.kind === 'reel_row') {
+          appended.push({ kind: 'reel_row', id: String(d.id), data: (d.reels ?? []) as Reel[] });
+        } else if (d.kind === 'suggestions') {
+          appended.push({ kind: 'suggestions', id: String(d.id), data: (d.users ?? []) as UserPublic[] });
+        } else if (d.kind === 'communities') {
+          appended.push({ kind: 'communities', id: String(d.id), data: (d.communities ?? []) as Community[] });
+        }
+      }
 
       feedPageRef.current = nextPage;
 
-      if (freshNonReel.length === 0 && freshReels.length === 0) {
+      if (appended.length === 0) {
         // Page entierement recoupee (deja vue) : le flux n'est fini si le
         // backend n'a lui-meme plus rien a offrir, OU si trop de pages
         // d'affilee n'ont ramene que du deja-vu (pool qui tourne sur
@@ -3237,52 +3148,8 @@ export default function FeedPage() {
         return;
       }
 
-      const SUGGEST_EVERY  = 8;
-      const COMM_EVERY     = 12;
-      const AD_EVERY       = 8;
-      const REEL_ROW_EVERY = 5;
-      const commData = commDataRef.current;
-
-      // Reels disponibles pour cette page = ceux en attente (non casés à une
-      // page précédente) + les nouveaux — jamais empilés en bloc : ils
-      // n'occupent que les créneaux naturels (i===2, puis tous les
-      // REEL_ROW_EVERY) qui se présentent dans freshNonReel ci-dessous.
-      // Ce qui ne trouve pas de créneau cette page-ci repart dans
-      // pendingReelsRef pour la page suivante, jamais perdu ni forcé.
-      const REELS_PER_ROW = 5;
-      const availableReels = [...pendingReelsRef.current, ...freshReels.map(r => r.data as Reel)];
-      const reelRowsThisPage: FeedItem[] = [];
-      for (let r = 0; r < availableReels.length; r += REELS_PER_ROW) {
-        const chunk = availableReels.slice(r, r + REELS_PER_ROW);
-        reelRowsThisPage.push({ kind: 'reel_row', id: `__reel_row__page_${nextPage}_${r}`, data: chunk });
-      }
-      let reelRowIdxThisPage = 0;
-
-      const appended: FeedItem[] = [];
-      const adSlotIds: string[] = [];
-      freshNonReel.forEach((item, localI) => {
-        const i = nonReelCountRef.current + localI;
-        appended.push(item);
-
-        if (reelRowIdxThisPage < reelRowsThisPage.length && (i === 2 || (i > 2 && (i - 2) % REEL_ROW_EVERY === 0))) {
-          appended.push(reelRowsThisPage[reelRowIdxThisPage++]);
-        }
-        if (i === 4 || (i > 4 && (i - 4) % SUGGEST_EVERY === 0)) {
-          appended.push({ kind: 'suggestions', id: `__suggestions__${++suggestCountRef.current}`, data: null });
-        }
-        if (commData.length > 0 && (i === 9 || (i > 9 && (i - 9) % COMM_EVERY === 0))) {
-          appended.push({ kind: 'communities', id: `__communities__${++commCountRef.current}`, data: commData });
-        }
-        if (i > 0 && i % AD_EVERY === 0 && feedAd) {
-          const slotId = `__ad__${++adCountRef.current}`;
-          adSlotIds.push(slotId);
-          appended.push({ kind: 'ad', id: slotId, data: null });
-        }
-      });
-      // reelRows non casées cette page-ci — reportées, jamais empilées de force.
-      pendingReelsRef.current = reelRowsThisPage.slice(reelRowIdxThisPage).flatMap(rr => rr.data as Reel[]);
-
-      nonReelCountRef.current += freshNonReel.length;
+      const adSlotIds = appended.filter(it => it.kind === 'ad').map(it => it.id);
+      nonReelCountRef.current += freshNonSpecialCount;
       setItems(prev => [...prev, ...appended]);
 
       // Tire une pub distincte (non déjà vue dans ce feed) pour chaque nouveau slot,
@@ -3452,7 +3319,7 @@ export default function FeedPage() {
             <div className="flex flex-col gap-3 animate-reveal-up delay-300">
               {items.map((item, i) => {
                 if (item.kind === 'suggestions') {
-                  return <div key={item.id} className="lg:hidden"><SuggestionsInline users={suggestUsers} loading={suggestLoading} /></div>;
+                  return <div key={item.id} className="lg:hidden"><SuggestionsInline users={item.data} loading={false} /></div>;
                 }
                 if (item.kind === 'communities') {
                   return <div key={item.id} className="lg:hidden"><CommunitiesInline communities={item.data} /></div>;
