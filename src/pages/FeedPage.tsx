@@ -2667,6 +2667,11 @@ export default function FeedPage() {
   const adCountRef       = useRef(0);
   const loadingMoreRef   = useRef(false);
   const sentinelRef      = useRef<HTMLDivElement | null>(null);
+  // Container qui scrolle réellement le feed sur desktop (lg:overflow-y-auto,
+  // colonne isolée des sidebars) — sur mobile ce même noeud n'a pas de scroll
+  // propre (window scrolle), auquel cas root=ce noeud se comporte comme le
+  // viewport, donc pas besoin de branche séparée par breakpoint.
+  const feedScrollRef    = useRef<HTMLDivElement | null>(null);
   const seenAdIdsRef     = useRef<string[]>([]);
   // Anti-race : deux loadFeed() concurrents (StrictMode double-invoke, ou
   // changement rapide d'onglet) pouvaient tous les deux appeler setItems --
@@ -2872,12 +2877,17 @@ export default function FeedPage() {
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node || loading || !hasMoreFeed) return;
-    // rootMargin volontairement faible : ne déclenche qu'une fois le bas de
-    // la page réellement approché, pour laisser le temps de voir tout le
-    // contenu de la page courante avant que la suivante ne charge.
+    // root explicite : sur desktop (lg+), c'est feedScrollRef qui scrolle
+    // réellement (lg:overflow-y-auto, colonne isolée des sidebars), PAS la
+    // fenêtre. Sans root explicite, IntersectionObserver observe par défaut
+    // le viewport de la fenêtre — le sentinel pouvait alors être considéré
+    // "visible" dès le premier rendu (il est dans le viewport window, même
+    // hors du scroll visible du container interne), déclenchant page 2
+    // quasi instantanément après page 1, sans laisser le temps de scroller.
+    // rootMargin quasi nul : ne déclenche qu'une fois le bas réel approché.
     const obs = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMoreFeed(); },
-      { rootMargin: '100px' },
+      { root: feedScrollRef.current, rootMargin: '40px' },
     );
     obs.observe(node);
     return () => obs.disconnect();
@@ -2905,7 +2915,7 @@ export default function FeedPage() {
              les images de post (souvent portrait) ne flottent pas dans un vide immense
              maintenant que la page occupe toute la largeur d'écran.
              lg+ : seule cette colonne scrolle, indépendamment des sidebars. ── */}
-        <div className="flex-1 min-w-0 max-w-2xl space-y-3 lg:space-y-5 lg:h-full lg:overflow-y-auto lg:pr-1"
+        <div ref={feedScrollRef} className="flex-1 min-w-0 max-w-2xl space-y-3 lg:space-y-5 lg:h-full lg:overflow-y-auto lg:pr-1"
           style={{ scrollbarWidth: 'thin' }}>
 
           {/* Greeting — desktop uniquement, superflu sur mobile */}
