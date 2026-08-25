@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Check, Trash2, Heart, UserPlus, MessageCircle, Radio, CheckSquare, Square, X, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import type { Notification } from '../types';
 import { apiClient } from '../api';
@@ -7,8 +8,36 @@ import { useApi } from '../hooks/useApi';
 import { useWs } from '../context/WebSocketContext';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { AiAnalysisStatusModal, type AiContentType } from '../components/ui/AiAnalysisStatusModal';
+import { encodeId } from '../utils/slugId';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+// Types "sociaux purs" qui ouvrent toujours le profil de l'acteur — 'reaction'
+// et 'comment' ne sont PAS dans cette liste : ils portent un ref_type/ref_id
+// vers le contenu concerné (post/reel/...) et doivent ouvrir CE contenu, pas
+// le profil de la personne qui a réagi/commenté. Même liste que côté mobile
+// (NotificationsScreen.tsx, USER_NOTIF_TYPES).
+const USER_NOTIF_TYPES = new Set(['follow', 'profile_view', 'story_view', 'mention', 'subscription', 'reel_posted']);
+
+/** URL de destination d'une notification — même cascade par ref_type que
+ * NotificationsScreen.tsx côté mobile (handlePress). Retourne null si aucune
+ * destination connue (notification purement informative). */
+function notificationTargetUrl(n: Notification): string | null {
+  if (USER_NOTIF_TYPES.has(n.notification_type) && n.actor?.id) {
+    return `/user/${encodeId(n.actor.id)}`;
+  }
+  if (!n.ref_id || !n.ref_type) return null;
+  switch (n.ref_type) {
+    case 'concert':   return `/concerts/${encodeId(n.ref_id)}`;
+    case 'event':     return `/events/${encodeId(n.ref_id)}`;
+    case 'reel':      return `/reels?id=${encodeId(n.ref_id)}`;
+    case 'post':      return `/posts/${encodeId(n.ref_id)}`;
+    case 'community': return `/communities/${encodeId(n.ref_id)}`;
+    case 'user':      return `/user/${encodeId(n.ref_id)}`;
+    case 'story':     return n.actor?.id ? `/user/${encodeId(n.actor.id)}` : null;
+    default:          return null;
+  }
+}
 
 const NOTIF_ICONS: Record<string, React.ReactNode> = {
   follow:       <UserPlus size={14} />,
@@ -95,6 +124,7 @@ function NotifBody({ text }: { text: string }) {
 }
 
 export default function NotificationsPage() {
+  const navigate = useNavigate();
   const { data, loading, refetch } = useApi<Notification[]>(
     () => apiClient.get<Notification[]>(`${Endpoints.notifications.list}?limit=100`),
   );
@@ -319,9 +349,18 @@ export default function NotificationsPage() {
                 key={n.id}
                 onClick={() => {
                   if (selectMode) { toggleItem(n.id); return; }
+                  if (!n.is_read) {
+                    setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, is_read: true } : x));
+                    apiClient.patch(Endpoints.notifications.read(n.id)).catch(() => {});
+                  }
+                  // Verdict d'analyse IA — écran dédié plutôt que le contenu
+                  // générique, intercepte avant la cascade ref_type normale.
                   if (n.notification_type.startsWith('reel_analysis_') && n.ref_id && n.ref_type) {
                     setAiStatusTarget({ type: n.ref_type as AiContentType, id: n.ref_id });
+                    return;
                   }
+                  const url = notificationTargetUrl(n);
+                  if (url) navigate(url);
                 }}
                 className="flex items-start gap-3 p-4 rounded-xl transition-all group"
                 style={{
@@ -332,7 +371,7 @@ export default function NotificationsPage() {
                     isSelected
                       ? 'rgba(123,63,242,0.5)'
                       : n.is_read ? 'var(--border)' : 'rgba(123,63,242,0.2)'}`,
-                  cursor: selectMode ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   userSelect: 'none',
                 }}>
 
