@@ -2977,6 +2977,11 @@ export default function FeedPage() {
   const commCountRef     = useRef(0);
   const adCountRef       = useRef(0);
   const reelRowIdxRef    = useRef(0);
+  // Reels chargés (chargement initial ou pages suivantes) mais pas encore
+  // casés dans un créneau naturel du contenu normal — jamais empilés en
+  // bloc, ils patientent ici jusqu'à ce qu'assez de posts/events/concerts
+  // arrivent pour les espacer correctement (voir loadFeed/loadMoreFeed).
+  const pendingReelsRef  = useRef<Reel[]>([]);
   const commDataRef      = useRef<Community[]>([]);
   const loadingMoreRef   = useRef(false);
   const sentinelRef      = useRef<HTMLDivElement | null>(null);
@@ -3018,6 +3023,7 @@ export default function FeedPage() {
     commCountRef.current    = 0;
     adCountRef.current      = 0;
     reelRowIdxRef.current   = 0;
+    pendingReelsRef.current = [];
     seenAdIdsRef.current    = [];
     setHasMoreFeed(true);
     try {
@@ -3093,6 +3099,17 @@ export default function FeedPage() {
 
         const result: FeedItem[] = [];
 
+        // Principe (comme Instagram/Facebook) : le feed n'est PAS un écran de
+        // reels — reels, suggestions, communautés et pubs ne sont que des
+        // encarts occasionnels intercalés dans le contenu normal (posts/
+        // events/concerts), jamais l'inverse. Chaque type ne s'insère QUE
+        // quand son créneau naturel se présente dans la boucle sur `merged`.
+        // Si `merged` est trop court pour caser tout ce qui est disponible
+        // (ex: peu de posts ce jour-là mais beaucoup de reels), le surplus
+        // n'est PAS empilé en bloc à la fin — il reste simplement non
+        // consommé (les refs ne sont pas avancées) et sera repris à la page
+        // suivante quand un nouveau lot de contenu normal arrivera pour
+        // l'espacer correctement. Aucun `while` de rattrapage ici, par choix.
         merged.forEach((item, i) => {
           result.push(item);
 
@@ -3114,10 +3131,9 @@ export default function FeedPage() {
           }
         });
 
-        // Append remaining reel_rows at end
-        while (reelRowIdxRef.current < reelRows.length) {
-          result.push(reelRows[reelRowIdxRef.current++]);
-        }
+        // reelRows non casées cette page-ci (créneaux insuffisants dans
+        // merged) — reportées, jamais perdues ni empilées de force.
+        pendingReelsRef.current = reelRows.slice(reelRowIdxRef.current).flatMap(rr => rr.data as Reel[]);
 
         nonReelCountRef.current = merged.length;
         if (runId !== loadFeedRunRef.current) return;
@@ -3221,25 +3237,35 @@ export default function FeedPage() {
         return;
       }
 
-      const SUGGEST_EVERY = 8;
-      const COMM_EVERY    = 12;
-      const AD_EVERY      = 8;
+      const SUGGEST_EVERY  = 8;
+      const COMM_EVERY     = 12;
+      const AD_EVERY       = 8;
+      const REEL_ROW_EVERY = 5;
       const commData = commDataRef.current;
 
-      const reelRow: FeedItem | null = freshReels.length > 0
-        ? { kind: 'reel_row', id: `__reel_row__page_${nextPage}`, data: freshReels.map(r => r.data as Reel) }
-        : null;
+      // Reels disponibles pour cette page = ceux en attente (non casés à une
+      // page précédente) + les nouveaux — jamais empilés en bloc : ils
+      // n'occupent que les créneaux naturels (i===2, puis tous les
+      // REEL_ROW_EVERY) qui se présentent dans freshNonReel ci-dessous.
+      // Ce qui ne trouve pas de créneau cette page-ci repart dans
+      // pendingReelsRef pour la page suivante, jamais perdu ni forcé.
+      const REELS_PER_ROW = 5;
+      const availableReels = [...pendingReelsRef.current, ...freshReels.map(r => r.data as Reel)];
+      const reelRowsThisPage: FeedItem[] = [];
+      for (let r = 0; r < availableReels.length; r += REELS_PER_ROW) {
+        const chunk = availableReels.slice(r, r + REELS_PER_ROW);
+        reelRowsThisPage.push({ kind: 'reel_row', id: `__reel_row__page_${nextPage}_${r}`, data: chunk });
+      }
+      let reelRowIdxThisPage = 0;
 
       const appended: FeedItem[] = [];
-      let reelRowInserted = false;
       const adSlotIds: string[] = [];
       freshNonReel.forEach((item, localI) => {
         const i = nonReelCountRef.current + localI;
         appended.push(item);
 
-        if (!reelRowInserted && reelRow) {
-          appended.push(reelRow);
-          reelRowInserted = true;
+        if (reelRowIdxThisPage < reelRowsThisPage.length && (i === 2 || (i > 2 && (i - 2) % REEL_ROW_EVERY === 0))) {
+          appended.push(reelRowsThisPage[reelRowIdxThisPage++]);
         }
         if (i === 4 || (i > 4 && (i - 4) % SUGGEST_EVERY === 0)) {
           appended.push({ kind: 'suggestions', id: `__suggestions__${++suggestCountRef.current}`, data: null });
@@ -3253,7 +3279,8 @@ export default function FeedPage() {
           appended.push({ kind: 'ad', id: slotId, data: null });
         }
       });
-      if (reelRow && !reelRowInserted) appended.push(reelRow);
+      // reelRows non casées cette page-ci — reportées, jamais empilées de force.
+      pendingReelsRef.current = reelRowsThisPage.slice(reelRowIdxThisPage).flatMap(rr => rr.data as Reel[]);
 
       nonReelCountRef.current += freshNonReel.length;
       setItems(prev => [...prev, ...appended]);
