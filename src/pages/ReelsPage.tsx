@@ -2024,6 +2024,48 @@ export default function ReelsPage() {
     }
   }, [fetchReels, me?.id]); // eslint-disable-line
 
+  // Injection pub toutes les 5 reels — chaque slot a sa propre ad, rechargée
+  // indépendamment (rotation, pas la même pub partout comme avant). Déclaré
+  // tôt (avant activeIndex/activeReel plus bas) : c'est feedWithAds, pas
+  // reels, qui reflète l'ordre RÉEL du DOM/scroll une fois des pubs
+  // insérées — activeIndex doit indexer CE tableau, jamais `reels`
+  // directement (les deux espaces divergent dès la 1ère pub insérée, ce qui
+  // causait un mauvais reel/pub actif après scroll rapide).
+  const AD_INTERVAL = 5;
+  const feedWithAds = useMemo(() => {
+    if (userMode) return reels.map(r => ({ _isAd: false as const, reel: r }));
+    const result: ({ _isAd: false; reel: Reel } | { _isAd: true; ad: ReelAd; id: string; slotIdx: number })[] = [];
+    reels.forEach((r, i) => {
+      result.push({ _isAd: false, reel: r });
+      if ((i + 1) % AD_INTERVAL === 0) {
+        const slotIdx = Math.floor((i + 1) / AD_INTERVAL) - 1;
+        const ad = adSlots.get(slotIdx);
+        if (ad) result.push({ _isAd: true, ad, id: `ad-${ad.id}-${i}`, slotIdx });
+      }
+    });
+    return result;
+  }, [reels, adSlots, userMode]);
+
+  // Précharge le slot pub suivant dès que le dernier slot rempli est visible
+  useEffect(() => {
+    if (userMode) return;
+    const filledSlots = adSlots.size;
+    const slotsNeeded = Math.floor(reels.length / AD_INTERVAL);
+    if (slotsNeeded > filledSlots) loadAdForSlot(filledSlots);
+  }, [reels.length, adSlots, userMode, loadAdForSlot]);
+
+  // Item actif dans l'espace AFFICHÉ (feedWithAds, avec pubs) — seule source
+  // fiable pour dériver le reel/pub réellement actif, activeIndex n'ayant de
+  // sens QUE dans cet espace (voir commentaire plus haut).
+  const activeItem = feedWithAds[activeIndex] ?? null;
+  // Position de ce même item dans reels[] (sans pubs) — nécessaire pour la
+  // pagination (loadMore) et la restauration de scroll par ID, distincte de
+  // activeIndex qui reste toujours un index dans feedWithAds.
+  const activeDataIndex = activeItem
+    ? reels.findIndex(r => r.id === (activeItem._isAd ? undefined : activeItem.reel.id))
+    : -1;
+  const activeReel = activeItem && !activeItem._isAd ? activeItem.reel : null;
+
   // ── Recherche ──
   const openSearch = useCallback(() => {
     setSearchOpen(true);
@@ -2198,7 +2240,7 @@ export default function ReelsPage() {
     // Le scroll lui-même réécrit l'URL en continu (persistance F5) — si le reel visé
     // est déjà celui actif, l'URL vient de refléter le scroll naturel, pas un clic
     // externe : ne pas re-scroller, ça casserait le défilement en cours.
-    if (reels[activeIndex]?.id === wanted) return;
+    if (activeReel?.id === wanted) return;
 
     const existing = reels.find(r => r.id === wanted);
     if (existing) {
@@ -2208,7 +2250,7 @@ export default function ReelsPage() {
         .then(r => { if (r.data?.id) jumpToReel(r.data as Reel); })
         .catch(() => {});
     }
-  }, [searchParams, reels, activeIndex, jumpToReel]);
+  }, [searchParams, reels, activeReel, jumpToReel]);
 
   // ── Menu 3 points ──
   const handleOpenEdit = useCallback((r: Reel) => {
@@ -2241,7 +2283,7 @@ export default function ReelsPage() {
 
   // ── Repost ──
   const handleRepost = useCallback(async () => {
-    const cur = reels[activeIndex] ?? null;
+    const cur = activeReel;
     if (!cur || reposting) return;
     setReposting(true);
     setMoreSheetOpen(false);
@@ -2253,11 +2295,11 @@ export default function ReelsPage() {
       const msg = getApiErrorDetail(e) ?? e?.message ?? 'Impossible de republier';
       toast.error(msg);
     } finally { setReposting(false); }
-  }, [reels, activeIndex, reposting]); // eslint-disable-line
+  }, [activeReel, reposting]); // eslint-disable-line
 
   // ── Cable ──
   const handleCable = useCallback(async () => {
-    const cur = reels[activeIndex] ?? null;
+    const cur = activeReel;
     if (!cur || cabling) return;
     const authorName = cur.author?.display_name ?? cur.author?.username ?? 'cet utilisateur';
     const ok = await confirm({ title: `Envoyer une invitation Cable à ${authorName} ?`, danger: false });
@@ -2273,11 +2315,11 @@ export default function ReelsPage() {
       const msg = getApiErrorDetail(e) ?? e?.message ?? 'Impossible d\'envoyer l\'invitation';
       toast.error(msg);
     } finally { setCabling(false); }
-  }, [reels, activeIndex, cabling, confirm]); // eslint-disable-line
+  }, [activeReel, cabling, confirm]); // eslint-disable-line
 
   // ── Toggle comments (owner) ──
   const handleToggleComments = useCallback(async () => {
-    const cur = reels[activeIndex] ?? null;
+    const cur = activeReel;
     if (!cur || togglingComments) return;
     setTogglingComments(true);
     setMoreSheetOpen(false);
@@ -2290,7 +2332,7 @@ export default function ReelsPage() {
       setActiveCommentsDisabled(!newState);
       setReels(prev => prev.map(r => r.id === cur.id ? { ...r, comments_disabled: !newState } : r));
     } finally { setTogglingComments(false); }
-  }, [reels, activeIndex, activeCommentsDisabled, togglingComments]); // eslint-disable-line
+  }, [activeReel, activeCommentsDisabled, togglingComments]); // eslint-disable-line
 
   // Restaurer position uniquement lors d'une navigation interne (pas au F5)
   // _reelPosition est null après F5 (module rechargé) → index 0
@@ -2301,8 +2343,13 @@ export default function ReelsPage() {
     const pos = _reelPosition; // null si F5, valide si navigation
     if (!pos) return;
 
-    const foundIdx = reels.findIndex(r => r.id === pos!.reelId);
-    const restoreIdx = foundIdx >= 0 ? foundIdx : Math.min(pos.idx, reels.length - 1);
+    // pos.reelId identifie le reel visé — retrouver sa position dans
+    // feedWithAds (espace AFFICHÉ, avec pubs), seul espace dont l'index
+    // correspond réellement à un cran de scrollTop (container.clientHeight
+    // par item DOM). pos.idx (ancien fallback) était un index dans reels[],
+    // invalide dès qu'une pub est insérée avant cette position.
+    const displayIdx = feedWithAds.findIndex(it => !it._isAd && it.reel.id === pos!.reelId);
+    const restoreIdx = displayIdx >= 0 ? displayIdx : Math.min(pos.idx, feedWithAds.length - 1);
     if (restoreIdx <= 0) return;
 
     // Scroll 80ms après rendu (identique mobile)
@@ -2334,8 +2381,12 @@ export default function ReelsPage() {
         const idx = Number((best.target as HTMLElement).dataset.index);
         setActiveIndex(idx);
         savedIndexRef.current = idx;
-        // Sauvegarder position (module-level, survit à une navigation interne)
-        const reelId = reels[idx]?.id ?? '';
+        // idx est un index dans feedWithAds (espace AFFICHÉ, avec pubs) — ne
+        // jamais l'utiliser pour indexer reels[] directement (les deux
+        // espaces divergent dès la 1ère pub insérée : c'était la cause du
+        // mauvais reel/pub actif après un scroll rapide).
+        const item = feedWithAds[idx];
+        const reelId = item && !item._isAd ? item.reel.id : '';
         _reelPosition = { idx, reelId };
         // Reflète le reel actif dans l'URL — seul moyen de le retrouver après un F5
         // (le module-level state ci-dessus est perdu au rechargement de page).
@@ -2345,14 +2396,19 @@ export default function ReelsPage() {
             navigate(nextUrl, { replace: true });
           }
         }
-        // Charger plus quand on approche des 3 derniers (identique mobile)
-        if (idx >= reels.length - 3) loadMore();
+        // Charger plus quand on approche des 3 derniers reels de DONNÉES
+        // (pas des 3 derniers items affichés, qui incluent les pubs) —
+        // retrouve la position réelle dans reels[] via l'id de l'item actif.
+        if (item && !item._isAd) {
+          const dataIdx = reels.findIndex(r => r.id === item.reel.id);
+          if (dataIdx >= reels.length - 3) loadMore();
+        }
       },
       { threshold: 0.6 },
     );
     document.querySelectorAll('[data-reel-item]').forEach(el => observer.observe(el));
     return () => observer.disconnect();
-  }, [reels, loadMore]);
+  }, [reels, feedWithAds, loadMore]);
 
   // Filet de sécurité — à chaque changement d'item actif, force la pause de
   // toute <video> hors de l'élément actif. Chaque ReelPlayer gère déjà son
@@ -2369,38 +2425,11 @@ export default function ReelsPage() {
     });
   }, [activeIndex]);
 
-  // Injection pub toutes les 5 reels — chaque slot a sa propre ad, rechargée
-  // indépendamment (rotation, pas la même pub partout comme avant).
-  const AD_INTERVAL = 5;
-  const feedWithAds = useMemo(() => {
-    if (userMode) return reels.map(r => ({ _isAd: false as const, reel: r }));
-    const result: ({ _isAd: false; reel: Reel } | { _isAd: true; ad: ReelAd; id: string; slotIdx: number })[] = [];
-    reels.forEach((r, i) => {
-      result.push({ _isAd: false, reel: r });
-      if ((i + 1) % AD_INTERVAL === 0) {
-        const slotIdx = Math.floor((i + 1) / AD_INTERVAL) - 1;
-        const ad = adSlots.get(slotIdx);
-        if (ad) result.push({ _isAd: true, ad, id: `ad-${ad.id}-${i}`, slotIdx });
-      }
-    });
-    return result;
-  }, [reels, adSlots, userMode]);
-
-  // Précharge le slot pub suivant dès que le dernier slot rempli est visible
-  useEffect(() => {
-    if (userMode) return;
-    const filledSlots = adSlots.size;
-    const slotsNeeded = Math.floor(reels.length / AD_INTERVAL);
-    if (slotsNeeded > filledSlots) loadAdForSlot(filledSlots);
-  }, [reels.length, adSlots, userMode, loadAdForSlot]);
-
-  const activeReel = reels[activeIndex] ?? null;
-
   // Fermer le drawer mobile et le more sheet quand on change de reel
   useEffect(() => {
     setDrawerOpen(false);
     setMoreSheetOpen(false);
-    const r = reels[activeIndex];
+    const r = activeReel;
     if (r) {
       setActiveRepostCount(r.repost_count ?? 0);
       setActiveRemixCount(r.remix_count ?? 0);
@@ -2740,7 +2769,9 @@ export default function ReelsPage() {
   }
 
   // ── Main layout ─────────────────────────────────────────────────────────────
-  const suggestions = reels.slice(activeIndex + 1);
+  // activeDataIndex (position dans reels[], sans pubs) — activeIndex seul
+  // pointerait trop loin dans reels[] dès qu'une pub a été comptée.
+  const suggestions = reels.slice(activeDataIndex + 1);
 
   return (
     <div className="h-full overflow-hidden flex" style={{ zIndex: 0, background: 'var(--bg)' }}>
