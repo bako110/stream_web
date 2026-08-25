@@ -1,4 +1,5 @@
 import { PageLoader } from '../../components/ui/Spinner';
+import { ExpandableText } from '../../components/ui/ExpandableText';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
@@ -953,7 +954,7 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
                   style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}><X size={13} /></button>
               </div>
             ) : (
-              <div className={`w-fit rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+              <div className={`rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                 style={isMe
                   ? { background: 'var(--primary)', color: '#fff' }
                   : { background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
@@ -1000,8 +1001,8 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
 
                 {/* Contenu texte */}
                 {msg.content && (
-                  <div className="px-3.5 py-2 whitespace-pre-line break-words">
-                    {msg.content}
+                  <div className="px-3.5 py-2 break-words">
+                    <ExpandableText text={msg.content} limit={400} className="!m-0" style={{ color: 'inherit' }} />
                     {msg.edited_at && <span className="text-[9px] ml-1.5 opacity-60">modifié</span>}
                   </div>
                 )}

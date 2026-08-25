@@ -9,6 +9,7 @@ import {
 import { Avatar } from '../ui/Avatar';
 import { Spinner, PageLoader } from '../ui/Spinner';
 import { Lightbox } from '../ui/Lightbox';
+import { ExpandableText } from '../ui/ExpandableText';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
@@ -402,7 +403,7 @@ function MiniChatWindow({
                 )}
                 <div className="relative flex items-end gap-1">
                   {/* Bulle */}
-                  <div className={`w-fit rounded-2xl text-xs overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+                  <div className={`rounded-2xl text-xs overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                     style={isMe
                       ? { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', opacity: isTemp ? 0.6 : 1, boxShadow: '0 2px 10px rgba(123,63,242,0.2)' }
                       : { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
@@ -444,8 +445,8 @@ function MiniChatWindow({
                     )}
                     {/* Texte */}
                     {body ? (
-                      <div className="px-3 py-2 whitespace-pre-line break-words">
-                        {body}
+                      <div className="px-3 py-2 break-words">
+                        <ExpandableText text={body} limit={400} className="!m-0 !text-xs" style={{ color: 'inherit' }} />
                         {msg.edited_at && <span className="text-[9px] ml-1 opacity-50">modifié</span>}
                       </div>
                     ) : null}

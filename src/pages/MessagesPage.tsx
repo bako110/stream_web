@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useConfirm } from '../components/ui/Dialog';
+import { ExpandableText } from '../components/ui/ExpandableText';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
 import {
@@ -386,7 +387,7 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
         <div className={`flex items-end gap-1 min-w-0 ${isMe ? 'flex-row-reverse' : ''}`}>
           <div className="relative min-w-0">
             {/* Bulle */}
-            <div className={`w-fit rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+            <div className={`rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
               style={isMe
                 ? { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', boxShadow: '0 4px 16px rgba(123,63,242,0.25)' }
                 : { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
@@ -466,8 +467,8 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
 
               {/* Texte */}
               {body && (
-                <div className="px-3.5 py-2.5 whitespace-pre-line break-words">
-                  {body}
+                <div className="px-3.5 py-2.5 break-words">
+                  <ExpandableText text={body} limit={400} className="!m-0" style={{ color: 'inherit' }} />
                   {msg.edited_at && <span className="text-[9px] ml-1.5 opacity-60">modifié</span>}
                 </div>
               )}
