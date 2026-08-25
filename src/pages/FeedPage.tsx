@@ -819,9 +819,6 @@ type FeedItem =
   | { kind: 'event';        id: string; data: Event }
   | { kind: 'post';         id: string; data: Post }
   | { kind: 'reel';         id: string; data: Reel }
-  | { kind: 'reel_row';     id: string; data: Reel[] }
-  | { kind: 'suggestions';  id: string; data: UserPublic[] }
-  | { kind: 'communities';  id: string; data: Community[] }
   | { kind: 'ad';           id: string; data: FeedAd | null };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -2149,167 +2146,6 @@ function ReelCard({ reel, delay = 0 }: {
   );
 }
 
-// ── Reel row — horizontal scroll strip of up to 5 reel thumbnails ────────────
-function ReelRowCard({ reels }: { reels: Reel[] }) {
-  const navigate = useNavigate();
-  return (
-    <div className="rounded-2xl overflow-hidden"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <Film size={13} style={{ color: '#7B3FF2' }} />
-          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Reels</p>
-        </div>
-        <button onClick={() => navigate('/reels')}
-          className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
-          Voir tout
-        </button>
-      </div>
-      <div className="flex gap-3 px-4 pb-4 pt-3 overflow-x-auto" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-        {reels.map(reel => (
-          <HoverVideoPreview key={reel.id}
-            src={reel.hls_url} poster={reel.thumbnail_url}
-            className="relative shrink-0 overflow-hidden transition-transform hover:scale-[1.03] active:scale-95"
-            style={{ width: 'clamp(120px, 26vw, 180px)', aspectRatio: '9/16', borderRadius: 16, background: '#000' }}>
-            <button
-              onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}
-              className="absolute inset-0 w-full h-full text-left">
-              {!reel.thumbnail_url && !reel.hls_url && (
-                <MediaPlaceholder title={reel.caption} icon={<Play size={24} color="#fff" />} />
-              )}
-              {/* Gradient haut — badge reel */}
-              <div className="absolute inset-x-0 top-0 h-14 pointer-events-none"
-                style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)' }} />
-              {/* Gradient bas */}
-              <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
-                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }} />
-              {/* Badge Reel */}
-              <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full text-white"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                <Film size={9} /> Reel
-              </span>
-              {/* Caption */}
-              {reel.caption && (
-                <span className="absolute bottom-6 inset-x-2 text-[10px] text-white/80 font-medium line-clamp-2 text-left leading-snug">
-                  {reel.caption}
-                </span>
-              )}
-              {/* Vues */}
-              {(reel.view_count ?? 0) > 0 && (
-                <span className="absolute bottom-2 left-2 flex items-center gap-0.5 text-[10px] text-white/70 font-semibold">
-                  <Play size={8} fill="white" className="opacity-70" /> {fmtCount(reel.view_count)}
-                </span>
-              )}
-            </button>
-          </HoverVideoPreview>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Suggestions inline block ──────────────────────────────────────────────────
-function SuggestionCard({ u, followed, onFollow, onNavigate }: {
-  u: any; followed: boolean; onFollow: () => void; onNavigate: () => void;
-}) {
-  const [imgError, setImgError] = useState(false);
-  const showImg = u.avatar_url && !imgError;
-
-  return (
-    <div
-      className="flex flex-col shrink-0 rounded-2xl overflow-hidden transition-all cursor-pointer"
-      style={{ width: 160, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-      onClick={onNavigate}>
-
-      <div className="relative w-full overflow-hidden" style={{ height: 200, background: 'var(--bg-tertiary)' }}>
-        {showImg
-          ? <img src={u.avatar_url} alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              onError={() => setImgError(true)} />
-          : <div className="absolute inset-0"><MediaPlaceholder title={u.display_name ?? u.username} /></div>
-        }
-        {u.is_verified && (
-          <span className="absolute top-2 right-2 z-10">
-            <VerifiedBadge size={18} />
-          </span>
-        )}
-        <div className="absolute bottom-0 left-0 right-0 h-16 z-10"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)' }} />
-        <div className="absolute bottom-2 left-0 right-0 px-2 text-center z-10">
-          <p className="text-xs font-bold leading-tight line-clamp-2 text-white drop-shadow">
-            {u.display_name ?? u.username}
-          </p>
-          {u.username && (
-            <p className="text-[9px] opacity-70 truncate text-white">@{u.username}</p>
-          )}
-        </div>
-      </div>
-
-      <button
-        className="text-xs font-bold py-2.5 w-full transition-all"
-        style={followed
-          ? { background: 'var(--surface)', color: 'var(--text-secondary)' }
-          : { background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}
-        onMouseEnter={e => { e.stopPropagation(); if (!followed) { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; } }}
-        onMouseLeave={e => { e.stopPropagation(); if (!followed) { e.currentTarget.style.background = 'rgba(123,63,242,0.15)'; e.currentTarget.style.color = 'var(--primary)'; } }}
-        onClick={e => { e.stopPropagation(); onFollow(); }}>
-        {followed ? 'Suivi' : 'Suivre'}
-      </button>
-    </div>
-  );
-}
-
-function SuggestionsInline({ users, loading }: { users: any[]; loading: boolean }) {
-  const navigate = useNavigate();
-  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
-
-  async function follow(id: string) {
-    const was = followedIds.has(id);
-    setFollowedIds(prev => { const s = new Set(prev); was ? s.delete(id) : s.add(id); return s; });
-    try {
-      if (was) await apiClient.delete(Endpoints.users.follow(id));
-      else     await apiClient.post(Endpoints.users.follow(id));
-    } catch {
-      setFollowedIds(prev => { const s = new Set(prev); was ? s.add(id) : s.delete(id); return s; });
-    }
-  }
-
-  if (!loading && users.length === 0) return null;
-
-  return (
-    <div className="rounded-2xl overflow-hidden"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center justify-between px-4 py-3.5"
-        style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <Sparkles size={14} style={{ color: 'var(--primary)' }} />
-          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Personnes à suivre</p>
-        </div>
-        <button onClick={() => navigate('/following')}
-          className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
-          Voir plus →
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-8"><Spinner size="sm" /></div>
-      ) : (
-        <div className="flex gap-3 px-4 py-4 overflow-x-auto scrollbar-none">
-          {users.map((u: any) => (
-            <SuggestionCard key={u.id} u={u}
-              followed={followedIds.has(u.id)}
-              onFollow={() => follow(u.id)}
-              onNavigate={() => navigate(`/user/${encodeId(u.id)}`)} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Upcoming events panel ─────────────────────────────────────────────────────
 const UPCOMING_PAGE_SIZE = 4;
 
@@ -2497,157 +2333,6 @@ function fmtCommCount(n: number): string {
   return String(n);
 }
 
-function CommunityCard({ c, isJoined, isJoining, onJoin, onClick }: {
-  c: Community;
-  isJoined: boolean;
-  isJoining: boolean;
-  onJoin: (e: React.MouseEvent) => void;
-  onClick: () => void;
-}) {
-  const [bannerErr, setBannerErr] = useState(false);
-  const count = c.members_count ?? c.member_count ?? 0;
-  const [g1, g2] = commGradient(c.name);
-  const showBanner = c.banner_url && !bannerErr;
-
-  return (
-    <div
-      className="flex flex-col shrink-0 rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]"
-      style={{
-        width: 160,
-        scrollSnapAlign: 'start',
-        background: 'var(--bg-secondary)',
-        border: '1px solid var(--border)' }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-      onClick={onClick}>
-
-      {/* Image zone */}
-      <div className="relative w-full overflow-hidden" style={{ height: 200, background: 'var(--bg-tertiary)' }}>
-        {showBanner
-          ? <img src={c.banner_url!} className="absolute inset-0 w-full h-full object-cover"
-              alt="" onError={() => setBannerErr(true)} />
-          : <div className="absolute inset-0"><MediaPlaceholder title={c.name} /></div>
-        }
-        {/* Membres badge */}
-        <span className="absolute top-2 right-2 flex items-center gap-1 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full z-10"
-          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-          <Users size={8} /> {fmtCommCount(count)}
-        </span>
-        {/* Gradient footer */}
-        <div className="absolute bottom-0 left-0 right-0 h-20 z-10"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)' }} />
-        {/* Avatar communauté */}
-        <div className="absolute bottom-9 left-2 z-20">
-          <CommAvatar c={c} g1={g1} g2={g2} />
-        </div>
-        {/* Nom + description */}
-        <div className="absolute bottom-2 left-0 right-0 px-2 z-20">
-          <p className="text-xs font-bold leading-tight line-clamp-1 text-white drop-shadow">{c.name}</p>
-          {c.description && (
-            <p className="text-[9px] opacity-60 line-clamp-1 text-white mt-0.5">{c.description}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Bouton rejoindre */}
-      <button
-        className="text-xs font-bold py-2.5 w-full flex items-center justify-center gap-1 transition-all disabled:opacity-60"
-        style={isJoined
-          ? { background: 'var(--surface)', color: 'var(--text-secondary)' }
-          : { background: `linear-gradient(90deg,${g1},${g2})`, color: '#fff' }}
-        disabled={isJoining || isJoined}
-        onClick={onJoin}>
-        {isJoining
-          ? <Spinner size="sm" />
-          : isJoined
-            ? <><Check size={10} /> Rejoint</>
-            : <><UserPlus size={10} /> Rejoindre</>}
-      </button>
-    </div>
-  );
-}
-
-function CommAvatar({ c, g1, g2 }: { c: Community; g1: string; g2: string }) {
-  const [err, setErr] = useState(false);
-  if (c.avatar_url && !err) {
-    return (
-      <img src={c.avatar_url} alt="" onError={() => setErr(true)}
-        className="w-7 h-7 rounded-lg object-cover"
-        style={{ border: '2px solid rgba(0,0,0,0.5)' }} />
-    );
-  }
-  return (
-    <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-xs"
-      style={{ background: `linear-gradient(135deg,${g1},${g2})`, border: '2px solid rgba(0,0,0,0.5)' }}>
-      {c.name[0]?.toUpperCase()}
-    </div>
-  );
-}
-
-function CommunitiesInline({ communities }: { communities: Community[] }) {
-  const navigate = useNavigate();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [joining, setJoining] = useState<Set<string>>(new Set());
-  const [joined,  setJoined]  = useState<Set<string>>(new Set());
-
-  async function handleJoin(e: React.MouseEvent, id: string) {
-    e.stopPropagation();
-    setJoining(prev => new Set([...prev, id]));
-    try {
-      await apiClient.post(Endpoints.communities.join(id));
-      setJoined(prev => new Set([...prev, id]));
-    } catch { }
-    finally { setJoining(prev => { const n = new Set(prev); n.delete(id); return n; }); }
-  }
-
-  function scrollBy(dir: number) {
-    scrollRef.current?.scrollBy({ left: dir * 200, behavior: 'smooth' });
-  }
-
-  return (
-    <div className="rounded-2xl overflow-hidden"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center justify-between px-4 py-3.5"
-        style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <Users size={14} style={{ color: 'var(--primary)' }} />
-          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Communautés</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => scrollBy(-1)}
-            className="p-1.5 rounded-lg transition-all"
-            style={{ color: 'var(--text-tertiary)' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <ChevronLeft size={14} />
-          </button>
-          <button onClick={() => scrollBy(1)}
-            className="p-1.5 rounded-lg transition-all"
-            style={{ color: 'var(--text-tertiary)' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <ChevronRight size={14} />
-          </button>
-          <button onClick={() => navigate('/communities')}
-            className="text-xs font-bold ml-1" style={{ color: 'var(--primary)' }}>
-            Voir tout
-          </button>
-        </div>
-      </div>
-
-      <div ref={scrollRef} className="flex gap-3 px-4 py-4 overflow-x-auto scrollbar-hide"
-        style={{ scrollSnapType: 'x mandatory' }}>
-        {communities.map(c => (
-          <CommunityCard key={c.id} c={c}
-            isJoined={joined.has(c.id)}
-            isJoining={joining.has(c.id)}
-            onJoin={e => handleJoin(e, c.id)}
-            onClick={() => navigate(`/communities/${encodeId(c.id)}`)} />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Suggestions sidebar ───────────────────────────────────────────────────────
 const SUGGESTIONS_PAGE_SIZE = 5;
@@ -2974,6 +2659,10 @@ export default function FeedPage() {
   // tout vu". Après N pages recoupées d'affilée, on considère le flux fini.
   const emptyStreakRef   = useRef(0);
   const MAX_EMPTY_STREAK = 3;
+  // Taille de page harmonisée avec le mobile (searchService.getFeed) — même
+  // valeur partout, page 1 comprise, pour que la pagination web/mobile se
+  // comporte de façon identique et prévisible.
+  const FEED_PAGE_SIZE   = 30;
   const nonReelCountRef  = useRef(0);
   const adCountRef       = useRef(0);
   const loadingMoreRef   = useRef(false);
@@ -3006,21 +2695,15 @@ export default function FeedPage() {
     setHasMoreFeed(true);
     try {
       if (filter === 'all') {
-        // /search/feed renvoie désormais directement la séquence entrelacée :
-        // events/concerts/posts triés par score, avec au plus UN encart
-        // spécial par page (reel_row, suggestions ou communities — rotation
-        // stricte page%3 décidée côté backend, cf. FeedService.get_feed).
-        // Le frontend n'a plus qu'à afficher tel quel — plus de shuffle, plus
-        // de calcul d'intervalles, plus de risque d'empilement ou de
-        // chevauchement entre types (ancien système, retiré).
+        // /search/feed renvoie events/concerts/posts triés par score.
         const [feedRes, adRes] = await Promise.all([
-          apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=40`).catch(() => null),
+          apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=${FEED_PAGE_SIZE}`).catch(() => null),
           apiClient.get<any>(Endpoints.ads.feedNext('feed')).catch(() => null),
         ]);
         if (adRes?.data) { setFeedAd(adRes.data); seenAdIdsRef.current = [adRes.data.id]; }
 
         const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
-        feedHasMoreRef.current = feedRaw.length >= 40;
+        feedHasMoreRef.current = feedRaw.length >= FEED_PAGE_SIZE;
 
         const seen = seenIdsRef.current;
         const mapped: FeedItem[] = [];
@@ -3038,12 +2721,6 @@ export default function FeedPage() {
             if (adRes?.data && nonSpecialCount > 0 && nonSpecialCount % 8 === 0) {
               mapped.push({ kind: 'ad', id: `__ad__${++adCountRef.current}`, data: adRes.data });
             }
-          } else if (d.kind === 'reel_row') {
-            mapped.push({ kind: 'reel_row', id: String(d.id), data: (d.reels ?? []) as Reel[] });
-          } else if (d.kind === 'suggestions') {
-            mapped.push({ kind: 'suggestions', id: String(d.id), data: (d.users ?? []) as UserPublic[] });
-          } else if (d.kind === 'communities') {
-            mapped.push({ kind: 'communities', id: String(d.id), data: (d.communities ?? []) as Community[] });
           }
         }
 
@@ -3098,13 +2775,10 @@ export default function FeedPage() {
     setLoadingMore(true);
     try {
       const nextPage = feedPageRef.current + 1;
-      // /search/feed renvoie déjà la séquence entrelacée pour cette page
-      // (au plus un encart spécial reel_row/suggestions/communities, rotation
-      // décidée côté backend) — voir loadFeed ci-dessus pour le détail.
-      const feedRes = await apiClient.get<any>(`${Endpoints.search.feed}?page=${nextPage}&limit=20`).catch(() => null);
+      const feedRes = await apiClient.get<any>(`${Endpoints.search.feed}?page=${nextPage}&limit=${FEED_PAGE_SIZE}`).catch(() => null);
 
       const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
-      feedHasMoreRef.current = feedRaw.length >= 20;
+      feedHasMoreRef.current = feedRaw.length >= FEED_PAGE_SIZE;
       // Le pool se retrie a chaque page (score = f(temps)) -- une page BRUTE non vide
       // peut ne contenir QUE des items deja vus sur une page precedente (recoupement),
       // sans que le catalogue soit pour autant epuise. Ne conclure a la fin du flux que
@@ -3127,12 +2801,6 @@ export default function FeedPage() {
             const slotId = `__ad__${++adCountRef.current}`;
             appended.push({ kind: 'ad', id: slotId, data: null });
           }
-        } else if (d.kind === 'reel_row') {
-          appended.push({ kind: 'reel_row', id: String(d.id), data: (d.reels ?? []) as Reel[] });
-        } else if (d.kind === 'suggestions') {
-          appended.push({ kind: 'suggestions', id: String(d.id), data: (d.users ?? []) as UserPublic[] });
-        } else if (d.kind === 'communities') {
-          appended.push({ kind: 'communities', id: String(d.id), data: (d.communities ?? []) as Community[] });
         }
       }
 
@@ -3204,9 +2872,12 @@ export default function FeedPage() {
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node || loading || !hasMoreFeed) return;
+    // rootMargin volontairement faible : ne déclenche qu'une fois le bas de
+    // la page réellement approché, pour laisser le temps de voir tout le
+    // contenu de la page courante avant que la suivante ne charge.
     const obs = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMoreFeed(); },
-      { rootMargin: '600px' },
+      { rootMargin: '100px' },
     );
     obs.observe(node);
     return () => obs.disconnect();
@@ -3246,8 +2917,8 @@ export default function FeedPage() {
               </span>
             </h1>
             <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-              {items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length > 0
-                ? `${items.filter(i => i.kind !== 'suggestions' && i.kind !== 'communities' && i.kind !== 'reel_row').length} éléments dans ton fil`
+              {items.length > 0
+                ? `${items.length} éléments dans ton fil`
                 : 'Concerts, événements, reels et posts mélangés'}
             </p>
           </div>
@@ -3318,15 +2989,6 @@ export default function FeedPage() {
           ) : (
             <div className="flex flex-col gap-3 animate-reveal-up delay-300">
               {items.map((item, i) => {
-                if (item.kind === 'suggestions') {
-                  return <div key={item.id} className="lg:hidden"><SuggestionsInline users={item.data} loading={false} /></div>;
-                }
-                if (item.kind === 'communities') {
-                  return <div key={item.id} className="lg:hidden"><CommunitiesInline communities={item.data} /></div>;
-                }
-                if (item.kind === 'reel_row') {
-                  return <ReelRowCard key={item.id} reels={item.data} />;
-                }
                 if (item.kind === 'concert') {
                   return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'concert' && x.id === item.id)))}
