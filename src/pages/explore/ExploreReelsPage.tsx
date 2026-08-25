@@ -65,16 +65,23 @@ export default function ExploreReelsPage() {
     finally { loadingMoreRef.current = false; setLoadingMore(false); }
   }, [hasMore]);
 
+  // `loading` doit être dans les deps : le sentinel n'est monté dans le DOM
+  // qu'une fois le chargement initial terminé (voir JSX plus bas), et
+  // loadMore ne change pas forcément d'identité à ce moment-là (ses propres
+  // deps ne dépendent pas de `loading`) — sans ça l'effet peut tourner une
+  // seule fois avec sentinelRef.current encore null et ne jamais
+  // ré-observer le sentinel une fois réellement monté (même bug que
+  // FeedPage.tsx corrigé précédemment).
   useEffect(() => {
     const node = sentinelRef.current;
-    if (!node) return;
+    if (!node || loading || !hasMore) return;
     const obs = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMore(); },
       { rootMargin: '800px' },
     );
     obs.observe(node);
     return () => obs.disconnect();
-  }, [loadMore]);
+  }, [loading, hasMore, loadMore]);
 
   return (
     <div className="w-full mx-auto px-5 py-16">
