@@ -386,7 +386,7 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
         <div className={`flex items-end gap-1 min-w-0 ${isMe ? 'flex-row-reverse' : ''}`}>
           <div className="relative min-w-0">
             {/* Bulle */}
-            <div className={`rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+            <div className={`w-fit rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
               style={isMe
                 ? { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', boxShadow: '0 4px 16px rgba(123,63,242,0.25)' }
                 : { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>

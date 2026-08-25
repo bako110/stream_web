@@ -953,7 +953,7 @@ function MessageBubble({ msg, isMe, canManage, canBlock, onReact, onReply, onEdi
                   style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}><X size={13} /></button>
               </div>
             ) : (
-              <div className={`rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+              <div className={`w-fit rounded-2xl text-sm overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                 style={isMe
                   ? { background: 'var(--primary)', color: '#fff' }
                   : { background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>

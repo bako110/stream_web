@@ -244,7 +244,7 @@ function ChannelChat({ communityId, channel, myRole, onBack, onChannelUpdated }:
               <div className={`max-w-[85%] sm:max-w-[560px] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
                 {!isMe && <span className="text-[11px] font-semibold px-1" style={{ color: 'var(--primary)' }}>{authorName}</span>}
                 <div className="flex items-end gap-1.5">
-                  <div className={`rounded-2xl px-3.5 py-2 text-sm whitespace-pre-line break-words ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+                  <div className={`w-fit rounded-2xl px-3.5 py-2 text-sm whitespace-pre-line break-words ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                     style={isMe
                       ? { background: 'var(--primary)', color: '#fff' }
                       : { background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>

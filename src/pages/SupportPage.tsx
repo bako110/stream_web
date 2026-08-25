@@ -239,7 +239,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
           <>
             {/* Message de bienvenue */}
             <div className="flex justify-start mb-4">
-              <div className="max-w-[85%] sm:max-w-[560px] rounded-2xl rounded-bl-sm px-4 py-3"
+              <div className="w-fit max-w-[85%] sm:max-w-[560px] rounded-2xl rounded-bl-sm px-4 py-3"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <p className="text-xs font-bold mb-1" style={{ color: 'var(--primary)' }}>Support Gofolyx</p>
                 <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
@@ -254,7 +254,7 @@ function SupportChat({ onClose }: { onClose: () => void }) {
               const isStaff = msg.is_staff;
               return (
                 <div key={msg.id} className={`flex ${isStaff ? 'justify-start' : 'justify-end'}`}>
-                  <div className={`max-w-[85%] sm:max-w-[560px] rounded-2xl px-4 py-3 ${isStaff ? 'rounded-bl-sm' : 'rounded-br-sm'}`}
+                  <div className={`w-fit max-w-[85%] sm:max-w-[560px] rounded-2xl px-4 py-3 ${isStaff ? 'rounded-bl-sm' : 'rounded-br-sm'}`}
                     style={isStaff
                       ? { background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' }
                       : { background: 'var(--primary)', color: '#fff' }}>

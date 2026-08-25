@@ -402,7 +402,7 @@ function MiniChatWindow({
                 )}
                 <div className="relative flex items-end gap-1">
                   {/* Bulle */}
-                  <div className={`rounded-2xl text-xs overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+                  <div className={`w-fit rounded-2xl text-xs overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                     style={isMe
                       ? { background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff', opacity: isTemp ? 0.6 : 1, boxShadow: '0 2px 10px rgba(123,63,242,0.2)' }
                       : { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
