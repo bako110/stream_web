@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Trash2, Heart, UserPlus, MessageCircle, Radio, CheckSquare, Square, X, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import type { Notification } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
+import { useWs } from '../context/WebSocketContext';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { AiAnalysisStatusModal, type AiContentType } from '../components/ui/AiAnalysisStatusModal';
 import { formatDistanceToNow } from 'date-fns';
@@ -49,10 +50,55 @@ function NotifIcon({ type }: { type: string }) {
   );
 }
 
+// Corps de notification limité à 2 lignes avec "Voir plus"/"Voir moins" —
+// équivalent web de NotifCard côté mobile (NotificationsScreen.tsx),
+// bouton affiché seulement si le texte dépasse réellement 2 lignes.
+function NotifBody({ text }: { text: string }) {
+  const [expanded, setExpanded]   = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || expanded) return;
+    setTruncated(el.scrollHeight > el.clientHeight + 1);
+  }, [text, expanded]);
+
+  return (
+    <div>
+      <p
+        ref={ref}
+        className="text-sm mt-0.5 leading-snug"
+        style={expanded ? {
+          color: 'var(--text-secondary)',
+          whiteSpace: 'pre-line',
+          wordBreak: 'break-word',
+        } : {
+          color: 'var(--text-secondary)',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}>
+        {text}
+      </p>
+      {truncated && (
+        <button
+          onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
+          className="text-xs font-bold mt-0.5"
+          style={{ color: 'var(--primary)' }}>
+          {expanded ? 'Voir moins' : 'Voir plus'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function NotificationsPage() {
   const { data, loading, refetch } = useApi<Notification[]>(
     () => apiClient.get<Notification[]>(`${Endpoints.notifications.list}?limit=100`),
   );
+  const { addListener, removeListener, clearUnreadNotifications } = useWs();
 
   const [selected,    setSelected]    = useState<Set<string>>(new Set());
   const [selectMode,  setSelectMode]  = useState(false);
@@ -60,8 +106,39 @@ export default function NotificationsPage() {
   const [deletingSel, setDeletingSel] = useState(false);
   const [aiStatusTarget, setAiStatusTarget] = useState<{ type: AiContentType; id: string } | null>(null);
 
-  const notifications = data ?? [];
-  const unread        = notifications.filter(n => !n.is_read).length;
+  // État local synchronisé depuis `data` — nécessaire pour insérer les
+  // notifications reçues en temps réel par WS sans reload complet (data,
+  // lui, n'est réécrit que par refetch()).
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  useEffect(() => { setNotifications(data ?? []); }, [data]);
+
+  useEffect(() => { clearUnreadNotifications(); }, [clearUnreadNotifications]);
+
+  // Injection temps réel — même pattern que NotificationsScreen.tsx côté
+  // mobile : sans id persistant on ne peut pas dédupliquer, on recharge
+  // depuis l'API dans ce cas plutôt que de risquer un doublon.
+  useEffect(() => {
+    const onMessage = (payload: any) => {
+      if (payload.type !== 'notification') return;
+      if (!payload.id) { refetch(); return; }
+      const newItem: Notification = {
+        id:                 payload.id,
+        notification_type:  payload.notification_type ?? 'system',
+        title:              payload.title ?? 'Notification',
+        body:               payload.body  ?? '',
+        ref_id:             payload.ref_id   ?? null,
+        ref_type:           payload.ref_type ?? null,
+        is_read:            false,
+        created_at:         payload.created_at ?? new Date().toISOString(),
+        actor:              payload.actor ?? undefined,
+      };
+      setNotifications(prev => prev.some(n => n.id === newItem.id) ? prev : [newItem, ...prev]);
+    };
+    addListener(onMessage);
+    return () => removeListener(onMessage);
+  }, [addListener, removeListener, refetch]);
+
+  const unread = notifications.filter(n => !n.is_read).length;
   const allSelected   = selected.size > 0 && selected.size === notifications.length;
   const someSelected  = selected.size > 0;
 
@@ -272,9 +349,7 @@ export default function NotificationsPage() {
                   <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
                     {n.title}
                   </p>
-                  <p className="text-sm mt-0.5 leading-snug" style={{ color: 'var(--text-secondary)' }}>
-                    {n.body}
-                  </p>
+                  <NotifBody text={n.body} />
                   <p className="text-xs mt-1.5" style={{ color: 'var(--text-tertiary)' }}>
                     {formatDistanceToNow(new Date(n.created_at), { locale: fr, addSuffix: true })}
                   </p>
