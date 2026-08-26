@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import { CUSTOM_REACH_CONFIG, computeCustomGoGold } from '../wallet/boost/BoostCatalog';
 
 /* ── Shared tokens (évite la répétition) ───────────────────────────────────── */
 const CARD: React.CSSProperties  = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16 };
@@ -32,12 +33,28 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
   const [days,    setDays]    = useState(1);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
-  const PRICE_PER_DAY = 500;
+  // Reach personnalisé fixé au preset le plus bas du catalogue concert_reach —
+  // cette modale ne propose qu'un choix de durée, pas de portée (contrairement
+  // à WalletBoostPage où l'utilisateur ajuste les deux) ; le prix suit quand
+  // même la vraie grille tarifaire (computeCustomGoGold), plus le format
+  // custom_reach/custom_duration attendu par le backend pour boost_option_id
+  // 'concert_reach' avec tier_id 'custom'.
+  const REACH = CUSTOM_REACH_CONFIG.concert_reach.presets[0];
+  const gogold = computeCustomGoGold('concert_reach', REACH, days);
 
   async function handleBoost() {
     setLoading(true); setError(null);
     try {
-      await apiClient.post(Endpoints.wallet.boostsPurchase, { target_type: 'concert', target_id: concert.id, days });
+      await apiClient.post(Endpoints.wallet.boostsPurchase, {
+        boost_option_id: 'concert_reach',
+        tier_id: 'custom',
+        gogold_amount: gogold,
+        custom_reach: REACH,
+        custom_duration: days,
+        target_content_id: concert.id,
+        target_content_type: 'concert',
+        target_content_title: concert.title,
+      });
       onDone(); onClose();
     } catch (e: any) { setError(extractApiErrorMessage(e, 'Erreur lors du boost')); }
     finally { setLoading(false); }
@@ -80,7 +97,7 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
           style={{ background: 'var(--bg-secondary)' }}>
           <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total</span>
           <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-            {(days * PRICE_PER_DAY).toLocaleString()} GoGold
+            {gogold.toLocaleString()} GoGold
           </span>
         </div>
         {error && <p className="text-xs mb-3" style={{ color: '#ef4444' }}>{error}</p>}

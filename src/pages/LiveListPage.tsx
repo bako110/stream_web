@@ -12,6 +12,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { extractApiErrorMessage } from '../utils/apiError';
+import { CUSTOM_REACH_CONFIG, computeCustomGoGold } from './wallet/boost/BoostCatalog';
 
 function LiveBadge() {
   return (
@@ -145,16 +146,27 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
 
-  const PRICE_PER_DAY = 500;
+  // Reach fixé au preset le plus bas du catalogue concert_reach — cette
+  // modale ne propose qu'un choix de durée, pas de portée. Prix suit la
+  // vraie grille tarifaire (computeCustomGoGold) au lieu d'un forfait
+  // "maison" (500 GoGold/jour) déconnecté du schéma backend, qui attend
+  // boost_option_id/tier_id/gogold_amount (BoostPurchaseRequest côté API).
+  const REACH = CUSTOM_REACH_CONFIG.concert_reach.presets[0];
+  const gogold = computeCustomGoGold('concert_reach', REACH, days);
 
   async function handleBoost() {
     setLoading(true);
     setError(null);
     try {
       await apiClient.post(Endpoints.wallet.boostsPurchase, {
-        target_type: 'concert',
-        target_id:   concert.id,
-        days,
+        boost_option_id: 'concert_reach',
+        tier_id: 'custom',
+        gogold_amount: gogold,
+        custom_reach: REACH,
+        custom_duration: days,
+        target_content_id: concert.id,
+        target_content_type: 'concert',
+        target_content_title: concert.title,
       });
       onDone();
       onClose();
@@ -193,7 +205,7 @@ function BoostModal({ concert, onClose, onDone }: { concert: Concert; onClose: (
 
         <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: 'var(--bg-secondary)' }}>
           <span className="text-sm text-[var(--text-secondary)]">Total</span>
-          <span className="font-bold text-[var(--text-primary)]">{(days * PRICE_PER_DAY).toLocaleString()} GoGold</span>
+          <span className="font-bold text-[var(--text-primary)]">{gogold.toLocaleString()} GoGold</span>
         </div>
 
         {error && <p className="text-xs text-red-400">{error}</p>}

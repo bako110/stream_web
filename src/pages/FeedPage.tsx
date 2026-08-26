@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, Fragment, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTabReselect } from '../utils/tabReselect';
 import toast from 'react-hot-toast';
@@ -2663,10 +2663,21 @@ export default function FeedPage() {
   // valeur partout, page 1 comprise, pour que la pagination web/mobile se
   // comporte de façon identique et prévisible.
   const FEED_PAGE_SIZE   = 30;
+  // Distance en nombre d'items restants à laquelle on déclenche le chargement de la
+  // page suivante — même principe que côté mobile (PREFETCH_ITEMS_REMAINING,
+  // FeedScreen.tsx). Comptage par nombre d'items plutôt que par rootMargin en pixels :
+  // la hauteur des cartes varie trop (post texte court vs image haute vs carrousel)
+  // pour qu'une distance en px reste fiable dans les deux sens — testé trop serré
+  // (raté sur scroll rapide) puis trop large (déclenché tôt), les deux peu fiables.
+  const PREFETCH_ITEMS_REMAINING = 5;
   const nonReelCountRef  = useRef(0);
   const adCountRef       = useRef(0);
   const loadingMoreRef   = useRef(false);
   const sentinelRef      = useRef<HTMLDivElement | null>(null);
+  // Marqueur placé PREFETCH_ITEMS_REMAINING items avant la fin de la liste —
+  // observé par IntersectionObserver pour déclencher loadMoreFeed dès qu'il entre
+  // dans le viewport, indépendamment de la hauteur réelle des cartes.
+  const prefetchMarkerRef = useRef<HTMLDivElement | null>(null);
   // Container qui scrolle réellement le feed sur desktop (lg:overflow-y-auto,
   // colonne isolée des sidebars) — sur mobile ce même noeud n'a pas de scroll
   // propre (window scrolle), auquel cas root=ce noeud se comporte comme le
@@ -2872,31 +2883,34 @@ export default function FeedPage() {
     loadFeed(tab);
   }, [tab]));
 
-  // Infinite scroll — sentinel observé en bas de liste. `loading` doit être
-  // dans les deps : le sentinel n'est monté dans le DOM qu'une fois le
-  // chargement initial terminé (items.length > 0), et loadMoreFeed ne change
-  // pas forcément d'identité à ce moment-là (ses propres deps tab/hasMoreFeed/
-  // feedAd ne bougent pas systématiquement) — sans ça l'effet peut tourner
-  // une seule fois avec sentinelRef.current encore null et ne jamais
-  // ré-observer le sentinel une fois réellement monté.
+  // Infinite scroll — observe un marqueur placé PREFETCH_ITEMS_REMAINING items
+  // avant la fin de la liste (voir items.map plus bas), pas un sentinel en toute
+  // fin + rootMargin en pixels. Un rootMargin fixe s'est révélé peu fiable dans
+  // les deux sens (40px : raté sur scroll rapide : la zone était traversée entre
+  // deux frames ; 150px : déclenchement trop tôt) car la hauteur des cartes varie
+  // trop (post texte court vs image haute vs carrousel) pour qu'une distance en
+  // pixels reste cohérente. Compter les items est indépendant de leur hauteur —
+  // même principe que côté mobile (PREFETCH_ITEMS_REMAINING, FeedScreen.tsx).
+  // `loading` dans les deps : le marqueur n'est monté qu'une fois le chargement
+  // initial terminé, et loadMoreFeed ne change pas forcément d'identité à ce
+  // moment-là — sans ça l'effet peut tourner une seule fois avec la ref encore
+  // null et ne jamais ré-observer le marqueur une fois réellement monté.
   useEffect(() => {
-    const node = sentinelRef.current;
+    const node = prefetchMarkerRef.current;
     if (!node || loading || !hasMoreFeed) return;
     // root explicite : sur desktop (lg+), c'est feedScrollRef qui scrolle
     // réellement (lg:overflow-y-auto, colonne isolée des sidebars), PAS la
-    // fenêtre. Sans root explicite, IntersectionObserver observe par défaut
-    // le viewport de la fenêtre — le sentinel pouvait alors être considéré
-    // "visible" dès le premier rendu (il est dans le viewport window, même
-    // hors du scroll visible du container interne), déclenchant page 2
-    // quasi instantanément après page 1, sans laisser le temps de scroller.
-    // rootMargin quasi nul : ne déclenche qu'une fois le bas réel approché.
+    // fenêtre. Sans root explicite, IntersectionObserver observe par défaut le
+    // viewport de la fenêtre — le marqueur pouvait alors être considéré "visible"
+    // dès le premier rendu (dans le viewport window, même hors du scroll visible
+    // du container interne), déclenchant la page suivante immédiatement.
     const obs = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMoreFeed(); },
-      { root: feedScrollRef.current, rootMargin: '40px' },
+      { root: feedScrollRef.current },
     );
     obs.observe(node);
     return () => obs.disconnect();
-  }, [loading, hasMoreFeed, loadMoreFeed]);
+  }, [loading, hasMoreFeed, loadMoreFeed, items.length]);
 
   return (
     <div className="px-2 sm:px-4 py-2 lg:py-6 w-full mx-auto lg:h-full lg:overflow-hidden">
@@ -3004,29 +3018,38 @@ export default function FeedPage() {
           ) : (
             <div className="flex flex-col gap-3 animate-reveal-up delay-300">
               {items.map((item, i) => {
+                // Marqueur de prefetch — observé par IntersectionObserver pour déclencher
+                // loadMoreFeed quand l'utilisateur approche de la fin RÉELLEMENT chargée
+                // (comptage par nombre d'items, pas par distance en pixels/rootMargin) : la
+                // hauteur des cartes varie trop (post texte court vs image haute vs
+                // carrousel) pour qu'un rootMargin en px reste fiable dans les deux sens —
+                // testé trop serré (raté sur scroll rapide) puis trop large (déclenché tôt).
+                const isPrefetchMarker = tab === 'all' && hasMoreFeed
+                  && i === Math.max(0, items.length - PREFETCH_ITEMS_REMAINING);
+                const prefetchMarkerNode = isPrefetchMarker
+                  ? <div key={`prefetch-marker-${item.id}`} ref={prefetchMarkerRef} style={{ height: 1 }} />
+                  : null;
+                let cardNode: ReactNode = null;
                 if (item.kind === 'concert') {
-                  return <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
+                  cardNode = <ConcertCard key={`concert-${item.id}`} concert={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'concert' && x.id === item.id)))}
                     openMore={openMore} openReport={openReport} openAiStatus={openAiStatus} />;
-                }
-                if (item.kind === 'event') {
-                  return <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
+                } else if (item.kind === 'event') {
+                  cardNode = <EventCard key={`event-${item.id}`} event={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'event' && x.id === item.id)))}
                     openMore={openMore} openReport={openReport} openAiStatus={openAiStatus} />;
-                }
-                if (item.kind === 'post') {
-                  return <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
+                } else if (item.kind === 'post') {
+                  cardNode = <PostCard key={`post-${item.id}`} post={item.data} delay={Math.min(i, 8) * 0.04} followedIds={followedIds} onFollow={toggleFollow} onOpenComments={openComments} onOpenShare={openShare} commentCountOverride={commentCounts[item.id]}
                     onHide={() => setItems(prev => prev.filter(x => !(x.kind === 'post' && x.id === item.id)))}
                     openAiStatus={openAiStatus}
                     openMore={openMore} openReport={openReport} />;
+                } else if (item.kind === 'reel') {
+                  cardNode = <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;
+                } else if (item.kind === 'ad') {
+                  cardNode = item.data ? <FeedAdCard key={item.id} ad={item.data} /> : null;
                 }
-                if (item.kind === 'reel') {
-                  return <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;
-                }
-                if (item.kind === 'ad') {
-                  return item.data ? <FeedAdCard key={item.id} ad={item.data} /> : null;
-                }
-                return null;
+                if (!prefetchMarkerNode) return cardNode;
+                return <Fragment key={`wrap-${item.kind}-${item.id}`}>{prefetchMarkerNode}{cardNode}</Fragment>;
               })}
 
               {/* ── Sentinel scroll infini ── */}
