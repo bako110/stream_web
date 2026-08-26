@@ -2889,10 +2889,14 @@ export default function FeedPage() {
     // "visible" dès le premier rendu (il est dans le viewport window, même
     // hors du scroll visible du container interne), déclenchant page 2
     // quasi instantanément après page 1, sans laisser le temps de scroller.
-    // rootMargin quasi nul : ne déclenche qu'une fois le bas réel approché.
+    // rootMargin modere : un rootMargin trop faible (teste a 40px) s'est revele
+    // peu fiable en pratique sur scroll rapide (la fenetre ou le sentinel devient
+    // "intersecting" peut etre traversee entre deux frames sans jamais declencher
+    // le callback) — 150px garde le declenchement proche de la fin reelle (pas
+    // d'anticipation large) tout en laissant assez de marge pour ne jamais le rater.
     const obs = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMoreFeed(); },
-      { root: feedScrollRef.current, rootMargin: '40px' },
+      { root: feedScrollRef.current, rootMargin: '150px' },
     );
     obs.observe(node);
     return () => obs.disconnect();
