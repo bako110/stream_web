@@ -28,6 +28,17 @@ let _refreshTokenFn:  (() => Promise<string>) | null = null;
 let _onUnauthorized:  (() => void) | null = null;
 let _refreshPromise:  Promise<string> | null = null;  // dedup concurrent refresh
 
+// Dedup des GET identiques déclenchés à quelques ms d'écart — notamment le
+// double-invoke de React.StrictMode en dev (chaque effect de montage tourne
+// deux fois : montage factice + vrai montage), qui sinon déclenche deux
+// fetch réseau pour chaque endpoint appelé au montage d'une page. Fenêtre
+// courte (500ms) : assez pour absorber le double-invoke StrictMode (quasi
+// synchrone), sans risquer de servir une réponse périmée à un vrai refetch
+// volontaire (pull-to-refresh, changement de filtre) qui doit toujours
+// repartir d'un fetch frais.
+const _inflightGets = new Map<string, Promise<ApiResponse<unknown>>>();
+const GET_DEDUP_WINDOW_MS = 500;
+
 export const setAuthToken      = (t: string | null)           => { _authToken = t; };
 export const setRefreshTokenFn = (fn: () => Promise<string>)  => { _refreshTokenFn = fn; };
 export const setOnUnauthorized = (fn: () => void)             => { _onUnauthorized = fn; };
@@ -226,8 +237,28 @@ export const publicClient = {
 
 // ── Public API client ─────────────────────────────────────────────────────────
 export const apiClient = {
-  get:    <T>(ep: string, opts?: Omit<RequestOptions, 'method' | 'body'>) =>
-    request<T>(ep, { ...opts, method: 'GET' }),
+  get: <T>(ep: string, opts?: Omit<RequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> => {
+    // Dedup uniquement le cas courant (aucune option custom — pas de signal/
+    // timeout/headers propres à cet appelant) : un signal externe implique un
+    // cycle de vie/annulation propre à CET appel, qu'on ne doit pas partager
+    // avec un autre appelant même sur le même endpoint.
+    if (!opts) {
+      const inflight = _inflightGets.get(ep);
+      if (inflight) return inflight as Promise<ApiResponse<T>>;
+
+      const p = request<T>(ep, { method: 'GET' }) as Promise<ApiResponse<unknown>>;
+      _inflightGets.set(ep, p);
+      const clear = () => {
+        // Ne retire que si c'est toujours CETTE promesse (évite de purger
+        // l'entrée d'un appel plus récent démarré entre-temps).
+        if (_inflightGets.get(ep) === p) _inflightGets.delete(ep);
+      };
+      setTimeout(clear, GET_DEDUP_WINDOW_MS);
+      p.finally(clear);
+      return p as Promise<ApiResponse<T>>;
+    }
+    return request<T>(ep, { ...opts, method: 'GET' });
+  },
 
   post:   <T>(ep: string, body?: unknown, opts?: Omit<RequestOptions, 'method' | 'body'>) =>
     request<T>(ep, { ...opts, method: 'POST', body }),
