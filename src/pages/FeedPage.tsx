@@ -2898,15 +2898,24 @@ export default function FeedPage() {
   useEffect(() => {
     const node = prefetchMarkerRef.current;
     if (!node || loading || !hasMoreFeed) return;
-    // root explicite : sur desktop (lg+), c'est feedScrollRef qui scrolle
-    // réellement (lg:overflow-y-auto, colonne isolée des sidebars), PAS la
-    // fenêtre. Sans root explicite, IntersectionObserver observe par défaut le
-    // viewport de la fenêtre — le marqueur pouvait alors être considéré "visible"
-    // dès le premier rendu (dans le viewport window, même hors du scroll visible
-    // du container interne), déclenchant la page suivante immédiatement.
+    // root explicite UNIQUEMENT quand feedScrollRef est un vrai ancêtre
+    // scrollable de node (desktop lg+, où lg:overflow-y-auto rend cette colonne
+    // scrollable indépendamment de la fenêtre). Sur mobile, ce même noeud n'a
+    // PAS d'overflow (c'est la fenêtre qui scrolle) — passer quand même un
+    // `root` qui n'est pas un vrai ancêtre scrollable de l'élément observé
+    // rendait l'intersection indéfinie : le marqueur redevenait "intersecting"
+    // en continu dès son montage, quelle que soit la position réelle de
+    // scroll, provoquant un enchaînement immédiat page=1→2→3→4... (bug
+    // constaté en prod). root=null (viewport document) est le bon choix sur
+    // mobile ; vérifié dynamiquement via getComputedStyle plutôt que deviné
+    // par largeur d'écran, pour rester robuste si le breakpoint CSS change.
+    const scrollNode = feedScrollRef.current;
+    const isRealScrollContainer = !!scrollNode
+      && getComputedStyle(scrollNode).overflowY === 'auto'
+      && scrollNode.scrollHeight > scrollNode.clientHeight;
     const obs = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMoreFeed(); },
-      { root: feedScrollRef.current },
+      { root: isRealScrollContainer ? scrollNode : null },
     );
     obs.observe(node);
     return () => obs.disconnect();
