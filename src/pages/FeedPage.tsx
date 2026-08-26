@@ -2679,6 +2679,10 @@ export default function FeedPage() {
   // écrasant un fil déjà chargé par une réponse vide/obsolète ("le contenu
   // apparaît puis disparaît"). Seul le run le plus récent a le droit d'écrire.
   const loadFeedRunRef   = useRef(0);
+  // Garde synchrone : tant que loadFeed('all') (page 1 / rechargement complet) n'a pas
+  // fini d'écrire son résultat dans items, loadMoreFeed ne doit jamais démarrer — sinon
+  // la page 2 pourrait se charger avant que la page 1 ne soit stabilisée à l'écran.
+  const loadingInitialRef = useRef(false);
 
   function openComments(id: string, kind: 'event'|'concert'|'post'|'reel', count: number) {
     setCommentTarget({ id, kind, count });
@@ -2688,6 +2692,7 @@ export default function FeedPage() {
   }
   async function loadFeed(filter: typeof tab) {
     const runId = ++loadFeedRunRef.current;
+    if (filter === 'all') loadingInitialRef.current = true;
     setLoading(true);
     // Reset pagination state — nouveau tirage complet
     seenIdsRef.current      = new Set();
@@ -2715,7 +2720,7 @@ export default function FeedPage() {
         let nonSpecialCount = 0;
         for (const d of feedRaw) {
           if (!d || !d.id) continue;
-          if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post') {
+          if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post' || d.kind === 'reel') {
             const key = `${d.kind}-${d.id}`;
             if (seen.has(key)) continue;
             seen.add(key);
@@ -2730,6 +2735,17 @@ export default function FeedPage() {
         }
 
         nonReelCountRef.current = nonSpecialCount;
+        if (import.meta.env.DEV) {
+          console.log('[FEED-DEBUG] page1 loaded', {
+            rawFromBackend: feedRaw.length,
+            mappedCount: mapped.filter(i => i.kind !== 'ad').length,
+            totalWithAds: mapped.length,
+            kindsRaw: feedRaw.reduce((acc: Record<string, number>, d: any) => {
+              acc[d?.kind ?? 'null'] = (acc[d?.kind ?? 'null'] ?? 0) + 1;
+              return acc;
+            }, {}),
+          });
+        }
         if (runId !== loadFeedRunRef.current) return;
         setItems(mapped);
         setHasMoreFeed(feedHasMoreRef.current);
@@ -2770,11 +2786,15 @@ export default function FeedPage() {
         setItems(results);
       }
     } catch { /* silencieux */ }
-    finally { setLoading(false); }
+    finally { loadingInitialRef.current = false; setLoading(false); }
   }
 
   const loadMoreFeed = useCallback(async () => {
     if (tab !== 'all') return; // pagination infinie gérée uniquement sur le flux principal
+    // La page 1 (loadFeed) doit avoir fini d'écrire son résultat AVANT que la page 2 ne
+    // puisse démarrer — sans cette garde, le sentinel pouvait déclencher loadMoreFeed
+    // pendant que loadFeed tourne encore.
+    if (loadingInitialRef.current) return;
     if (loadingMoreRef.current || !hasMoreFeed) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
@@ -2796,7 +2816,7 @@ export default function FeedPage() {
       let freshNonSpecialCount = 0;
       for (const d of feedRaw) {
         if (!d || !d.id) continue;
-        if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post') {
+        if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post' || d.kind === 'reel') {
           const key = `${d.kind}-${d.id}`;
           if (seen.has(key)) continue;
           seen.add(key);
