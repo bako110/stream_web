@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Config par environnement — chaque déploiement (dev local, prod) a ses
+# propres valeurs (URLs API/WS) ; ne jamais committer, source de conflit
+# de merge et de risque d'écraser une config serveur réelle avec des
+# valeurs de dev vides.
+.env
+.env.local
+.env.*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
