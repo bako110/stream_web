@@ -2720,7 +2720,7 @@ export default function FeedPage() {
         let nonSpecialCount = 0;
         for (const d of feedRaw) {
           if (!d || !d.id) continue;
-          if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post' || d.kind === 'reel') {
+          if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post') {
             const key = `${d.kind}-${d.id}`;
             if (seen.has(key)) continue;
             seen.add(key);
@@ -2735,32 +2735,17 @@ export default function FeedPage() {
         }
 
         nonReelCountRef.current = nonSpecialCount;
-        if (import.meta.env.DEV) {
-          console.log('[FEED-DEBUG] page1 loaded', {
-            rawFromBackend: feedRaw.length,
-            mappedCount: mapped.filter(i => i.kind !== 'ad').length,
-            totalWithAds: mapped.length,
-            kindsRaw: feedRaw.reduce((acc: Record<string, number>, d: any) => {
-              acc[d?.kind ?? 'null'] = (acc[d?.kind ?? 'null'] ?? 0) + 1;
-              return acc;
-            }, {}),
-          });
-        }
         if (runId !== loadFeedRunRef.current) return;
         setItems(mapped);
         setHasMoreFeed(feedHasMoreRef.current);
       } else if (filter === 'friends') {
-        // Uniquement le contenu des comptes suivis — posts + events/concerts + reels,
-        // triés chronologiquement, sans pub/suggestions/communautés (même pattern mobile).
-        const [feedRes, reelsRes] = await Promise.all([
-          apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=30&following_only=true`).catch(() => null),
-          apiClient.get<any>(`${Endpoints.reels.feed}?limit=20&following_only=true`).catch(() => null),
-        ]);
+        // Uniquement le contenu des comptes suivis — posts + events/concerts,
+        // triés chronologiquement, sans pub/suggestions/communautés/reels.
+        const feedRes = await apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=30&following_only=true`).catch(() => null);
         const results: FeedItem[] = [];
         toArray<any>(feedRes?.data)
           .filter(d => d.id && (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post'))
           .forEach(d => results.push({ kind: d.kind, id: String(d.id), data: d }));
-        toArray<Reel>(reelsRes?.data).forEach(r => results.push({ kind: 'reel', id: String(r.id), data: r }));
         results.sort((a, b) => {
           const dateOf = (it: FeedItem) => (it.data as any).created_at ?? (it.data as any).starts_at ?? (it.data as any).scheduled_at ?? 0;
           return new Date(dateOf(b)).getTime() - new Date(dateOf(a)).getTime();
@@ -2816,7 +2801,7 @@ export default function FeedPage() {
       let freshNonSpecialCount = 0;
       for (const d of feedRaw) {
         if (!d || !d.id) continue;
-        if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post' || d.kind === 'reel') {
+        if (d.kind === 'event' || d.kind === 'concert' || d.kind === 'post') {
           const key = `${d.kind}-${d.id}`;
           if (seen.has(key)) continue;
           seen.add(key);
