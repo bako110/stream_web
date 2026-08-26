@@ -2701,7 +2701,7 @@ export default function FeedPage() {
   function openShare(id: string, kind: 'event'|'concert'|'post'|'reel', title?: string, image?: string, desc?: string) {
     setShareTarget({ id, kind, title, image, desc });
   }
-  async function loadFeed(filter: typeof tab) {
+  async function loadFeed(filter: typeof tab, refresh = false) {
     const runId = ++loadFeedRunRef.current;
     if (filter === 'all') loadingInitialRef.current = true;
     setLoading(true);
@@ -2717,8 +2717,11 @@ export default function FeedPage() {
     try {
       if (filter === 'all') {
         // /search/feed renvoie events/concerts/posts triés par score.
+        // refresh=true bypass le cache serveur (retap sur l'onglet Accueil
+        // déjà actif, cf. useTabReselect plus bas) — sans ça, revenir sur le
+        // feed dans la même minute renvoyait le même contenu déjà en cache.
         const [feedRes, adRes] = await Promise.all([
-          apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=${FEED_PAGE_SIZE}`).catch(() => null),
+          apiClient.get<any>(`${Endpoints.search.feed}?page=1&limit=${FEED_PAGE_SIZE}${refresh ? '&refresh=true' : ''}`).catch(() => null),
           apiClient.get<any>(Endpoints.ads.feedNext('feed')).catch(() => null),
         ]);
         if (adRes?.data) { setFeedAd(adRes.data); seenAdIdsRef.current = [adRes.data.id]; }
@@ -2880,7 +2883,7 @@ export default function FeedPage() {
   // haut + recharge le fil, cf. utils/tabReselect.ts.
   useTabReselect('/feed', useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    loadFeed(tab);
+    loadFeed(tab, true);
   }, [tab]));
 
   // Infinite scroll — observe un marqueur placé PREFETCH_ITEMS_REMAINING items
