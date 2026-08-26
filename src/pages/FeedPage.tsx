@@ -2876,8 +2876,19 @@ export default function FeedPage() {
       .catch(() => {});
   }, []);
 
-  // Reload when tab changes
-  useEffect(() => { loadFeed(tab); }, [tab]);
+  // Reload when tab changes — refresh=true au tout premier montage du
+  // composant (F5/rechargement navigateur, arrivée depuis une autre page) :
+  // sans ça, "rafraîchir la page" au sens usuel (pas juste le retap sidebar
+  // ci-dessous) retombait sur le cache serveur jusqu'à 5 min, donnant
+  // l'impression que rien ne bougeait jamais. Les changements d'onglet
+  // suivants (tab dépendance) restent sans refresh — ce ne sont pas des
+  // demandes explicites de rafraîchissement.
+  const isFirstMountRef = useRef(true);
+  useEffect(() => {
+    const isFirstMount = isFirstMountRef.current;
+    isFirstMountRef.current = false;
+    loadFeed(tab, isFirstMount);
+  }, [tab]);
 
   // Retap sur l'onglet "Accueil" déjà actif (Sidebar/BottomNav) — scroll en
   // haut + recharge le fil, cf. utils/tabReselect.ts.
