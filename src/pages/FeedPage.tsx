@@ -10,7 +10,8 @@ import {
   Heart, MessageCircle, Share2, Bookmark, Film,
   X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3, Copy,
   Image as ImageIcon, Video, Type, MoreHorizontal, Lock,
-  Megaphone, ExternalLink, Zap, EyeOff, Flag, Bell, BellOff } from 'lucide-react';
+  Megaphone, ExternalLink, Zap, EyeOff, Flag, Bell, BellOff,
+  Volume2, VolumeX, Maximize2 } from 'lucide-react';
 import Hls from 'hls.js';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -1889,10 +1890,21 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, on
 }
 
 // ── Post video player ─────────────────────────────────────────────────────────
+// Lecteur vidéo inline pour une carte de post — même langage visuel que
+// InlineVideoPlayer côté mobile (stream_mobile/src/components/common/
+// InlineVideoPlayer.tsx) : thumbnail affichée avant le premier play, overlay
+// play semi-transparent centré, bouton mute discret en bas à droite, bouton
+// plein écran. Avant ce fix, la vidéo web n'avait aucun contrôle utilisateur
+// (autoplay muet au scroll uniquement, tap = navigation, pas de mute/play).
 function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?: string; onClick: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const wrapRef  = useRef<HTMLDivElement>(null);
   const proxied  = toProxiedUrl(src);
+
+  const [started,    setStarted]    = useState(false);
+  const [playing,    setPlaying]    = useState(false);
+  const [muted,      setMuted]      = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -1910,29 +1922,101 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
     return () => { hls?.destroy(); };
   }, [proxied]);
 
+  // Autoplay muet au scroll (comme avant) — mais respecte maintenant l'état
+  // "started" : une fois que l'utilisateur a lui-même mis pause, on ne le
+  // relance pas de force au prochain passage dans le viewport.
   useEffect(() => {
     const el = wrapRef.current;
     const v  = videoRef.current;
     if (!el || !v) return;
     const obs = new IntersectionObserver(
-      ([e]) => { e.isIntersecting ? v.play().catch(() => {}) : v.pause(); },
+      ([e]) => {
+        if (e.isIntersecting) {
+          v.play().then(() => { setStarted(true); setPlaying(true); }).catch(() => {});
+        } else {
+          v.pause();
+          setPlaying(false);
+        }
+      },
       { threshold: 0.5 },
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
+  function togglePlay(e: React.MouseEvent) {
+    e.stopPropagation();
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) { v.play().catch(() => {}); setStarted(true); setPlaying(true); }
+    else { v.pause(); setPlaying(false); }
+  }
+
+  function toggleMute(e: React.MouseEvent) {
+    e.stopPropagation();
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  }
+
   return (
-    <div ref={wrapRef} className="relative overflow-hidden cursor-pointer" style={{ background: '#000', maxHeight: 500 }} onClick={onClick}>
+    <div ref={wrapRef} className="relative overflow-hidden" style={{ background: '#000', aspectRatio: '16/9' }}>
+      {!started && thumbnail && (
+        <img src={thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      )}
+
       <video
         ref={videoRef}
         poster={thumbnail}
         muted
         loop
         playsInline
-        className="w-full object-contain"
-        style={{ maxHeight: 500 }}
+        className="absolute inset-0 w-full h-full object-contain"
       />
+
+      {/* Overlay play/pause central */}
+      <button
+        type="button"
+        className="absolute inset-0 flex items-center justify-center"
+        style={playing ? undefined : { background: 'rgba(0,0,0,0.28)' }}
+        onClick={togglePlay}
+        aria-label={playing ? 'Mettre en pause' : 'Lire la vidéo'}
+      >
+        {!playing && (
+          <span className="flex items-center justify-center rounded-full"
+            style={{ width: 68, height: 68, background: 'rgba(0,0,0,0.55)' }}>
+            <Play size={28} color="#fff" fill="#fff" style={{ marginLeft: 4 }} />
+          </span>
+        )}
+      </button>
+
+      {/* Bouton volume */}
+      <button
+        type="button"
+        onClick={toggleMute}
+        aria-label={muted ? 'Activer le son' : 'Couper le son'}
+        className="absolute flex items-center justify-center rounded-full"
+        style={{
+          bottom: 12, right: 12, width: 36, height: 36,
+          background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(255,255,255,0.18)',
+        }}>
+        {muted ? <VolumeX size={16} color="#fff" /> : <Volume2 size={16} color="#fff" />}
+      </button>
+
+      {/* Bouton plein écran — ouvre le détail du post (même comportement
+          que le tap ailleurs sur la carte, cf. onClick reçu en prop) */}
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); onClick(); }}
+        aria-label="Voir en plein écran"
+        className="absolute flex items-center justify-center rounded-full"
+        style={{
+          bottom: 12, right: 56, width: 34, height: 34,
+          background: 'rgba(0,0,0,0.55)',
+        }}>
+        <Maximize2 size={15} color="#fff" />
+      </button>
     </div>
   );
 }
