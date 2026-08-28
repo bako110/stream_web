@@ -820,6 +820,9 @@ type FeedItem =
   | { kind: 'event';        id: string; data: Event }
   | { kind: 'post';         id: string; data: Post }
   | { kind: 'reel';         id: string; data: Reel }
+  | { kind: 'reel_row';     id: string; data: Reel[] }
+  | { kind: 'suggestions';  id: string; data: UserPublic[] }
+  | { kind: 'communities';  id: string; data: Community[] }
   | { kind: 'ad';           id: string; data: FeedAd | null };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -2696,6 +2699,144 @@ function SectionHead({ icon, title, onMore }: {
   );
 }
 
+// ── Encart : rangée de reels ───────────────────────────────────────────────────
+function ReelRowCard({ reels }: { reels: Reel[] }) {
+  const navigate = useNavigate();
+  if (!reels.length) return null;
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+            <Film size={13} color="#fff" />
+          </div>
+          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Reels pour toi</p>
+        </div>
+        <button onClick={() => navigate('/reels')} className="text-xs font-bold" style={{ color: 'var(--primary)' }}>
+          Voir tout
+        </button>
+      </div>
+      <div className="flex gap-2.5 px-4 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        {reels.map(r => (
+          <HoverVideoPreview key={r.id} src={r.hls_url} poster={r.thumbnail_url}
+            className="relative shrink-0 rounded-xl overflow-hidden cursor-pointer"
+            style={{ width: 108, aspectRatio: '9/16', background: '#000' }}>
+            <div onClick={() => navigate(`/reels?id=${encodeId(r.id)}`)} className="absolute inset-0">
+              {!r.thumbnail_url && <MediaPlaceholder title={r.caption} icon={<Play size={20} color="#fff" />} />}
+              <div className="absolute inset-x-0 bottom-0 h-14 pointer-events-none"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)' }} />
+              {(r.view_count ?? 0) > 0 && (
+                <span className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 text-[10px] text-white font-bold">
+                  <Play size={8} fill="#fff" />{fmtCount(r.view_count ?? 0)}
+                </span>
+              )}
+            </div>
+          </HoverVideoPreview>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Encart : suggestions d'amis ─────────────────────────────────────────────────
+function SuggestionsInlineCard({ users }: { users: UserPublic[] }) {
+  const navigate = useNavigate();
+  const [followed, setFollowed] = useState<Set<string>>(new Set());
+  if (!users.length) return null;
+
+  async function follow(id: string) {
+    setFollowed(prev => new Set(prev).add(id));
+    try { await apiClient.post(Endpoints.users.follow(id)); }
+    catch { setFollowed(prev => { const n = new Set(prev); n.delete(id); return n; }); }
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <Sparkles size={15} style={{ color: 'var(--primary)' }} />
+          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Personnes à suivre</p>
+        </div>
+        <button onClick={() => navigate('/search?tab=users')} className="text-xs font-bold" style={{ color: 'var(--primary)' }}>
+          Voir plus
+        </button>
+      </div>
+      <div className="flex gap-3 px-4 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        {users.map(u => (
+          <div key={u.id} className="flex flex-col items-center gap-2 shrink-0" style={{ width: 92 }}>
+            <div onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="cursor-pointer relative"
+              style={{ width: 60, height: 60, borderRadius: '50%', padding: 2.5, background: 'linear-gradient(135deg,var(--primary),var(--primary-light))' }}>
+              <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? '?'} size="lg" verified={u.is_verified} />
+            </div>
+            <p className="text-[11px] font-bold text-center leading-tight line-clamp-1" style={{ color: 'var(--text-primary)' }}>
+              {u.display_name ?? u.username}
+            </p>
+            <button onClick={() => follow(u.id)} disabled={followed.has(u.id)}
+              className="text-[10.5px] font-bold rounded-full w-full py-1.5 text-center"
+              style={followed.has(u.id)
+                ? { background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }
+                : { background: 'var(--primary)', color: '#fff' }}>
+              {followed.has(u.id) ? 'Suivi' : 'Suivre'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Encart : suggestions de communautés ─────────────────────────────────────────
+function CommunitiesInlineCard({ communities }: { communities: Community[] }) {
+  const navigate = useNavigate();
+  const [joined, setJoined] = useState<Set<string>>(new Set());
+  if (!communities.length) return null;
+
+  async function join(id: string) {
+    setJoined(prev => new Set(prev).add(id));
+    try { await apiClient.post(Endpoints.communities.join(id)); }
+    catch { setJoined(prev => { const n = new Set(prev); n.delete(id); return n; }); }
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#F59E0B,#7B3FF2)' }}>
+            <Users size={13} color="#fff" />
+          </div>
+          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Ta tribu t'attend</p>
+        </div>
+        <button onClick={() => navigate('/communities')} className="text-xs font-bold" style={{ color: 'var(--primary)' }}>
+          Explorer
+        </button>
+      </div>
+      <div className="flex flex-col px-2 pb-2">
+        {communities.map(c => (
+          <div key={c.id} className="flex items-center gap-3 px-2 py-2 rounded-xl">
+            <div className="shrink-0 rounded-xl flex items-center justify-center font-black text-white text-base"
+              style={{ width: 44, height: 44, background: `linear-gradient(135deg,${placeholderPalette(c.name)[1]},${placeholderPalette(c.name)[2]})` }}>
+              {c.avatar_url ? <img src={c.avatar_url} className="w-full h-full rounded-xl object-cover" alt="" /> : c.name[0]?.toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-bold truncate" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
+              <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{fmtCount(c.members_count ?? 0)} membres</p>
+            </div>
+            <button onClick={() => join(c.id)} disabled={joined.has(c.id)}
+              className="shrink-0 text-[10.5px] font-bold rounded-full px-3 py-1.5 flex items-center gap-1"
+              style={joined.has(c.id)
+                ? { background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }
+                : { border: '1.3px solid var(--primary)', color: 'var(--primary)' }}>
+              {joined.has(c.id) ? <><Check size={10} /> Membre</> : 'Rejoindre'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function FeedPage() {
   const { user }   = useAuthStore();
@@ -2824,11 +2965,16 @@ export default function FeedPage() {
             seen.add(key);
             mapped.push({ kind: d.kind, id: String(d.id), data: d });
             nonSpecialCount++;
-            // Pub injectée côté client, indépendamment de la rotation backend
-            // (pas demandée dans la migration reel/suggestion/communauté).
+            // Pub injectée côté client, indépendamment de l'encart backend.
             if (adRes?.data && nonSpecialCount > 0 && nonSpecialCount % 8 === 0) {
               mapped.push({ kind: 'ad', id: `__ad__${++adCountRef.current}`, data: adRes.data });
             }
+          } else if (d.kind === 'reel_row') {
+            mapped.push({ kind: 'reel_row', id: String(d.id), data: (d.reels ?? []) as Reel[] });
+          } else if (d.kind === 'suggestions') {
+            mapped.push({ kind: 'suggestions', id: String(d.id), data: (d.users ?? []) as UserPublic[] });
+          } else if (d.kind === 'communities') {
+            mapped.push({ kind: 'communities', id: String(d.id), data: (d.communities ?? []) as Community[] });
           }
         }
 
@@ -2909,6 +3055,12 @@ export default function FeedPage() {
             const slotId = `__ad__${++adCountRef.current}`;
             appended.push({ kind: 'ad', id: slotId, data: null });
           }
+        } else if (d.kind === 'reel_row') {
+          appended.push({ kind: 'reel_row', id: String(d.id), data: (d.reels ?? []) as Reel[] });
+        } else if (d.kind === 'suggestions') {
+          appended.push({ kind: 'suggestions', id: String(d.id), data: (d.users ?? []) as UserPublic[] });
+        } else if (d.kind === 'communities') {
+          appended.push({ kind: 'communities', id: String(d.id), data: (d.communities ?? []) as Community[] });
         }
       }
 
@@ -3152,6 +3304,12 @@ export default function FeedPage() {
                     openMore={openMore} openReport={openReport} />;
                 } else if (item.kind === 'reel') {
                   cardNode = <ReelCard key={`reel-${item.id}`} reel={item.data} delay={Math.min(i, 8) * 0.04} />;
+                } else if (item.kind === 'reel_row') {
+                  cardNode = <ReelRowCard key={`reelrow-${item.id}`} reels={item.data} />;
+                } else if (item.kind === 'suggestions') {
+                  cardNode = <SuggestionsInlineCard key={`sugg-${item.id}`} users={item.data} />;
+                } else if (item.kind === 'communities') {
+                  cardNode = <CommunitiesInlineCard key={`comm-${item.id}`} communities={item.data} />;
                 } else if (item.kind === 'ad') {
                   cardNode = item.data ? <FeedAdCard key={item.id} ad={item.data} /> : null;
                 }
