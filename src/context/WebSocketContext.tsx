@@ -37,6 +37,7 @@ export interface LiveStream {
   user?: { id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null } | null;
 }
 
+export interface FeedUpdatedPayload   { kind: string; }
 export interface ConcertLivePayload   { concert_id: string; title: string; artist_id: string; }
 export interface LiveStartedPayload   { live: LiveStream; }
 export interface LiveViewersPayload   { live_id: string; current_viewers: number; }
@@ -56,6 +57,7 @@ interface WsContextValue {
   addListener:          (fn: (p: WsPayload) => void) => void;
   removeListener:       (fn: (p: WsPayload) => void) => void;
   // Events spécialisés (state React — déclenche re-render)
+  lastFeedUpdated:      FeedUpdatedPayload | null;
   lastLiveStarted:      LiveStartedPayload | null;
   lastLiveEnded:        string | null;
   liveUserIds:          Set<string>;
@@ -84,6 +86,7 @@ const Ctx = createContext<WsContextValue>({
   sendMessage: () => {},
   addListener: () => {},
   removeListener: () => {},
+  lastFeedUpdated: null,
   lastLiveStarted: null,
   lastLiveEnded: null,
   liveUserIds: new Set(),
@@ -138,6 +141,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [unreadMessages,       setUnreadMessages]       = useState(0);
   const [unreadActivity,       setUnreadActivity]       = useState(0);
   const [unreadNotifications,  setUnreadNotifications]  = useState(0);
+  const [lastFeedUpdated,      setLastFeedUpdated]      = useState<FeedUpdatedPayload | null>(null);
   const [lastLiveStarted,      setLastLiveStarted]      = useState<LiveStartedPayload | null>(null);
   const [lastLiveEnded,        setLastLiveEnded]        = useState<string | null>(null);
   // IDs des utilisateurs actuellement en live — alimente l'anneau "Live" sur les avatars
@@ -187,6 +191,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       case 'live_viewers_updated':
         setLastLiveViewersUpdated(payload as unknown as LiveViewersPayload);
+        break;
+      case 'feed_updated':
+        setLastFeedUpdated(payload as unknown as FeedUpdatedPayload);
         break;
       case 'concert_live':
         setLastConcertLive(payload as unknown as ConcertLivePayload);
@@ -347,6 +354,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     sendMessage,
     addListener,
     removeListener,
+    lastFeedUpdated,
     lastLiveStarted,
     lastLiveEnded,
     liveUserIds,
@@ -369,6 +377,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     clearUnreadNotifications: () => setUnreadNotifications(0),
   }), [
     isConnected, sendMessage, addListener, removeListener,
+    lastFeedUpdated,
     lastLiveStarted, lastLiveEnded, liveUserIds, liveIdByUserId, lastLiveViewersUpdated,
     lastConcertLive, lastConcertEnded,
     lastNewFollower, lastStoryAdded,

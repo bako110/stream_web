@@ -3126,6 +3126,21 @@ export default function FeedPage() {
     loadFeed(tab, isFirstMount);
   }, [tab]);
 
+  // Temps réel (2026-09) — le backend broadcast feed_updated sur toute création de
+  // post/event/concert (create post/event/concert), cf. ws_manager.broadcast_all dans
+  // posts.py/events.py/concerts.py. Recharge la page 1 pour que le nouveau contenu (et
+  // son classement à jour — garantie réseau + priorisation régionale incluses, cf.
+  // FeedService.get_feed) apparaisse sans action explicite de l'utilisateur.
+  // refresh=true (comme useTabReselect ci-dessous) pour bypasser le cache serveur : sans
+  // ça, un signal reçu dans la fenêtre CACHE_TTL (300s) reservirait le même pool figé,
+  // donc le nouveau contenu resterait invisible malgré le refetch déclenché. Mobile
+  // (FeedScreen.tsx) gère déjà ce cas via addListener — rien à changer côté mobile.
+  const { lastFeedUpdated } = useWs();
+  useEffect(() => {
+    if (!lastFeedUpdated) return;
+    loadFeed(tab, true);
+  }, [lastFeedUpdated]);
+
   // Retap sur l'onglet "Accueil" déjà actif (Sidebar/BottomNav) — scroll en
   // haut + recharge le fil, cf. utils/tabReselect.ts.
   useTabReselect('/feed', useCallback(() => {
