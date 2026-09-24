@@ -2290,7 +2290,7 @@ function UpcomingEventsPanel() {
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
-          <Calendar size={13} style={{ color: '#7B3FF2' }} />
+          <Calendar size={13} style={{ color: 'var(--text-tertiary)' }} />
           <p className="font-black text-xs" style={{ color: 'var(--text-primary)' }}>À venir</p>
         </div>
         <button onClick={() => navigate('/events')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
@@ -2374,7 +2374,7 @@ function TrendingPanel() {
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
-          <Flame size={13} style={{ color: '#7B3FF2' }} />
+          <Flame size={13} style={{ color: 'var(--text-tertiary)' }} />
           <p className="font-black text-xs" style={{ color: 'var(--text-primary)' }}>Tendances</p>
         </div>
         <button onClick={() => navigate('/concerts')} className="text-[11px] font-semibold" style={{ color: 'var(--primary)' }}>Voir tout</button>
@@ -2499,7 +2499,7 @@ function SuggestionsPanel() {
       <div className="flex items-center justify-between px-4 py-3.5"
         style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
-          <Sparkles size={14} style={{ color: 'var(--primary)' }} />
+          <Sparkles size={14} style={{ color: 'var(--text-tertiary)' }} />
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Suggestions</p>
         </div>
         <button onClick={() => navigate('/discover/people')}
@@ -2619,7 +2619,7 @@ function CommunitiesSidePanel() {
       <div className="flex items-center justify-between px-4 py-3.5"
         style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
-          <Users size={14} style={{ color: 'var(--primary)' }} />
+          <Users size={14} style={{ color: 'var(--text-tertiary)' }} />
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Communautés</p>
         </div>
         <button onClick={() => navigate('/discover/communities')}
@@ -2684,7 +2684,7 @@ function SectionHead({ icon, title, onMore }: {
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2.5">
-        <span style={{ color: 'var(--primary)' }}>{icon}</span>
+        <span style={{ color: 'var(--text-tertiary)' }}>{icon}</span>
         <h2 className="font-black text-lg" style={{ color: 'var(--text-primary)' }}>{title}</h2>
       </div>
       {onMore && (
@@ -2804,7 +2804,7 @@ function CommunitiesInlineCard({ communities }: { communities: Community[] }) {
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#F59E0B,#7B3FF2)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <Users size={13} color="#fff" />
           </div>
           <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Ta tribu t'attend</p>

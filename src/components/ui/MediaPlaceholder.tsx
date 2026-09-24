@@ -1,10 +1,12 @@
+// Nuances de violet uniquement — un seul accent de marque, même en fallback
+// décoratif quand aucune image n'est disponible.
 const PALETTES = [
   ['#1a0533','#7B3FF2','#7B3FF2'],
-  ['#0f172a','#7B3FF2','#06B6D4'],
-  ['#0c1a0f','#22C55E','#7B3FF2'],
-  ['#1a0f00','#7B3FF2','#7B3FF2'],
-  ['#1a000d','#7B3FF2','#7B3FF2'],
-  ['#0d0d1a','#7B3FF2','#7B3FF2'],
+  ['#0f0a1e','#9B65F5','#5B2EC4'],
+  ['#150a2e','#A67CF7','#7B3FF2'],
+  ['#1a0f2e','#8B4FE8','#5B2EC4'],
+  ['#1a000d','#7B3FF2','#9B65F5'],
+  ['#0d0d1a','#7B3FF2','#3C1F80'],
 ];
 
 export function paletteBySeed(seed: string): [string, string, string] {

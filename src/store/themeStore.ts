@@ -22,6 +22,18 @@ export const useThemeStore = create<ThemeState>()(
 
 function applyTheme(dark: boolean) {
   document.documentElement.classList.toggle('dark', dark);
+  // Barre de statut mobile (Android/Chrome) — synchronisée avec le thème
+  // réellement appliqué à l'écran, jamais avec la couleur de marque violette.
+  // Les deux balises <meta name="theme-color" media="..."> posées dans
+  // index.html couvrent le cas par défaut (thème système) ; ceci prend le
+  // dessus dès qu'un choix explicite (setDark) diverge du système.
+  let meta = document.querySelector('meta[name="theme-color"]:not([media])') as HTMLMetaElement | null;
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', dark ? '#000000' : '#FFFFFF');
 }
 
 // init on load
