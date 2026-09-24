@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, KeyRound, Mail, Eye, EyeOff, CheckCircle, Phone, User } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import { useThemeStore } from '../../store/themeStore';
-import { RoundLogo } from '../../components/ui/RoundLogo';
+import { GateLogo } from '../../components/ui/GateLogo';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import '../landing.css';
 
 type Step = 'identifier' | 'code' | 'password' | 'done';
 type Method = 'email' | 'phone' | 'username';
@@ -13,8 +13,7 @@ type Method = 'email' | 'phone' | 'username';
 const accent = '#7B3FF2';
 
 export default function ForgotPasswordPage() {
-  const { isDark } = useThemeStore();
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
 
   const [step,        setStep]        = useState<Step>('identifier');
   const [method,      setMethod]      = useState<Method>('email');
@@ -143,36 +142,24 @@ export default function ForgotPasswordPage() {
       : `@${identifier}`;
 
   return (
-    <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="gate-page min-h-screen flex overflow-hidden">
 
-      {/* ── Left panel ── */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-10"
-        style={{ background: 'linear-gradient(145deg,#0d0118 0%,#1a0533 40%,#2d0f5e 70%,#1a0533 100%)' }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-80px] left-[-80px] w-72 h-72 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.35 }} />
-          <div className="absolute bottom-[-60px] right-[-60px] w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.25 }} />
-          <div className="absolute inset-0 hero-grid opacity-20" />
-        </div>
-
+      {/* ── Left panel — sobre, encre unie ── */}
+      <div className="hidden lg:flex flex-col justify-between w-[42%] relative overflow-hidden p-10"
+        style={{ background: 'var(--gt-ink)' }}>
         <div className="relative z-10">
-          <RoundLogo size={44} />
+          <GateLogo size={40} />
         </div>
 
         <div className="relative z-10 space-y-6">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(123,63,242,0.2)', border: '1px solid rgba(123,63,242,0.35)' }}>
-            <KeyRound size={28} style={{ color: '#A78BFA' }} />
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <KeyRound size={28} style={{ color: 'var(--gt-accent)' }} />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-white leading-tight mb-3">
-              Réinitialiser<br />
-              <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                votre mot de passe
-              </span>
+            <h1 className="gt-display text-3xl leading-tight mb-3" style={{ color: 'var(--gt-paper)' }}>
+              Réinitialiser <span style={{ color: 'var(--gt-accent)' }}>votre mot de passe</span>
             </h1>
-            <p className="text-white/60 text-sm leading-relaxed">
+            <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,244,242,0.6)' }}>
               Utilisez votre email, numéro de téléphone ou nom d'utilisateur pour réinitialiser votre mot de passe.
             </p>
           </div>
@@ -183,8 +170,8 @@ export default function ForgotPasswordPage() {
               'Le code expire après 15 minutes',
             ].map((tip, i) => (
               <div key={i} className="flex items-start gap-2.5">
-                <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: '#A78BFA' }} />
-                <p className="text-white/50 text-xs">{tip}</p>
+                <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: 'var(--gt-accent)' }} />
+                <p className="text-xs" style={{ color: 'rgba(245,244,242,0.5)' }}>{tip}</p>
               </div>
             ))}
           </div>
@@ -207,21 +194,16 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="relative z-10">
-          <p className="text-white/30 text-xs">© 2026 Gofolyx</p>
+          <p className="text-xs" style={{ color: 'rgba(245,244,242,0.3)' }}>© 2026 Gofolyx</p>
         </div>
       </div>
 
       {/* ── Right panel ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden lg:hidden">
-          <div className="absolute -top-32 -left-32 w-72 h-72 rounded-full"
-            style={{ background: `radial-gradient(circle,${accent},transparent 70%)`, opacity: isDark ? 0.14 : 0.05 }} />
-        </div>
-
         <div className="relative w-full max-w-md">
 
           <div className="flex justify-center mb-8 lg:hidden">
-            <RoundLogo size={52} />
+            <GateLogo size={52} />
           </div>
 
           {step !== 'done' && (

@@ -1,145 +1,620 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   LANDING PAGE — tokens et styles propres à cette page uniquement.
-   N'affecte jamais les variables globales (--bg, --primary, etc.) utilisées
-   par le reste de l'app — tout ce qui suit est scopé sous .landing-v2.
+   GATE PAGES — landing + onboarding.
+   Système unique : 1 conteneur, 1 style de carte, 1 grille de section.
+   Palette resserrée à l'encre/papier + UN seul accent (violet).
+   Scopé sous .gate-page pour ne jamais toucher aux tokens globaux (--bg, etc).
    ══════════════════════════════════════════════════════════════════════════ */
 
-.landing-v2 {
-  --lp-ink:      #0A0812;
-  --lp-paper:    #F5F3FA;
-  --lp-violet:   #7B3FF2;
-  --lp-violet-2: #5B2EC4;
-  --lp-amber:    #A67CF7;
-  --lp-amber-2:  #9B65F5;
-  --lp-surface-dark:  #15111F;
-  --lp-line-dark:     rgba(255,255,255,0.08);
-  --lp-line-light:    rgba(10,8,18,0.08);
+.gate-page {
+  --gt-ink:     #0B0B10;
+  --gt-paper:   #FAFAF8;
+  --gt-accent:  #7B3FF2;
 
+  --gt-bg:      var(--gt-paper);
+  --gt-surface: #FFFFFF;
+  --gt-text:    var(--gt-ink);
+  --gt-text-2:  #55545F;
+  --gt-text-3:  #96959E;
+  --gt-line:    rgba(11,11,16,0.10);
+  --gt-line-2:  rgba(11,11,16,0.06);
+
+  --stk-accent: var(--gt-accent);
+
+  background: var(--gt-bg);
+  color: var(--gt-text);
   font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-/* Le thème global de l'app bascule via une classe .dark sur <html>
-   (themeStore.ts → documentElement.classList.toggle('dark', ...)),
-   pas via data-theme — on suit le même mécanisme ici. */
-.dark .landing-v2 {
-  --lp-bg:      var(--lp-ink);
-  --lp-surface: var(--lp-surface-dark);
-  --lp-ink-text:   #F5F3FA;
-  --lp-ink-text-2: #B8B2CC;
-  --lp-ink-text-3: #6E6786;
-  --lp-line: var(--lp-line-dark);
-  --lp-amber:   #9B65F5;
-  --lp-amber-2: #A67CF7;
-}
-.landing-v2 {
-  --lp-bg:      var(--lp-paper);
-  --lp-surface: #FFFFFF;
-  --lp-ink-text:   #0A0812;
-  --lp-ink-text-2: #4A4560;
-  --lp-ink-text-3: #918C9F;
-  --lp-line: var(--lp-line-light);
+.dark .gate-page {
+  --gt-bg:      var(--gt-ink);
+  --gt-surface: #16151C;
+  --gt-text:    #F5F4F2;
+  --gt-text-2:  #ADACB6;
+  --gt-text-3:  #6B6A74;
+  --gt-line:    rgba(255,255,255,0.10);
+  --gt-line-2:  rgba(255,255,255,0.06);
 }
 
-/* ── Display face — condensé, capitales, énergique (affiche de concert) ── */
-.lp-display {
-  font-family: 'Anton', 'Inter', system-ui, sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
+/* ── Conteneur unique — header, hero, sections et footer s'alignent TOUS
+   sur ce même conteneur. Ne jamais dupliquer max-width ailleurs. ── */
+.gt-container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+@media (min-width: 640px) {
+  .gt-container { padding-left: 2rem; padding-right: 2rem; }
+}
+
+/* ── Typo ── */
+.gt-display {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   text-wrap: balance;
 }
-
-.lp-eyebrow {
+.gt-eyebrow {
   font-family: ui-monospace, 'SF Mono', Consolas, monospace;
   font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   font-weight: 600;
+  color: var(--gt-text-3);
 }
 
-/* ── Accent ambre — le seul endroit où il apparaît, avec parcimonie ── */
-.lp-amber-text { color: var(--lp-amber); }
-.lp-amber-underline {
-  background-image: linear-gradient(transparent 65%, var(--lp-amber) 65%);
-  background-repeat: no-repeat;
-  padding-bottom: 0.05em;
-}
-
-/* ── Hero split layout ── */
-.lp-hero-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 3rem;
-}
-@media (min-width: 1024px) {
-  .lp-hero-grid {
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 2rem;
-    align-items: center;
-  }
-}
-
-/* Pile de vignettes en léger décalage ("mur d'affiches") */
-.lp-poster-stack {
-  position: relative;
-  height: 560px;
-}
-.lp-poster-stack > * { position: absolute; }
-
-/* ── Ticket-stub card — coin découpé façon billet de concert ── */
-.lp-stub {
-  position: relative;
-  clip-path: polygon(
-    0% 4%, 4% 0%, 96% 0%, 100% 4%,
-    100% 96%, 96% 100%, 4% 100%, 0% 96%
-  );
-}
-
-/* ── Grain texture overlay — subtil, evite le look "plastique" du glass ── */
-.lp-grain {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.035;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-.dark .landing-v2 .lp-grain { opacity: 0.05; }
-
-/* ── Section rule — trait fin avec label, remplace les cartes flottantes ── */
-.lp-rule {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.lp-rule::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--lp-line);
-}
-
-/* ── Marquee (bandeau défilant) — variante haute contraste, sur fond plein ── */
-.lp-marquee-track {
+/* ── Boutons — 3 variantes seulement, jamais de style ad-hoc en inline ── */
+.gt-btn {
   display: inline-flex;
-  animation: lp-marquee 32s linear infinite;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1;
+  border-radius: 999px;
+  padding: 0.9rem 1.7rem;
+  transition: transform 0.2s cubic-bezier(.16,1,.3,1), box-shadow 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
   white-space: nowrap;
 }
-@keyframes lp-marquee {
+.gt-btn-sm { padding: 0.6rem 1.15rem; font-size: 0.825rem; }
+.gt-btn-block { width: 100%; }
+
+.gt-btn-solid { background: var(--gt-ink); color: var(--gt-paper); }
+.dark .gt-btn-solid { background: #F5F4F2; color: var(--gt-ink); }
+.gt-btn-solid:hover { transform: translateY(-2px); opacity: 0.88; }
+
+.gt-btn-accent { background: var(--gt-accent); color: #fff; box-shadow: 0 10px 24px rgba(123,63,242,0.28); }
+.gt-btn-accent:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(123,63,242,0.38); }
+
+.gt-btn-line { background: transparent; color: var(--gt-text); border: 1.5px solid var(--gt-line); }
+.gt-btn-line:hover { border-color: var(--gt-text); }
+
+.gt-btn-ghost-invert { background: transparent; color: rgba(250,250,248,0.8); }
+.gt-btn-ghost-invert:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+/* ── Header ── */
+.gt-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.gt-header.is-scrolled {
+  background: var(--gt-bg);
+  border-bottom-color: var(--gt-line);
+}
+.gt-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+}
+/* Le logo peut rétrécir (jamais disparaître) plutôt que forcer le header
+   à déborder horizontalement en mobile — un enfant flex a `min-width:auto`
+   par défaut, ce qui l'empêche de céder de la place : on le désactive ici. */
+.gt-header-inner > a { min-width: 0; }
+.gt-header-inner > a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gt-header-nav {
+  /* display géré par les utilitaires Tailwind (hidden / md:flex) posés en
+     JSX — ne pas fixer `display` ici pour éviter tout conflit de
+     spécificité avec ces utilitaires responsive. */
+  align-items: center;
+  gap: 0.25rem;
+}
+.gt-navlink {
+  padding: 0.55rem 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gt-text-2);
+  border-radius: 999px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.gt-navlink:hover { color: var(--gt-text); background: var(--gt-line-2); }
+.gt-header-actions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.gt-icon-btn {
+  width: 40px; height: 40px; border-radius: 999px;
+  color: var(--gt-text-3);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.gt-icon-btn:hover { color: var(--gt-text); background: var(--gt-line-2); }
+
+/* Spacer sous le header fixe — évite que le hero commence sous la barre */
+.gt-header-spacer { height: 72px; }
+
+/* ── Sticker strip — bandeau défilant, illustrations line-art ── */
+.gt-strip {
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid var(--gt-line);
+  border-bottom: 1px solid var(--gt-line);
+  padding: 1.75rem 0;
+  background: var(--gt-surface);
+}
+.gt-strip-track {
+  display: flex;
+  width: max-content;
+  gap: 3rem;
+  animation: gt-scroll 40s linear infinite;
+}
+.gt-strip:hover .gt-strip-track { animation-play-state: paused; }
+@keyframes gt-scroll {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
-
-/* ── Reveal on scroll (réutilise .sr mais avec courbe plus marquée) ── */
-.lp-rise {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1);
+.gt-sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  color: var(--gt-text);
 }
-.lp-rise.visible { opacity: 1; transform: none; }
+.gt-sticker-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--gt-bg);
+  border: 1px solid var(--gt-line);
+  color: var(--gt-accent);
+  animation: gt-bob 5s ease-in-out infinite;
+}
+.gt-sticker:nth-child(3n)   .gt-sticker-icon { animation-delay: -0.7s; }
+.gt-sticker:nth-child(3n+1) .gt-sticker-icon { animation-delay: -2.1s; }
+.gt-sticker:nth-child(3n+2) .gt-sticker-icon { animation-delay: -3.4s; }
+@keyframes gt-bob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+.gt-sticker-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gt-text-2);
+}
+
+/* ── Hero — texte centré, une seule bannière pleine largeur en dessous.
+   Remplace l'ancienne pile de vignettes empilées, source d'empilements
+   ratés selon la largeur réelle de la colonne. ── */
+.gt-hero {
+  padding-top: 4.5rem;
+  padding-bottom: 3rem;
+}
+.gt-hero-intro {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+.gt-hero-banner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 21/9;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  background: var(--gt-line-2);
+}
+@media (max-width: 640px) {
+  .gt-hero-banner { aspect-ratio: 4/3; }
+}
+.gt-hero-banner img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.gt-hero-banner-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gt-text-3);
+}
+.gt-hero-banner-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.15) 55%, transparent 80%);
+}
+.gt-hero-banner-stats {
+  position: absolute; left: 1.5rem; right: 1.5rem; bottom: 1.25rem;
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+  gap: 2rem;
+}
+.gt-hero-banner-stats .gt-stat-value,
+.gt-hero-banner-stats .gt-stat-label { color: #fff; }
+.gt-hero-banner-stats .gt-stat-label { color: rgba(255,255,255,0.7); }
+
+.gt-stat-row {
+  display: flex;
+  gap: 2.25rem;
+  padding-top: 1.75rem;
+  margin-top: 1.75rem;
+  border-top: 1px solid var(--gt-line);
+}
+.gt-stat-value { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+.gt-stat-label { font-size: 0.78rem; color: var(--gt-text-3); margin-top: 0.15rem; }
+
+/* ── Section shell — un seul rythme vertical pour toutes les sections ── */
+.gt-section { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+.gt-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.gt-section-head .gt-eyebrow { display: block; margin-bottom: 0.6rem; }
+.gt-section-title { font-size: 1.5rem; }
+@media (min-width: 640px) { .gt-section-title { font-size: 1.75rem; } }
+.gt-section-sub { font-size: 0.875rem; color: var(--gt-text-2); margin-top: 0.35rem; }
+.gt-section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gt-text);
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--gt-line);
+  transition: gap 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.gt-section-link:hover { gap: 0.55rem; border-color: var(--gt-accent); color: var(--gt-accent); }
+
+/* ── Grille de contenu — remplace le scroll horizontal ad-hoc, largeurs
+   toujours cohérentes entre elles, jamais de px fixe par carte. ── */
+.gt-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 640px)  { .gt-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1024px) { .gt-grid { grid-template-columns: repeat(4, 1fr); } }
+.gt-grid-wide { grid-template-columns: repeat(1, 1fr); }
+@media (min-width: 640px)  { .gt-grid-wide { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .gt-grid-wide { grid-template-columns: repeat(3, 1fr); } }
+
+/* ── Showcase — UNE seule carte visible par section, en pleine largeur, qui
+   défile automatiquement (une à la fois). Chaque catégorie a déjà sa page
+   de liste complète (/explore/...) : la landing ne montre qu'un aperçu. ── */
+.gt-showcase {
+  width: 100%;
+}
+.gt-showcase-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+.gt-showcase-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.02);
+  transition: opacity 0.7s ease, transform 0.9s cubic-bezier(.16,1,.3,1);
+  pointer-events: none;
+}
+.gt-showcase-slide.is-active {
+  position: relative;
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+.gt-showcase-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+}
+.gt-showcase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gt-line);
+  transition: background-color 0.2s ease, width 0.2s ease;
+}
+.gt-showcase-dot.is-active { background: var(--gt-accent); width: 18px; }
+.gt-showcase-card {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  background: var(--gt-surface);
+  border: 1.5px solid var(--gt-line);
+  cursor: pointer;
+  transition: border-color 0.25s ease, box-shadow 0.4s ease;
+  box-shadow: 0 1px 2px rgba(11,11,16,0.04);
+}
+.gt-showcase-card:hover {
+  border-color: var(--gt-accent);
+  box-shadow: 0 24px 48px -12px rgba(11,11,16,0.18);
+}
+.gt-showcase-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 21/9;
+  overflow: hidden;
+  background: var(--gt-line-2);
+}
+@media (max-width: 640px) {
+  .gt-showcase-media { aspect-ratio: 4/3; }
+}
+.gt-showcase-media img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.6s ease;
+}
+.gt-showcase-card:hover .gt-showcase-media img { transform: scale(1.04); }
+.gt-showcase-media-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gt-text-3);
+}
+.gt-showcase-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.15) 50%, transparent 75%);
+}
+.gt-showcase-badge {
+  position: absolute; top: 1rem; left: 1rem;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--gt-accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.gt-showcase-rating {
+  position: absolute; top: 1rem; right: 1rem;
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.gt-showcase-overlay {
+  position: absolute; left: 1.25rem; right: 1.25rem; bottom: 1.1rem;
+  color: #fff;
+}
+.gt-showcase-title { font-weight: 700; font-size: 1.15rem; line-height: 1.25; }
+.gt-showcase-sub {
+  font-size: 0.82rem; color: rgba(255,255,255,0.72);
+  margin-top: 0.3rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;
+}
+.gt-showcase-date {
+  position: absolute; top: 1rem; left: 1rem;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.7rem;
+  background: rgba(255,255,255,0.95);
+  color: var(--gt-ink);
+  line-height: 1;
+}
+.gt-showcase-date-day { font-size: 1.15rem; font-weight: 800; }
+.gt-showcase-date-month { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.15rem; color: var(--gt-text-2); }
+.gt-showcase-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--gt-line);
+}
+.gt-showcase-price { font-weight: 700; color: var(--gt-accent); display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
+.gt-showcase-meta { font-size: 0.82rem; color: var(--gt-text-3); display: inline-flex; align-items: center; gap: 0.35rem; }
+.gt-showcase-cta {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.85rem; font-weight: 600; color: var(--gt-accent);
+}
+
+/* ── Carte unique — même structure pour poster / concert / event, seul le
+   ratio et le contenu du bandeau changent. Élimine les 3 styles disparates
+   (poster plein / stub billet en pointillé / bloc date). ── */
+.gt-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-line);
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(.16,1,.3,1), border-color 0.2s ease;
+}
+.gt-tile:hover { transform: translateY(-4px); border-color: var(--gt-text-3); }
+.gt-tile-media {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--gt-line-2);
+}
+.gt-tile-media--poster { aspect-ratio: 2/3; }
+.gt-tile-media--wide   { aspect-ratio: 16/10; }
+.gt-tile-media img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.gt-tile:hover .gt-tile-media img { transform: scale(1.05); }
+.gt-tile-media-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gt-text-3);
+}
+.gt-tile-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.25) 45%, transparent 70%);
+}
+.gt-tile-badge {
+  position: absolute; top: 0.6rem; left: 0.6rem;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--gt-accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.gt-tile-overlay {
+  position: absolute; left: 0.75rem; right: 0.75rem; bottom: 0.75rem;
+  color: #fff;
+}
+.gt-tile-overlay-title { font-weight: 700; font-size: 0.9rem; line-height: 1.25; }
+
+/* ── Placeholder / skeleton ── */
+.gt-skeleton { background: var(--gt-line-2); animation: gt-pulse 1.6s ease-in-out infinite; }
+@keyframes gt-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* ── Features — mise en page éditoriale : titre figé à gauche, cartes à
+   droite. Remplace la liste numérotée à plat. ── */
+.gt-features-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+}
+@media (min-width: 1024px) {
+  .gt-features-grid { grid-template-columns: 0.8fr 1.2fr; gap: 4rem; }
+}
+.gt-features-intro { position: relative; }
+@media (min-width: 1024px) {
+  .gt-features-intro { position: sticky; top: 6.5rem; align-self: start; }
+}
+.gt-features-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 640px) { .gt-features-list { grid-template-columns: repeat(2, 1fr); } }
+
+.gt-feature-card {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 1.1rem;
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-line);
+  transition: transform 0.3s cubic-bezier(.16,1,.3,1), border-color 0.2s ease;
+}
+.gt-feature-card:hover { transform: translateY(-3px); border-color: var(--gt-text-3); }
+.gt-feature-card-num {
+  position: absolute; top: 1.5rem; right: 1.5rem;
+  font-weight: 700; font-size: 0.75rem; color: var(--gt-text-3);
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+}
+.gt-feature-icon {
+  width: 2.75rem; height: 2.75rem; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.85rem;
+  background: var(--gt-bg);
+  border: 1px solid var(--gt-line);
+  color: var(--gt-accent);
+  margin-bottom: 1.25rem;
+}
+
+/* ── Testimonial cards ── */
+.gt-testimonial {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+.gt-avatar {
+  width: 2.25rem; height: 2.25rem; border-radius: 999px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--gt-ink); color: var(--gt-paper);
+  font-weight: 700; font-size: 0.85rem;
+}
+
+/* ── CTA band ── */
+.gt-cta {
+  border-radius: 1.5rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--gt-ink);
+  color: var(--gt-paper);
+}
+@media (min-width: 768px) { .gt-cta { padding: 5rem 3rem; } }
+
+/* ── Footer ── */
+.gt-footer { border-top: 1px solid var(--gt-line); padding-top: 4rem; padding-bottom: 2rem; }
+.gt-footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  padding-bottom: 3rem;
+}
+@media (min-width: 640px)  { .gt-footer-grid { grid-template-columns: 1.4fr repeat(3, 1fr); } }
+.gt-footer-col-title { margin-bottom: 1rem; }
+.gt-footer-links { display: flex; flex-direction: column; gap: 0.65rem; }
+.gt-footer-links a { font-size: 0.875rem; color: var(--gt-text-2); transition: color 0.2s ease; }
+.gt-footer-links a:hover { color: var(--gt-text); }
+.gt-footer-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--gt-line);
+  font-size: 0.78rem;
+  color: var(--gt-text-3);
+}
+@media (min-width: 640px) {
+  .gt-footer-bottom { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+.gt-footer-legal { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.gt-footer-legal a:hover { color: var(--gt-text); }
+
+/* ── Rule (section header separator) — encore utilisé par le eyebrow seul ── */
+.gt-rule { display: flex; align-items: center; gap: 1rem; }
+.gt-rule::after { content: ''; flex: 1; height: 1px; background: var(--gt-line); }
+
+/* ── Reveal on scroll ── */
+.gt-rise {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1);
+}
+.gt-rise.visible { opacity: 1; transform: none; }
+
+/* ── Onboarding progress dots ── */
+.gt-dot {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gt-line);
+  transition: background-color 0.3s ease;
+}
+.gt-dot.is-active { background: var(--gt-accent); }
+.gt-dot.is-done    { background: var(--gt-text-3); }
 
 @media (prefers-reduced-motion: reduce) {
-  .lp-marquee-track { animation: none; }
-  .lp-rise { transition: none; opacity: 1; transform: none; }
+  .gt-strip-track { animation: none; }
+  .gt-sticker-icon { animation: none; }
+  .gt-rise { transition: none; opacity: 1; transform: none; }
 }

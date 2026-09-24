@@ -1,136 +1,94 @@
-import { useState, useEffect } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { Sun, Moon, Menu, X } from 'lucide-react';
+import { Sun, Moon, LogIn } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { Images } from '../assets';
+import { GateLogo } from '../ui/GateLogo';
 import './explore.css';
 
+// ── Catégories — Reels retiré : cette section ne montre plus le format court,
+// qui reste accessible depuis /reels une fois connecté. ──
 const NAV_LINKS = [
   { to: '/explore/films',    label: 'Films'      },
   { to: '/explore/series',   label: 'Séries'     },
   { to: '/explore/live',     label: 'Live'       },
   { to: '/explore/concerts', label: 'Concerts'   },
   { to: '/explore/events',   label: 'Événements' },
-  { to: '/explore/reels',    label: 'Reels'      },
 ];
 
+// ── Header — identité propre, différente de la landing et de l'ancien
+// header : pas de nav horizontale classique, une bande compacte (logo +
+// actions) au-dessus d'une rangée de catégories en pilules scrollables. ──
 export function ExploreLayout() {
   const { isAuthenticated } = useAuthStore();
   const { isDark, toggle }  = useThemeStore();
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
 
   return (
-    <div className="explore-v2">
-      {/* ── Navbar ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        style={{
-          background: scrolled ? 'var(--ex-bg)' : 'transparent',
-          borderBottom: scrolled ? '1px solid var(--ex-line)' : '1px solid transparent',
-        }}>
-        <div className="w-full mx-auto px-4 h-16 flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-8 w-auto" />
-            <span className="ex-display text-base hidden sm:block" style={{ color: 'var(--ex-text)' }}>Gofolyx</span>
+    <div className="explore-v3">
+      <header className="xp-header">
+        <div className="xp-container xp-header-top">
+          <Link to="/" className="xp-header-brand">
+            <GateLogo size={30} />
+            <span className="xp-display text-base">Gofolyx</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-0.5 ml-2">
-            {NAV_LINKS.map(({ to, label }) => (
-              <NavLink key={to} to={to}
-                className="px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200"
-                style={({ isActive }) => ({
-                  color: isActive ? 'var(--ex-violet)' : 'var(--ex-text-2)',
-                })}
-              >
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2 ml-auto">
-            <button onClick={toggle} className="p-2 rounded-full transition-colors duration-200" style={{ color: 'var(--ex-text-3)' }}>
+          <div className="xp-header-actions">
+            <button onClick={toggle} className="inline-flex items-center justify-center xp-icon-btn" title={isDark ? 'Mode clair' : 'Mode sombre'}>
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
             {isAuthenticated ? (
-              <Link to="/feed" className="text-sm font-bold px-4 py-2 rounded-full text-white" style={{ background: 'var(--ex-violet)' }}>
+              <Link to="/feed" className="xp-btn xp-btn-solid" style={{ padding: '0.6rem 1.1rem', fontSize: '0.8rem' }}>
                 Mon espace
               </Link>
             ) : (
               <>
-                <Link to="/auth/login" className="hidden sm:block text-sm font-medium px-3 py-1.5" style={{ color: 'var(--ex-text-2)' }}>
-                  Connexion
+                <Link to="/auth/login" className="!hidden sm:!inline-flex xp-icon-btn items-center justify-center" title="Connexion">
+                  <LogIn size={16} />
                 </Link>
-                <Link to="/auth/register" className="text-sm font-bold px-4 py-2 rounded-full text-white" style={{ background: 'var(--ex-violet)' }}>
+                <Link to="/auth/register" className="xp-btn xp-btn-solid" style={{ padding: '0.6rem 1.1rem', fontSize: '0.8rem' }}>
                   S'inscrire
                 </Link>
               </>
             )}
-
-            <button onClick={() => setMenuOpen(v => !v)} className="md:hidden p-2" style={{ color: 'var(--ex-text)' }}>
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
           </div>
+        </div>
+
+        <div className="xp-container">
+          <nav className="xp-tabs">
+            {NAV_LINKS.map(({ to, label }) => (
+              <NavLink key={to} to={to} className={({ isActive }) => `xp-tab${isActive ? ' is-active' : ''}`}>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
         </div>
       </header>
 
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--ex-bg)' }}>
-          <div className="flex items-center justify-between px-4 h-16 shrink-0" style={{ borderBottom: '1px solid var(--ex-line)' }}>
-            <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2">
-              <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-8 w-auto" />
-              <span className="ex-display text-base" style={{ color: 'var(--ex-text)' }}>Gofolyx</span>
-            </Link>
-            <button onClick={() => setMenuOpen(false)} style={{ color: 'var(--ex-text)' }}><X size={24} /></button>
-          </div>
-          <nav className="flex flex-col px-6 pt-6 gap-1">
-            {NAV_LINKS.map(({ to, label }) => (
-              <NavLink key={to} to={to} onClick={() => setMenuOpen(false)}
-                className="py-4 text-xl ex-display transition-colors duration-200"
-                style={({ isActive }) => ({ color: isActive ? 'var(--ex-violet)' : 'var(--ex-text)', borderBottom: '1px solid var(--ex-line)' })}
-              >{label}</NavLink>
-            ))}
-          </nav>
-          {!isAuthenticated && (
-            <div className="px-6 pt-6 flex flex-col gap-3">
-              <Link to="/auth/register" className="text-base text-center py-3 rounded-full font-bold text-white" style={{ background: 'var(--ex-violet)' }} onClick={() => setMenuOpen(false)}>
-                S'inscrire
-              </Link>
-              <Link to="/auth/login" className="text-base text-center py-3 rounded-full font-medium" style={{ color: 'var(--ex-text)', border: '1px solid var(--ex-line)' }} onClick={() => setMenuOpen(false)}>
-                Connexion
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-
-      <main className="pt-16">
+      <main>
         <Outlet />
       </main>
 
-      <footer className="mt-20 pt-10 pb-8 px-4" style={{ borderTop: '1px solid var(--ex-line)' }}>
-        <div className="w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <img src={isDark ? Images.logoDark : Images.logoLight} alt="Gofolyx" className="h-8 w-auto" />
-            <span className="text-sm" style={{ color: 'var(--ex-text-3)' }}>© 2026 Tous droits réservés</span>
+      <footer className="xp-footer">
+        <div className="xp-container">
+          <div className="xp-footer-row">
+            <div className="flex items-center gap-2.5">
+              <GateLogo size={28} />
+              <span className="xp-display text-sm">Gofolyx</span>
+            </div>
+            <nav className="xp-footer-links">
+              <Link to="/">Accueil</Link>
+              {NAV_LINKS.map(({ to, label }) => <Link key={to} to={to}>{label}</Link>)}
+              {!isAuthenticated && <Link to="/auth/register" style={{ color: 'var(--xp-accent)', fontWeight: 700 }}>S'inscrire</Link>}
+            </nav>
           </div>
-          <nav className="flex items-center gap-5 text-sm flex-wrap justify-center">
-            <Link to="/" style={{ color: 'var(--ex-text-3)' }}>Accueil</Link>
-            {NAV_LINKS.map(({ to, label }) => (
-              <Link key={to} to={to} style={{ color: 'var(--ex-text-3)' }}>{label}</Link>
-            ))}
-            <Link to="/auth/register" className="text-xs font-bold px-4 py-1.5 rounded-full text-white" style={{ background: 'var(--ex-violet)' }}>
-              S'inscrire
-            </Link>
-          </nav>
+          <div className="xp-footer-bottom">
+            <p>© 2026 Gofolyx. Tous droits réservés.</p>
+            <div className="flex gap-4">
+              <Link to="/politique-confidentialite">Confidentialité</Link>
+              <Link to="/cgu">Conditions</Link>
+              <Link to="/cookies">Cookies</Link>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

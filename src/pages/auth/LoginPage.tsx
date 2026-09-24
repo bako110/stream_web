@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio, QrCode, Smartphone, Mail, LogIn, X } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Play, Music2, Calendar, Film, Radio, QrCode, Smartphone, Mail, LogIn, X, ArrowLeft } from 'lucide-react';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
-import { RoundLogo } from '../../components/ui/RoundLogo';
+import { GateLogo } from '../../components/ui/GateLogo';
 import { CountryPicker } from '../../components/auth/CountryPicker';
 import { COUNTRIES } from '../../data/countries';
 import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
@@ -15,17 +14,18 @@ import QRLoginPanel from '../../components/auth/QRLoginPanel';
 import { getSafeRedirect } from '../../utils/safeRedirect';
 import { getApiErrorDetail, extractApiErrorMessage } from '../../utils/apiError';
 import { accountsService } from '../../services/accountsService';
+import '../landing.css';
 
 declare global { interface Window { google?: any; } }
 
 type LoginMethod = 'email' | 'phone';
 
 const FEATURES = [
-  { icon: Film,      label: 'Films & séries en streaming HD',     color: '#7B3FF2' },
-  { icon: Play,      label: 'Reels, stories & contenu viral',     color: '#A855F7' },
-  { icon: Music2,    label: 'Concerts live & replays exclusifs',  color: '#EC4899' },
-  { icon: Calendar,  label: 'Événements & billets numériques',    color: '#F59E0B' },
-  { icon: Radio,     label: 'Communautés, wallet & monétisation', color: '#10B981' },
+  { icon: Film,     label: 'Films & séries en streaming HD' },
+  { icon: Play,     label: 'Reels, stories & contenu viral' },
+  { icon: Music2,   label: 'Concerts live & replays exclusifs' },
+  { icon: Calendar, label: 'Événements & billets numériques' },
+  { icon: Radio,    label: 'Communautés, wallet & monétisation' },
 ];
 
 export default function LoginPage() {
@@ -33,7 +33,6 @@ export default function LoginPage() {
   const location   = useLocation();
   const [searchParams] = useSearchParams();
   const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
-  const { isDark } = useThemeStore();
 
   const redirectTo = getSafeRedirect(searchParams.get('redirect'));
   // Multi-compte (parité mobile AddAccountScreen.tsx) : ce mode réutilise
@@ -153,70 +152,56 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="gate-page min-h-screen flex overflow-hidden">
 
-      {/* Left panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-10"
-        style={{ background: 'linear-gradient(145deg,#0d0118 0%,#1a0533 40%,#2d0f5e 70%,#1a0533 100%)' }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-80px] left-[-80px] w-72 h-72 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.35 }} />
-          <div className="absolute bottom-[-60px] right-[-60px] w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.25 }} />
-          <div className="absolute inset-0 hero-grid opacity-20" />
-        </div>
+      {/* Left panel — sobre, encre unie, un seul accent violet */}
+      <div className="hidden lg:flex flex-col justify-between w-[42%] relative overflow-hidden p-10"
+        style={{ background: 'var(--gt-ink)' }}>
         <div className="relative z-10">
-          <RoundLogo size={44} />
+          <GateLogo size={40} />
         </div>
         <div className="relative z-10 space-y-8">
           <div>
-            <h1 className="text-4xl font-black text-white leading-tight mb-3">
-              Tout l'univers<br />
-              <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Gofolyx
-              </span>
+            <h1 className="gt-display text-4xl leading-tight mb-3" style={{ color: 'var(--gt-paper)' }}>
+              Tout l'univers <span style={{ color: 'var(--gt-accent)' }}>Gofolyx</span>
             </h1>
-            <p className="text-white/60 text-base leading-relaxed">
+            <p className="text-base leading-relaxed" style={{ color: 'rgba(245,244,242,0.6)' }}>
               Films, séries, reels, concerts live, événements, communautés, portefeuille et monétisation — la plateforme tout-en-un pensée pour l'Afrique et sa diaspora.
             </p>
           </div>
           <div className="space-y-3">
-            {FEATURES.map(({ icon: Icon, label, color }) => (
+            {FEATURES.map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: `${color}25`, border: `1px solid ${color}40` }}>
-                  <Icon size={15} style={{ color }} />
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Icon size={15} style={{ color: 'var(--gt-accent)' }} />
                 </div>
-                <span className="text-white/75 text-sm font-medium">{label}</span>
+                <span className="text-sm font-medium" style={{ color: 'rgba(245,244,242,0.75)' }}>{label}</span>
               </div>
             ))}
           </div>
         </div>
         <div className="relative z-10 space-y-4">
           <AppDownloadBar variant="card" />
-          <p className="text-white/30 text-xs">© 2026 Gofolyx · Tous droits réservés</p>
+          <p className="text-xs" style={{ color: 'rgba(245,244,242,0.3)' }}>© 2026 Gofolyx · Tous droits réservés</p>
         </div>
       </div>
 
       {/* Right panel */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative overflow-y-auto">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden lg:hidden">
-          <div className="absolute -top-32 -left-32 w-72 h-72 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: isDark ? 0.15 : 0.06 }} />
-          <div className="absolute -bottom-32 -right-32 w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: isDark ? 0.12 : 0.05 }} />
-        </div>
-
         <div className="relative w-full max-w-md">
 
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <RoundLogo size={52} />
+            <GateLogo size={52} />
           </div>
 
+          <Link to="/" className="gt-icon-btn inline-flex items-center justify-center mb-6" title="Retour à l'accueil" aria-label="Retour à l'accueil">
+            <ArrowLeft size={17} />
+          </Link>
+
           <div className="mb-7">
-            <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>Bon retour</h2>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connectez-vous à votre compte Gofolyx</p>
+            <h2 className="gt-display text-2xl mb-1">Connexion</h2>
+            <p className="text-sm" style={{ color: 'var(--gt-text-2)' }}>Connectez-vous à votre compte Gofolyx</p>
           </div>
 
           {/* Google */}

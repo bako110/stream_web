@@ -3,22 +3,22 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles, ShieldCheck, Zap, Globe, Smartphone, Mail, ArrowLeft, ArrowRight, Gift, Check, Calendar, X, Loader2 } from 'lucide-react';
 import type { Gender } from '../../types';
 import { AppDownloadBar } from '../../components/ui/AppDownloadBar';
-import { RoundLogo } from '../../components/ui/RoundLogo';
+import { GateLogo } from '../../components/ui/GateLogo';
 import { CountryPicker } from '../../components/auth/CountryPicker';
 import { COUNTRIES } from '../../data/countries';
 import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { googleOAuthPopup } from '../../utils/googleOAuth';
 import { getDeviceFingerprint } from '../../utils/deviceFingerprint';
 import { getSafeRedirect } from '../../utils/safeRedirect';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import '../landing.css';
 
 const PERKS = [
-  { icon: Zap,         label: 'Films, séries & reels en streaming',  color: '#7B3FF2' },
-  { icon: Globe,       label: 'Concerts live & événements',           color: '#A855F7' },
-  { icon: ShieldCheck, label: 'Communautés, wallet & monétisation',   color: '#EC4899' },
+  { icon: Zap,         label: 'Films, séries & reels en streaming' },
+  { icon: Globe,       label: 'Concerts live & événements' },
+  { icon: ShieldCheck, label: 'Communautés, wallet & monétisation' },
 ];
 
 type AuthMethod = 'email' | 'phone';
@@ -52,7 +52,6 @@ export default function RegisterPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = getSafeRedirect(searchParams.get('redirect'));
   const { register: signup, isLoading, error, clearError, isAuthenticated } = useAuthStore();
-  const { isDark } = useThemeStore();
 
   // Anti-bot : timestamp de montage du formulaire (détecte un remplissage
   // anormalement rapide côté serveur) + honeypot (champ invisible pour un
@@ -247,47 +246,35 @@ export default function RegisterPage() {
   const strengthLvl = strengthLevels[Math.max(0, strength - 1)];
 
   return (
-    <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="gate-page min-h-screen flex overflow-hidden">
 
-      {/* ── Left panel — branding ── */}
+      {/* ── Left panel — branding, sobre encre unie ── */}
       <div className="hidden lg:flex flex-col justify-between w-[42%] relative overflow-hidden p-10"
-        style={{ background: 'linear-gradient(145deg,#0d0118 0%,#1a0533 40%,#2d0f5e 70%,#1a0533 100%)' }}>
-
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-80px] right-[-80px] w-72 h-72 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.3 }} />
-          <div className="absolute bottom-[-60px] left-[-60px] w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: 0.25 }} />
-          <div className="absolute inset-0 hero-grid opacity-20" />
-        </div>
+        style={{ background: 'var(--gt-ink)' }}>
 
         {/* Logo */}
         <div className="relative z-10">
-          <RoundLogo size={44} />
+          <GateLogo size={40} />
         </div>
 
         {/* Center */}
         <div className="relative z-10 space-y-8">
           <div>
-            <h1 className="text-4xl font-black text-white leading-tight mb-3">
-              Bienvenue sur<br />
-              <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Gofolyx
-              </span>
+            <h1 className="gt-display text-4xl leading-tight mb-3" style={{ color: 'var(--gt-paper)' }}>
+              Bienvenue sur <span style={{ color: 'var(--gt-accent)' }}>Gofolyx</span>
             </h1>
-            <p className="text-white/60 text-base leading-relaxed">
+            <p className="text-base leading-relaxed" style={{ color: 'rgba(245,244,242,0.6)' }}>
               La plateforme tout-en-un : films, séries, reels, concerts live, événements, communautés et bien plus. Rejoignez des milliers d'utilisateurs et profitez d'une expérience unique.
             </p>
           </div>
 
           <div className="space-y-4">
-            {PERKS.map(({ icon: Icon, label, color }) => (
+            {PERKS.map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: `${color}25`, border: `1px solid ${color}40` }}>
-                  <Icon size={15} style={{ color }} />
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Icon size={15} style={{ color: 'var(--gt-accent)' }} />
                 </div>
-                <span className="text-white/75 text-sm font-medium">{label}</span>
+                <span className="text-sm font-medium" style={{ color: 'rgba(245,244,242,0.75)' }}>{label}</span>
               </div>
             ))}
           </div>
@@ -295,33 +282,24 @@ export default function RegisterPage() {
         </div>
 
         <div className="relative z-10">
-          <p className="text-white/30 text-xs">© 2026 Gofolyx · Tous droits réservés</p>
+          <p className="text-xs" style={{ color: 'rgba(245,244,242,0.3)' }}>© 2026 Gofolyx · Tous droits réservés</p>
         </div>
       </div>
 
       {/* ── Right panel — form ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative overflow-y-auto">
 
-        <div className="absolute inset-0 pointer-events-none overflow-hidden lg:hidden">
-          <div className="absolute -top-32 -right-32 w-72 h-72 rounded-full"
-            style={{ background: 'radial-gradient(circle,#7B3FF2,transparent 70%)', opacity: isDark ? 0.13 : 0.05 }} />
-        </div>
-
         <div className="relative w-full max-w-md py-8">
 
           {/* Mobile logo */}
           <div className="flex justify-center mb-6 lg:hidden">
-            <RoundLogo size={52} />
+            <GateLogo size={52} />
           </div>
 
           <div className="mb-5 flex items-center gap-3">
-            {step > 1 && (
-              <button onClick={goBack} type="button"
-                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                <ArrowLeft size={16} />
-              </button>
-            )}
+            <button onClick={goBack} type="button" className="gt-icon-btn inline-flex items-center justify-center shrink-0" title="Retour" aria-label="Retour">
+              <ArrowLeft size={16} />
+            </button>
             <div>
               <h2 className="text-2xl font-black mb-0.5" style={{ color: 'var(--text-primary)' }}>Créer un compte</h2>
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>

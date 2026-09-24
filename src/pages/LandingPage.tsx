@@ -1,22 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
-  Play, Radio, Music2, Calendar, Users, ArrowRight, ArrowUpRight,
-  Sun, Moon, Menu, X, MapPin, Star, Eye, Zap, Shield, Ticket,
+  Play, Music2, Calendar, Users, ArrowRight, ArrowUpRight,
+  Menu, X, MapPin, Star, Ticket, Radio, Film, Shield,
 } from 'lucide-react';
 import { publicClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import type { Concert, Content, Event } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { useThemeStore } from '../store/themeStore';
-import { Images } from '../components/assets';
+import { GateLogo } from '../components/ui/GateLogo';
+import { STICKERS } from '../components/ui/Stickers';
+import { ShowcaseSlideshow } from '../components/ui/ShowcaseSlideshow';
 import './landing.css';
 
 // ── Scroll reveal ─────────────────────────────────────────────────────────────
 function useScrollReveal() {
   useEffect(() => {
-    const els = document.querySelectorAll('.lp-rise');
+    const els = document.querySelectorAll('.gt-rise');
     const obs = new IntersectionObserver(
       entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
       { threshold: 0.1, rootMargin: '0px 0px -60px 0px' },
@@ -26,161 +27,109 @@ function useScrollReveal() {
   });
 }
 
-// ── Logo rond réutilisable ────────────────────────────────────────────────────
-function RoundLogo({ size = 40 }: { size?: number }) {
-  const { isDark } = useThemeStore();
-  const border = Math.max(2, Math.round(size * 0.04));
+const NAV_LINKS = [
+  { label: 'Films & séries', href: '/explore/films'    },
+  { label: 'Concerts',       href: '/explore/concerts' },
+  { label: 'Événements',     href: '/explore/events'   },
+  { label: 'Pourquoi nous',  href: '#features'         },
+];
+
+// Nav sans l'ancre #features (n'existe que sur la landing) — utilisée par
+// les pages qui réutilisent GateHeader ailleurs que sur "/".
+export const EXPLORE_NAV_LINKS = NAV_LINKS.filter(l => !l.href.startsWith('#'));
+
+// ── Bandeau de stickers défilant — illustrations line-art, boucle infinie ─────
+export function StickerStrip() {
+  const items = [...STICKERS, ...STICKERS];
   return (
-    <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
-      <div style={{
-        position: 'relative', width: size, height: size, borderRadius: '50%', padding: border,
-        background: 'linear-gradient(135deg, #7B3FF2, #A67CF7)',
-        flexShrink: 0,
-      }}>
-        <div style={{
-          width: '100%', height: '100%', borderRadius: '50%',
-          background: isDark ? '#0A0812' : '#fff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-        }}>
-          <img
-            src={isDark ? Images.logoDark : Images.logoLight}
-            alt="Gofolyx"
-            style={{ width: '78%', height: '78%', objectFit: 'contain', display: 'block' }}
-          />
-        </div>
+    <div className="gt-strip">
+      <div className="gt-strip-track">
+        {items.map(({ Icon, label }, i) => (
+          <div key={i} className="gt-sticker">
+            <span className="gt-sticker-icon"><Icon size={20} /></span>
+            <span className="gt-sticker-label">{label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// ── Navbar ────────────────────────────────────────────────────────────────────
-function Navbar() {
+// ── Header — un seul composant réutilisé par toutes les pages "gate"
+// (landing, onboarding, explore...) pour une identité unique cohérente. ─────
+export function GateHeader({ navLinks = NAV_LINKS }: { navLinks?: typeof NAV_LINKS }) {
   const { isAuthenticated } = useAuthStore();
-  const { isDark, toggle }  = useThemeStore();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
+    const fn = () => setScrolled(window.scrollY > 8);
+    fn();
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const navLinks = [
-    { label: 'Films & Séries', href: '/explore/films'    },
-    { label: 'Concerts',       href: '/explore/concerts' },
-    { label: 'Événements',     href: '/explore/events'   },
-    { label: 'Pourquoi Gofolyx', href: '#features'        },
-  ];
-
   return (
     <>
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
-        style={{
-          background: scrolled ? 'var(--lp-bg)' : 'transparent',
-          borderBottom: scrolled ? '1px solid var(--lp-line)' : '1px solid transparent',
-        }}
-      >
-        <div className="w-full mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 shrink-0">
-            <RoundLogo size={38} />
-            <span className="lp-display text-lg" style={{ color: 'var(--lp-ink-text)' }}>Gofolyx</span>
+      <header className={`gt-header${scrolled ? ' is-scrolled' : ''}`}>
+        <div className="gt-container gt-header-inner">
+          <Link to="/" className="flex items-center gap-2.5">
+            <GateLogo size={32} />
+            <span className="gt-display text-base">Gofolyx</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
+          <nav className="!hidden md:!flex gt-header-nav">
             {navLinks.map(({ label, href }) => href.startsWith('#') ? (
-              <a key={href} href={href}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
-                style={{ color: 'var(--lp-ink-text-2)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-2)')}
-              >{label}</a>
+              <a key={href} href={href} className="gt-navlink">{label}</a>
             ) : (
-              <Link key={href} to={href}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
-                style={{ color: 'var(--lp-ink-text-2)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-2)')}
-              >{label}</Link>
+              <Link key={href} to={href} className="gt-navlink">{label}</Link>
             ))}
-          </div>
+          </nav>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggle}
-              className="p-2.5 rounded-full transition-colors duration-200"
-              style={{ color: 'var(--lp-ink-text-3)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-3)')}
-              title={isDark ? 'Mode clair' : 'Mode sombre'}
-            >
-              {isDark ? <Sun size={17} /> : <Moon size={17} />}
-            </button>
-
+          <div className="gt-header-actions">
             {isAuthenticated ? (
-              <button onClick={() => navigate('/feed')}
-                className="text-sm font-bold px-5 py-2.5 rounded-full text-white"
-                style={{ background: 'var(--lp-violet)' }}>
+              <button onClick={() => navigate('/feed')} className="gt-btn gt-btn-solid gt-btn-sm">
                 Mon espace
               </button>
             ) : (
               <>
-                <Link to="/auth/login"
-                  className="hidden sm:block text-sm font-medium px-4 py-2"
-                  style={{ color: 'var(--lp-ink-text-2)' }}>
+                <Link to="/auth/login" className="!hidden md:!inline-flex gt-btn gt-btn-line gt-btn-sm">
                   Connexion
                 </Link>
-                <Link to="/auth/register"
-                  className="text-sm font-bold px-5 py-2.5 rounded-full text-white"
-                  style={{ background: 'var(--lp-violet)' }}>
+                <Link to="/auth/register" className="gt-btn gt-btn-solid gt-btn-sm">
                   S'inscrire
                 </Link>
               </>
             )}
 
-            <button onClick={() => setMenuOpen(v => !v)} className="md:hidden p-2.5" style={{ color: 'var(--lp-ink-text)' }}>
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            <button onClick={() => setMenuOpen(v => !v)} className="md:!hidden inline-flex items-center justify-center gt-icon-btn">
+              {menuOpen ? <X size={19} /> : <Menu size={19} />}
             </button>
           </div>
         </div>
-      </nav>
+      </header>
+      <div className="gt-header-spacer" />
 
       {menuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--lp-bg)' }}>
-          <div className="flex items-center justify-between px-5 h-16 shrink-0" style={{ borderBottom: '1px solid var(--lp-line)' }}>
-            <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5">
-              <RoundLogo size={34} />
-              <span className="lp-display text-base" style={{ color: 'var(--lp-ink-text)' }}>Gofolyx</span>
-            </Link>
-            <button onClick={() => setMenuOpen(false)} style={{ color: 'var(--lp-ink-text)' }}><X size={24} /></button>
-          </div>
+        <div className="md:!hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--gt-bg)', top: 72 }}>
           <nav className="flex flex-col px-6 pt-6 gap-1">
             {navLinks.map(({ label, href }) => href.startsWith('#') ? (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}
-                className="py-4 text-xl lp-display transition-colors duration-200"
-                style={{ color: 'var(--lp-ink-text)', borderBottom: '1px solid var(--lp-line)' }}
+                className="py-4 text-xl gt-display" style={{ borderBottom: '1px solid var(--gt-line)' }}
               >{label}</a>
             ) : (
               <Link key={href} to={href} onClick={() => setMenuOpen(false)}
-                className="py-4 text-xl lp-display transition-colors duration-200"
-                style={{ color: 'var(--lp-ink-text)', borderBottom: '1px solid var(--lp-line)' }}
+                className="py-4 text-xl gt-display" style={{ borderBottom: '1px solid var(--gt-line)' }}
               >{label}</Link>
             ))}
           </nav>
           {!isAuthenticated && (
             <div className="px-6 pt-8 flex flex-col gap-3">
-              <Link to="/auth/register"
-                className="text-base text-center py-3.5 rounded-full font-bold text-white"
-                style={{ background: 'var(--lp-violet)' }}
-                onClick={() => setMenuOpen(false)}>
+              <Link to="/auth/register" className="gt-btn gt-btn-accent gt-btn-block" onClick={() => setMenuOpen(false)}>
                 S'inscrire
               </Link>
-              <Link to="/auth/login"
-                className="text-base text-center py-3.5 rounded-full font-medium"
-                style={{ color: 'var(--lp-ink-text)', border: '1px solid var(--lp-line)' }}
-                onClick={() => setMenuOpen(false)}>
+              <Link to="/auth/login" className="gt-btn gt-btn-line gt-btn-block" onClick={() => setMenuOpen(false)}>
                 Connexion
               </Link>
             </div>
@@ -191,232 +140,160 @@ function Navbar() {
   );
 }
 
-// ── Hero — split asymétrique, mur d'affiches à droite ─────────────────────────
+// ── Hero — texte centré, une seule bannière visuelle en dessous ──────────────
 function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[] }) {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const [imgErr, setImgErr] = useState(false);
 
-  const posterA = films[0];
-  const posterB = concerts[0];
-  const posterC = films[1];
+  const banner = concerts[0] ?? films[0];
 
   return (
-    <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-      <div className="w-full mx-auto lp-hero-grid">
-        {/* ── Colonne texte ── */}
-        <div>
-          <div className="lp-rise flex items-center gap-2 mb-7">
+    <section className="gt-hero">
+      <div className="gt-container">
+        <div className="gt-hero-intro">
+          <div className="gt-rise flex items-center justify-center gap-2 mb-6">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inset-0 rounded-full" style={{ background: 'var(--lp-amber)', opacity: 0.7 }} />
-              <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: 'var(--lp-amber)' }} />
+              <span className="animate-ping absolute inset-0 rounded-full" style={{ background: 'var(--gt-accent)', opacity: 0.6 }} />
+              <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: 'var(--gt-accent)' }} />
             </span>
-            <span className="lp-eyebrow" style={{ color: 'var(--lp-ink-text-3)' }}>
+            <span className="gt-eyebrow">
               En direct maintenant · {concerts.length > 0 ? `${concerts.length} lives` : 'reels, films, concerts'}
             </span>
           </div>
 
-          <h1 className="text-[2.6rem] sm:text-[3.4rem] lg:text-[3.8rem] font-semibold leading-[1.08] tracking-tight mb-7 lp-rise"
-            style={{ color: 'var(--lp-ink-text)', animationDelay: '80ms' }}>
-            Tout se passe, en <span style={{ color: 'var(--lp-violet)' }}>direct</span>.
+          <h1 className="gt-display gt-rise text-[2.4rem] sm:text-[3.2rem] lg:text-[3.6rem] leading-[1.08] mb-6"
+            style={{ animationDelay: '80ms' }}>
+            Tout se passe, en <span style={{ color: 'var(--gt-accent)' }}>direct</span>.
           </h1>
 
-          <p className="text-lg leading-relaxed max-w-md mb-9 lp-rise" style={{ color: 'var(--lp-ink-text-2)', animationDelay: '160ms' }}>
-            Concerts live, films, séries, reels et communautés — un seul pass pour vivre
-            la scène, l'écran et le direct, où que tu sois.
+          <p className="text-base leading-relaxed max-w-lg mx-auto mb-8 gt-rise" style={{ color: 'var(--gt-text-2)', animationDelay: '160ms' }}>
+            Concerts live, films, séries, reels et communautés — un seul endroit pour
+            vivre la scène, l'écran et le direct, où que tu sois.
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 mb-14 lp-rise" style={{ animationDelay: '240ms' }}>
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-12 gt-rise" style={{ animationDelay: '240ms' }}>
             {isAuthenticated ? (
-              <button onClick={() => navigate('/feed')}
-                className="inline-flex items-center gap-2.5 text-white font-bold px-7 py-4 rounded-full text-base"
-                style={{ background: 'var(--lp-violet)', boxShadow: '0 12px 32px rgba(123,63,242,0.35)' }}>
-                Mon espace <ArrowRight size={18} />
+              <button onClick={() => navigate('/feed')} className="gt-btn gt-btn-accent">
+                Mon espace <ArrowRight size={17} />
               </button>
             ) : (
               <>
-                <Link to="/auth/register"
-                  className="inline-flex items-center gap-2.5 text-white font-bold px-7 py-4 rounded-full text-base"
-                  style={{ background: 'var(--lp-violet)', boxShadow: '0 12px 32px rgba(123,63,242,0.35)' }}>
-                  Rejoindre Gofolyx <ArrowRight size={18} />
+                <Link to="/auth/register" className="gt-btn gt-btn-accent">
+                  Rejoindre Gofolyx <ArrowRight size={17} />
                 </Link>
-                <a href="#discover"
-                  className="inline-flex items-center gap-2.5 font-bold px-7 py-4 rounded-full text-base"
-                  style={{ color: 'var(--lp-ink-text)', border: '1.5px solid var(--lp-line)' }}>
-                  <Play size={16} /> Explorer sans compte
+                <a href="#discover" className="gt-btn gt-btn-line">
+                  <Play size={15} /> Explorer sans compte
                 </a>
               </>
             )}
           </div>
+        </div>
 
-          <div className="flex items-center gap-8 lp-rise" style={{ animationDelay: '320ms' }}>
+        <div className="gt-hero-banner gt-rise" style={{ animationDelay: '200ms' }}>
+          {banner?.thumbnail_url && !imgErr ? (
+            <img src={banner.thumbnail_url} alt="" onError={() => setImgErr(true)} />
+          ) : (
+            <div className="gt-hero-banner-fallback"><Play size={40} /></div>
+          )}
+          <div className="gt-hero-banner-scrim" />
+          <div className="gt-stat-row gt-hero-banner-stats">
             {[['500+', 'Films & séries'], ['200+', 'Concerts live'], ['1 000+', 'Communautés']].map(([n, l]) => (
               <div key={l}>
-                <p className="lp-display text-2xl" style={{ color: 'var(--lp-ink-text)' }}>{n}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--lp-ink-text-3)' }}>{l}</p>
+                <p className="gt-stat-value">{n}</p>
+                <p className="gt-stat-label">{l}</p>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* ── Mur d'affiches ── */}
-        <div className="lp-poster-stack hidden lg:block lp-rise" style={{ animationDelay: '200ms' }}>
-          {posterB && (
-            <div className="lp-stub rounded-2xl overflow-hidden shadow-2xl"
-              style={{ width: 260, height: 330, top: 0, right: 40, transform: 'rotate(-4deg)', background: 'var(--lp-surface)' }}>
-              <div className="relative w-full h-full">
-                {posterB.thumbnail_url
-                  ? <img src={posterB.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7B3FF2,#3C1F80)' }}><Music2 size={40} className="text-white/50" /></div>}
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,8,18,0.85), transparent 55%)' }} />
-                {posterB.status === 'live' && (
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wider"
-                    style={{ background: 'var(--lp-amber)' }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
-                  </div>
-                )}
-                <div className="absolute bottom-3 left-3 right-3">
-                  <p className="text-white font-bold text-sm truncate">{posterB.title}</p>
-                </div>
-              </div>
-            </div>
-          )}
-          {posterA && (
-            <div className="rounded-2xl overflow-hidden shadow-2xl"
-              style={{ width: 210, aspectRatio: '2/3', top: 140, left: 0, transform: 'rotate(3deg)', background: 'var(--lp-surface)' }}>
-              {posterA.thumbnail_url
-                ? <img src={posterA.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5B2EC4,#0A0812)' }}><Play size={32} className="text-white/50" /></div>}
-            </div>
-          )}
-          {posterC && (
-            <div className="rounded-2xl overflow-hidden shadow-2xl"
-              style={{ width: 170, aspectRatio: '2/3', bottom: 0, right: 0, transform: 'rotate(-2deg)', background: 'var(--lp-surface)' }}>
-              {posterC.thumbnail_url
-                ? <img src={posterC.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#A67CF7,#7B3FF2)' }}><Play size={28} className="text-white/60" /></div>}
-            </div>
-          )}
-          {/* Glow violet derrière la pile */}
-          <div className="absolute rounded-full pointer-events-none" style={{
-            width: 340, height: 340, top: 100, right: -40, zIndex: -1,
-            background: 'radial-gradient(circle, rgba(123,63,242,0.22), transparent 70%)', filter: 'blur(40px)',
-          }} />
         </div>
       </div>
     </section>
   );
 }
 
-// ── Section header — rule + label, pas de carte flottante ─────────────────────
+// ── Section header ────────────────────────────────────────────────────────────
 function SectionHeader({ index, title, sub, seeAllHref }: {
   index: string; title: string; sub?: string; seeAllHref?: string;
 }) {
   return (
-    <div className="w-full mx-auto px-6 mb-7 lp-rise">
-      <div className="lp-rule mb-3">
-        <span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>{index}</span>
+    <div className="gt-section-head gt-rise">
+      <div>
+        <span className="gt-eyebrow">{index}</span>
+        <h2 className="gt-display gt-section-title">{title}</h2>
+        {sub && <p className="gt-section-sub">{sub}</p>}
       </div>
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h2 className="lp-display text-3xl md:text-4xl" style={{ color: 'var(--lp-ink-text)' }}>{title}</h2>
-          {sub && <p className="mt-1.5 text-sm" style={{ color: 'var(--lp-ink-text-2)' }}>{sub}</p>}
-        </div>
-        {seeAllHref && (
-          <Link to={seeAllHref}
-            className="shrink-0 flex items-center gap-1.5 text-sm font-bold transition-transform hover:translate-x-1"
-            style={{ color: 'var(--lp-violet)' }}>
-            Tout voir <ArrowUpRight size={15} />
-          </Link>
-        )}
-      </div>
+      {seeAllHref && (
+        <Link to={seeAllHref} className="gt-section-link">
+          Tout voir <ArrowUpRight size={14} />
+        </Link>
+      )}
     </div>
   );
 }
 
-// ── Poster card (film / série) ────────────────────────────────────────────────
-function PosterCard({ item, onClick }: { item: Content; onClick: () => void }) {
+// ── Carte vedette film / série — une seule, grand format ──────────────────────
+function FilmShowcase({ item, onClick }: { item: Content; onClick: () => void }) {
   const [imgErr, setImgErr] = useState(false);
   return (
-    <div className="shrink-0 group cursor-pointer" style={{ width: 168 }} onClick={onClick}>
-      <div className="relative aspect-[2/3] rounded-2xl overflow-hidden transition-transform duration-500 group-hover:-translate-y-2"
-        style={{ background: 'var(--lp-surface)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}>
+    <div className="gt-showcase-card" onClick={onClick}>
+      <div className="gt-showcase-media">
         {item.thumbnail_url && !imgErr ? (
-          <img src={item.thumbnail_url} alt={item.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            onError={() => setImgErr(true)} />
+          <img src={item.thumbnail_url} alt={item.title} onError={() => setImgErr(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5B2EC4,#0A0812)' }}>
-            <Play size={26} className="text-white/50" />
-          </div>
+          <div className="gt-showcase-media-fallback"><Film size={40} /></div>
         )}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
-          style={{ background: 'rgba(10,8,18,0.4)' }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--lp-amber)' }}>
-            <Play size={15} className="text-white" fill="white" style={{ marginLeft: 1 }} />
-          </div>
-        </div>
+        <div className="gt-showcase-scrim" />
         {item.rating != null && (
-          <div className="absolute top-2 right-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold text-white"
-            style={{ background: 'rgba(10,8,18,0.65)' }}>
-            <Star size={9} fill="var(--lp-amber)" style={{ color: 'var(--lp-amber)' }} />
-            {Number(item.rating).toFixed(1)}
-          </div>
+          <div className="gt-showcase-rating"><Star size={11} fill="#fff" /> {Number(item.rating).toFixed(1)}</div>
         )}
+        <div className="gt-showcase-overlay">
+          <p className="gt-showcase-title truncate">{item.title}</p>
+          {item.year && <p className="gt-showcase-sub">{item.year}</p>}
+        </div>
       </div>
-      <p className="mt-2.5 text-sm font-semibold truncate" style={{ color: 'var(--lp-ink-text)' }}>{item.title}</p>
-      <p className="text-xs mt-0.5" style={{ color: 'var(--lp-ink-text-3)' }}>{item.year}</p>
+      <div className="gt-showcase-footer">
+        <span className="gt-showcase-meta"><Film size={13} /> Disponible en streaming</span>
+        <span className="gt-showcase-cta">Regarder <ArrowUpRight size={14} /></span>
+      </div>
     </div>
   );
 }
 
-// ── Concert card — ticket-stub ────────────────────────────────────────────────
-function ConcertCard({ concert, onClick }: { concert: Concert; onClick: () => void }) {
+// ── Carte vedette concert — une seule, grand format ───────────────────────────
+function ConcertShowcase({ concert, onClick }: { concert: Concert; onClick: () => void }) {
   const [imgErr, setImgErr] = useState(false);
   const isLive = concert.status === 'live';
   const artistName = concert.artist?.display_name ?? concert.artist?.username;
 
   return (
-    <div className="lp-stub shrink-0 cursor-pointer group transition-transform duration-500 hover:-translate-y-2"
-      style={{ width: 300, background: 'var(--lp-surface)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}
-      onClick={onClick}>
-      <div className="relative h-44 overflow-hidden">
+    <div className="gt-showcase-card" onClick={onClick}>
+      <div className="gt-showcase-media">
         {concert.thumbnail_url && !imgErr ? (
-          <img src={concert.thumbnail_url} alt={concert.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            onError={() => setImgErr(true)} />
+          <img src={concert.thumbnail_url} alt={concert.title} onError={() => setImgErr(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7B3FF2,#3C1F80)' }}>
-            <Music2 size={34} className="text-white/50" />
-          </div>
+          <div className="gt-showcase-media-fallback"><Music2 size={40} /></div>
         )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,8,18,0.8) 30%, transparent)' }} />
-        {isLive && (
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wider"
-            style={{ background: 'var(--lp-amber)' }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
-          </div>
-        )}
-        <div className="absolute bottom-3 left-4 right-4">
-          <p className="font-bold text-white text-base leading-tight truncate">{concert.title}</p>
-          {artistName && <p className="text-white/65 text-xs mt-0.5">{artistName}</p>}
+        <div className="gt-showcase-scrim" />
+        {isLive && <span className="gt-showcase-badge"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live</span>}
+        <div className="gt-showcase-overlay">
+          <p className="gt-showcase-title truncate">{concert.title}</p>
+          {artistName && <p className="gt-showcase-sub truncate">{artistName}</p>}
         </div>
       </div>
-      <div className="px-4 py-3 flex items-center justify-between" style={{ borderTop: '1px dashed var(--lp-line)' }}>
-        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--lp-ink-text-3)' }}>
-          <Eye size={12} /> {(concert.current_viewers ?? 0).toLocaleString()} spectateurs
-        </div>
-        {concert.ticket_price != null && (
-          <span className="flex items-center gap-1 text-sm font-bold" style={{ color: 'var(--lp-violet)' }}>
-            <Ticket size={13} /> {concert.ticket_price === 0 ? 'Gratuit' : `${concert.ticket_price}€`}
-          </span>
+      <div className="gt-showcase-footer">
+        <span className="gt-showcase-meta"><Music2 size={13} /> Concert en streaming</span>
+        {concert.ticket_price != null ? (
+          <span className="gt-showcase-price"><Ticket size={13} /> {concert.ticket_price === 0 ? 'Gratuit' : `${concert.ticket_price}€`}</span>
+        ) : (
+          <span className="gt-showcase-cta">Voir <ArrowUpRight size={14} /></span>
         )}
       </div>
     </div>
   );
 }
 
-// ── Event card ────────────────────────────────────────────────────────────────
-function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
+// ── Carte vedette événement — une seule, grand format ─────────────────────────
+function EventShowcase({ event, onClick }: { event: Event; onClick: () => void }) {
   const [imgErr, setImgErr] = useState(false);
   const date = new Date(event.starts_at);
   const dd = date.getDate().toString().padStart(2, '0');
@@ -424,113 +301,97 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
   const location = [event.venue_name, event.venue_city].filter(Boolean).join(', ');
 
   return (
-    <div className="shrink-0 cursor-pointer group flex rounded-2xl overflow-hidden transition-transform duration-500 hover:-translate-y-2"
-      style={{ width: 320, background: 'var(--lp-surface)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}
-      onClick={onClick}>
-      <div className="w-16 shrink-0 flex flex-col items-center justify-center py-4"
-        style={{ background: 'var(--lp-violet)' }}>
-        <span className="lp-display text-2xl text-white leading-none">{dd}</span>
-        <span className="text-[10px] font-bold tracking-widest mt-1 text-white/80">{mo}</span>
-      </div>
-      <div className="relative flex-1 overflow-hidden" style={{ minHeight: 116 }}>
+    <div className="gt-showcase-card" onClick={onClick}>
+      <div className="gt-showcase-media">
         {event.thumbnail_url && !imgErr ? (
-          <img src={event.thumbnail_url} alt={event.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            onError={() => setImgErr(true)} />
+          <img src={event.thumbnail_url} alt={event.title} onError={() => setImgErr(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5B2EC4,#0A0812)' }}>
-            <Calendar size={26} className="text-white/40" />
-          </div>
+          <div className="gt-showcase-media-fallback"><Calendar size={40} /></div>
         )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 15%, rgba(10,8,18,0.7))' }} />
-        <div className="absolute inset-0 p-3.5 flex flex-col justify-end">
-          <p className="font-bold text-white text-sm leading-tight line-clamp-2">{event.title}</p>
-          {location && (
-            <div className="flex items-center gap-1 text-xs mt-1 text-white/60">
-              <MapPin size={10} /> {location}
-            </div>
-          )}
-          {event.ticket_price != null && (
-            <span className="lp-amber-text text-xs font-bold mt-1.5">
-              {event.ticket_price === 0 ? 'Gratuit' : `${event.ticket_price}€`}
-            </span>
-          )}
+        <div className="gt-showcase-scrim" />
+        <div className="gt-showcase-date">
+          <span className="gt-showcase-date-day">{dd}</span>
+          <span className="gt-showcase-date-month">{mo}</span>
+        </div>
+        <div className="gt-showcase-overlay">
+          <p className="gt-showcase-title truncate">{event.title}</p>
+          {location && <p className="gt-showcase-sub truncate"><MapPin size={12} /> {location}</p>}
+        </div>
+      </div>
+      <div className="gt-showcase-footer">
+        <span className="gt-showcase-meta"><Calendar size={13} /> Billetterie intégrée</span>
+        {event.ticket_price != null ? (
+          <span className="gt-showcase-price">{event.ticket_price === 0 ? 'Gratuit' : `${event.ticket_price}€`}</span>
+        ) : (
+          <span className="gt-showcase-cta">Voir <ArrowUpRight size={14} /></span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+function ShowcaseSkeleton() {
+  return (
+    <div className="gt-showcase">
+      <div className="gt-showcase-card">
+        <div className="gt-showcase-media gt-skeleton" />
+        <div className="gt-showcase-footer">
+          <div className="gt-skeleton" style={{ width: 120, height: 12, borderRadius: 4 }} />
+          <div className="gt-skeleton" style={{ width: 60, height: 12, borderRadius: 4 }} />
         </div>
       </div>
     </div>
   );
 }
 
-// ── Rangée scrollable manuellement (sans auto-scroll — plus lisible, plus pro) ─
-function ScrollRow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex gap-5 overflow-x-auto px-6 pb-4" style={{ scrollbarWidth: 'none' }}>
-      {children}
-    </div>
-  );
+function EmptyRow() {
+  return <p className="text-sm py-6" style={{ color: 'var(--gt-text-3)' }}>Aucun contenu disponible pour le moment</p>;
 }
 
-// ── Marquee — bandeau plein, fond violet, sur une ligne ───────────────────────
-function MarqueeBanner() {
-  const tags = ['Reels', 'Concerts live', 'Films', 'Séries', 'Communautés', 'Cadeaux virtuels', 'Billetterie', 'Monétisation créateur', 'Trésorerie', 'Événements'];
-  const doubled = [...tags, ...tags];
-
-  return (
-    <div className="relative py-4 overflow-hidden my-16" style={{ background: 'var(--lp-violet)' }}>
-      <div className="lp-marquee-track">
-        {doubled.map((tag, i) => (
-          <span key={i} className="inline-flex items-center mx-5 lp-display text-sm text-white/90">
-            {tag} <span className="mx-5 text-white/40">·</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Features — liste numérotée, pas de grille de cartes iconées ──────────────
+// ── Features — mise en page éditoriale : titre figé à gauche, cartes à droite ─
 function FeaturesSection() {
   const features = [
-    { n: '01', icon: Radio,  title: 'Concerts en direct', desc: 'Live streaming HD, chat en temps réel, cadeaux virtuels pour soutenir les artistes pendant le show.' },
-    { n: '02', icon: Play,   title: 'Films & séries',     desc: 'Un catalogue en streaming HD, sous-titré, accessible sans interruption publicitaire.' },
-    { n: '03', icon: Zap,    title: 'Reels & stories',    desc: 'Formats courts pour découvrir les créateurs et partager tes propres moments en quelques secondes.' },
-    { n: '04', icon: Users,  title: 'Communautés',        desc: 'Groupes thématiques avec trésorerie partagée, cotisations et gouvernance par les membres.' },
-    { n: '05', icon: Calendar, title: 'Événements & billets', desc: 'Festivals, expos, conférences — billetterie intégrée, du premier accès au dernier rappel.' },
-    { n: '06', icon: Shield, title: 'Monétisation créatrice', desc: 'Abonnements, cadeaux, publicité partagée — les créateurs sont payés directement sur la plateforme.' },
+    { icon: Radio,  title: 'Concerts en direct', desc: 'Live streaming HD, chat en temps réel, cadeaux virtuels pour soutenir les artistes pendant le show.' },
+    { icon: Play,   title: 'Films & séries',     desc: 'Un catalogue en streaming HD, sous-titré, accessible sans interruption publicitaire.' },
+    { icon: Film,   title: 'Reels & stories',    desc: 'Formats courts pour découvrir les créateurs et partager tes propres moments en quelques secondes.' },
+    { icon: Users,  title: 'Communautés',        desc: 'Groupes thématiques avec trésorerie partagée, cotisations et gouvernance par les membres.' },
+    { icon: Calendar, title: 'Événements & billets', desc: 'Festivals, expos, conférences — billetterie intégrée, du premier accès au dernier rappel.' },
+    { icon: Shield, title: 'Monétisation créatrice', desc: 'Abonnements, cadeaux, publicité partagée — les créateurs sont payés directement sur la plateforme.' },
   ];
 
   return (
-    <section id="features" className="py-24 px-6">
-      <div className="w-full mx-auto">
-        <div className="mb-16 lp-rise">
-          <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Pourquoi Gofolyx</span></div>
-          <h2 className="lp-display text-4xl md:text-5xl" style={{ color: 'var(--lp-ink-text)' }}>Une scène, un écran,<br />une seule adresse.</h2>
-        </div>
+    <section id="features" className="gt-section">
+      <div className="gt-container">
+        <div className="gt-features-grid">
+          <div className="gt-features-intro gt-rise">
+            <span className="gt-eyebrow">Pourquoi Gofolyx</span>
+            <h2 className="gt-display text-3xl sm:text-4xl mt-3 mb-4">
+              Une scène,<br />un écran,<br />une seule adresse.
+            </h2>
+            <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--gt-text-2)' }}>
+              Chaque format que tu regardes, chaque scène que tu suis, chaque
+              communauté que tu rejoins — au même endroit, avec le même compte.
+            </p>
+          </div>
 
-        <div>
-          {features.map(({ n, icon: Icon, title, desc }, i) => (
-            <div key={n}
-              className="lp-rise flex items-start gap-6 py-7 group"
-              style={{ animationDelay: `${i * 60}ms`, borderTop: i === 0 ? '1px solid var(--lp-line)' : undefined, borderBottom: '1px solid var(--lp-line)' }}
-            >
-              <span className="lp-display text-2xl shrink-0 w-14" style={{ color: 'var(--lp-ink-text-3)' }}>{n}</span>
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
-                style={{ background: 'rgba(123,63,242,0.1)' }}>
-                <Icon size={19} style={{ color: 'var(--lp-violet)' }} />
+          <div className="gt-features-list">
+            {features.map(({ icon: Icon, title, desc }, i) => (
+              <div key={title} className="gt-rise gt-feature-card" style={{ animationDelay: `${i * 60}ms` }}>
+                <span className="gt-feature-card-num">{String(i + 1).padStart(2, '0')}</span>
+                <div className="gt-feature-icon"><Icon size={18} /></div>
+                <h3 className="font-semibold text-base mb-1.5">{title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--gt-text-2)' }}>{desc}</p>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--lp-ink-text)' }}>{title}</h3>
-                <p className="text-sm leading-relaxed max-w-md" style={{ color: 'var(--lp-ink-text-2)' }}>{desc}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-// ── Social proof ───────────────────────────────────────────────────────────────
+// ── Social proof ──────────────────────────────────────────────────────────────
 function SocialProof() {
   const cards = [
     { name: 'Kouamé A.',  city: 'Abidjan',     text: 'Les concerts live sont incroyables, j\'ai l\'impression d\'y être vraiment présent.' },
@@ -540,32 +401,28 @@ function SocialProof() {
   ];
 
   return (
-    <section className="py-20 px-6">
-      <div className="w-full mx-auto">
-        <div className="mb-12 lp-rise">
-          <div className="lp-rule mb-4"><span className="lp-eyebrow shrink-0" style={{ color: 'var(--lp-violet)' }}>Communauté</span></div>
-          <h2 className="lp-display text-3xl md:text-4xl" style={{ color: 'var(--lp-ink-text)' }}>Déjà sur Gofolyx</h2>
+    <section className="gt-section">
+      <div className="gt-container">
+        <div className="mb-10 gt-rise">
+          <span className="gt-eyebrow">Communauté</span>
+          <h2 className="gt-display text-2xl sm:text-3xl mt-2">Déjà sur Gofolyx</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="gt-grid gt-grid-wide">
           {cards.map((r, i) => (
-            <div key={r.name}
-              className="lp-rise rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-1"
-              style={{ animationDelay: `${i * 90}ms`, background: 'var(--lp-surface)', border: '1px solid var(--lp-line)' }}
-            >
-              <div className="flex gap-0.5 mb-3">
-                {Array.from({ length: 5 }).map((_, j) => (
-                  <Star key={j} size={13} style={{ color: 'var(--lp-amber)' }} fill="var(--lp-amber)" />
-                ))}
-              </div>
-              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--lp-ink-text-2)' }}>"{r.text}"</p>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                  style={{ background: 'var(--lp-violet)' }}>
-                  {r.name.charAt(0)}
+            <div key={r.name} className="gt-tile gt-rise" style={{ animationDelay: `${i * 70}ms` }}>
+              <div className="gt-testimonial">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <Star key={j} size={12} style={{ color: 'var(--gt-accent)' }} fill="var(--gt-accent)" />
+                  ))}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--lp-ink-text)' }}>{r.name}</p>
-                  <p className="text-xs truncate" style={{ color: 'var(--lp-ink-text-3)' }}>{r.city}</p>
+                <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--gt-text-2)' }}>"{r.text}"</p>
+                <div className="flex items-center gap-2.5">
+                  <div className="gt-avatar">{r.name.charAt(0)}</div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{r.name}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--gt-text-3)' }}>{r.city}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -576,55 +433,43 @@ function SocialProof() {
   );
 }
 
-// ── CTA — pleine largeur, fond encre + spot ambre ─────────────────────────────
+// ── CTA ───────────────────────────────────────────────────────────────────────
 function CtaSection() {
   const { isAuthenticated } = useAuthStore();
 
   return (
-    <section className="py-24 px-6">
-      <div className="w-full mx-auto lp-rise">
-        <div className="relative rounded-3xl overflow-hidden px-8 py-16 md:px-16 md:py-20 text-center"
-          style={{ background: 'var(--lp-ink)' }}>
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: 'radial-gradient(circle at 20% 20%, rgba(166,124,247,0.18), transparent 55%), radial-gradient(circle at 85% 80%, rgba(123,63,242,0.28), transparent 55%)',
-          }} />
-          <div className="relative z-10">
-            <p className="lp-eyebrow mb-5" style={{ color: 'var(--lp-amber)' }}>Rejoins la scène</p>
-            <h2 className="lp-display text-4xl md:text-5xl text-white leading-tight mb-5">
-              Prêt à tout vivre<br />en direct ?
-            </h2>
-            <p className="text-lg mb-10 max-w-lg mx-auto" style={{ color: 'rgba(245,243,250,0.7)' }}>
-              Rejoins des milliers d'utilisateurs qui vivent la musique, le cinéma et les événements en direct.
-            </p>
-            {isAuthenticated ? (
-              <Link to="/feed"
-                className="inline-flex items-center gap-2 font-bold px-9 py-4 rounded-full text-base transition-transform hover:scale-105"
-                style={{ background: 'var(--lp-amber)', color: 'var(--lp-ink)' }}>
-                Accéder à mon espace <ArrowRight size={18} />
+    <section className="gt-section">
+      <div className="gt-container gt-rise">
+        <div className="gt-cta">
+          <p className="gt-eyebrow mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>Rejoins la scène</p>
+          <h2 className="gt-display text-2xl sm:text-3xl leading-tight mb-4" style={{ color: 'var(--gt-paper)' }}>
+            Prêt à tout vivre en direct ?
+          </h2>
+          <p className="text-base mb-9 max-w-lg mx-auto" style={{ color: 'rgba(245,244,242,0.65)' }}>
+            Rejoins des milliers d'utilisateurs qui vivent la musique, le cinéma et les événements en direct.
+          </p>
+          {isAuthenticated ? (
+            <Link to="/feed" className="gt-btn gt-btn-accent">
+              Accéder à mon espace <ArrowRight size={17} />
+            </Link>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link to="/auth/register" className="gt-btn gt-btn-accent">
+                Commencer gratuitement <ArrowRight size={17} />
               </Link>
-            ) : (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link to="/auth/register"
-                  className="inline-flex items-center gap-2 font-bold px-9 py-4 rounded-full text-base transition-transform hover:scale-105"
-                  style={{ background: 'var(--lp-amber)', color: 'var(--lp-ink)' }}>
-                  Commencer gratuitement <ArrowRight size={18} />
-                </Link>
-                <Link to="/auth/login"
-                  className="font-medium px-6 py-4 rounded-full transition-colors hover:bg-white/10"
-                  style={{ color: 'rgba(245,243,250,0.75)' }}>
-                  Déjà un compte ? →
-                </Link>
-              </div>
-            )}
-          </div>
+              <Link to="/auth/login" className="gt-btn gt-btn-ghost-invert">
+                Déjà un compte ? →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </section>
   );
 }
 
-// ── Footer ────────────────────────────────────────────────────────────────────
-function Footer() {
+// ── Footer — un seul composant réutilisé par toutes les pages "gate" ─────────
+export function GateFooter() {
   const cols = [
     { title: 'Explorer', links: [
       { label: 'Films',      href: '/explore/films'    },
@@ -639,69 +484,48 @@ function Footer() {
     { title: 'Gofolyx', links: [
       { label: 'À propos', href: '/a-propos' },
       { label: 'Blog',     href: '/blog'     },
+      { label: 'Support',  href: '/support'  },
     ]},
   ];
 
   return (
-    <footer className="pt-16 pb-8 px-6" style={{ borderTop: '1px solid var(--lp-line)' }}>
-      <div className="w-full mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+    <footer className="gt-footer">
+      <div className="gt-container">
+        <div className="gt-footer-grid">
           <div>
             <div className="flex items-center gap-2.5 mb-4">
-              <RoundLogo size={34} />
-              <span className="lp-display text-base" style={{ color: 'var(--lp-ink-text)' }}>Gofolyx</span>
+              <GateLogo size={30} />
+              <span className="gt-display text-base">Gofolyx</span>
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--lp-ink-text-3)' }}>
+            <p className="text-sm leading-relaxed max-w-[220px]" style={{ color: 'var(--gt-text-3)' }}>
               La scène, l'écran et le direct — réunis en un seul endroit.
             </p>
           </div>
           {cols.map(col => (
             <div key={col.title}>
-              <h4 className="lp-eyebrow mb-4" style={{ color: 'var(--lp-ink-text-3)' }}>{col.title}</h4>
-              <ul className="space-y-2.5">
+              <span className="gt-eyebrow gt-footer-col-title block">{col.title}</span>
+              <div className="gt-footer-links">
                 {col.links.map(({ label, href }) => (
-                  <li key={label}>
-                    <Link to={href} className="text-sm transition-colors"
-                      style={{ color: 'var(--lp-ink-text-2)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-2)')}
-                    >{label}</Link>
-                  </li>
+                  <Link key={label} to={href}>{label}</Link>
                 ))}
-              </ul>
+              </div>
             </div>
           ))}
         </div>
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs"
-          style={{ borderTop: '1px solid var(--lp-line)', color: 'var(--lp-ink-text-3)' }}>
+        <div className="gt-footer-bottom">
           <p>© 2026 Gofolyx. Tous droits réservés.</p>
-          <div className="flex gap-6">
+          <div className="gt-footer-legal">
             {[
               { label: 'Confidentialité', href: '/politique-confidentialite' },
               { label: 'Conditions',      href: '/cgu'                       },
               { label: 'Cookies',         href: '/cookies'                   },
             ].map(({ label, href }) => (
-              <Link key={label} to={href} className="transition-colors"
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-ink-text)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-ink-text-3)')}
-              >{label}</Link>
+              <Link key={label} to={href} className="transition-colors">{label}</Link>
             ))}
           </div>
         </div>
       </div>
     </footer>
-  );
-}
-
-// ── Skeleton placeholders ─────────────────────────────────────────────────────
-function PlaceholderRow({ count, aspect, width }: { count: number; aspect: string; width: number }) {
-  return (
-    <div className="flex gap-5 overflow-x-hidden px-6">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="shrink-0 rounded-2xl animate-pulse"
-          style={{ width, aspectRatio: aspect, background: 'var(--lp-surface)' }} />
-      ))}
-    </div>
   );
 }
 
@@ -718,70 +542,81 @@ export default function LandingPage() {
 
   useEffect(() => {
     Promise.allSettled([
-      publicClient.get<any>(`${Endpoints.content.films}?page=1&limit=12&status=published`)
+      publicClient.get<any>(`${Endpoints.content.films}?page=1&limit=8&status=published`)
         .then(r => setFilms(r.data?.items ?? [])),
-      publicClient.get<any>(`${Endpoints.content.series}?page=1&limit=12&status=published`)
+      publicClient.get<any>(`${Endpoints.content.series}?page=1&limit=8&status=published`)
         .then(r => setSeries(r.data?.items ?? [])),
-      publicClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=10&status=published`)
+      publicClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=6&status=published`)
         .then(r => setConcerts(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))),
-      publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=10&status=published`)
+      publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=6&status=published`)
         .then(r => setEvents(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))),
     ]).finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="landing-v2 relative min-h-screen overflow-x-hidden" style={{ background: 'var(--lp-bg)' }}>
-      <div className="lp-grain" />
-      <Navbar />
+    <div className="gate-page relative min-h-screen">
+      <GateHeader />
       <HeroSection films={films} concerts={concerts} />
+      <StickerStrip />
 
-      <div id="discover" className="relative z-10 space-y-16 pb-8">
-        <section id="films">
-          <SectionHeader index="01 · Cinéma" title="Films en vedette" sub="Sans inscription requise" seeAllHref="/explore/films" />
-          {loading
-            ? <PlaceholderRow count={8} aspect="2/3" width={168} />
-            : films.length === 0
-              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--lp-ink-text-3)' }}>Aucun contenu disponible pour le moment</div>
-              : <ScrollRow>{films.map(f => <PosterCard key={f.id} item={f} onClick={() => navigate(`/explore/films/${encodeId(f.id)}`)} />)}</ScrollRow>
-          }
+      <div id="discover">
+        <section id="films" className="gt-section" style={{ paddingBottom: 0 }}>
+          <div className="gt-container">
+            <SectionHeader index="Cinéma" title="Films en vedette" sub="Sans inscription requise" seeAllHref="/explore/films" />
+            {loading ? <ShowcaseSkeleton />
+              : films.length === 0 ? <EmptyRow />
+              : <ShowcaseSlideshow
+                  items={films}
+                  getKey={f => f.id}
+                  renderItem={f => <FilmShowcase item={f} onClick={() => navigate(`/explore/films/${encodeId(f.id)}`)} />}
+                />}
+          </div>
         </section>
 
-        <section>
-          <SectionHeader index="02 · Séries" title="Séries populaires" sub="Des saisons entières à explorer" seeAllHref="/explore/series" />
-          {loading
-            ? <PlaceholderRow count={8} aspect="2/3" width={168} />
-            : series.length === 0
-              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--lp-ink-text-3)' }}>Aucun contenu disponible pour le moment</div>
-              : <ScrollRow>{series.map(s => <PosterCard key={s.id} item={s} onClick={() => navigate(`/explore/series/${encodeId(s.id)}`)} />)}</ScrollRow>
-          }
+        <section className="gt-section">
+          <div className="gt-container">
+            <SectionHeader index="Séries" title="Séries populaires" sub="Des saisons entières à explorer" seeAllHref="/explore/series" />
+            {loading ? <ShowcaseSkeleton />
+              : series.length === 0 ? <EmptyRow />
+              : <ShowcaseSlideshow
+                  items={series}
+                  getKey={s => s.id}
+                  renderItem={s => <FilmShowcase item={s} onClick={() => navigate(`/explore/series/${encodeId(s.id)}`)} />}
+                />}
+          </div>
         </section>
 
-        <section id="concerts">
-          <SectionHeader index="03 · Live" title="Concerts & lives" sub="La musique en temps réel" seeAllHref="/explore/concerts" />
-          {loading
-            ? <PlaceholderRow count={5} aspect="16/9" width={300} />
-            : concerts.length === 0
-              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--lp-ink-text-3)' }}>Aucun contenu disponible pour le moment</div>
-              : <ScrollRow>{concerts.map(c => <ConcertCard key={c.id} concert={c} onClick={() => navigate(`/explore/concerts/${encodeId(c.id)}`)} />)}</ScrollRow>
-          }
+        <section id="concerts" className="gt-section">
+          <div className="gt-container">
+            <SectionHeader index="Live" title="Concerts & lives" sub="La musique en temps réel" seeAllHref="/explore/concerts" />
+            {loading ? <ShowcaseSkeleton />
+              : concerts.length === 0 ? <EmptyRow />
+              : <ShowcaseSlideshow
+                  items={concerts}
+                  getKey={c => c.id}
+                  renderItem={c => <ConcertShowcase concert={c} onClick={() => navigate(`/explore/concerts/${encodeId(c.id)}`)} />}
+                />}
+          </div>
         </section>
 
-        <section id="events">
-          <SectionHeader index="04 · Événements" title="À ne pas manquer" sub="Festivals, conférences, expositions" seeAllHref="/explore/events" />
-          {loading
-            ? <PlaceholderRow count={5} aspect="16/9" width={320} />
-            : events.length === 0
-              ? <div className="px-6 py-8 text-center text-sm" style={{ color: 'var(--lp-ink-text-3)' }}>Aucun contenu disponible pour le moment</div>
-              : <ScrollRow>{events.map(e => <EventCard key={e.id} event={e} onClick={() => navigate(`/explore/events/${encodeId(e.id)}`)} />)}</ScrollRow>
-          }
+        <section id="events" className="gt-section">
+          <div className="gt-container">
+            <SectionHeader index="Événements" title="À ne pas manquer" sub="Festivals, conférences, expositions" seeAllHref="/explore/events" />
+            {loading ? <ShowcaseSkeleton />
+              : events.length === 0 ? <EmptyRow />
+              : <ShowcaseSlideshow
+                  items={events}
+                  getKey={e => e.id}
+                  renderItem={e => <EventShowcase event={e} onClick={() => navigate(`/explore/events/${encodeId(e.id)}`)} />}
+                />}
+          </div>
         </section>
       </div>
 
-      <MarqueeBanner />
       <FeaturesSection />
       <SocialProof />
       <CtaSection />
-      <Footer />
+      <GateFooter />
     </div>
   );
 }

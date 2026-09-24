@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="/src/index.css">
+<style>body{margin:0;background:#000}</style>
+</head>
+<body>
+  <div style="width:375px;height:700px;margin:0 auto;position:relative;background:#333;overflow:hidden">
+    <div class="flex flex-col min-w-0" style="flex:1 1 0%;min-height:0;overflow:hidden;height:100%">
+      <div class="relative flex flex-col min-w-0" style="height:100%;min-height:0;overflow:hidden">
+        <div class="relative flex-1 min-h-0 flex flex-col min-w-0">
+          <div class="absolute inset-0 bg-black overflow-hidden" style="background:#666"></div>
+          <div class="absolute inset-0 z-10" onclick="console.log('TAP ZONE CLICKED')"></div>
+          <div class="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-1.5 pt-6" style="background:linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.55) 55%, transparent)">
+            <div class="lg:hidden shrink-0">
+              <div class="px-3 py-2 flex flex-col justify-end gap-1.5 overscroll-contain touch-pan-y pointer-events-auto" id="chatList" style="background:transparent;height:130px;max-height:130px;min-height:0;overflow-y:auto"></div>
+            </div>
+            <div class="shrink-0 flex items-center gap-1.5 px-2.5" style="height:60px;color:white">Actions bar (Cam/Terminer/Like...)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const list = document.getElementById('chatList');
+    for (let i = 0; i < 30; i++) {
+      const d = document.createElement('div');
+      d.style.color = 'white';
+      d.style.fontSize = '13px';
+      d.textContent = 'Message numero ' + i;
+      list.appendChild(d);
+    }
+    list.scrollTop = list.scrollHeight;
+  </script>
+</body>
+</html>

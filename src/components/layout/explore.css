@@ -1,84 +1,331 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   EXPLORE — même système de tokens que la landing (landing.css), réutilisé
-   pour le layout public d'exploration (films/séries/reels/concerts/events).
-   Scopé sous .explore-v2, n'affecte jamais le thème global de l'app.
+   EXPLORE — refonte complète, aligné sur le système de la landing
+   (landing.css : palette resserrée encre/papier + un seul accent violet).
+   Header et footer entièrement différents de l'ancienne version et de la
+   landing : identité propre (bandeau latéral de catégories, pas un nav
+   horizontal classique). Scopé sous .explore-v3.
    ══════════════════════════════════════════════════════════════════════════ */
 
-.explore-v2 {
-  --ex-ink:      #0A0812;
-  --ex-paper:    #F5F3FA;
-  --ex-violet:   #7B3FF2;
-  --ex-violet-2: #5B2EC4;
-  --ex-amber:    #A67CF7;
-  --ex-surface-dark: #15111F;
-  --ex-line-dark:    rgba(255,255,255,0.08);
-  --ex-line-light:   rgba(10,8,18,0.08);
+.explore-v3 {
+  --xp-ink:     #0B0B10;
+  --xp-paper:   #FAFAF8;
+  --xp-accent:  #7B3FF2;
 
-  --ex-bg:      var(--ex-paper);
-  --ex-surface: #FFFFFF;
-  --ex-text:    #0A0812;
-  --ex-text-2:  #4A4560;
-  --ex-text-3:  #918C9F;
-  --ex-line:    var(--ex-line-light);
+  --xp-bg:      var(--xp-paper);
+  --xp-surface: #FFFFFF;
+  --xp-text:    var(--xp-ink);
+  --xp-text-2:  #55545F;
+  --xp-text-3:  #96959E;
+  --xp-line:    rgba(11,11,16,0.10);
+  --xp-line-2:  rgba(11,11,16,0.06);
 
   font-family: 'Inter', system-ui, sans-serif;
-  background: var(--ex-bg);
+  background: var(--xp-bg);
+  color: var(--xp-text);
   min-height: 100vh;
 }
 
-.dark .explore-v2 {
-  --ex-bg:      var(--ex-ink);
-  --ex-surface: var(--ex-surface-dark);
-  --ex-text:    #F5F3FA;
-  --ex-text-2:  #B8B2CC;
-  --ex-text-3:  #6E6786;
-  --ex-line:    var(--ex-line-dark);
-  --ex-amber:   #9B65F5;
+.dark .explore-v3 {
+  --xp-bg:      var(--xp-ink);
+  --xp-surface: #16151C;
+  --xp-text:    #F5F4F2;
+  --xp-text-2:  #ADACB6;
+  --xp-text-3:  #6B6A74;
+  --xp-line:    rgba(255,255,255,0.10);
+  --xp-line-2:  rgba(255,255,255,0.06);
 }
 
-.ex-display {
-  font-family: 'Anton', 'Inter', system-ui, sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
+.xp-display {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   text-wrap: balance;
 }
-
-.ex-eyebrow {
+.xp-eyebrow {
   font-family: ui-monospace, 'SF Mono', Consolas, monospace;
   font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   font-weight: 600;
+  color: var(--xp-text-3);
 }
 
-.ex-amber { color: var(--ex-amber); }
-
-/* Rule with label — replaces boxed section headers */
-.ex-rule { display: flex; align-items: center; gap: 1rem; }
-.ex-rule::after { content: ''; flex: 1; height: 1px; background: var(--ex-line); }
-
-/* Ticket-stub card — notched corners, evokes a concert ticket */
-.ex-stub {
-  clip-path: polygon(
-    0% 4%, 4% 0%, 96% 0%, 100% 4%,
-    100% 96%, 96% 100%, 4% 100%, 0% 96%
-  );
+.xp-container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+@media (min-width: 640px) {
+  .xp-container { padding-left: 2rem; padding-right: 2rem; }
 }
 
-/* Poster tile hover lift */
-.ex-tile { transition: transform 0.45s cubic-bezier(.16,1,.3,1); }
-.ex-tile:hover { transform: translateY(-6px); }
+/* ── Boutons ── */
+.xp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 999px;
+  padding: 0.8rem 1.5rem;
+  transition: transform 0.2s cubic-bezier(.16,1,.3,1), box-shadow 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+.xp-btn-accent { background: var(--xp-accent); color: #fff; box-shadow: 0 10px 24px rgba(123,63,242,0.28); }
+.xp-btn-accent:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(123,63,242,0.38); }
+.xp-btn-line { background: transparent; color: var(--xp-text); border: 1.5px solid var(--xp-line); }
+.xp-btn-line:hover { border-color: var(--xp-text); }
+.xp-btn-solid { background: var(--xp-ink); color: var(--xp-paper); }
+.dark .xp-btn-solid { background: #F5F4F2; color: var(--xp-ink); }
 
-/* Reveal on scroll */
-.ex-rise {
+/* ── Header — identité propre : bande fine au-dessus + rangée de catégories
+   façon "pilules" scrollables, différente du header nav classique de la
+   landing (pas de logo+liens sur une ligne). ── */
+.xp-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--xp-bg);
+  border-bottom: 1px solid var(--xp-line);
+}
+.xp-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  gap: 1rem;
+}
+.xp-header-brand { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.xp-header-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xp-header-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.xp-icon-btn {
+  width: 38px; height: 38px; border-radius: 999px;
+  color: var(--xp-text-3);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.xp-icon-btn:hover { color: var(--xp-text); background: var(--xp-line-2); }
+
+/* Rangée de catégories — pilules horizontales scrollables, jamais de burger */
+.xp-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  scrollbar-width: none;
+}
+.xp-tabs::-webkit-scrollbar { display: none; }
+.xp-tab {
+  flex-shrink: 0;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--xp-text-2);
+  border: 1.5px solid var(--xp-line);
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.xp-tab:hover { color: var(--xp-text); border-color: var(--xp-text-3); }
+.xp-tab.is-active {
+  color: #fff;
+  background: var(--xp-ink);
+  border-color: var(--xp-ink);
+}
+.dark .xp-tab.is-active { background: #F5F4F2; color: var(--xp-ink); border-color: #F5F4F2; }
+
+/* ── Page head ── */
+.xp-page-head { padding-top: 2.5rem; padding-bottom: 2rem; }
+.xp-page-title { font-size: 2rem; margin-top: 0.5rem; }
+@media (min-width: 640px) { .xp-page-title { font-size: 2.5rem; } }
+.xp-page-sub { margin-top: 0.5rem; font-size: 0.95rem; color: var(--xp-text-2); }
+
+.xp-search {
+  position: relative;
+  width: 100%;
+}
+@media (min-width: 640px) { .xp-search { width: 300px; } }
+.xp-search input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  background: var(--xp-surface);
+  border: 1px solid var(--xp-line);
+  color: var(--xp-text);
+  transition: border-color 0.2s ease;
+}
+.xp-search input:focus { outline: none; border-color: var(--xp-accent); }
+.xp-search input::placeholder { color: var(--xp-text-3); }
+.xp-search svg {
+  position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%);
+  color: var(--xp-text-3);
+  pointer-events: none;
+}
+
+/* ── Grid ── */
+.xp-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 640px)  { .xp-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1024px) { .xp-grid { grid-template-columns: repeat(4, 1fr); } }
+.xp-grid-wide { grid-template-columns: repeat(1, 1fr); }
+@media (min-width: 640px)  { .xp-grid-wide { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .xp-grid-wide { grid-template-columns: repeat(3, 1fr); } }
+
+/* ── Card unique — même structure pour poster / concert / event ── */
+.xp-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--xp-surface);
+  border: 1px solid var(--xp-line);
+  transition: transform 0.35s cubic-bezier(.16,1,.3,1), border-color 0.2s ease;
+}
+.xp-card:hover { transform: translateY(-4px); border-color: var(--xp-text-3); }
+.xp-card-media {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--xp-line-2);
+}
+.xp-card-media--poster { aspect-ratio: 2/3; }
+.xp-card-media--wide   { aspect-ratio: 16/10; }
+.xp-card-media img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.xp-card:hover .xp-card-media img { transform: scale(1.05); }
+.xp-card-media-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--xp-text-3);
+}
+.xp-card-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.2) 45%, transparent 70%);
+}
+.xp-card-badge {
+  position: absolute; top: 0.6rem; left: 0.6rem;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--xp-accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.xp-card-chip {
+  position: absolute; top: 0.6rem; right: 0.6rem;
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.xp-card-date {
+  position: absolute; top: 0.6rem; right: 0.6rem;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.6rem;
+  background: rgba(255,255,255,0.95);
+  color: var(--xp-ink);
+  line-height: 1;
+}
+.xp-card-date-day { font-size: 1rem; font-weight: 800; }
+.xp-card-date-month { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.1rem; color: var(--xp-text-2); }
+.xp-card-overlay {
+  position: absolute; left: 0.75rem; right: 0.75rem; bottom: 0.75rem;
+  color: #fff;
+}
+.xp-card-overlay-title { font-weight: 700; font-size: 0.9rem; line-height: 1.25; }
+.xp-card-overlay-sub { font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-top: 0.15rem; display: flex; align-items: center; gap: 0.3rem; }
+.xp-card-body { padding: 0.7rem 0.85rem 0.85rem; flex: 1; display: flex; flex-direction: column; gap: 0.15rem; }
+.xp-card-title { font-weight: 600; font-size: 0.875rem; line-height: 1.3; }
+.xp-card-meta { font-size: 0.75rem; color: var(--xp-text-3); }
+.xp-card-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.7rem 0.85rem;
+  border-top: 1px solid var(--xp-line);
+  font-size: 0.75rem;
+  color: var(--xp-text-3);
+}
+.xp-card-price { font-weight: 700; color: var(--xp-accent); display: inline-flex; align-items: center; gap: 0.3rem; }
+
+/* ── Empty / skeleton ── */
+.xp-empty { text-align: center; padding: 5rem 0; color: var(--xp-text-3); }
+.xp-skeleton { background: var(--xp-line-2); animation: xp-pulse 1.6s ease-in-out infinite; }
+@keyframes xp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* ── Section rule ── */
+.xp-rule { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+.xp-rule::after { content: ''; flex: 1; height: 1px; background: var(--xp-line); }
+
+/* ── CTA band ── */
+.xp-cta {
+  margin-top: 4rem;
+  margin-bottom: 2.5rem;
+  border-radius: 1.5rem;
+  padding: 3.5rem 2rem;
+  text-align: center;
+  background: var(--xp-ink);
+  color: var(--xp-paper);
+}
+@media (min-width: 768px) { .xp-cta { padding: 4.5rem 3rem; } }
+
+/* ── Footer — mise en page différente du footer de la landing (colonnes
+   + bloc newsletter/CTA compact, plutôt que grille 4 colonnes classique) ── */
+.xp-footer { border-top: 1px solid var(--xp-line); padding-top: 3rem; padding-bottom: 2rem; }
+.xp-footer-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding-bottom: 2rem;
+}
+@media (min-width: 640px) {
+  .xp-footer-row { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+.xp-footer-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.xp-footer-links a {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--xp-text-2);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.xp-footer-links a:hover { color: var(--xp-text); background: var(--xp-line-2); }
+.xp-footer-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--xp-line);
+  font-size: 0.78rem;
+  color: var(--xp-text-3);
+}
+@media (min-width: 640px) {
+  .xp-footer-bottom { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+
+/* ── Reveal on scroll ── */
+.xp-rise {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.8s cubic-bezier(.16,1,.3,1), transform 0.8s cubic-bezier(.16,1,.3,1);
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1);
 }
-.ex-rise.visible { opacity: 1; transform: none; }
+.xp-rise.visible { opacity: 1; transform: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ex-rise { transition: none; opacity: 1; transform: none; }
-  .ex-tile { transition: none; }
+  .xp-rise { transition: none; opacity: 1; transform: none; }
 }
