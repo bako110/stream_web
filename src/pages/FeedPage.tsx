@@ -2407,10 +2407,11 @@ function TrendingPanel() {
   );
 }
 
-// ── CommunitiesInline ─────────────────────────────────────────────────────────
+// ── CommunitiesInline — nuances de violet uniquement (un seul accent),
+// jamais de couleur hors marque même en fallback d'avatar. ───────────────────
 const COMM_GRADIENTS = [
-  ['#7B3FF2','#5B2EC4'],['#7B3FF2','#7B3FF2'],['#10B981','#7B3FF2'],
-  ['#7B3FF2','#EF4444'],['#7B3FF2','#7B3FF2'],['#14B8A6','#7B3FF2'],
+  ['#7B3FF2','#5B2EC4'], ['#9B65F5','#7B3FF2'], ['#5B2EC4','#3C1F80'],
+  ['#A67CF7','#7B3FF2'], ['#7B3FF2','#3C1F80'], ['#8B4FE8','#5B2EC4'],
 ];
 function commGradient(name: string): [string, string] {
   return COMM_GRADIENTS[(name.charCodeAt(0) || 0) % COMM_GRADIENTS.length] as [string, string];

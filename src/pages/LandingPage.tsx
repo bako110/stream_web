@@ -162,12 +162,12 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
             </span>
           </div>
 
-          <h1 className="gt-display gt-rise text-[2.4rem] sm:text-[3.2rem] lg:text-[3.6rem] leading-[1.08] mb-6"
+          <h1 className="gt-display gt-rise text-[2.6rem] sm:text-[4rem] lg:text-[4.6rem] leading-[1.05] mb-7"
             style={{ animationDelay: '80ms' }}>
             Tout se passe, en <span style={{ color: 'var(--gt-accent)' }}>direct</span>.
           </h1>
 
-          <p className="text-base leading-relaxed max-w-lg mx-auto mb-8 gt-rise" style={{ color: 'var(--gt-text-2)', animationDelay: '160ms' }}>
+          <p className="text-lg leading-relaxed max-w-xl mx-auto mb-9 gt-rise" style={{ color: 'var(--gt-text-2)', animationDelay: '160ms' }}>
             Concerts live, films, séries, reels et communautés — un seul endroit pour
             vivre la scène, l'écran et le direct, où que tu sois.
           </p>

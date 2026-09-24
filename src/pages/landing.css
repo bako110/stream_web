@@ -207,11 +207,11 @@
    Remplace l'ancienne pile de vignettes empilées, source d'empilements
    ratés selon la largeur réelle de la colonne. ── */
 .gt-hero {
-  padding-top: 4.5rem;
+  padding-top: 2.75rem;
   padding-bottom: 3rem;
 }
 .gt-hero-intro {
-  max-width: 640px;
+  max-width: 800px;
   margin: 0 auto;
   text-align: center;
 }
