@@ -28,11 +28,11 @@ function getDomain(url: string): string {
   } catch { return url; }
 }
 
-// *gras* (style WhatsApp, même règle que le RichText mobile) : pas d'espace collé aux
-// astérisques. Le gras est détecté AVANT les liens : un lien peut donc se trouver à l'intérieur
+// *gras* (style WhatsApp) : pas d'espace juste APRÈS l'étoile ouvrante ; un espace avant
+// l'étoile fermante est toléré (« *SAPEC * » donne bien SAPEC en gras), le contenu est rogné. Le gras est détecté AVANT les liens : un lien peut donc se trouver à l'intérieur
 // d'un passage en gras (« *retrouvez vos photos ici : https://… * »), sinon les étoiles
 // restaient affichées telles quelles dès qu'une URL les séparait.
-const BOLD_RE = /(\*[^\s*][^*]*[^\s*]\*|\*[^\s*]\*)/g;
+const BOLD_RE = /(\*[^\s*][^*\n]*\*)/g;
 
 function renderLinks(str: string, linkClassName: string, linkStyle?: React.CSSProperties) {
   return str.split(URL_SPLIT).map((part, i) =>
@@ -53,7 +53,7 @@ export function renderTextWithLinks(str: string, linkClassName = 'underline font
   // split avec groupe capturant : les indices impairs sont les segments *gras*
   return str.split(BOLD_RE).map((part, i) =>
     i % 2 === 1
-      ? <strong key={i} style={{ fontWeight: 800 }}>{renderLinks(part.slice(1, -1), linkClassName, linkStyle)}</strong>
+      ? <strong key={i} style={{ fontWeight: 800 }}>{renderLinks(part.slice(1, -1).trim(), linkClassName, linkStyle)}</strong>
       : <span key={i}>{renderLinks(part, linkClassName, linkStyle)}</span>
   );
 }
