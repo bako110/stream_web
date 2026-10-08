@@ -51,7 +51,7 @@ function MoreRow({ to, label, desc, icon: Icon, color, onClick, danger, onNaviga
 }) {
   const content = (isActive?: boolean) => (
     <>
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}15`, color }}>
+      <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ background: `${color}18`, color }}>
         <Icon size={18} />
       </div>
       <div className="min-w-0 flex-1 text-left">
@@ -60,7 +60,7 @@ function MoreRow({ to, label, desc, icon: Icon, color, onClick, danger, onNaviga
       </div>
     </>
   );
-  const baseClass = 'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-150 w-full';
+  const baseClass = 'flex items-center gap-3 pl-1.5 pr-4 py-1.5 rounded-full transition-colors duration-150 w-full';
   if (to) {
     return (
       <NavLink to={to} onClick={onNavigate}
@@ -112,8 +112,8 @@ export function MoreMenuContent({ onNavigate }: Props) {
       {user && (
         <div className="mb-3">
           <NavLink to="/profile" onClick={onNavigate}
-            className="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors duration-150"
-            style={{ background: 'rgba(123,63,242,0.06)' }}
+            className="flex items-center gap-3 pl-2.5 pr-4 py-2.5 rounded-full transition-colors duration-150"
+            style={{ background: 'rgba(123,63,242,0.06)', border: '1px solid rgba(123,63,242,0.15)' }}
             onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.12)'); }}
             onMouseLeave={e => { (e.currentTarget.style.background = 'rgba(123,63,242,0.06)'); }}>
             <Avatar src={user.avatar_url} name={user.display_name ?? user.username ?? user.first_name} size="md" verified={user.is_verified} className="shrink-0" />
@@ -135,7 +135,7 @@ export function MoreMenuContent({ onNavigate }: Props) {
       {/* Sections Social / Mes contenus / Finance */}
       {MORE_SECTIONS.map(section => (
         <div key={section.label} className="mb-3">
-          <p className="px-3 pb-1 text-[10px] font-black tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="px-4 pb-1.5 text-[10px] font-black tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
             {section.label}
           </p>
           <div className="space-y-0.5">
@@ -148,7 +148,7 @@ export function MoreMenuContent({ onNavigate }: Props) {
 
       {/* Paramètres */}
       <div className="mb-3">
-        <p className="px-3 pb-1 text-[10px] font-black tracking-widest" style={{ color: 'var(--text-tertiary)' }}>PARAMÈTRES</p>
+        <p className="px-4 pb-1.5 text-[10px] font-black tracking-widest" style={{ color: 'var(--text-tertiary)' }}>PARAMÈTRES</p>
         <div className="space-y-0.5">
           <MoreRow to="/settings" label="Paramètres" desc="Compte, confidentialité et sécurité" icon={Settings} color="#7B3FF2" onNavigate={onNavigate} />
           <MoreRow to="/support" label="Aide & Support" desc="Contacte-nous ou consulte la FAQ" icon={HelpCircle} color="#06B6D4" onNavigate={onNavigate} />

@@ -162,19 +162,22 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
       </div>
     </aside>
 
-    {/* ── Panneau "Plus" — occupe la zone de contenu, juste à droite de la sidebar ── */}
+    {/* ── Panneau "Plus" — carte flottante arrondie, à droite de la sidebar ── */}
     {showMore && (
       <div className="fixed inset-y-0 right-0 z-[70] flex"
         style={{ left: collapsed ? 68 : 220 }}
         onClick={() => setShowMore(false)}>
-        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.35)' }} />
-        <div className="relative w-full max-w-md h-full flex flex-col overflow-hidden animate-reveal-left"
-          style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', animationDuration: '0.2s' }}
+        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(3px)' }} />
+        <div className="relative w-full max-w-md my-2 ml-2 rounded-[2rem] flex flex-col overflow-hidden animate-reveal-left"
+          style={{
+            background: 'var(--surface)', border: '1px solid var(--border)', animationDuration: '0.2s',
+            boxShadow: '0 8px 20px rgba(11,11,16,0.12), 0 24px 56px -8px rgba(11,11,16,0.28)',
+          }}
           onClick={e => e.stopPropagation()}>
 
-          <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between pl-6 pr-4 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
             <p className="text-lg font-extrabold" style={{ color: 'var(--text-primary)' }}>Plus</p>
-            <button onClick={() => setShowMore(false)} className="w-8 h-8 rounded-full flex items-center justify-center"
+            <button onClick={() => setShowMore(false)} className="w-9 h-9 rounded-full flex items-center justify-center"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
               <X size={16} />
             </button>

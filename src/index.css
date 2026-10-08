@@ -451,16 +451,25 @@
 }
 
 /* ── Feedback au toucher/clic — équivalent web du TouchableOpacity mobile :
-   l'élément s'assombrit tant qu'il est pressé. :where() = spécificité 0, donc
-   n'écrase aucun style existant ; filtre brightness plutôt que opacity pour
-   assombrir aussi sur fond clair. ── */
-:where(button, a[href], [role='button'], summary, label[for], .cursor-pointer):where(:active):not(:disabled):not([aria-disabled='true']) {
+   l'élément s'assombrit tant qu'il est pressé. Global : app connectée, pages
+   invité (landing/gate, Explorer, GuestPreview) et pages légales.
+   :where() = spécificité 0, n'écrase aucun style existant ; brightness plutôt
+   qu'opacity pour assombrir aussi sur fond clair. Couvre boutons, liens, rôles
+   bouton, champs cliquables, ET les <div onClick> (repérés par cursor-pointer,
+   classe ou style inline). Exclus : désactivés, plein écran/overlays (fixed,
+   inset-0) et conteneurs vidéo — assombrir tout un lecteur au clic serait
+   parasite. ── */
+:where(
+  button, a[href], summary, select, [role='button'], [role='tab'], [role='menuitem'],
+  label[for], input[type='button'], input[type='submit'], input[type='checkbox'], input[type='radio'],
+  .cursor-pointer, [style*='cursor: pointer'], [style*='cursor:pointer'],
+  .gt-showcase-card, .poster-card, .gp-body-trigger
+):where(:active):not(:disabled):not([aria-disabled='true']):not(.fixed):not([class*='inset-0']):not(:has(video)) {
   filter: brightness(0.82);
-  transition: filter 0.08s ease-out;
 }
-:where(button, a[href], [role='button'], summary, label[for], .cursor-pointer) {
+:where(button, a[href], [role='button'], .cursor-pointer, [style*='cursor: pointer']) {
   -webkit-tap-highlight-color: transparent;
 }
-@media (prefers-reduced-motion: reduce) {
-  :where(button, a[href], [role='button'], .cursor-pointer):where(:active) { transition: none; }
-}
+
+/* Posé par utils/pressFeedback.ts sur tout élément au curseur pointer (CSS ou inline) */
+[data-pressed] { filter: brightness(0.82); }
