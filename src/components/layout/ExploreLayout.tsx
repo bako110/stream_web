@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { Sun, Moon, LogIn } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { GateLogo } from '../ui/GateLogo';
@@ -42,8 +42,8 @@ export function ExploreLayout() {
               </Link>
             ) : (
               <>
-                <Link to="/auth/login" className="!hidden sm:!inline-flex xp-icon-btn items-center justify-center" title="Connexion">
-                  <LogIn size={16} />
+                <Link to="/auth/login" className="xp-btn xp-btn-line" style={{ padding: '0.6rem 1.1rem', fontSize: '0.8rem' }}>
+                  Connexion
                 </Link>
                 <Link to="/auth/register" className="xp-btn xp-btn-solid" style={{ padding: '0.6rem 1.1rem', fontSize: '0.8rem' }}>
                   S'inscrire
