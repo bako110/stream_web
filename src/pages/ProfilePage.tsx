@@ -856,7 +856,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="w-full mx-auto pb-10">
+    <div className="w-full mx-auto pb-10 overflow-x-clip">
 
       {/* ── Banner ── */}
       <div className="relative h-44 overflow-hidden group"
@@ -956,10 +956,10 @@ export default function ProfilePage() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex px-5 gap-1 mb-1" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="grid grid-flow-col auto-cols-fr px-3 sm:px-5 gap-1 mb-1" style={{ borderBottom: '1px solid var(--border)' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold transition-all relative"
+            className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 min-w-0 px-1 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-sm font-semibold transition-all relative whitespace-nowrap"
             style={{ color: tab === t.id ? 'var(--primary)' : 'var(--text-tertiary)' }}>
             {t.icon}{t.label}
             {tab === t.id && (

@@ -476,7 +476,7 @@ export default function UserProfilePage() {
   const name = profile.display_name ?? profile.username ?? 'Utilisateur';
 
   return (
-    <div className="w-full mx-auto pb-10">
+    <div className="w-full mx-auto pb-10 overflow-x-clip">
 
       {/* ── Banner ── */}
       <div className="relative h-48 overflow-hidden">
@@ -584,7 +584,7 @@ export default function UserProfilePage() {
           )}
 
           {/* Stats — inline sous le nom, style Instagram */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Stat value={(profile.followers_count ?? 0) + followersDelta}  label="Abonnés"      />
             <Stat value={profile.following_count ?? 0}  label="Abonnements"  />
             <Stat value={profile.publications_count ?? 0} label="Publications" />
@@ -615,11 +615,11 @@ export default function UserProfilePage() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex px-5 gap-1.5 mb-1 sticky top-0 z-10 py-2"
+      <div className="grid grid-flow-col auto-cols-fr px-3 sm:px-5 gap-1 sm:gap-1.5 mb-1 sticky top-0 z-10 py-2"
         style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-full transition-all"
+            className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 min-w-0 px-1 sm:px-4 py-2 text-[11px] sm:text-sm font-bold rounded-2xl sm:rounded-full transition-all whitespace-nowrap"
             style={tab === t.id
               ? { background: 'var(--primary)', color: '#fff' }
               : { background: 'transparent', color: 'var(--text-tertiary)' }}>
