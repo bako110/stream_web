@@ -591,19 +591,35 @@ export default function PostDetailPage() {
                 </button>
               )}
 
-              {/* Images multiples */}
-              {post.image_urls && post.image_urls.length > 1 && (
-                <div className="px-5 pb-4"
-                  style={{ display: 'grid', gap: 6,
-                    gridTemplateColumns: post.image_urls.length === 2 ? '1fr 1fr' : 'repeat(3,1fr)' }}>
-                  {post.image_urls.map((u, i) => (
-                    <button key={i} className="rounded-xl overflow-hidden cursor-zoom-in"
-                      style={{ aspectRatio: '1' }} onClick={() => setLightbox(i)}>
-                      <img src={u} alt="" className="w-full h-full object-cover transition-transform hover:scale-105" />
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Images multiples — grille bornée à 6 tuiles ; au-delà, la dernière affiche
+                  « +N » et ouvre la visionneuse (qui permet de parcourir toutes les images). */}
+              {post.image_urls && post.image_urls.length > 1 && (() => {
+                const urls   = post.image_urls!;
+                const MAX    = 6;
+                const shown  = urls.slice(0, MAX);
+                const extra  = urls.length - MAX;
+                const cols   = urls.length === 2 ? 2 : 3;
+                return (
+                  <div className="px-5 pb-4"
+                    style={{ display: 'grid', gap: 6, gridTemplateColumns: `repeat(${cols},minmax(0,1fr))` }}>
+                    {shown.map((u, i) => {
+                      const isLast = i === MAX - 1 && extra > 0;
+                      return (
+                        <button key={i} className="relative rounded-2xl overflow-hidden cursor-zoom-in"
+                          style={{ aspectRatio: urls.length === 2 ? '4/5' : '1' }} onClick={() => setLightbox(i)}>
+                          <img src={u} alt="" loading="lazy" className="w-full h-full object-cover transition-transform hover:scale-105" />
+                          {isLast && (
+                            <span className="absolute inset-0 flex items-center justify-center text-white text-2xl font-black"
+                              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }}>
+                              +{extra + 1}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Action bar */}
               <div className="flex items-center gap-0.5 px-4 py-3"

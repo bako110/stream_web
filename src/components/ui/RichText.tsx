@@ -23,6 +23,18 @@ function getDomain(url: string): string {
   catch { return url; }
 }
 
+// *gras* (style WhatsApp, même règle que le RichText mobile) : pas d'espace collé aux
+// astérisques. Appliqué uniquement aux segments qui ne sont pas des URL.
+const BOLD_RE = /(\*[^\s*][^*]*[^\s*]\*|\*[^\s*]\*)/g;
+export function renderBold(str: string) {
+  // split avec groupe capturant : les indices impairs sont les segments *gras*
+  return str.split(BOLD_RE).map((part, i) =>
+    i % 2 === 1
+      ? <strong key={i} style={{ fontWeight: 800 }}>{part.slice(1, -1)}</strong>
+      : <span key={i}>{part}</span>
+  );
+}
+
 /** Rend un texte brut en segments avec liens cliquables — réutilisable hors RichText
  *  pour les zones à style personnalisé (ex: caption de reel sur fond vidéo). */
 export function renderTextWithLinks(str: string, linkClassName = 'underline font-medium', linkStyle?: React.CSSProperties) {
@@ -34,7 +46,7 @@ export function renderTextWithLinks(str: string, linkClassName = 'underline font
         {getDomain(part)}
       </a>
     ) : (
-      <span key={i}>{part}</span>
+      <span key={i}>{renderBold(part)}</span>
     )
   );
 }
@@ -71,7 +83,7 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
           {getDomain(part)}
         </a>
       ) : (
-        <span key={i}>{part}</span>
+        <span key={i}>{renderBold(part)}</span>
       )
     );
   }
