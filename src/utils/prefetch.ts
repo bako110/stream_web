@@ -11,6 +11,7 @@
  */
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
+import { toProxiedUrl } from './constants';
 
 const prefetched = new Set<string>();
 const MAX_TRACKED = 600;
@@ -64,7 +65,8 @@ export function startReelsPrefetch(): void {
         warmVideo = document.createElement('video');
         warmVideo.preload = 'auto';
         warmVideo.muted = true;
-        warmVideo.src = first.mp4_url;
+        // Même URL que le lecteur (ReelPlayer utilise toProxiedUrl) — sinon aucun partage de cache.
+        warmVideo.src = toProxiedUrl(first.mp4_url);
         warmVideo.load();
         // Libère la référence après quelques secondes — le cache HTTP suffit.
         setTimeout(() => { if (warmVideo) { warmVideo.removeAttribute('src'); warmVideo.load(); warmVideo = null; } }, 15000);

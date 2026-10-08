@@ -653,6 +653,8 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
   const videoRef      = useRef<HTMLVideoElement>(null);
   const hlsRef        = useRef<Hls | null>(null);
   const tapTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTapRef    = useRef<{ t: number; zone: string } | null>(null);
+  const bufferTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stallTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCount    = useRef(0);
   const startTimeRef     = useRef<number>(0);
@@ -897,6 +899,9 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
       // montage, y compris pour les slides préchargées hors écran.
       v.src = loadSrc;
       v.addEventListener('loadedmetadata', playWhenReady, { once: true });
+      // Démarre tout de suite : le navigateur lit dès qu'il a assez de données (poster + fond flou
+      // entre-temps), au lieu d'attendre les métadonnées puis de démarrer.
+      if (active) playWhenReady();
     } else if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30, maxMaxBufferLength: 60 });
       hlsRef.current = hls;
@@ -1062,38 +1067,35 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
     }
   }
 
-  // Zones de tap : gauche (skip -10), centre (like/pause), droite (skip +10)
+  // Zones de tap : gauche (skip -10), centre (pause/lecture + like), droite (skip +10).
+  // Pause/lecture IMMÉDIATE au premier tap (aucun délai d'attente de double-tap) ; un second
+  // tap rapide au centre = like et rétablit l'état de lecture d'avant le premier tap.
   function handleZoneTap(zone: 'left'|'center'|'right', e: React.MouseEvent) {
     e.stopPropagation();
-    if (tapTimer.current) {
-      // Double-tap
-      clearTimeout(tapTimer.current); tapTimer.current = null;
-      if (zone === 'left')   doSkip(-10);
+    const now  = Date.now();
+    const last = lastTapRef.current;
+    if (last && last.zone === zone && now - last.t < 300) {
+      lastTapRef.current = null;
+      if (zone === 'left')       doSkip(-10);
       else if (zone === 'right') doSkip(10);
       else {
-        // Double-tap centre = like (identique mobile)
+        togglePlay(); // annule la pause/lecture déclenchée par le 1er tap
+        const rect = (e.target as HTMLElement).closest('[data-reel-zone]')?.getBoundingClientRect();
+        if (rect) setHeartPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
         if (!liked && !likeInFlight.current) {
           likeInFlight.current = true;
           setLiked(true); setLikeCount(c => c + 1);
-          const rect = (e.target as HTMLElement).closest('[data-reel-zone]')?.getBoundingClientRect();
-          if (rect) setHeartPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
           apiClient.post(Endpoints.social.toggleReaction, { reel_id: reel.id, reaction_type: 'like' })
             .catch(() => { setLiked(false); setLikeCount(c => Math.max(0, c - 1)); })
             .finally(() => { likeInFlight.current = false; });
-        } else {
-          const rect = (e.target as HTMLElement).closest('[data-reel-zone]')?.getBoundingClientRect();
-          if (rect) setHeartPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
         }
         setShowHeart(true);
         setTimeout(() => setShowHeart(false), 750);
       }
-    } else {
-      tapTimer.current = setTimeout(() => {
-        tapTimer.current = null;
-        if (zone === 'center') togglePlay();
-        // gauche/droite single tap = rien
-      }, 230);
+      return;
     }
+    lastTapRef.current = { t: now, zone };
+    if (zone === 'center') togglePlay();
   }
 
   function handleTap() {
@@ -1204,8 +1206,12 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
               const v = videoRef.current;
               if (v?.duration) setProgress((v.currentTime / v.duration) * 100);
             }}
-            onWaiting={() => { setBuffering(true); armStall(); }}
+            onWaiting={() => {
+              if (!bufferTimer.current) bufferTimer.current = setTimeout(() => { bufferTimer.current = null; setBuffering(true); }, 700);
+              armStall();
+            }}
             onPlaying={() => {
+              if (bufferTimer.current) { clearTimeout(bufferTimer.current); bufferTimer.current = null; }
               setBuffering(false); clearStall();
               // Le navigateur peut réémettre "playing" après un pause() manuel
               // (resync interne HLS) — ne pas annuler une pause volontaire.
