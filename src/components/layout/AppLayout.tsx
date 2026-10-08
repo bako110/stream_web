@@ -33,7 +33,7 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
     <div className="flex overflow-hidden" style={{ background: 'var(--bg)', height: '100dvh' }}>
 
       {/* ── Desktop sidebar ── */}
-      <div className="hidden lg:flex shrink-0 transition-all duration-300">
+      <div className="hidden lg:flex shrink-0 transition-all duration-300 p-2 pr-0">
         <Sidebar
           collapsed={sidebarCollapsed}
           onCollapseToggle={() => setSidebarCollapsed(v => !v)}

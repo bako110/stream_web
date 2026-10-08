@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Hls from 'hls.js';
 import { RoundLogo } from './RoundLogo';
+import { Lightbox } from './Lightbox';
 import { renderTextWithLinks } from './RichText';
 import { toProxiedUrl } from '../../utils/constants';
 
@@ -110,6 +111,14 @@ const TYPE_CONFIG: Record<GuestPreviewType, { label: string; cta: string; icon: 
   },
 };
 
+const WHY_ITEMS = [
+  { icon: '🎬', title: 'Films, séries & concerts en direct', desc: 'Regarde en entier, en HD, avec le son.' },
+  { icon: '💬', title: 'Réagis et échange', desc: 'Like, commente, partage et discute avec les créateurs.' },
+  { icon: '🎤', title: 'Vis les lives', desc: 'Lives, défis 1 vs 1 et tournois en temps réel.' },
+  { icon: '👥', title: 'Rejoins des communautés', desc: 'Retrouve des gens qui partagent tes passions.' },
+  { icon: '💰', title: 'Crée et gagne', desc: 'Publie tes reels, vends des billets, reçois des GoGold.' },
+];
+
 const isMedia = (type: GuestPreviewType) => type === 'reel' || type === 'concert' || type === 'film' || type === 'serie';
 
 function formatCount(n: number): string {
@@ -197,6 +206,8 @@ export function GuestPreview({
   const [slide, setSlide] = useState(0);
   const dragStartX  = useRef<number | null>(null);
   const isDragging  = useRef(false);
+  const justDragged = useRef(false);
+  const [lightbox, setLightbox] = useState<number | null>(null);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [autoPaused, setAutoPaused] = useState(false);
 
@@ -225,6 +236,8 @@ export function GuestPreview({
     const delta = x - dragStartX.current;
     dragStartX.current = null;
     if (Math.abs(delta) < 40) return;
+    justDragged.current = true;
+    setTimeout(() => { justDragged.current = false; }, 0);
     goToSlide(slide + (delta < 0 ? 1 : -1));
   }
 
@@ -240,7 +253,11 @@ export function GuestPreview({
     return () => clearInterval(iv);
   }, [images.length, autoPaused]);
 
-  const hasStats = likeCount != null || commentCount != null || viewCount != null;
+  // Compteurs à zéro non affichés : rien d'imposé à l'écran quand il n'y a rien à montrer.
+  const showLikes    = (likeCount ?? 0) > 0;
+  const showComments = (commentCount ?? 0) > 0;
+  const showViews    = (viewCount ?? 0) > 0;
+  const hasStats     = showLikes || showComments || showViews;
   const isReel   = type === 'reel';
   // Description longue : repliée à 5 lignes avec « Voir plus » (plus d'overlay noir plein écran).
   const longBody = (body?.length ?? 0) > 280;
@@ -251,6 +268,7 @@ export function GuestPreview({
       <style>{`
         /* ── Page — thème de l'app (clair/sombre), contenu lisible sous le visuel ── */
         .gp-page {
+          overflow-x: clip;
           min-height: 100dvh;
           background: var(--bg);
           color: var(--text-primary);
@@ -328,6 +346,12 @@ export function GuestPreview({
           transition: transform .2s, background .2s;
         }
         .gp-hero-play:hover { transform: translate(-50%, -50%) scale(1.08); background: rgba(0,0,0,0.6); }
+        .gp-hero-expand {
+          position: absolute; top: 12px; right: 12px; z-index: 6; width: 38px; height: 38px; border-radius: 50%;
+          background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.25);
+          display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .gp-hero-expand:hover { background: rgba(0,0,0,0.65); }
         .gp-preview-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,0.25); z-index: 6; }
         .gp-preview-progress-fill { height: 100%; background: #fff; transition: width .2s linear; }
         .gp-empty-hero { position: absolute; inset: 0; background: linear-gradient(135deg,#1a0533 0%,#3d1478 45%,#7B3FF2 70%,#0A0010 100%); }
@@ -381,19 +405,25 @@ export function GuestPreview({
         .gp-body a { color: var(--primary); text-decoration: underline; font-weight: 600; }
         .gp-body-more { margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--primary); background: none; border: none; padding: 0; cursor: pointer; }
 
-        /* ── Carte d'invitation ── */
-        .gp-cta-card {
-          margin-top: 14px; padding: 24px 22px; text-align: center; color: #fff;
-          border-radius: 28px; background: linear-gradient(135deg,#7B3FF2,#5B2EC4);
+        /* ── Pourquoi rejoindre ── */
+        .gp-why {
+          margin-top: 14px; padding: 26px 22px; border-radius: 28px; color: #fff;
+          background: radial-gradient(120% 100% at 0% 0%, #8b4dff 0%, #5B2EC4 55%, #2a1068 100%);
           box-shadow: 0 18px 40px -12px rgba(91,46,196,0.5);
         }
-        .gp-cta-headline { font-size: 18px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
-        .gp-cta-sub { font-size: 13px; opacity: .85; margin: 0 0 16px; }
-        .gp-cta-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-        .gp-cta-btns .gp-pillbtn { height: 44px; padding: 0 24px; font-size: 14px; }
-        .gp-cta-btns .gp-pillbtn-solid { background: #fff; color: #5B2EC4; box-shadow: none; }
-        .gp-cta-btns .gp-pillbtn-ghost { color: #fff; border-color: rgba(255,255,255,0.5); }
-        .gp-cta-btns .gp-pillbtn-ghost:hover { background: rgba(255,255,255,0.12); }
+        .gp-why-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin: 0 0 8px; }
+        .gp-why-title { font-size: clamp(20px, 4.6vw, 26px); font-weight: 900; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 8px; }
+        .gp-why-sub { font-size: 14px; opacity: .85; margin: 0 0 18px; }
+        .gp-why-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+        @media (min-width: 640px) { .gp-why-list { grid-template-columns: 1fr 1fr; } }
+        .gp-why-item {
+          display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 20px;
+          background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.14);
+        }
+        .gp-why-ico { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 19px; background: rgba(255,255,255,0.16); }
+        .gp-why-item strong { display: block; font-size: 14px; font-weight: 800; }
+        .gp-why-item span > span { display: block; font-size: 12px; opacity: .8; line-height: 1.4; margin-top: 1px; }
+        .gp-why-foot { margin: 16px 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: .85; }
 
         /* Barre d'action flottante (mobile) */
         .gp-dock {
@@ -478,7 +508,9 @@ export function GuestPreview({
                 {images.map((src, i) => (
                   <div key={i} className="gp-hero-slide-wrap">
                     <img src={src} alt="" className="gp-hero-slide-bg" draggable={false} aria-hidden="true" />
-                    <img src={src} alt={title ?? ''} className="gp-hero-slide" draggable={false} />
+                    <img src={src} alt={title ?? ''} className="gp-hero-slide" draggable={false}
+                      style={{ cursor: 'zoom-in' }}
+                      onClick={() => { if (!justDragged.current) setLightbox(i); }} />
                   </div>
                 ))}
               </div>
@@ -512,6 +544,14 @@ export function GuestPreview({
                     onClick={() => goToSlide(i)} aria-label={`Image ${i + 1}`} />
                 ))}
               </div>
+            )}
+
+            {images.length > 0 && !(type === 'reel' && videoUrl) && (
+              <button className="gp-hero-expand" onClick={() => setLightbox(slide)} aria-label="Voir en plein écran">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                  <path d="M12 3h5v5M8 17H3v-5M17 3l-5.5 5.5M3 17l5.5-5.5" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
             )}
 
             {isMedia(type) && !(type === 'reel' && videoReady && !previewEnded) && (
@@ -559,29 +599,29 @@ export function GuestPreview({
 
             {hasStats && (
               <div className="gp-stats">
-                {likeCount != null && (
+                {showLikes && (
                   <span className="gp-stat">
                     <svg width="15" height="15" viewBox="0 0 20 20" fill="#F0365A">
                       <path d="M10 17.5s-6.5-4-8.5-8A4.5 4.5 0 0 1 10 5.5a4.5 4.5 0 0 1 8.5 4c-2 4-8.5 8-8.5 8z"/>
                     </svg>
-                    {formatCount(likeCount)}
+                    {formatCount(likeCount ?? 0)}
                   </span>
                 )}
-                {commentCount != null && (
+                {showComments && (
                   <span className="gp-stat">
                     <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                       <path d="M17 10a7 7 0 1 1-3-5.75L17 3l-1 3.5A6.98 6.98 0 0 1 17 10z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round"/>
                     </svg>
-                    {formatCount(commentCount)}
+                    {formatCount(commentCount ?? 0)}
                   </span>
                 )}
-                {viewCount != null && (
+                {showViews && (
                   <span className="gp-stat">
                     <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                       <path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
                       <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
                     </svg>
-                    {formatCount(viewCount)}
+                    {formatCount(viewCount ?? 0)}
                   </span>
                 )}
               </div>
@@ -636,16 +676,29 @@ export function GuestPreview({
             )}
           </section>
 
-          {/* Invitation à rejoindre */}
-          <section className="gp-cta-card">
-            <p className="gp-cta-headline">{cfg.cta}</p>
-            <p className="gp-cta-sub">Rejoins Gofolyx · concerts, events, reels et bien plus. Gratuit.</p>
-            <div className="gp-cta-btns">
-              <Link to={`/auth/register?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-solid">S'inscrire</Link>
-              <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-ghost">Se connecter</Link>
-            </div>
+          {/* Pourquoi rejoindre — arguments, sans bouton (connexion/inscription : barre du haut et barre du bas) */}
+          <section className="gp-why">
+            <p className="gp-why-eyebrow">Gofolyx</p>
+            <h2 className="gp-why-title">La scène, l'écran et le direct — au même endroit</h2>
+            <p className="gp-why-sub">{cfg.cta.replace('Connecte-toi pour', 'Rejoins-nous pour')}.</p>
+            <ul className="gp-why-list">
+              {WHY_ITEMS.map(it => (
+                <li key={it.title} className="gp-why-item">
+                  <span className="gp-why-ico">{it.icon}</span>
+                  <span>
+                    <strong>{it.title}</strong>
+                    <span>{it.desc}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="gp-why-foot">100 % gratuit · sans engagement · en quelques secondes</p>
           </section>
         </main>
+
+        {lightbox !== null && images.length > 0 && (
+          <Lightbox urls={images} index={lightbox} onClose={() => setLightbox(null)} />
+        )}
 
         {/* Barre d'action flottante — mobile */}
         <div className="gp-dock">

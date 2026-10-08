@@ -47,10 +47,10 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         }}
         title={collapsed ? label : undefined}
         className={({ isActive }) => clsx(
-          'flex items-center rounded-2xl transition-all duration-150 cursor-pointer group relative',
+          'flex items-center rounded-full transition-all duration-150 cursor-pointer group relative',
           // Replié : seule l'icône (carré 44px) porte le fond actif, centrée dans la barre —
           // sinon le fond du lien + celui de l'icône se doublaient et débordaient des 68px.
-          collapsed ? 'justify-center py-1' : 'gap-3 px-2.5 py-2',
+          collapsed ? 'justify-center py-1' : 'gap-3 pl-1.5 pr-4 py-1.5',
           isActive ? 'font-semibold' : 'font-normal',
         )}
         style={({ isActive }) => ({
@@ -75,7 +75,7 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         {({ isActive }) => (
           <>
             <div className={clsx(
-              'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-150',
+              'w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all duration-150',
               isActive ? 'scale-100' : 'scale-90 group-hover:scale-100',
               collapsed && !isActive && 'group-hover:bg-[var(--bg-secondary)]',
             )}
@@ -104,8 +104,11 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
   return (
     <>
     <aside
-      className={clsx('relative flex flex-col h-full transition-all duration-300 shrink-0', collapsed ? 'w-[68px]' : 'w-[220px]')}
-      style={{ background: 'var(--bg)', borderRight: '1px solid var(--border)' }}
+      className={clsx('relative flex flex-col h-full transition-all duration-300 shrink-0 rounded-[2rem] overflow-hidden', collapsed ? 'w-[68px]' : 'w-[240px]')}
+      style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 24px rgba(11,11,16,0.08), 0 20px 40px -12px rgba(11,11,16,0.12)',
+      }}
     >
       {/* ── Logo + collapse toggle ── */}
       <div className={clsx('flex items-center h-14 shrink-0 transition-all', collapsed ? 'px-2 justify-center' : 'px-4 justify-between')}>
@@ -149,11 +152,11 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
       {/* ── Footer — juste le bouton Plus ── */}
       <div className="px-2 pb-3 pt-2 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
         <button onClick={() => setShowMore(true)} title={collapsed ? 'Plus' : undefined}
-          className={clsx('flex items-center rounded-2xl w-full transition-all duration-150', collapsed ? 'justify-center py-1' : 'gap-3 px-2.5 py-2')}
+          className={clsx('flex items-center rounded-full w-full transition-all duration-150', collapsed ? 'justify-center py-1' : 'gap-3 pl-1.5 pr-4 py-1.5')}
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = 'var(--text-secondary)'); }}>
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+          <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
             style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
             <MoreHorizontal size={16} />
           </div>
@@ -165,7 +168,7 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
     {/* ── Panneau "Plus" — carte flottante arrondie, à droite de la sidebar ── */}
     {showMore && (
       <div className="fixed inset-y-0 right-0 z-[70] flex"
-        style={{ left: collapsed ? 68 : 220 }}
+        style={{ left: collapsed ? 76 : 248 }}
         onClick={() => setShowMore(false)}>
         <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(3px)' }} />
         <div className="relative w-full max-w-md my-2 ml-2 rounded-[2rem] flex flex-col overflow-hidden animate-reveal-left"
