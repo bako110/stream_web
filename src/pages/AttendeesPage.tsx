@@ -105,8 +105,8 @@ export default function AttendeesPage() {
   return (
     <div className="w-full mx-auto">
       {/* Header */}
-      <div className="sticky top-0 z-10 px-4 py-4 flex items-center gap-3"
-        style={{ background: 'linear-gradient(135deg,var(--primary),#5B2EC4)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="sticky top-2 mx-2 sm:mx-4 mt-2 mb-2 rounded-full z-10 px-4 py-4 flex items-center gap-3"
+        style={{ background: 'linear-gradient(135deg,var(--primary),#5B2EC4)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 20px rgba(11,11,16,0.08), 0 20px 40px -10px rgba(11,11,16,0.12)' }}>
         <button onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
           style={{ background: 'rgba(255,255,255,0.2)' }}>

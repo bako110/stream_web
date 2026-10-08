@@ -323,13 +323,13 @@ function ReelsTab({ userId }: { userId: string }) {
     <div className="grid grid-cols-3 gap-1 p-1">
       {reels.map(reel => (
         <HoverVideoPreview key={reel.id}
-          src={reel.hls_url} poster={reel.thumbnail_url}
+          src={reel.mp4_url || reel.hls_url} poster={reel.thumbnail_url}
           className="relative overflow-hidden"
           style={{ aspectRatio: '9/16', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
           <button
             onClick={() => navigate(`/reels?user=${encodeId(userId)}&id=${encodeId(reel.id)}`)}
             className="absolute inset-0 w-full h-full text-left">
-            {!reel.thumbnail_url && !reel.hls_url && (
+            {!reel.thumbnail_url && !reel.mp4_url && !reel.hls_url && (
               <div className="w-full h-full flex items-center justify-center">
                 <Play size={22} style={{ color: 'var(--text-tertiary)' }} />
               </div>

@@ -84,8 +84,8 @@ export default function CreateReelPage() {
     <div className="w-full mx-auto" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
 
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3"
-        style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+      <div className="sticky top-2 mx-2 sm:mx-4 mt-2 mb-2 rounded-full z-10 flex items-center gap-3 px-4 py-3"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 20px rgba(11,11,16,0.08), 0 20px 40px -10px rgba(11,11,16,0.12)' }}>
         <button onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-full flex items-center justify-center"
           style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>

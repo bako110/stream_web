@@ -581,11 +581,11 @@ function RightPanelTabs({ reelId, commentCount, suggestions, onSuggestionClick, 
               <div className="grid grid-cols-2 gap-2.5">
                 {suggestions.map(r => (
                   <HoverVideoPreview key={r.id}
-                    src={r.hls_url} poster={r.thumbnail_url}
+                    src={r.mp4_url || r.hls_url} poster={r.thumbnail_url}
                     className="relative overflow-hidden transition-transform hover:scale-[1.02]"
                     style={{ aspectRatio: '2/3.6', borderRadius: 12, background: 'var(--bg-secondary)' }}>
                     <button onClick={() => onSuggestionClick(r.id)} className="absolute inset-0 w-full h-full text-left">
-                      {!r.thumbnail_url && !r.hls_url && (
+                      {!r.thumbnail_url && !r.mp4_url && !r.hls_url && (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Play size={24} style={{ color: 'var(--text-tertiary)' }} />
                         </div>
@@ -811,25 +811,31 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
     if (stallTimer.current) { clearTimeout(stallTimer.current); stallTimer.current = null; }
   }
 
+  // Source de lecture — MP4 en priorité (nouveaux reels, lecture native du
+  // navigateur, pas de hls.js : démarrage plus rapide, aucun manifest à
+  // parser). hls_url reste géré en fallback pour les anciens reels qui n'ont
+  // jamais eu de mp4_url. Même priorité que ReelsScreen.tsx côté mobile.
+  const isMp4    = !!reel.mp4_url;
+  const videoSrc = toProxiedUrl((reel.mp4_url || reel.hls_url) ?? '');
+
   // Retry avec backoff exponentiel (identique mobile)
   function doRetry() {
     const v = videoRef.current;
-    if (!v || !reel.hls_url) return;
+    if (!v || !videoSrc) return;
     if (retryCount.current >= MAX_RETRIES) { setVideoError(true); setBuffering(false); return; }
     const attempt = retryCount.current++;
     setTimeout(() => {
-      const src = toProxiedUrl(reel.hls_url!);
-      if (hlsRef.current) {
-        hlsRef.current.loadSource(src);
+      if (isMp4) {
+        // MP4 : recharger la même source suffit, pas de manifest à re-parser.
+        v.load();
+      } else if (hlsRef.current) {
+        hlsRef.current.loadSource(videoSrc);
       } else if (v.src) {
         v.load();
       }
       v.play().catch(() => {});
     }, Math.pow(2, attempt) * 1000);
   }
-
-  // HLS setup
-  const videoSrc = toProxiedUrl(reel.hls_url ?? '');
 
   useEffect(() => {
     const v = videoRef.current;
@@ -864,7 +870,14 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
       });
     };
 
-    if (Hls.isSupported()) {
+    if (isMp4) {
+      // Lecture native — le navigateur gère seul le streaming HTTP range +
+      // son propre cache disque, pas de bibliothèque tierce nécessaire.
+      // preload="auto" (posé en JSX) démarre déjà le téléchargement dès le
+      // montage, y compris pour les slides préchargées hors écran.
+      v.src = videoSrc;
+      v.addEventListener('loadedmetadata', playWhenReady, { once: true });
+    } else if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30, maxMaxBufferLength: 60 });
       hlsRef.current = hls;
       hls.loadSource(videoSrc);
@@ -1164,6 +1177,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
           <video ref={videoRef}
             className="relative w-full h-full object-contain"
             playsInline poster={reel.thumbnail_url ?? undefined}
+            preload="auto"
             onTimeUpdate={() => {
               const v = videoRef.current;
               if (v?.duration) setProgress((v.currentTime / v.duration) * 100);
@@ -1685,7 +1699,8 @@ function HoverVideoCard({ r, onOpen, onMenu, fmt }: {
 
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !r.hls_url) return;
+    const source = r.mp4_url || r.hls_url;
+    if (!v || !source) return;
     if (!hovering) {
       v.pause();
       hlsRef.current?.destroy();
@@ -1694,8 +1709,11 @@ function HoverVideoCard({ r, onOpen, onMenu, fmt }: {
       v.load();
       return;
     }
-    const src = toProxiedUrl(r.hls_url);
-    if (Hls.isSupported()) {
+    const src = toProxiedUrl(source);
+    if (r.mp4_url) {
+      // MP4 : lecture native directe, pas de hls.js nécessaire.
+      v.src = src; v.muted = true; v.play().catch(() => {});
+    } else if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 10 });
       hlsRef.current = hls;
       hls.loadSource(src);
@@ -1708,7 +1726,7 @@ function HoverVideoCard({ r, onOpen, onMenu, fmt }: {
       hlsRef.current?.destroy(); hlsRef.current = null;
       v.pause(); v.removeAttribute('src'); v.load();
     };
-  }, [hovering, r.hls_url]); // eslint-disable-line
+  }, [hovering, r.hls_url, r.mp4_url]); // eslint-disable-line
 
   return (
     <div className="flex flex-col"
@@ -2223,12 +2241,12 @@ export default function ReelsPage() {
   }, []);
 
   // Les reels tendance/résultats de recherche n'ont pas toujours tous les champs
-  // nécessaires à la lecture (hls_url notamment, cf. get_trending_reels côté
-  // backend) — on refetch l'objet complet avant de jouer, comme côté mobile,
-  // pour ne jamais lancer une lecture avec un flux vidéo manquant.
+  // nécessaires à la lecture (mp4_url/hls_url notamment, cf. get_trending_reels
+  // côté backend) — on refetch l'objet complet avant de jouer, comme côté
+  // mobile, pour ne jamais lancer une lecture avec un flux vidéo manquant.
   const pickSearchResult = useCallback(async (r: Reel) => {
     closeSearch();
-    if (r.hls_url) { jumpToReel(r); return; }
+    if (r.mp4_url || r.hls_url) { jumpToReel(r); return; }
     try {
       const full = await apiClient.get<Reel>(Endpoints.reels.byId(r.id));
       jumpToReel(full.data ?? r);
@@ -2458,7 +2476,7 @@ export default function ReelsPage() {
       <GuestPreview
         type="reel"
         thumbnail={guestReel?.thumbnail_url ?? null}
-        videoUrl={guestReel?.hls_url ?? null}
+        videoUrl={(guestReel?.mp4_url || guestReel?.hls_url) ?? null}
         body={guestReel?.caption ?? null}
         author={guestReel?.author ?? null}
         date={guestReel?.created_at ?? null}
@@ -2736,7 +2754,7 @@ export default function ReelsPage() {
 
         {/* Overlay player inline — s'ouvre sans quitter la page */}
         {previewReel && (() => {
-          const videoSrc = toProxiedUrl(previewReel.hls_url ?? '');
+          const videoSrc = toProxiedUrl((previewReel.mp4_url || previewReel.hls_url) ?? '');
           return (
             <div className="fixed inset-0 z-[60] flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}

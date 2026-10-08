@@ -156,8 +156,8 @@ export default function DiscoverEventsPage() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 px-4 py-3 flex items-center gap-3"
-        style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', backdropFilter: 'blur(12px)' }}>
+      <div className="sticky top-2 mx-2 sm:mx-4 mt-2 mb-2 rounded-full z-30 px-4 py-3 flex items-center gap-3"
+        style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 20px rgba(11,11,16,0.08), 0 20px 40px -10px rgba(11,11,16,0.12)', backdropFilter: 'blur(12px)' }}>
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'rgba(123,63,242,0.12)' }}>

@@ -39,9 +39,14 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
   const backLabel = type === 'film' ? 'Films' : 'Séries';
 
   return (
-    <div>
+    <div className="xp-container pt-2 md:pt-4">
+      <Link to={backPath} className="xp-back">
+        <ArrowLeft size={15} />
+        {backLabel}
+      </Link>
+
       {/* Hero */}
-      <div className="relative h-72 md:h-96 overflow-hidden">
+      <div className="relative rounded-3xl h-72 md:h-96 overflow-hidden">
         {content.banner_url || content.thumbnail_url ? (
           <img
             src={content.banner_url ?? content.thumbnail_url!}
@@ -53,17 +58,10 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/50 to-transparent" />
 
-        <Link
-          to={backPath}
-          className="absolute top-4 left-4 flex items-center gap-2 text-white bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm hover:bg-black/60 transition-colors"
-        >
-          <ArrowLeft size={14} />
-          {backLabel}
-        </Link>
       </div>
 
       {/* Content */}
-      <div className="w-full mx-auto px-4 -mt-24 relative z-10 pb-16">
+      <div className="w-full px-2 sm:px-4 -mt-24 relative z-10 pb-16">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Thumbnail as poster */}
           {content.thumbnail_url && (

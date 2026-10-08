@@ -64,13 +64,15 @@ export function BottomNav() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-around px-2"
+      className="lg:hidden fixed inset-x-3 z-40 flex items-center justify-around px-2 rounded-full"
       style={{
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
         height: '60px',
         background: 'var(--glass-strong-bg)',
         backdropFilter: 'blur(24px) saturate(180%)',
         WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderTop: '1px solid var(--border)',
+        border: '1px solid var(--border)',
+        boxShadow: '0 8px 28px rgba(0,0,0,0.18)',
       }}
     >
       {tabs.map(({ to, icon: Icon, label }, index) => {

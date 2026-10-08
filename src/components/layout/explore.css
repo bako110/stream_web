@@ -86,11 +86,22 @@
    landing (pas de logo+liens sur une ligne). ── */
 .xp-header {
   position: sticky;
-  top: 0;
+  top: 0.5rem;
   z-index: 40;
-  background: var(--xp-bg);
-  border-bottom: 1px solid var(--xp-line);
+  width: calc(100% - 1rem);
+  max-width: 1180px;
+  margin: 0.5rem auto 0;
+  border-radius: 2rem;
+  background: color-mix(in srgb, var(--xp-surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--xp-line);
+  box-shadow: 0 1px 2px rgba(11,11,16,0.05), 0 8px 20px rgba(11,11,16,0.07), 0 20px 40px -10px rgba(11,11,16,0.12);
 }
+@media (min-width: 768px) { .xp-header { top: 1rem; width: calc(100% - 2rem); margin: 1rem auto 0; } }
+/* Contenu de la pilule aligné sur ses bords (pas sur le conteneur de page) */
+.xp-header .xp-container { max-width: none; padding-left: 1.25rem; padding-right: 1.25rem; }
+@media (min-width: 640px) { .xp-header .xp-container { padding-left: 1.75rem; padding-right: 1.75rem; } }
 .xp-header-top {
   display: flex;
   align-items: center;
@@ -285,7 +296,15 @@
 
 /* ── Footer — mise en page différente du footer de la landing (colonnes
    + bloc newsletter/CTA compact, plutôt que grille 4 colonnes classique) ── */
-.xp-footer { border-top: 1px solid var(--xp-line); padding-top: 3rem; padding-bottom: 2rem; }
+.xp-footer {
+  margin: 2rem 0.5rem 0.75rem;
+  border: 1px solid var(--xp-line);
+  border-radius: 2rem;
+  background: var(--xp-surface, transparent);
+  padding-top: 2.5rem;
+  padding-bottom: 1.5rem;
+}
+@media (min-width: 768px) { .xp-footer { margin: 3rem 1rem 1rem; border-radius: 2.5rem; padding-top: 3rem; padding-bottom: 2rem; } }
 .xp-footer-row {
   display: flex;
   flex-direction: column;
@@ -329,3 +348,21 @@
 @media (prefers-reduced-motion: reduce) {
   .xp-rise { transition: none; opacity: 1; transform: none; }
 }
+
+/* Bouton retour — pilule visible, alignée sur le bord gauche du contenu */
+.xp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.25rem 0 1rem 0.5rem;
+  padding: 0.5rem 1rem 0.5rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--xp-text-2);
+  background: var(--xp-surface);
+  border: 1px solid var(--xp-line);
+  box-shadow: 0 2px 8px rgba(11,11,16,0.06);
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.xp-back:hover { color: var(--xp-text); border-color: var(--xp-text-3); transform: translateX(-2px); }

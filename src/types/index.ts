@@ -233,7 +233,11 @@ export type ReelRemixType = 'remix' | 'repost' | null;
 
 export interface Reel {
   id: string; user_id: string; caption: string | null;
+  // hls_url : legacy, uniquement présent sur d'anciens reels — le backend a
+  // basculé sur MP4 unique (voir reel_render_service.py). mp4_url est la
+  // source de lecture réelle pour tout nouveau reel.
   hls_url: string | null;
+  mp4_url?: string | null;
   thumbnail_url: string | null; duration_sec: number | null; status: ReelStatus;
   ref_content_id: string | null; ref_concert_id: string | null; ref_event_id: string | null;
   view_count: number; like_count: number; dislike_count: number; comment_count: number;

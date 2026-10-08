@@ -88,15 +88,15 @@ export function MobileDrawer({ onClose }: Props) {
       )}
 
       {/* ── Découvrir ── */}
-      <div className="flex-1 overflow-y-auto py-2">
-        <p className="px-4 pt-3 pb-1 text-[10px] font-black uppercase tracking-widest"
+      <div className="flex-1 overflow-y-auto py-2 px-2">
+        <p className="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-widest"
           style={{ color: 'var(--text-tertiary)' }}>
           {MAIN_SECTION.label}
         </p>
         {MAIN_SECTION.items.map(({ to, label, icon: Icon, color }) => (
           <NavLink key={to} to={to} onClick={onClose}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-2.5 transition-all ${isActive ? 'font-semibold' : 'font-normal'}`
+              `flex items-center gap-3 pl-2 pr-4 py-1.5 mb-0.5 rounded-full transition-all ${isActive ? 'font-semibold' : 'font-normal'}`
             }
             style={({ isActive }) => ({
               background: isActive ? `${color}12` : 'transparent',
@@ -104,7 +104,7 @@ export function MobileDrawer({ onClose }: Props) {
             })}>
             {({ isActive }) => (
               <>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
                   style={{ background: isActive ? `${color}20` : 'var(--bg-secondary)', color }}>
                   <Icon size={16} />
                 </div>
@@ -119,13 +119,13 @@ export function MobileDrawer({ onClose }: Props) {
       </div>
 
       {/* ── Footer — bouton Plus ── */}
-      <div className="shrink-0 px-2 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+      <div className="shrink-0 px-2 py-2" style={{ borderTop: '1px solid var(--border)' }}>
         <button onClick={() => { onClose(); navigate('/more'); }}
-          className="flex items-center gap-3 px-4 py-2.5 rounded-xl w-full text-left transition-all"
+          className="flex items-center gap-3 pl-2 pr-4 py-1.5 rounded-full w-full text-left transition-all"
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+          <div className="w-9 h-9 rounded-full flex items-center justify-center"
             style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
             <MoreHorizontal size={16} />
           </div>

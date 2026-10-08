@@ -57,12 +57,13 @@ export function Topbar({ onMenuClick }: Props) {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3 pl-2 pr-3 sm:px-4 h-14 overflow-hidden"
+      className="sticky top-2 z-30 flex items-center gap-1.5 sm:gap-3 pl-3 pr-3 sm:px-5 h-14 mx-2 sm:mx-4 mt-2 mb-1 rounded-full shrink-0"
       style={{
         background:          'var(--glass-strong-bg)',
         backdropFilter:      'blur(20px) saturate(180%)',
         WebkitBackdropFilter:'blur(20px) saturate(180%)',
-        borderBottom:        '1px solid var(--border)',
+        border:              '1px solid var(--border)',
+        boxShadow:           '0 4px 20px rgba(0,0,0,0.08)',
       }}
     >
       {/* Mobile hamburger */}
@@ -93,7 +94,7 @@ export function Topbar({ onMenuClick }: Props) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Rechercher films, artistes, reels…"
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-xl focus:outline-none transition-all"
+            className="w-full pl-9 pr-4 py-2 text-sm rounded-full focus:outline-none transition-all"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
             onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 3px rgba(123,63,242,0.12)'; }}
             onBlur={e  => { e.target.style.borderColor = 'var(--border)';  e.target.style.boxShadow = 'none'; }}

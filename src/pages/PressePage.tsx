@@ -42,8 +42,8 @@ export default function PressePage() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}>
       {/* Nav */}
-      <nav className="sticky top-0 z-40 flex items-center gap-4 px-6 py-4"
-        style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+      <nav className="sticky top-2 mx-2 sm:mx-4 mt-2 mb-2 rounded-full z-40 flex items-center gap-4 px-6 py-4"
+        style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 20px rgba(11,11,16,0.08), 0 20px 40px -10px rgba(11,11,16,0.12)' }}>
         <button onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-sm transition-opacity hover:opacity-70"
           style={{ color: 'var(--text-secondary)' }}>
@@ -192,7 +192,7 @@ export default function PressePage() {
         </section>
       </div>
 
-      <footer className="py-8 text-center text-xs" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
+      <footer className="py-8 text-center text-xs mx-2 md:mx-4 mb-3 rounded-[2rem]" style={{ border: '1px solid var(--border)', color: 'var(--text-tertiary)' }}>
         © 2025 Gofolyx. Tous droits réservés.
       </footer>
     </div>

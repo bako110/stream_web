@@ -151,12 +151,14 @@ function ReelStage({ reel, locked }: { reel: Reel; locked: boolean }) {
   const [elapsed,  setElapsed]  = useState(0);
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const videoSrc = toProxiedUrl(reel.hls_url ?? '');
+  const videoSrc = toProxiedUrl((reel.mp4_url || reel.hls_url) ?? '');
   const author   = reel.author;
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !videoSrc) return;
+    // MP4 direct (nouveaux reels) : lecture native, pas de hls.js.
+    if (reel.mp4_url) { v.src = videoSrc; v.play().catch(() => {}); return; }
     let hls: Hls | null = null;
     if (Hls.isSupported()) {
       hls = new Hls({ autoStartLoad: true });
@@ -168,7 +170,7 @@ function ReelStage({ reel, locked }: { reel: Reel; locked: boolean }) {
       v.play().catch(() => {});
     }
     return () => { hls?.destroy(); };
-  }, [videoSrc]);
+  }, [videoSrc, reel.mp4_url]);
 
   // Extrait limité pour un visiteur non connecté — passé PREVIEW_SECONDS, on met en
   // pause et on affiche la porte de connexion par-dessus (flou + overlay).

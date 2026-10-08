@@ -36,9 +36,14 @@ export default function ExploreEventDetailPage() {
   const location  = [event.venue_name, event.venue_address, event.venue_city, event.venue_country].filter(Boolean).join(', ');
 
   return (
-    <div>
+    <div className="xp-container pt-2 md:pt-4">
+      <Link to="/explore/events" className="xp-back">
+        <ArrowLeft size={15} />
+        Événements
+      </Link>
+
       {/* Hero */}
-      <div className="relative h-64 md:h-96 overflow-hidden">
+      <div className="relative rounded-3xl h-64 md:h-96 overflow-hidden">
         {event.thumbnail_url || event.banner_url ? (
           <img
             src={event.banner_url ?? event.thumbnail_url!}
@@ -50,13 +55,6 @@ export default function ExploreEventDetailPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/40 to-transparent" />
 
-        <Link
-          to="/explore/events"
-          className="absolute top-4 left-4 flex items-center gap-2 text-white bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm hover:bg-black/60 transition-colors"
-        >
-          <ArrowLeft size={14} />
-          Événements
-        </Link>
 
         {event.event_type && (
           <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full capitalize">
@@ -66,7 +64,7 @@ export default function ExploreEventDetailPage() {
       </div>
 
       {/* Content */}
-      <div className="w-full mx-auto px-4 -mt-16 relative z-10 pb-16">
+      <div className="w-full px-2 sm:px-4 -mt-16 relative z-10 pb-16">
         <div className="card p-6 md:p-8">
           <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">{event.title}</h1>
 

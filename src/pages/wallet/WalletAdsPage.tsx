@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useConfirm } from '../../components/ui/Dialog';
 import {
   Plus, Zap, PauseCircle, PlayCircle, Trash2, BarChart2,
-  ArrowLeft, RefreshCw, Info, TrendingUp, Eye, MousePointer,
-  CheckCircle, XCircle, Edit3, Megaphone,
+  ArrowLeft, RefreshCw, Info, Eye, MousePointer,
+  CheckCircle, XCircle, Edit3, Megaphone, Percent, Pause,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
-import { Spinner, PageLoader } from '../../components/ui/Spinner';
+import { PageLoader } from '../../components/ui/Spinner';
 
 export type AdStatus    = 'draft' | 'active' | 'paused' | 'ended' | 'rejected';
 export type AdPlacement = 'feed' | 'reels' | 'stories' | 'search';
@@ -44,26 +45,36 @@ export interface Ad {
 }
 
 const EUR_TO_GOGOLD = 100;
-const goGoldToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
 const PLACEMENT_LABELS: Record<AdPlacement, string> = {
   feed: 'Feed principal', reels: 'Reels', stories: 'Stories', search: 'Recherche',
 };
-const STATUS_CONFIG: Record<AdStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  draft:    { label: 'Brouillon',  color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)', icon: <Edit3 size={12}/>     },
-  active:   { label: 'En ligne',   color: '#22C55E', bg: 'rgba(34,197,94,0.12)',   icon: <Zap size={12}/>        },
-  paused:   { label: 'En pause',   color: '#7B3FF2', bg: 'rgba(123,63,242,0.12)',  icon: <PauseCircle size={12}/> },
-  ended:    { label: 'Terminée',   color: '#6B7280', bg: 'rgba(107,114,128,0.12)', icon: <CheckCircle size={12}/> },
-  rejected: { label: 'Refusée',    color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   icon: <XCircle size={12}/>     },
+const STATUS_CONFIG: Record<AdStatus, { label: string; color: string }> = {
+  draft:    { label: 'Brouillon', color: '#9CA3AF' },
+  active:   { label: 'En ligne',  color: '#22C55E' },
+  paused:   { label: 'En pause',  color: '#F59E0B' },
+  ended:    { label: 'Terminée',  color: '#6B7280' },
+  rejected: { label: 'Refusée',   color: '#EF4444' },
 };
 
 const CPM_TIERS = [
-  { label: 'Économique', cpm: 1,  gogold: 100,  est: '~1000 imp/€' },
-  { label: 'Standard',   cpm: 2,  gogold: 200,  est: '~500 imp/€'  },
-  { label: 'Premium',    cpm: 5,  gogold: 500,  est: '~200 imp/€'  },
-  { label: 'Top',        cpm: 10, gogold: 1000, est: '~100 imp/€'  },
+  { label: 'Économique', cpm: 1,  gogold: 100,  reach: '~1 000' },
+  { label: 'Standard',   cpm: 2,  gogold: 200,  reach: '~500'   },
+  { label: 'Premium',    cpm: 5,  gogold: 500,  reach: '~200'   },
+  { label: 'Top',        cpm: 10, gogold: 1000, reach: '~100'   },
+];
+const HOW_IT_WORKS: { icon: ReactNode; text: string }[] = [
+  { icon: <Zap size={12}/>,       text: 'Tu paies en GoGold — 100 GoGold = 1 €' },
+  { icon: <Eye size={12}/>,       text: "Ta pub apparaît dans le feed de milliers d'utilisateurs" },
+  { icon: <BarChart2 size={12}/>, text: 'Tu suis impressions, clics et CTR en temps réel' },
+  { icon: <Pause size={12}/>,     text: 'Tu peux mettre en pause ou arrêter à tout moment' },
 ];
 
+const fmt = (n: number) => n.toLocaleString('fr-FR');
+const eur = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
+
+// Carte campagne — même structure que AdsScreen (mobile) : titre + statut,
+// bloc budget GoGold restants, barre de consommation, stats. Toute la carte ouvre l'édition.
 function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
   ad: Ad;
   onPause:  (id: string) => void;
@@ -71,117 +82,109 @@ function AdCard({ ad, onPause, onResume, onDelete, onEdit }: {
   onDelete: (id: string) => void;
   onEdit:   (ad: Ad)     => void;
 }) {
-  const cfg         = STATUS_CONFIG[ad.status];
+  const cfg          = STATUS_CONFIG[ad.status];
   const budgetGoGold = ad.gogold_debited   ?? Math.round(ad.budget_eur * EUR_TO_GOGOLD);
   const spentGoGold  = ad.gogold_spent     ?? Math.round(ad.spent_eur  * EUR_TO_GOGOLD);
-  const remaining   = ad.gogold_remaining ?? Math.max(0, budgetGoGold - spentGoGold);
-  const progress    = budgetGoGold > 0 ? Math.min((spentGoGold / budgetGoGold) * 100, 100) : 0;
-  const cpmGoGold    = Math.round(ad.cpm_eur * EUR_TO_GOGOLD);
+  const remaining    = ad.gogold_remaining ?? Math.max(0, budgetGoGold - spentGoGold);
+  const pct          = ad.budget_eur > 0 ? Math.min(ad.spent_eur / ad.budget_eur, 1) : 0;
+  const cpmGoGold    = Math.round((ad.cpm_eur ?? 2) * EUR_TO_GOGOLD);
+  const barColor     = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : 'var(--primary)';
+  const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
 
   return (
-    <div className="rounded-2xl overflow-hidden transition-all"
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      {/* Header */}
-      <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ color: cfg.color, background: cfg.bg }}>
-              {cfg.icon} {cfg.label}
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
-              {PLACEMENT_LABELS[ad.placement]}
-            </span>
-          </div>
-          <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
-          {ad.description && (
-            <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{ad.description}</p>
-          )}
-        </div>
-        {/* Thumbnail */}
+    <div onClick={() => onEdit(ad)}
+      className="rounded-3xl p-4 flex flex-col gap-3 cursor-pointer transition-all hover:-translate-y-0.5"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 10px rgba(11,11,16,0.05)' }}>
+
+      {/* Titre + statut + actions */}
+      <div className="flex items-start gap-3">
         {ad.thumbnail_url || ad.creative_url ? (
-          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
+          <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0">
             <img src={ad.thumbnail_url ?? ad.creative_url!} alt="" className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.2),rgba(123,63,242,0.1))' }}>
-            <Megaphone size={20} style={{ color: 'var(--primary)' }} />
+          <div className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center"
+            style={{ background: 'rgba(123,63,242,0.12)' }}>
+            <Megaphone size={18} style={{ color: 'var(--primary)' }} />
           </div>
         )}
-      </div>
-
-      {/* Budget progress */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center justify-between text-[11px] mb-1.5">
-          <span style={{ color: 'var(--text-tertiary)' }}>Budget utilisé</span>
-          <span style={{ color: 'var(--text-secondary)' }}>
-            {spentGoGold.toLocaleString('fr-FR')} / {budgetGoGold.toLocaleString('fr-FR')} GoGold
-          </span>
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
-          <div className="h-full rounded-full transition-all"
-            style={{ width: `${progress}%`, background: progress > 85 ? '#EF4444' : progress > 60 ? '#7B3FF2' : '#22C55E' }} />
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div className="grid grid-cols-4 gap-px" style={{ borderTop: '1px solid var(--border)' }}>
-        {[
-          { icon: <Eye size={12}/>,           label: 'Impressions', value: ad.impressions.toLocaleString('fr-FR') },
-          { icon: <MousePointer size={12}/>,  label: 'Clics',       value: ad.clicks.toLocaleString('fr-FR')      },
-          { icon: <TrendingUp size={12}/>,    label: 'CTR',         value: `${ad.ctr_pct.toFixed(1)}%`            },
-          { icon: <Zap size={12}/>,           label: 'Restant',     value: `${remaining.toLocaleString('fr-FR')} c` },
-        ].map(s => (
-          <div key={s.label} className="flex flex-col items-center py-2.5 gap-0.5"
-            style={{ background: 'var(--bg-secondary)' }}>
-            <span style={{ color: 'var(--text-tertiary)' }}>{s.icon}</span>
-            <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{s.value}</span>
-            <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>{s.label}</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] flex-wrap">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: cfg.color }} />
+            <span className="font-bold" style={{ color: cfg.color }}>{cfg.label}</span>
+            <span style={{ color: 'var(--text-tertiary)' }}>· {PLACEMENT_LABELS[ad.placement] ?? ad.placement}</span>
           </div>
-        ))}
-      </div>
-
-      {/* CPM */}
-      <div className="px-4 py-2.5 flex items-center justify-between"
-        style={{ borderTop: '1px solid var(--border)' }}>
-        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          CPM : <span className="font-bold" style={{ color: 'var(--text-secondary)' }}>{cpmGoGold} GoGold ({ad.cpm_eur}€)</span>
-        </span>
-        {/* Actions */}
-        <div className="flex items-center gap-1.5">
-          <button onClick={() => onEdit(ad)}
-            className="p-1.5 rounded-lg transition-all text-xs"
-            style={{ color: 'var(--text-secondary)', background: 'var(--bg-secondary)' }}
-            title="Modifier">
-            <Edit3 size={13} />
-          </button>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
           {ad.status === 'active' && (
-            <button onClick={() => onPause(ad.id)}
-              className="p-1.5 rounded-lg transition-all"
-              style={{ color: '#7B3FF2', background: 'rgba(123,63,242,0.1)' }}
-              title="Mettre en pause">
-              <PauseCircle size={13} />
+            <button onClick={stop(() => onPause(ad.id))} title="Mettre en pause"
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ color: '#7B3FF2', background: 'rgba(123,63,242,0.1)' }}>
+              <PauseCircle size={15} />
             </button>
           )}
           {ad.status === 'paused' && (
-            <button onClick={() => onResume(ad.id)}
-              className="p-1.5 rounded-lg transition-all"
-              style={{ color: '#22C55E', background: 'rgba(34,197,94,0.1)' }}
-              title="Reprendre">
-              <PlayCircle size={13} />
+            <button onClick={stop(() => onResume(ad.id))} title="Reprendre"
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ color: '#22C55E', background: 'rgba(34,197,94,0.1)' }}>
+              <PlayCircle size={15} />
             </button>
           )}
           {(ad.status === 'draft' || ad.status === 'ended' || ad.status === 'rejected') && (
-            <button onClick={() => onDelete(ad.id)}
-              className="p-1.5 rounded-lg transition-all"
-              style={{ color: '#EF4444', background: 'rgba(239,68,68,0.1)' }}
-              title="Supprimer">
-              <Trash2 size={13} />
+            <button onClick={stop(() => onDelete(ad.id))} title="Supprimer"
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ color: '#EF4444', background: 'rgba(239,68,68,0.1)' }}>
+              <Trash2 size={14} />
             </button>
           )}
         </div>
+      </div>
+
+      {/* Budget GoGold */}
+      <div className="rounded-2xl p-3 flex items-center justify-between gap-3"
+        style={{ background: 'rgba(123,63,242,0.07)', border: '1px solid rgba(123,63,242,0.15)' }}>
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold tracking-wider" style={{ color: 'var(--primary)' }}>BUDGET</p>
+          <p className="text-lg font-black leading-tight" style={{ color: 'var(--primary)' }}>
+            {fmt(remaining)} <span className="text-xs font-bold">GoGold restants</span>
+          </p>
+          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+            {fmt(spentGoGold)} dépensés · {fmt(budgetGoGold)} total
+          </p>
+          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+            = {eur(ad.spent_eur)} / {eur(ad.budget_eur)}
+          </p>
+        </div>
+        <div className="shrink-0 rounded-xl px-2.5 py-1.5 text-center" style={{ background: 'rgba(123,63,242,0.13)' }}>
+          <p className="text-[9px] font-bold tracking-wider" style={{ color: 'var(--primary)' }}>CPM</p>
+          <p className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: 'var(--primary)' }}>1 000 imp = {cpmGoGold} GoGold</p>
+          <p className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>= {eur(ad.cpm_eur ?? 2)}</p>
+        </div>
+      </div>
+
+      {/* Progression */}
+      <div>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+          <div className="h-full rounded-full transition-all" style={{ width: `${pct * 100}%`, background: barColor }} />
+        </div>
+        <p className="text-[10px] mt-1" style={{ color: 'var(--text-tertiary)' }}>{Math.round(pct * 100)}% du budget consommé</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+        {[
+          { icon: <Eye size={13}/>,          label: 'Impressions',  value: fmt(ad.impressions) },
+          { icon: <MousePointer size={13}/>, label: 'Clics',        value: fmt(ad.clicks) },
+          { icon: <Percent size={13}/>,      label: 'CTR',          value: `${ad.ctr_pct}%` },
+          { icon: <Zap size={13}/>,          label: 'GoGold rest.', value: fmt(remaining) },
+        ].map(s => (
+          <div key={s.label} className="flex flex-col items-center gap-0.5 min-w-0">
+            <span style={{ color: 'var(--primary)' }}>{s.icon}</span>
+            <span className="text-xs font-bold truncate max-w-full" style={{ color: 'var(--text-primary)' }}>{s.value}</span>
+            <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>{s.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -221,158 +224,171 @@ export default function WalletAdsPage() {
     setActing(null);
   }
 
-  // Grouper par statut
   const byStatus = (s: AdStatus) => ads.filter(a => a.status === s);
-  const active   = byStatus('active');
-  const paused   = byStatus('paused');
-  const drafts   = byStatus('draft');
-  const ended    = byStatus('ended');
-  const rejected = byStatus('rejected');
 
-  // Stats globales
-  const totalBudget     = ads.reduce((s, a) => s + a.budget_eur * EUR_TO_GOGOLD, 0);
-  const totalSpent      = ads.reduce((s, a) => s + a.spent_eur  * EUR_TO_GOGOLD, 0);
-  const totalImpressions = ads.reduce((s, a) => s + a.impressions, 0);
-  const avgCtr          = ads.length ? ads.reduce((s, a) => s + a.ctr_pct, 0) / ads.length : 0;
+  // Stats globales — CTR global pondéré (clics / impressions), comme le mobile
+  const totalBudgetGoGold = ads.reduce((s, a) => s + (a.gogold_debited ?? Math.round(a.budget_eur * EUR_TO_GOGOLD)), 0);
+  const totalBudgetEur    = ads.reduce((s, a) => s + a.budget_eur, 0);
+  const totalSpentEur     = ads.reduce((s, a) => s + a.spent_eur, 0);
+  const totalImpressions  = ads.reduce((s, a) => s + a.impressions, 0);
+  const totalClicks       = ads.reduce((s, a) => s + a.clicks, 0);
+  const globalCtr         = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+  const activeCount       = byStatus('active').length;
+  const remainingImpressions = ads
+    .filter(a => a.status === 'active' || a.status === 'paused')
+    .reduce((s, a) => s + Math.round(((a.budget_eur - a.spent_eur) / (a.cpm_eur > 0 ? a.cpm_eur : 2)) * 1000), 0);
 
   const groups = [
-    { label: 'En ligne',   icon: <Zap size={14}/>,         color: '#22C55E', items: active   },
-    { label: 'En pause',   icon: <PauseCircle size={14}/>,  color: '#7B3FF2', items: paused   },
-    { label: 'Brouillons', icon: <Edit3 size={14}/>,        color: '#9CA3AF', items: drafts   },
-    { label: 'Terminées',  icon: <CheckCircle size={14}/>,  color: '#6B7280', items: ended    },
-    { label: 'Refusées',   icon: <XCircle size={14}/>,      color: '#EF4444', items: rejected },
+    { label: 'En ligne',   icon: <Zap size={14}/>,         color: '#10B981', items: byStatus('active')   },
+    { label: 'En pause',   icon: <PauseCircle size={14}/>,  color: '#F59E0B', items: byStatus('paused')   },
+    { label: 'Brouillons', icon: <Edit3 size={14}/>,        color: '#6B7280', items: byStatus('draft')    },
+    { label: 'Terminées',  icon: <CheckCircle size={14}/>,  color: '#6B7280', items: byStatus('ended')    },
+    { label: 'Refusées',   icon: <XCircle size={14}/>,      color: '#EF4444', items: byStatus('rejected') },
   ].filter(g => g.items.length > 0);
 
   if (loading) return <PageLoader />;
 
   return (
-    <div className="w-full mx-auto px-4 py-5 space-y-5">
+    <div className="w-full max-w-5xl mx-auto px-3 sm:px-4 pb-8">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/wallet')}
-            className="p-2 rounded-xl transition-all"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h1 className="text-xl font-black flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-              <Megaphone size={20} style={{ color: '#7B3FF2' }} /> Mes Publicités
-            </h1>
-            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Gérez vos campagnes publicitaires</p>
-          </div>
+      {/* Header — pilule flottante (même design que AdsScreen mobile) */}
+      <div className="sticky top-2 z-10 mt-2 mb-5 flex items-center gap-3 pl-2 pr-3 py-2 rounded-full"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)',
+          boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 20px rgba(11,11,16,0.08)' }}>
+        <button onClick={() => navigate('/wallet')} title="Retour"
+          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all"
+          style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+          <ArrowLeft size={16} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-black truncate" style={{ color: 'var(--text-primary)' }}>Mes publicités</h1>
+          <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>100 GoGold = 1 € de budget pub</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => { setLoading(true); fetchAds().finally(() => setLoading(false)); }}
-            className="p-2 rounded-xl transition-all"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-            <RefreshCw size={15} />
-          </button>
-          <button onClick={() => navigate('/wallet/ads/create')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 16px rgba(123,63,242,0.3)' }}>
-            <Plus size={15} /> Créer
-          </button>
-        </div>
+        <button onClick={() => { setLoading(true); fetchAds().finally(() => setLoading(false)); }} title="Actualiser"
+          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+          <RefreshCw size={15} />
+        </button>
+        <button onClick={() => navigate('/wallet/ads/create')}
+          className="flex items-center gap-1.5 px-4 h-9 rounded-full text-sm font-bold text-white shrink-0"
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 14px rgba(123,63,242,0.3)' }}>
+          <Plus size={15} /> Créer
+        </button>
       </div>
 
-      {/* Comment ça marche */}
-      <div className="rounded-2xl p-5 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.12),rgba(123,63,242,0.06))', border: '1px solid rgba(123,63,242,0.2)' }}>
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(123,63,242,0.15)' }}>
-            <Info size={18} style={{ color: 'var(--primary)' }} />
-          </div>
-          <div className="flex-1">
-            <p className="font-bold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>Comment ça marche</p>
-            <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
-              Vos pubs sont diffusées nativement dans le feed, les reels, les stories et la recherche.
-              Vous payez au CPM (coût pour 1000 impressions) en GoGold.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {CPM_TIERS.map(t => (
-                <div key={t.label} className="rounded-xl p-2.5 text-center"
-                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <p className="text-xs font-black" style={{ color: 'var(--text-primary)' }}>{t.label}</p>
-                  <p className="text-base font-black mt-0.5" style={{ color: 'var(--primary)' }}>{t.gogold} GoGold</p>
-                  <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{t.est}</p>
+      <div className="space-y-5">
+        {/* Comment ça marche */}
+        <div className="space-y-3">
+          <div className="rounded-3xl p-5" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+            <div className="flex items-center gap-2 mb-3 text-white">
+              <Megaphone size={18} />
+              <p className="font-black text-base">Comment ça marche ?</p>
+            </div>
+            <div className="space-y-2">
+              {HOW_IT_WORKS.map((r, i) => (
+                <div key={i} className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-white"
+                    style={{ background: 'rgba(255,255,255,0.2)' }}>{r.icon}</span>
+                  <p className="text-[13px] leading-snug" style={{ color: 'rgba(255,255,255,0.92)' }}>{r.text}</p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Stats globales — seulement si ads */}
-      {ads.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: 'Budget total',    value: `${totalBudget.toLocaleString('fr-FR')} GoGold`,     color: '#7B3FF2', icon: <Zap size={16}/> },
-            { label: 'Dépensé',         value: `${totalSpent.toLocaleString('fr-FR')} GoGold`,      color: '#EF4444', icon: <BarChart2 size={16}/> },
-            { label: 'Impressions',     value: totalImpressions.toLocaleString('fr-FR'),           color: '#7B3FF2', icon: <Eye size={16}/> },
-            { label: 'CTR moyen',       value: `${avgCtr.toFixed(1)}%`,                            color: '#22C55E', icon: <TrendingUp size={16}/> },
-          ].map(s => (
-            <div key={s.label} className="rounded-xl p-4"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                  style={{ background: `${s.color}18`, color: s.color }}>
-                  {s.icon}
-                </div>
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{s.label}</p>
-              </div>
-              <p className="text-base font-black" style={{ color: s.color }}>{s.value}</p>
+          <div className="rounded-3xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="px-4 py-3 flex items-center gap-1.5" style={{ background: 'rgba(123,63,242,0.07)' }}>
+              <Info size={13} style={{ color: 'var(--primary)' }} />
+              <p className="text-xs font-extrabold" style={{ color: 'var(--primary)' }}>Tarifs — Coût pour 1 000 impressions (CPM)</p>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Campagnes vides */}
-      {ads.length === 0 && (
-        <div className="rounded-2xl py-16 flex flex-col items-center gap-4 text-center"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(123,63,242,0.1)' }}>
-            <Megaphone size={32} style={{ color: '#7B3FF2' }} />
-          </div>
-          <div>
-            <p className="font-black text-base mb-1" style={{ color: 'var(--text-primary)' }}>Aucune campagne</p>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Créez votre première pub pour toucher plus d'utilisateurs</p>
-          </div>
-          <button onClick={() => navigate('/wallet/ads/create')}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-            <Plus size={15} /> Créer ma première pub
-          </button>
-        </div>
-      )}
-
-      {/* Groupes de campagnes */}
-      {groups.map(g => (
-        <section key={g.label} className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span style={{ color: g.color }}>{g.icon}</span>
-            <h2 className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>{g.label}</h2>
-            <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-              style={{ background: `${g.color}18`, color: g.color }}>
-              {g.items.length}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {g.items.map(ad => (
-              <div key={ad.id} style={{ opacity: acting === ad.id ? 0.6 : 1, pointerEvents: acting === ad.id ? 'none' : undefined }}>
-                <AdCard ad={ad} onPause={handlePause} onResume={handleResume} onDelete={handleDelete} onEdit={(a) => navigate('/wallet/ads/create', { state: { ad: a } })} />
+            {CPM_TIERS.map((t, i) => (
+              <div key={t.label} className="flex items-center gap-2.5 px-4 py-2.5"
+                style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'var(--primary)' }} />
+                <span className="text-[13px] font-bold w-24 shrink-0" style={{ color: 'var(--text-primary)' }}>{t.label}</span>
+                <span className="flex-1 text-xs min-w-0" style={{ color: 'var(--text-secondary)' }}>
+                  {eur(t.cpm)} · <b style={{ color: 'var(--primary)' }}>{t.gogold} GoGold</b> / 1 000 imp.
+                </span>
+                <span className="text-[11px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>{t.reach} imp/€</span>
               </div>
             ))}
           </div>
-        </section>
-      ))}
+        </div>
+
+        {/* Vue d'ensemble */}
+        {ads.length > 0 && (
+          <div className="rounded-3xl p-4 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>
+              Vue d'ensemble · <span style={{ color: 'var(--primary)' }}>{activeCount} active{activeCount !== 1 ? 's' : ''}</span>
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { label: 'Budget total', value: `${fmt(totalBudgetGoGold)} c`,                              sub: eur(totalBudgetEur) },
+                { label: 'Dépensé',      value: `${fmt(Math.round(totalSpentEur * EUR_TO_GOGOLD))} c`,      sub: eur(totalSpentEur) },
+                { label: 'Impressions',  value: fmt(totalImpressions),                                      sub: 'vues réelles' },
+                { label: 'CTR moyen',    value: `${globalCtr.toFixed(2)}%`,                                 sub: 'taux clic' },
+              ].map(g => (
+                <div key={g.label} className="rounded-2xl p-3" style={{ background: 'rgba(123,63,242,0.07)' }}>
+                  <p className="text-base font-black" style={{ color: 'var(--primary)' }}>{g.value}</p>
+                  <p className="text-[10px] font-semibold" style={{ color: 'rgba(123,63,242,0.7)' }}>{g.sub}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{g.label}</p>
+                </div>
+              ))}
+            </div>
+            {remainingImpressions > 0 && (
+              <div className="rounded-2xl p-3" style={{ background: 'rgba(123,63,242,0.07)' }}>
+                <p className="text-[13px] font-black flex items-center gap-1.5" style={{ color: 'var(--primary)' }}>
+                  <Eye size={13} /> ~{fmt(remainingImpressions)} imp. restantes estimées
+                </p>
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                  Sur budget restant des campagnes actives / en pause
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Vide */}
+        {ads.length === 0 && (
+          <div className="rounded-3xl py-14 px-6 flex flex-col items-center gap-4 text-center"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'rgba(123,63,242,0.1)' }}>
+              <Megaphone size={36} style={{ color: '#7B3FF2' }} />
+            </div>
+            <div>
+              <p className="font-black text-base mb-1" style={{ color: 'var(--text-primary)' }}>Lance ta première campagne</p>
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                Touche des milliers d'utilisateurs dès 100 GoGold (1 €). Tu contrôles ton budget, tu pauses quand tu veux.
+              </p>
+            </div>
+            <button onClick={() => navigate('/wallet/ads/create')}
+              className="flex items-center gap-2 px-5 h-10 rounded-full font-bold text-sm text-white"
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+              <Plus size={15} /> Créer ma première pub
+            </button>
+          </div>
+        )}
+
+        {/* Groupes */}
+        {groups.map(g => (
+          <section key={g.label} className="space-y-3">
+            <div className="flex items-center gap-2 pl-3" style={{ borderLeft: `3px solid ${g.color}` }}>
+              <span style={{ color: g.color }}>{g.icon}</span>
+              <h2 className="font-black text-sm" style={{ color: g.color }}>{g.label}</h2>
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: `${g.color}22`, color: g.color }}>
+                {g.items.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {g.items.map(ad => (
+                <div key={ad.id} style={{ opacity: acting === ad.id ? 0.6 : 1, pointerEvents: acting === ad.id ? 'none' : undefined }}>
+                  <AdCard ad={ad} onPause={handlePause} onResume={handleResume} onDelete={handleDelete}
+                    onEdit={(a) => navigate('/wallet/ads/create', { state: { ad: a } })} />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
       {ConfirmDialog}
     </div>
   );

@@ -2154,11 +2154,14 @@ function ReelCard({ reel, delay = 0 }: {
   const navigate  = useNavigate();
   const videoRef  = useRef<HTMLVideoElement>(null);
   const cardRef   = useRef<HTMLDivElement>(null);
-  const videoSrc  = toProxiedUrl(reel.hls_url ?? '');
+  const isMp4     = !!reel.mp4_url;
+  const videoSrc  = toProxiedUrl((reel.mp4_url || reel.hls_url) ?? '');
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !videoSrc) return;
+    // MP4 : lecture native directe, pas de hls.js à charger.
+    if (isMp4) { v.src = videoSrc; return; }
     let hlsInstance: import('hls.js').default | null = null;
     import('hls.js').then(({ default: Hls }) => {
       if (Hls.isSupported()) {
@@ -2170,7 +2173,7 @@ function ReelCard({ reel, delay = 0 }: {
       }
     });
     return () => { hlsInstance?.destroy(); };
-  }, [videoSrc]);
+  }, [videoSrc, isMp4]);
 
   // Autoplay when visible, pause when out of view
   useEffect(() => {
@@ -2720,7 +2723,7 @@ function ReelRowCard({ reels }: { reels: Reel[] }) {
       </div>
       <div className="flex gap-2.5 px-4 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         {reels.map(r => (
-          <HoverVideoPreview key={r.id} src={r.hls_url} poster={r.thumbnail_url}
+          <HoverVideoPreview key={r.id} src={r.mp4_url || r.hls_url} poster={r.thumbnail_url}
             className="relative shrink-0 rounded-xl overflow-hidden cursor-pointer"
             style={{ width: 108, aspectRatio: '9/16', background: '#000' }}>
             <div onClick={() => navigate(`/reels?id=${encodeId(r.id)}`)} className="absolute inset-0">

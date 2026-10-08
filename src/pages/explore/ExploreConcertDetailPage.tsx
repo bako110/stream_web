@@ -36,9 +36,14 @@ export default function ExploreConcertDetailPage() {
   const venue      = [concert.venue_name, concert.venue_city, concert.venue_country].filter(Boolean).join(', ');
 
   return (
-    <div>
+    <div className="xp-container pt-2 md:pt-4">
+      <Link to="/explore/concerts" className="xp-back">
+        <ArrowLeft size={15} />
+        Concerts
+      </Link>
+
       {/* Hero */}
-      <div className="relative h-72 md:h-[420px] overflow-hidden">
+      <div className="relative rounded-3xl h-72 md:h-[420px] overflow-hidden">
         {concert.thumbnail_url || concert.banner_url ? (
           <img
             src={concert.banner_url ?? concert.thumbnail_url!}
@@ -50,13 +55,6 @@ export default function ExploreConcertDetailPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/40 to-transparent" />
 
-        <Link
-          to="/explore/concerts"
-          className="absolute top-4 left-4 flex items-center gap-2 text-white bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm hover:bg-black/60 transition-colors"
-        >
-          <ArrowLeft size={14} />
-          Concerts
-        </Link>
 
         {isLive && (
           <div className="absolute top-4 right-4 badge-live flex items-center gap-1.5 text-base px-4 py-1.5">
@@ -68,7 +66,7 @@ export default function ExploreConcertDetailPage() {
       </div>
 
       {/* Content */}
-      <div className="w-full mx-auto px-4 -mt-20 relative z-10 pb-16">
+      <div className="w-full px-2 sm:px-4 -mt-20 relative z-10 pb-16">
         <div className="card p-6 md:p-8">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-12 h-12 rounded-xl bg-[var(--primary)]/20 flex items-center justify-center shrink-0">

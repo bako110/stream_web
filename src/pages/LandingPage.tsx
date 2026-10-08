@@ -112,7 +112,7 @@ export function GateHeader({ navLinks = NAV_LINKS }: { navLinks?: typeof NAV_LIN
       <div className="gt-header-spacer" />
 
       {menuOpen && (
-        <div className="md:!hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--gt-bg)', top: 72 }}>
+        <div className="md:!hidden fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--gt-bg)', top: 84 }}>
           <nav className="flex flex-col px-6 pt-6 gap-1">
             {navLinks.map(({ label, href }) => href.startsWith('#') ? (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}

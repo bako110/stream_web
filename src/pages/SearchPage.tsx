@@ -553,10 +553,10 @@ export default function SearchPage() {
                 {results.reels!.map((r: any) => (
                   <div key={r.id} onClick={() => navigate(`/reels?id=${encodeId(r.id)}`)} className="cursor-pointer">
                     <HoverVideoPreview
-                      src={r.hls_url} poster={r.thumbnail_url}
+                      src={r.mp4_url || r.hls_url} poster={r.thumbnail_url}
                       className="relative overflow-hidden rounded-xl"
                       style={{ aspectRatio: '9/16', background: 'var(--bg-tertiary)' }}>
-                      {!r.thumbnail_url && !r.hls_url && (
+                      {!r.thumbnail_url && !r.mp4_url && !r.hls_url && (
                         <div className="w-full h-full flex items-center justify-center">
                           <Play size={20} style={{ color: 'var(--text-tertiary)' }} />
                         </div>

@@ -162,7 +162,14 @@ export function GuestPreview({
     v.addEventListener('loadedmetadata', onLoadedMetadata);
     v.addEventListener('timeupdate', onTimeUpdate);
 
-    if (Hls.isSupported()) {
+    // MP4 direct (nouveaux reels) : lecture native, pas de hls.js — sinon
+    // hls.js échouerait silencieusement à parser un fichier qui n'est pas
+    // un manifest .m3u8.
+    const isHls = src.includes('.m3u8') || src.includes('/hls/');
+    if (!isHls) {
+      v.src = src;
+      v.addEventListener('loadedmetadata', playMuted, { once: true });
+    } else if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 15 });
       hlsRef.current = hls;
       hls.loadSource(src);
