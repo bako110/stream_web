@@ -5,6 +5,7 @@ import { fr } from 'date-fns/locale';
 import Hls from 'hls.js';
 import { RoundLogo } from './RoundLogo';
 import { Lightbox } from './Lightbox';
+import { Clapperboard, MessageCircle, Radio, Users, Coins } from 'lucide-react';
 import { renderTextWithLinks } from './RichText';
 import { toProxiedUrl } from '../../utils/constants';
 
@@ -112,11 +113,11 @@ const TYPE_CONFIG: Record<GuestPreviewType, { label: string; cta: string; icon: 
 };
 
 const WHY_ITEMS = [
-  { icon: '🎬', title: 'Films, séries & concerts en direct', desc: 'Regarde en entier, en HD, avec le son.' },
-  { icon: '💬', title: 'Réagis et échange', desc: 'Like, commente, partage et discute avec les créateurs.' },
-  { icon: '🎤', title: 'Vis les lives', desc: 'Lives, défis 1 vs 1 et tournois en temps réel.' },
-  { icon: '👥', title: 'Rejoins des communautés', desc: 'Retrouve des gens qui partagent tes passions.' },
-  { icon: '💰', title: 'Crée et gagne', desc: 'Publie tes reels, vends des billets, reçois des GoGold.' },
+  { icon: <Clapperboard size={19} />, title: 'Films, séries & concerts en direct', desc: 'Regarde en entier, en HD, avec le son.' },
+  { icon: <MessageCircle size={19} />, title: 'Réagis et échange', desc: 'Like, commente, partage et discute avec les créateurs.' },
+  { icon: <Radio size={19} />, title: 'Vis les lives', desc: 'Lives, défis 1 vs 1 et tournois en temps réel.' },
+  { icon: <Users size={19} />, title: 'Rejoins des communautés', desc: 'Retrouve des gens qui partagent tes passions.' },
+  { icon: <Coins size={19} />, title: 'Crée et gagne', desc: 'Publie tes reels, vends des billets, reçois des GoGold.' },
 ];
 
 const isMedia = (type: GuestPreviewType) => type === 'reel' || type === 'concert' || type === 'film' || type === 'serie';
@@ -261,7 +262,13 @@ export function GuestPreview({
   const isReel   = type === 'reel';
   // Description longue : repliée à 5 lignes avec « Voir plus » (plus d'overlay noir plein écran).
   const longBody = (body?.length ?? 0) > 280;
-  const [bodyOpen, setBodyOpen] = useState(false);
+  const [bodyOpen, setBodyOpen] = useState(false); // bottom sheet « description complète »
+  useEffect(() => {
+    if (!bodyOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setBodyOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [bodyOpen]);
 
   return (
     <>
@@ -272,7 +279,7 @@ export function GuestPreview({
           min-height: 100dvh;
           background: var(--bg);
           color: var(--text-primary);
-          padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+          padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
         }
         .gp-bar {
           position: sticky; top: 0.5rem; z-index: 30;
@@ -410,6 +417,20 @@ export function GuestPreview({
         .gp-body a { color: var(--primary); text-decoration: underline; font-weight: 600; }
         .gp-body-more { margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--primary); background: none; border: none; padding: 0; cursor: pointer; }
 
+        .gp-sheet-back { position: fixed; inset: 0; z-index: 1050; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; animation: gp-fade-in .2s ease; }
+        .gp-sheet {
+          width: 100%; max-width: 640px; max-height: 82dvh; display: flex; flex-direction: column;
+          background: var(--surface); border-radius: 28px 28px 0 0; border: 1px solid var(--border); border-bottom: none;
+          box-shadow: 0 -20px 60px rgba(0,0,0,0.3); animation: gp-sheet-up .28s cubic-bezier(.22,1,.36,1);
+          padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        @keyframes gp-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .gp-sheet-handle { width: 40px; height: 4px; border-radius: 4px; background: var(--border); margin: 10px auto 2px; flex-shrink: 0; }
+        .gp-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 18px 12px 22px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+        .gp-sheet-title { font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .gp-sheet-close { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--bg-secondary); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .gp-sheet-body { overflow-y: auto; padding: 18px 22px 26px; -webkit-overflow-scrolling: touch; }
+
         /* ── Pourquoi rejoindre ── */
         .gp-why {
           margin-top: 14px; padding: 26px 22px; border-radius: 28px; color: #fff;
@@ -429,18 +450,6 @@ export function GuestPreview({
         .gp-why-item strong { display: block; font-size: 14px; font-weight: 800; }
         .gp-why-item span > span { display: block; font-size: 12px; opacity: .8; line-height: 1.4; margin-top: 1px; }
         .gp-why-foot { margin: 16px 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: .85; }
-
-        /* Barre d'action flottante (mobile) */
-        .gp-dock {
-          position: fixed; left: 12px; right: 12px; z-index: 40;
-          bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-          display: flex; gap: 8px; padding: 8px; border-radius: 999px;
-          background: color-mix(in srgb, var(--surface) 92%, transparent);
-          -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-          border: 1px solid var(--border); box-shadow: 0 8px 28px rgba(0,0,0,0.18);
-        }
-        .gp-dock .gp-pillbtn { flex: 1; height: 46px; font-size: 14px; }
-        @media (min-width: 768px) { .gp-dock { display: none; } .gp-page { padding-bottom: 40px; } }
 
         /* Overlay « contenu réservé aux membres » (inchangé : modale sombre plein écran) */
         .gp-lock-overlay {
@@ -674,13 +683,11 @@ export function GuestPreview({
             {body && (
               <>
                 <div className="gp-divider" />
-                <p className={`gp-body${longBody && !bodyOpen ? ' is-clamped' : ''}`}>
+                <p className={`gp-body${longBody ? ' is-clamped' : ''}`}>
                   {renderTextWithLinks(body, 'underline font-semibold')}
                 </p>
                 {longBody && (
-                  <button className="gp-body-more" onClick={() => setBodyOpen(v => !v)}>
-                    {bodyOpen ? 'Voir moins' : 'Voir plus'}
-                  </button>
+                  <button className="gp-body-more" onClick={() => setBodyOpen(true)}>Voir plus</button>
                 )}
               </>
             )}
@@ -706,15 +713,27 @@ export function GuestPreview({
           </section>
         </main>
 
+        {/* Bottom sheet — description complète (au clic sur « Voir plus ») */}
+        {bodyOpen && body && (
+          <div className="gp-sheet-back" onClick={() => setBodyOpen(false)}>
+            <div className="gp-sheet" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+              <div className="gp-sheet-handle" />
+              <div className="gp-sheet-head">
+                <p className="gp-sheet-title">{title || 'Description'}</p>
+                <button className="gp-sheet-close" onClick={() => setBodyOpen(false)} aria-label="Fermer">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </button>
+              </div>
+              <div className="gp-sheet-body">
+                <p className="gp-body">{renderTextWithLinks(body, 'underline font-semibold')}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {lightbox !== null && images.length > 0 && (
           <Lightbox urls={images} index={lightbox} onClose={() => setLightbox(null)} />
         )}
-
-        {/* Barre d'action flottante — mobile */}
-        <div className="gp-dock">
-          <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-ghost">Se connecter</Link>
-          <Link to={`/auth/register?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-solid">S'inscrire</Link>
-        </div>
 
         {/* Overlay « contenu réservé aux membres » — au clic sur lecture, ou à 30 % d'un reel */}
         {showPlayPrompt && (

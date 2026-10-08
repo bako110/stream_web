@@ -2838,7 +2838,7 @@ function SuggestionsInlineCard({ users }: { users: UserPublic[] }) {
   }
 
   return (
-    <RecShell icon={<Sparkles size={16} />} title="Des gens qui te ressemblent ✨"
+    <RecShell icon={<Sparkles size={16} />} title="Des gens qui te ressemblent"
       subtitle="Élargis ton cercle, un abonnement à la fois"
       action="Voir plus" onAction={() => navigate('/discover/people')}>
       {visible.map(u => {
@@ -2854,7 +2854,7 @@ function SuggestionsInlineCard({ users }: { users: UserPublic[] }) {
               <button onClick={() => toggle(u.id)}
                 className="w-full flex items-center justify-center gap-1.5 text-[13px] font-bold py-2 rounded-full"
                 style={recBtn(done)}>
-                {done ? <><UserCheck size={14} /> Abonné ✓</> : <><UserPlus size={14} /> Suivre</>}
+                {done ? <><UserCheck size={14} /> Abonné</> : <><UserPlus size={14} /> Suivre</>}
               </button>
             } />
         );
