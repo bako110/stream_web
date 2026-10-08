@@ -327,6 +327,11 @@ export function GuestPreview({
           z-index: 6; display: flex; gap: 6px; padding: 6px 10px; border-radius: 999px;
           background: rgba(0,0,0,0.35); backdrop-filter: blur(8px);
         }
+        .gp-hero-count {
+          position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 6;
+          padding: 5px 14px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .04em;
+          color: #fff; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+        }
         .gp-hero-dot {
           width: 20px; height: 3px; border-radius: 3px; background: rgba(255,255,255,0.35);
           border: none; padding: 0; cursor: pointer; overflow: hidden; position: relative;
@@ -537,13 +542,18 @@ export function GuestPreview({
               </>
             )}
 
-            {images.length > 1 && (
+            {/* ≤ 6 images : barres de progression ; au-delà, un compteur « 3 / 24 » — des dizaines de
+                tirets formaient une ligne illisible. */}
+            {images.length > 1 && images.length <= 6 && (
               <div className="gp-hero-dots">
                 {images.map((_, i) => (
                   <button key={`${i}-${slide === i}`} className={`gp-hero-dot${i <= slide ? ' active' : ''}`}
                     onClick={() => goToSlide(i)} aria-label={`Image ${i + 1}`} />
                 ))}
               </div>
+            )}
+            {images.length > 6 && (
+              <div className="gp-hero-count" aria-live="polite">{slide + 1} / {images.length}</div>
             )}
 
             {images.length > 0 && !(type === 'reel' && videoUrl) && (
