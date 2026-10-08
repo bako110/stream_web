@@ -30,32 +30,35 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
   }, []);
 
   if (variant === 'card') {
+    // Utilisée sur le panneau de marque violet foncé : texte clair, carte en verre dépoli,
+    // bouton blanc à texte violet (contraste maximal, rien d'illisible sur le fond).
     return (
-      <div className={`rounded-2xl p-5 ${className}`}
-        style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.2)' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <RoundLogo size={40} />
-          <div>
-            <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Télécharger Gofolyx</p>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+      <div className={`rounded-[28px] p-5 ${className}`}
+        style={{
+          background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)',
+          WebkitBackdropFilter: 'blur(10px)', backdropFilter: 'blur(10px)',
+        }}>
+        <div className="flex items-center gap-3.5 mb-4">
+          <RoundLogo size={44} />
+          <div className="min-w-0">
+            <p className="font-black text-base leading-tight" style={{ color: '#fff' }}>Télécharger Gofolyx</p>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.78)' }}>
               Disponible sur Android{version ? ` · v${version}` : ''}
             </p>
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          {/* Play Store */}
           {PLAY_STORE_URL && (
             <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold no-underline transition-all"
-              style={{ background: 'var(--primary)', color: '#fff' }}>
+              className="flex items-center justify-center gap-2 h-12 px-5 rounded-full text-sm font-black no-underline transition-all hover:-translate-y-0.5"
+              style={{ background: '#fff', color: '#5B2EC4', boxShadow: '0 6px 18px rgba(0,0,0,0.25)' }}>
               Google Play
             </a>
           )}
-          {/* App Store */}
           {APP_STORE_URL && (
             <a href={APP_STORE_URL} target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold no-underline transition-all"
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+              className="flex items-center justify-center gap-2 h-12 px-5 rounded-full text-sm font-bold no-underline transition-all"
+              style={{ background: 'transparent', color: '#fff', border: '1.5px solid rgba(255,255,255,0.45)' }}>
               App Store
             </a>
           )}
@@ -66,7 +69,7 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
 
   // variant = 'bar'
   return (
-    <div className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl ${className}`}
+    <div className={`flex items-center justify-between gap-3 pl-3 pr-2.5 py-2.5 rounded-full ${className}`}
       style={{ background: 'rgba(123,63,242,0.08)', border: '1px solid rgba(123,63,242,0.18)' }}>
       <div className="flex items-center gap-2 min-w-0">
         <RoundLogo size={24} />
@@ -77,14 +80,14 @@ export function AppDownloadBar({ variant = 'bar', className = '' }: Props) {
       <div className="flex items-center gap-2 shrink-0">
         {PLAY_STORE_URL && (
           <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer"
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg no-underline transition-all"
+            className="text-xs font-bold px-4 py-2 rounded-full no-underline transition-all"
             style={{ background: 'var(--primary)', color: '#fff' }}>
             Play Store
           </a>
         )}
         {APP_STORE_URL && (
           <a href={APP_STORE_URL} target="_blank" rel="noreferrer"
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg no-underline transition-all"
+            className="text-xs font-bold px-4 py-2 rounded-full no-underline transition-all"
             style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
             App Store
           </a>
