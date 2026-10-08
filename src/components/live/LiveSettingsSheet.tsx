@@ -89,7 +89,7 @@ function MonetForm({
 
   if (showForm) {
     return (
-      <div className="rounded-xl border p-3 space-y-2.5"
+      <div className="rounded-2xl border p-3 space-y-2.5"
         style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
         <button onClick={() => setShowForm(false)} className="flex items-center gap-1 text-xs"
           style={{ color: 'var(--text-tertiary)' }}>
@@ -103,7 +103,7 @@ function MonetForm({
             { key: 'gift',  icon: <Gift  size={13} />, label: 'Cadeau', color: '#E85DAD' },
           ] as const).map(opt => (
             <button key={opt.key} type="button" onClick={() => setType(opt.key)}
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg border-2 text-xs font-bold transition-all"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl border-2 text-xs font-bold transition-all"
               style={{
                 borderColor: type === opt.key ? opt.color : 'var(--border)',
                 background:  type === opt.key ? `${opt.color}14` : 'var(--surface)',
@@ -116,7 +116,7 @@ function MonetForm({
         </div>
 
         {type === 'gogold' && (
-          <div className="flex items-center gap-2 rounded-lg border px-2.5 h-9"
+          <div className="flex items-center gap-2 rounded-xl border px-2.5 h-9"
             style={{ borderColor: '#F59E0B', background: 'var(--surface)' }}>
             <GoGold size={13} style={{ color: '#F59E0B', flexShrink: 0 }} />
             <input type="number" min={1}
@@ -138,7 +138,7 @@ function MonetForm({
                 <div className="grid grid-cols-5 gap-1 max-h-24 overflow-y-auto">
                   {gifts.map(g => (
                     <button key={g.id} type="button" onClick={() => setGift(g)}
-                      className="flex flex-col items-center gap-0.5 p-1 rounded-lg border-2 transition-all"
+                      className="flex flex-col items-center gap-0.5 p-1 rounded-xl border-2 transition-all"
                       style={{
                         borderColor: gift?.id === g.id ? '#E85DAD' : 'var(--border)',
                         background:  gift?.id === g.id ? 'rgba(232,93,173,0.1)' : 'var(--surface)',
@@ -156,7 +156,7 @@ function MonetForm({
         {error && <p className="text-xs" style={{ color: '#f87171' }}>{error}</p>}
 
         <button type="button" onClick={save} disabled={!type || saving}
-          className="w-full h-8 rounded-lg font-bold text-white text-xs disabled:opacity-40 flex items-center justify-center gap-1.5"
+          className="w-full h-8 rounded-xl font-bold text-white text-xs disabled:opacity-40 flex items-center justify-center gap-1.5"
           style={{ background: `linear-gradient(135deg,${accentColor},${accentColor}BB)` }}>
           {saving ? <Spinner size="sm" /> : 'Confirmer'}
         </button>
@@ -165,7 +165,7 @@ function MonetForm({
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-xl border"
+    <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border"
       style={{
         borderColor: isActive ? `${accentColor}44` : 'var(--border)',
         background: 'var(--bg-secondary)',
@@ -185,13 +185,13 @@ function MonetForm({
           </button>
           <button onClick={onRemove}
             className="flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-semibold"
-            style={{ borderColor: '#F0365A', color: '#F0365A' }}>
+            style={{ borderColor: '#EF4444', color: '#EF4444' }}>
             <Unlock size={10} /> Retirer
           </button>
         </div>
       ) : (
         <button onClick={open}
-          className="shrink-0 px-3 py-1 rounded-lg font-bold text-white text-[11px]"
+          className="shrink-0 px-3 py-1 rounded-xl font-bold text-white text-[11px]"
           style={{ background: `linear-gradient(135deg,${accentColor},${accentColor}AA)` }}>
           Activer
         </button>
@@ -279,7 +279,7 @@ function BlockedUsersSection() {
       {blocked === null ? (
         <div className="flex justify-center py-3"><Spinner size="sm" /></div>
       ) : blocked.length === 0 ? (
-        <div className="flex items-center justify-center py-3 rounded-xl"
+        <div className="flex items-center justify-center py-3 rounded-2xl"
           style={{ background: 'var(--bg-secondary)' }}>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucun utilisateur bloqué</p>
         </div>
@@ -289,7 +289,7 @@ function BlockedUsersSection() {
             const name = b.display_name ?? b.username ?? 'Utilisateur';
             return (
               <div key={b.blocked_id}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl border"
                 style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
                 <Avatar src={b.avatar_url} name={name} size="xs" className="shrink-0" />
                 <span className="text-xs font-semibold truncate flex-1"
@@ -387,7 +387,7 @@ function BannedUsersSection() {
       {banned === null ? (
         <div className="flex justify-center py-3"><Spinner size="sm" /></div>
       ) : banned.length === 0 ? (
-        <div className="flex items-center justify-center py-3 rounded-xl"
+        <div className="flex items-center justify-center py-3 rounded-2xl"
           style={{ background: 'var(--bg-secondary)' }}>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucun utilisateur éjecté</p>
         </div>
@@ -397,7 +397,7 @@ function BannedUsersSection() {
             const name = b.display_name ?? b.username ?? 'Utilisateur';
             return (
               <div key={b.banned_user_id}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl border"
                 style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
                 <Avatar src={b.avatar_url} name={name} size="xs" className="shrink-0" />
                 <span className="text-xs font-semibold truncate flex-1"
@@ -569,55 +569,55 @@ export function LiveSettingsSheet({
           {/* ── Diffusion : 2 boutons horizontaux compacts ── */}
           <div className="flex gap-2">
             <button onClick={toggleCam}
-              className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all"
+              className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-2xl border-2 transition-all"
               style={{
                 borderColor: camOn ? '#4ade80' : 'var(--border)',
                 background: camOn ? 'rgba(74,222,128,0.07)' : 'var(--bg-secondary)',
               }}>
               {camOn
                 ? <VideoIcon size={16} style={{ color: '#4ade80', flexShrink: 0 }} />
-                : <VideoOff  size={16} style={{ color: '#F0365A', flexShrink: 0 }} />}
-              <span className="text-xs font-bold" style={{ color: camOn ? '#4ade80' : '#F0365A' }}>
+                : <VideoOff  size={16} style={{ color: '#EF4444', flexShrink: 0 }} />}
+              <span className="text-xs font-bold" style={{ color: camOn ? '#4ade80' : '#EF4444' }}>
                 {camOn ? 'Caméra ON' : 'Caméra OFF'}
               </span>
               <span className="ml-auto w-2 h-2 rounded-full shrink-0"
-                style={{ background: camOn ? '#4ade80' : '#F0365A' }} />
+                style={{ background: camOn ? '#4ade80' : '#EF4444' }} />
             </button>
 
             <button onClick={toggleMic}
-              className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all"
+              className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-2xl border-2 transition-all"
               style={{
                 borderColor: micOn ? '#4ade80' : 'var(--border)',
                 background: micOn ? 'rgba(74,222,128,0.07)' : 'var(--bg-secondary)',
               }}>
               {micOn
                 ? <Mic    size={16} style={{ color: '#4ade80', flexShrink: 0 }} />
-                : <MicOff size={16} style={{ color: '#F0365A', flexShrink: 0 }} />}
-              <span className="text-xs font-bold" style={{ color: micOn ? '#4ade80' : '#F0365A' }}>
+                : <MicOff size={16} style={{ color: '#EF4444', flexShrink: 0 }} />}
+              <span className="text-xs font-bold" style={{ color: micOn ? '#4ade80' : '#EF4444' }}>
                 {micOn ? 'Micro ON' : 'Micro OFF'}
               </span>
               <span className="ml-auto w-2 h-2 rounded-full shrink-0"
-                style={{ background: micOn ? '#4ade80' : '#F0365A' }} />
+                style={{ background: micOn ? '#4ade80' : '#EF4444' }} />
             </button>
           </div>
 
           {/* ── Enregistrement ── */}
           <button onClick={toggleRecording} disabled={recordingLoading}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all disabled:opacity-60"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-2xl border-2 transition-all disabled:opacity-60"
             style={{
-              borderColor: isRecording ? '#F0365A' : 'var(--border)',
+              borderColor: isRecording ? '#EF4444' : 'var(--border)',
               background: isRecording ? 'rgba(240,54,90,0.07)' : 'var(--bg-secondary)',
             }}>
             {recordingLoading
               ? <Spinner size="sm" />
               : isRecording
-                ? <VideoOff size={16} style={{ color: '#F0365A', flexShrink: 0 }} />
+                ? <VideoOff size={16} style={{ color: '#EF4444', flexShrink: 0 }} />
                 : <VideoIcon size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />}
-            <span className="text-xs font-bold" style={{ color: isRecording ? '#F0365A' : 'var(--text-primary)' }}>
+            <span className="text-xs font-bold" style={{ color: isRecording ? '#EF4444' : 'var(--text-primary)' }}>
               {isRecording ? "Arrêter l'enregistrement" : 'Démarrer l\'enregistrement'}
             </span>
             {isRecording && (
-              <span className="ml-auto w-2 h-2 rounded-full shrink-0" style={{ background: '#F0365A' }} />
+              <span className="ml-auto w-2 h-2 rounded-full shrink-0" style={{ background: '#EF4444' }} />
             )}
           </button>
 
@@ -625,10 +625,10 @@ export function LiveSettingsSheet({
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
               style={{ color: 'var(--text-tertiary)' }}>
-              Demandes{handRequests.length > 0 && <span style={{ color: '#F0365A' }}> ({handRequests.length})</span>}
+              Demandes{handRequests.length > 0 && <span style={{ color: '#EF4444' }}> ({handRequests.length})</span>}
             </p>
             {handRequests.length === 0 ? (
-              <div className="flex items-center justify-center py-3 rounded-xl"
+              <div className="flex items-center justify-center py-3 rounded-2xl"
                 style={{ background: 'var(--bg-secondary)' }}>
                 <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Aucune demande</p>
               </div>
@@ -636,7 +636,7 @@ export function LiveSettingsSheet({
               <div className="space-y-1.5 max-h-32 overflow-y-auto">
                 {handRequests.map(req => (
                   <div key={req.identity}
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border"
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl border"
                     style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
                     <Avatar src={req.avatar} name={req.name} size="xs" className="shrink-0" />
                     <span className="text-xs font-semibold truncate flex-1"
@@ -697,7 +697,7 @@ export function LiveSettingsSheet({
               <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
                 style={{ color: 'var(--text-tertiary)' }}>Battle 1v1</p>
               <button onClick={onChallenge}
-                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all"
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-2xl border-2 transition-all"
                 style={{ borderColor: 'rgba(123,63,242,0.4)', background: 'rgba(123,63,242,0.08)' }}>
                 <Zap size={16} style={{ color: '#7B3FF2', flexShrink: 0 }} />
                 <span className="text-xs font-bold" style={{ color: '#7B3FF2' }}>Défier un créateur en direct</span>
@@ -713,8 +713,8 @@ export function LiveSettingsSheet({
 
           {/* ── Terminer ── */}
           <button onClick={confirmStop}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-all"
-            style={{ borderColor: '#F0365A', color: '#F0365A' }}>
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border-2 font-bold text-sm transition-all"
+            style={{ borderColor: '#EF4444', color: '#EF4444' }}>
             <Radio size={15} /> Terminer le live
           </button>
 

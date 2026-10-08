@@ -162,7 +162,7 @@ export function BattleChallengeSheet({ open, onClose, liveId }: Props) {
                   <button
                     onClick={() => isSent ? handleCancel() : handleInvite(item)}
                     disabled={(!!inviting && !isSent) || (!!pendingBattleId && !isSent) || cancelling}
-                    className="rounded-xl py-2 px-4 min-w-[76px] flex items-center justify-center text-xs font-bold text-white shrink-0"
+                    className="rounded-2xl py-2 px-4 min-w-[76px] flex items-center justify-center text-xs font-bold text-white shrink-0"
                     style={{ background: isSent ? 'rgba(255,255,255,0.1)' : '#7B3FF2' }}>
                     {inviting === item.live_id || (isSent && cancelling) ? <Spinner size="sm" /> : (isSent ? 'Annuler' : 'Défier')}
                   </button>

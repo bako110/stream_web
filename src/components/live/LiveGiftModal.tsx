@@ -94,7 +94,7 @@ export function GiftToast({ notif, onDone }: { notif: GiftNotif; onDone: () => v
         animation: 'slideInRight 0.3s ease-out',
         minWidth: 220,
       }}>
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
         style={{ background: 'rgba(255,215,0,0.2)' }}>
         <Gift size={22} style={{ color: '#fbbf24' }} />
       </div>
@@ -286,14 +286,14 @@ export function LiveGiftModal({ liveId, receiverId, receiverName, onClose, onSen
           <div className="flex gap-3">
             {!sufficient && (
               <button onClick={() => navigate('/wallet/buy')}
-                className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
+                className="flex-1 py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
                 style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.3)' }}>
                 <ExternalLink size={14} /> Recharger
               </button>
             )}
             <button onClick={handleSend}
               disabled={!selected || !sufficient || sending}
-              className="flex-1 py-3 rounded-xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+              className="flex-1 py-3 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
               style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.4)' }}>
               {sending ? <Spinner size="sm" /> : <><Gift size={15} /> Envoyer {selected ? selected.name : ''}</>}
             </button>

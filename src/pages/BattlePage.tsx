@@ -55,7 +55,7 @@ function GiftTickItem({ tick, side, onExpire }: { tick: GiftTick; side: 'a' | 'b
   return (
     <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold text-white truncate"
       style={{
-        background: side === 'a' ? 'linear-gradient(135deg,#7B3FF2,#4C1D95)' : 'linear-gradient(135deg,#F0365A,#9B1C3F)',
+        background: side === 'a' ? 'linear-gradient(135deg,#7B3FF2,#4C1D95)' : 'linear-gradient(135deg,#E85DAD,#B8397F)',
         opacity: visible ? 1 : 0,
         transform: visible ? 'scale(1)' : 'scale(0.7)',
         transition: 'opacity 0.3s ease-out, transform 0.3s ease-out',
@@ -165,18 +165,18 @@ function BattleMediaControls({ isHost, isRecording, onToggleRecording, recording
       <button onClick={toggleCam}
         className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
         style={{ background: camOn ? 'rgba(255,255,255,0.1)' : 'rgba(240,54,90,0.25)' }}>
-        {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#F0365A" />}
+        {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#EF4444" />}
       </button>
       <button onClick={toggleMic}
         className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
         style={{ background: micOn ? 'rgba(255,255,255,0.1)' : 'rgba(240,54,90,0.25)' }}>
-        {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#F0365A" />}
+        {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#EF4444" />}
       </button>
       <button onClick={onToggleRecording} disabled={recordingLoading}
         className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
         style={{ background: isRecording ? 'rgba(240,54,90,0.25)' : 'rgba(255,255,255,0.1)' }}
         title={isRecording ? "Arrêter l'enregistrement" : "Démarrer l'enregistrement"}>
-        {recordingLoading ? <Spinner size="sm" /> : isRecording ? <Check size={16} color="#F0365A" /> : <Video size={16} color="#fff" />}
+        {recordingLoading ? <Spinner size="sm" /> : isRecording ? <Check size={16} color="#EF4444" /> : <Video size={16} color="#fff" />}
       </button>
 
       {/* Mobile (<lg) : un seul bouton compact — la rangée du header est déjà
@@ -187,7 +187,7 @@ function BattleMediaControls({ isHost, isRecording, onToggleRecording, recording
         <button onClick={() => setShowMenu(v => !v)}
           className="w-9 h-9 rounded-full flex items-center justify-center"
           style={{ background: bothOff ? 'rgba(240,54,90,0.25)' : 'rgba(255,255,255,0.1)' }}>
-          {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#F0365A" />}
+          {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#EF4444" />}
         </button>
         {showMenu && (
           <>
@@ -196,19 +196,19 @@ function BattleMediaControls({ isHost, isRecording, onToggleRecording, recording
               style={{ background: 'rgba(20,20,26,0.97)', border: '1px solid rgba(255,255,255,0.12)', minWidth: 160, backdropFilter: 'blur(12px)' }}>
               <button onClick={() => { toggleCam(); setShowMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white">
-                {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#F0365A" />}
+                {camOn ? <VideoIcon size={16} color="#fff" /> : <VideoOff size={16} color="#EF4444" />}
                 {camOn ? 'Couper la caméra' : 'Activer la caméra'}
               </button>
               <button onClick={() => { toggleMic(); setShowMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white"
                 style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#F0365A" />}
+                {micOn ? <Mic size={16} color="#fff" /> : <MicOff size={16} color="#EF4444" />}
                 {micOn ? 'Couper le micro' : 'Activer le micro'}
               </button>
               <button onClick={() => { onToggleRecording(); setShowMenu(false); }} disabled={recordingLoading}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white"
                 style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                {isRecording ? <Check size={16} color="#F0365A" /> : <Video size={16} color="#fff" />}
+                {isRecording ? <Check size={16} color="#EF4444" /> : <Video size={16} color="#fff" />}
                 {isRecording ? "Arrêter l'enregistrement" : "Démarrer l'enregistrement"}
               </button>
             </div>
@@ -342,7 +342,7 @@ function BattleVideoHalf({ hostId, hostName, hostAvatar, side, leading, giftTick
 }) {
   const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const track = tracks.find(t => t.participant.identity === hostId);
-  const color = side === 'a' ? '#7B3FF2' : '#F0365A';
+  const color = side === 'a' ? '#7B3FF2' : '#E85DAD';
 
   return (
     <div
@@ -978,8 +978,8 @@ export default function BattlePage() {
 
             <div className="flex items-center gap-2 min-w-0 flex-row-reverse">
               {hostAvatarB
-                ? <img src={hostAvatarB} className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2 shrink-0" style={{ borderColor: '#F0365A' }} />
-                : <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#F0365A' }}><User size={14} color="#fff" /></div>}
+                ? <img src={hostAvatarB} className="w-8 h-8 lg:w-10 lg:h-10 rounded-full object-cover border-2 shrink-0" style={{ borderColor: '#E85DAD' }} />
+                : <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#E85DAD' }}><User size={14} color="#fff" /></div>}
               <div className="min-w-0 text-right">
                 <p className="flex items-center justify-end gap-1 text-white text-xs lg:text-sm font-bold truncate max-w-[90px] sm:max-w-[140px] lg:max-w-[200px]">
                   {verifiedB && <VerifiedCheck />}
@@ -991,7 +991,7 @@ export default function BattlePage() {
                 <button onClick={() => toggleFollow('b')}
                   className="shrink-0 px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-[11px] lg:text-xs font-bold"
                   style={{
-                    background: followingB ? 'rgba(255,255,255,0.12)' : 'linear-gradient(135deg,#F0365A,#9B1C3F)',
+                    background: followingB ? 'rgba(255,255,255,0.12)' : 'linear-gradient(135deg,#E85DAD,#B8397F)',
                     color: '#fff',
                   }}>
                   {followingB ? 'Suivi' : 'Suivre'}
@@ -1009,7 +1009,7 @@ export default function BattlePage() {
             style={{ background: '#2A1D42' }}>
             <div className="absolute inset-0 transition-all duration-700 ease-out"
               style={{
-                background: `linear-gradient(90deg,#7B3FF2,#4C1D95 ${scoreSplitPct - 2}%,#9B1C3F ${scoreSplitPct + 2}%,#F0365A)`,
+                background: `linear-gradient(90deg,#7B3FF2,#4C1D95 ${scoreSplitPct - 2}%,#B8397F ${scoreSplitPct + 2}%,#E85DAD)`,
               }} />
             <div className="relative"><BouncyScore value={scoreA} color="#fff" /></div>
             <div className="relative flex-1 min-w-0 flex"><HypeBanner message={hypeMessage} /></div>
@@ -1025,7 +1025,7 @@ export default function BattlePage() {
               winCount={battle?.win_count_a ?? 0} topDonors={ranking?.top_donors_a ?? []} showDonors={showDonorsA} />
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-1.5">
               <span className="px-3 py-1.5 rounded-full font-black text-white text-xs shadow-lg"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#F0365A)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>VS</span>
+                style={{ background: 'linear-gradient(135deg,#7B3FF2,#E85DAD)', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>VS</span>
               <span className="px-2.5 py-1 rounded-full text-white font-mono text-xs lg:text-sm font-bold"
                 style={{ background: 'rgba(0,0,0,0.6)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                 {formatCountdown(remaining)}
@@ -1080,7 +1080,7 @@ export default function BattlePage() {
               <div key={bigGift.id} className="absolute inset-y-0 z-[65] flex items-center justify-center pointer-events-none"
                 style={{ left: bigGift.side === 'a' ? 0 : '50%', width: '50%' }}>
                 <div className="flex flex-col items-center gap-1.5 px-6 py-6 rounded-3xl text-center mx-2"
-                  style={{ background: 'linear-gradient(135deg,#F59E0B,#F0365A,#9B65F5)', animation: 'battle-biggift-in 0.45s ease-out' }}>
+                  style={{ background: 'linear-gradient(135deg,#F59E0B,#E85DAD,#9B65F5)', animation: 'battle-biggift-in 0.45s ease-out' }}>
                   <span className="text-3xl">🪑</span>
                   <span className="text-xl -mt-3">👑</span>
                   <p className="text-white text-[10px] font-black tracking-widest">LE ROI DU MATCH</p>
@@ -1131,7 +1131,7 @@ export default function BattlePage() {
           <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0">
             {messages.map(m => (
               <div key={m.id} className="flex items-start gap-2 py-0.5">
-                <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: m.side === 'a' ? '#7B3FF2' : '#F0365A' }} />
+                <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: m.side === 'a' ? '#7B3FF2' : '#E85DAD' }} />
                 <p className="text-sm text-white/90 min-w-0">
                   <span className="font-bold" style={{ color: m.side === 'a' ? '#A78BFA' : '#F87A9C' }}>{m.user}</span>{'  '}{m.text}
                 </p>
@@ -1165,7 +1165,7 @@ export default function BattlePage() {
               <Heart size={15} color="#fff" />
               {heartCountB > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                  style={{ background: '#F0365A' }}>
+                  style={{ background: '#EF4444' }}>
                   {heartCountB > 99 ? '99+' : heartCountB}
                 </span>
               )}

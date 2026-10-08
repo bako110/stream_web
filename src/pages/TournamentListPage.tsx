@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, Award, Radio } from 'lucide-react';
+import { Plus, Award, Radio } from 'lucide-react';
 import { PageLoader, Spinner } from '../components/ui/Spinner';
 import { tournamentsApi, type OpenTournament, type Tournament } from '../api/tournaments';
 import { encodeId } from '../utils/slugId';
+import { LiveHeader, LivePage, PillButton, EmptyCard, InfoStrip, LIVE_COLORS, LIVE_GRADIENT, CARD_SHADOW, CARD_SHADOW_HOVER } from '../components/live/liveKit';
 import { CreateTournamentModal } from '../components/live/CreateTournamentModal';
 
 export default function TournamentListPage() {
@@ -80,81 +81,83 @@ export default function TournamentListPage() {
   if (loading) return <PageLoader />;
 
   return (
-    <div className="min-h-[calc(100vh-57px)]">
-      <div className="flex items-center gap-3 px-4 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-        <button onClick={() => navigate(-1)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-          <ChevronLeft size={22} />
-        </button>
-        <h1 className="text-lg font-bold flex-1" style={{ color: 'var(--text-primary)' }}>Tournois</h1>
-        <button onClick={() => navigate('/tournaments/active')} className="btn-ghost p-2 text-[var(--text-secondary)]" title="Tournois en cours">
-          <Radio size={18} />
-        </button>
-        <button onClick={() => setShowCreate(true)} className="btn-ghost p-2 text-brand-primary">
-          <Plus size={20} />
-        </button>
-      </div>
+    <LivePage>
+      <LiveHeader
+        icon={<Award size={16} />}
+        title="Tournois"
+        subtitle="Ouverts à l'inscription"
+        onBack={() => navigate(-1)}
+        actions={
+          <>
+            <PillButton variant="soft" icon={<Radio size={14} />} onClick={() => navigate('/tournaments/active')}>En cours</PillButton>
+            <PillButton icon={<Plus size={15} />} onClick={() => setShowCreate(true)}>Créer</PillButton>
+          </>
+        }
+      />
 
-      <div className="w-full mx-auto p-4">
-        <button onClick={() => navigate('/tournaments/active')}
-          className="w-full flex items-center gap-2.5 rounded-2xl px-4 py-3 mb-4 border"
-          style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)' }}>
-          <Radio size={16} color="#F59E0B" />
-          <span className="text-sm font-bold" style={{ color: '#F59E0B' }}>Voir les tournois en cours</span>
-        </button>
+      <InfoStrip tone="gold" icon={<Radio size={18} />} title="Voir les tournois en cours"
+        subtitle="Suis les matchs en direct" onClick={() => navigate('/tournaments/active')} />
 
-        {tournaments.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 pt-16">
-            <Award size={32} className="text-[var(--text-tertiary)]" />
-            <p className="text-sm text-center text-[var(--text-tertiary)]">Aucun tournoi ouvert pour le moment.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {tournaments.map(t => {
-              const full = t.participants_count >= t.max_participants;
-              return (
-                <div key={t.id}
-                  className="card flex items-center gap-3 p-3.5 cursor-pointer hover:border-brand-primary transition-colors"
-                  onClick={() => handleOpenBracket(t)}>
-                  {t.image_url ? (
-                    <img src={t.image_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-sm"
-                      style={{ background: 'rgba(123,63,242,0.13)', color: '#7B3FF2' }}>
-                      {t.format}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{t.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                      {t.format} joueurs · {t.participants_count} / {t.max_participants} inscrits
-                    </p>
+      {tournaments.length === 0 ? (
+        <EmptyCard icon={<Award size={28} />} title="Aucun tournoi ouvert"
+          description="Crée le premier tournoi et invite les créateurs à s'inscrire."
+          action={<PillButton icon={<Plus size={15} />} onClick={() => setShowCreate(true)}>Créer un tournoi</PillButton>} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          {tournaments.map(t => {
+            const full = t.participants_count >= t.max_participants;
+            const pct  = t.max_participants > 0 ? Math.min(100, (t.participants_count / t.max_participants) * 100) : 0;
+            return (
+              <div key={t.id}
+                className="flex items-center gap-3.5 p-3.5 cursor-pointer rounded-[28px] transition-all duration-200 hover:-translate-y-0.5"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: CARD_SHADOW }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = CARD_SHADOW; }}
+                onClick={() => handleOpenBracket(t)}>
+                {t.image_url ? (
+                  <img src={t.image_url} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 font-black text-sm"
+                    style={{ background: 'rgba(123,63,242,0.12)', color: LIVE_COLORS.violet }}>
+                    {t.format}
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleJoin(t); }}
-                    disabled={!!joining || full}
-                    className="shrink-0 rounded-xl px-3.5 py-2 text-xs font-bold text-white min-w-[84px] flex items-center justify-center"
-                    style={{ background: full ? '#9CA3AF' : '#7B3FF2' }}
-                  >
-                    {joining === t.id ? <Spinner size="sm" /> : full ? 'Complet' : 'Rejoindre'}
-                  </button>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-sm truncate" style={{ color: 'var(--text-primary)' }}>{t.name}</p>
+                  <p className="text-xs mt-0.5 font-semibold" style={{ color: 'var(--text-tertiary)' }}>
+                    {t.format} joueurs · {t.participants_count} / {t.max_participants} inscrits
+                  </p>
+                  <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: 'var(--bg-secondary)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: full ? LIVE_COLORS.gold : LIVE_COLORS.violet }} />
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleJoin(t); }}
+                  disabled={!!joining || full}
+                  className="shrink-0 h-9 px-4 rounded-full text-[13px] font-bold min-w-[92px] inline-flex items-center justify-center disabled:opacity-100"
+                  style={full
+                    ? { background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }
+                    : { background: LIVE_GRADIENT, color: '#fff', boxShadow: '0 4px 14px rgba(123,63,242,0.3)' }}
+                >
+                  {joining === t.id ? <Spinner size="sm" /> : full ? 'Complet' : 'Rejoindre'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-        {hasMore && tournaments.length > 0 && (
-          <div ref={sentinelRef} className="flex justify-center py-4">
-            {loadingMore && <Spinner size="sm" />}
-          </div>
-        )}
-      </div>
+      {hasMore && tournaments.length > 0 && (
+        <div ref={sentinelRef} className="flex justify-center py-6">
+          {loadingMore && <Spinner size="sm" />}
+        </div>
+      )}
 
       <CreateTournamentModal
         open={showCreate}
         onClose={() => setShowCreate(false)}
         onCreated={handleCreated}
       />
-    </div>
+    </LivePage>
   );
 }

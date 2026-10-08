@@ -8,111 +8,66 @@ import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useApi } from '../hooks/useApi';
 import { useWs } from '../context/WebSocketContext';
-import { Spinner } from '../components/ui/Spinner';
-import { EmptyState } from '../components/ui/EmptyState';
 import { Avatar } from '../components/ui/Avatar';
+import { LiveBadge, GlassChip, LiveHeader, LivePage, PillButton, EmptyCard, LIVE_GRADIENT, CARD_SHADOW, CARD_SHADOW_HOVER } from '../components/live/liveKit';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 function LiveCard({ live }: { live: LiveStream }) {
   const navigate = useNavigate();
+  const streamer = live.user?.display_name ?? live.user?.username;
 
   return (
     <div
-      className="group cursor-pointer overflow-hidden transition-all duration-200"
-      style={{
-        borderRadius: '1rem',
-        border: '1px solid rgba(123,63,242,0.2)',
-        background: 'var(--surface)',
-        boxShadow: '0 2px 12px rgba(123,63,242,0.08)',
-      }}
+      className="group cursor-pointer overflow-hidden rounded-[28px] transition-all duration-200 hover:-translate-y-0.5"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: CARD_SHADOW }}
       onClick={() => navigate(`/lives/${encodeId(live.id)}`)}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 28px rgba(123,63,242,0.22)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(123,63,242,0.5)';
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(123,63,242,0.08)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(123,63,242,0.2)';
-      }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = CARD_SHADOW; }}
     >
-      {/* Thumbnail / avatar streamer / placeholder */}
+      {/* Visuel */}
       <div className="relative overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
         {live.thumbnail_url ? (
           <img src={live.thumbnail_url} alt={live.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" />
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : live.user?.avatar_url ? (
-          <div className="relative w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#1a0a0a,#2d0a14)' }}>
-            {/* Photo de profil du streamer en fond flou, remplit la carte sans thumbnail dédiée */}
+          <div className="relative w-full h-full flex items-center justify-center" style={{ background: '#140a26' }}>
             <img src={live.user.avatar_url} alt="" aria-hidden
-              className="absolute inset-0 w-full h-full object-cover opacity-30"
-              style={{ filter: 'blur(16px)' }} />
-            <Avatar src={live.user.avatar_url} name={live.user?.display_name ?? live.user?.username} size="xl"
-              className="relative w-20 h-20" />
+              className="absolute inset-0 w-full h-full object-cover opacity-40" style={{ filter: 'blur(18px)' }} />
+            <Avatar src={live.user.avatar_url} name={streamer} size="xl" className="relative w-20 h-20" />
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#1a0a0a,#2d0a14)' }}>
-            <Radio size={32} className="text-red-500/40" />
+          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#1a0a33,#2d1366)' }}>
+            <Radio size={32} style={{ color: 'rgba(255,255,255,0.35)' }} />
           </div>
         )}
+        <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.6),transparent)' }} />
 
-        {/* Live badge + viewers */}
-        <div className="absolute top-3 left-3 flex items-center gap-2">
-          <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
-          </span>
-          <span className="flex items-center gap-1 text-xs text-white px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}>
-            <Eye size={10} /> {live.current_viewers.toLocaleString()}
-          </span>
+        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+          <LiveBadge />
+          <GlassChip><Eye size={11} /> {live.current_viewers.toLocaleString('fr-FR')}</GlassChip>
         </div>
-
-        {/* Badge privé */}
-        {live.is_private && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-            style={{ background: 'rgba(123,63,242,0.85)', backdropFilter: 'blur(4px)', border: '1px solid rgba(123,63,242,0.5)' }}>
-            <Lock size={10} /> Abonnés
-          </div>
-        )}
-
-        {/* Boost badge */}
-        {live.is_featured && (
-          <div className="absolute top-3 right-3">
-            <span className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full text-yellow-300"
-              style={{ background: 'rgba(123,63,242,0.25)', border: '1px solid rgba(123,63,242,0.4)', backdropFilter: 'blur(4px)' }}>
-              <Zap size={10} /> Boost
-            </span>
-          </div>
-        )}
-
-        {/* Durée depuis le début */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          {live.is_featured && <GlassChip tone="gold"><Zap size={11} /> Boost</GlassChip>}
+          {live.is_private && <GlassChip tone="violet"><Lock size={11} /> Abonnés</GlassChip>}
+        </div>
         <div className="absolute bottom-3 right-3">
-          <span className="text-xs text-white/70 px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-            {formatDistanceToNow(new Date(live.started_at), { locale: fr })}
-          </span>
+          <GlassChip>{formatDistanceToNow(new Date(live.started_at), { locale: fr })}</GlassChip>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="p-4 flex gap-3 items-start">
-        <Avatar src={live.user?.avatar_url} name={live.user?.display_name ?? live.user?.username} size="sm" className="shrink-0 mt-0.5" />
+      {/* Infos */}
+      <div className="p-4 flex gap-3 items-center">
+        <Avatar src={live.user?.avatar_url} name={streamer} size="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[var(--text-primary)] text-sm line-clamp-1">{live.title}</p>
-          <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
-            {live.user?.display_name ?? live.user?.username}
-          </p>
+          <p className="font-black text-sm line-clamp-1" style={{ color: 'var(--text-primary)' }}>{live.title}</p>
+          <p className="text-xs truncate mt-0.5 font-semibold" style={{ color: 'var(--text-secondary)' }}>{streamer}</p>
           {live.description && (
-            <p className="text-xs text-[var(--text-tertiary)] mt-1 line-clamp-1">{live.description}</p>
+            <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--text-tertiary)' }}>{live.description}</p>
           )}
         </div>
-        <span className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white shrink-0 self-center transition-all"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+        <span className="shrink-0 h-9 px-4 rounded-full inline-flex items-center text-[13px] font-bold text-white"
+          style={{ background: LIVE_GRADIENT, boxShadow: '0 4px 14px rgba(123,63,242,0.3)' }}>
           Rejoindre
         </span>
       </div>
@@ -159,50 +114,33 @@ export default function LiveSimpleListPage() {
   const active = lives;
 
   return (
-    <div className="w-full mx-auto p-3 sm:p-6 space-y-5 sm:space-y-8">
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-            <Radio className="text-red-500 shrink-0" size={22} /> <span className="truncate">Lives en direct</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
-            {loading ? '...' : `${active.length} live${active.length !== 1 ? 's' : ''} actif${active.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => refetch()} className="btn-ghost flex-1 sm:flex-none text-xs sm:text-sm border border-[var(--border)] whitespace-nowrap">
-            Actualiser
-          </button>
-          <button onClick={() => navigate('/go-live')}
-            className="btn-primary flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-            <Plus size={16} className="shrink-0" /> <span className="truncate">Démarrer un live</span>
-          </button>
-        </div>
-      </div>
+    <LivePage>
+      <LiveHeader
+        icon={<Radio size={16} />}
+        title="Lives en direct"
+        subtitle={loading ? '…' : `${active.length} live${active.length !== 1 ? 's' : ''} actif${active.length !== 1 ? 's' : ''}`}
+        actions={
+          <>
+            <PillButton variant="ghost" onClick={() => refetch()}>Actualiser</PillButton>
+            <PillButton icon={<Plus size={15} />} onClick={() => navigate('/go-live')}>Démarrer un live</PillButton>
+          </>
+        }
+      />
 
       {loading ? (
         <PageLoader />
       ) : active.length === 0 ? (
-        <EmptyState
-          icon={<Radio size={48} />}
+        <EmptyCard
+          icon={<Radio size={30} />}
           title="Aucun live en cours"
           description="Sois le premier à démarrer un live pour ta communauté."
-          action={
-            <button onClick={() => navigate('/go-live')}
-              className="btn-primary flex items-center gap-2 mx-auto"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-              <Radio size={16} /> Démarrer maintenant
-            </button>
-          }
+          action={<PillButton icon={<Radio size={15} />} onClick={() => navigate('/go-live')}>Démarrer maintenant</PillButton>}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {active.map(live => <LiveCard key={live.id} live={live} />)}
         </div>
       )}
-    </div>
+    </LivePage>
   );
 }

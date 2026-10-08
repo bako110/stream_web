@@ -187,7 +187,7 @@ export function CreateTournamentModal({ open, onClose, onCreated }: Props) {
                 <p className="text-[11px] font-bold tracking-wide mb-1.5" style={{ color: 'var(--text-tertiary)' }}>BANNIÈRE</p>
                 <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={e => handlePickImage(e, 'banner')} />
                 <button onClick={() => imageInputRef.current?.click()}
-                  className="w-full h-28 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden relative"
+                  className="w-full h-28 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden relative"
                   style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
                   {uploadingImage ? <Loader2 className="animate-spin" size={20} color="var(--text-tertiary)" />
                     : imageUrl ? <img src={imageUrl} className="w-full h-full object-cover" />
@@ -217,7 +217,7 @@ export function CreateTournamentModal({ open, onClose, onCreated }: Props) {
               <div className="flex gap-2">
                 {FORMATS.map(f => (
                   <button key={f} onClick={() => setFormat(f)}
-                    className="flex-1 py-2.5 rounded-xl border-[1.5px] text-sm font-bold"
+                    className="flex-1 py-2.5 rounded-2xl border-[1.5px] text-sm font-bold"
                     style={{ borderColor: format === f ? '#9B65F5' : 'var(--border)', background: format === f ? 'rgba(155,101,245,0.13)' : 'var(--bg-secondary)', color: format === f ? '#9B65F5' : 'var(--text-secondary)' }}>
                     {f}
                   </button>
@@ -228,7 +228,7 @@ export function CreateTournamentModal({ open, onClose, onCreated }: Props) {
               <div className="flex gap-2">
                 {DURATIONS.map(d => (
                   <button key={d.value} onClick={() => setBattleDurationSeconds(d.value)}
-                    className="flex-1 py-2.5 rounded-xl border-[1.5px] text-sm font-bold"
+                    className="flex-1 py-2.5 rounded-2xl border-[1.5px] text-sm font-bold"
                     style={{ borderColor: battleDurationSeconds === d.value ? '#9B65F5' : 'var(--border)', background: battleDurationSeconds === d.value ? 'rgba(155,101,245,0.13)' : 'var(--bg-secondary)', color: battleDurationSeconds === d.value ? '#9B65F5' : 'var(--text-secondary)' }}>
                     {d.label}
                   </button>
@@ -332,7 +332,7 @@ export function CreateTournamentModal({ open, onClose, onCreated }: Props) {
                 <p className="text-[11px] font-bold tracking-wide mb-1.5" style={{ color: 'var(--text-tertiary)' }}>LOGO DU SPONSOR</p>
                 <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => handlePickImage(e, 'logo')} />
                 <button onClick={() => logoInputRef.current?.click()}
-                  className="w-full h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden"
+                  className="w-full h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden"
                   style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
                   {uploadingLogo ? <Loader2 className="animate-spin" size={18} color="var(--text-tertiary)" />
                     : sponsorLogoUrl ? <img src={sponsorLogoUrl} className="h-full object-contain" />
@@ -347,18 +347,18 @@ export function CreateTournamentModal({ open, onClose, onCreated }: Props) {
 
         <div className="flex gap-2.5 px-5 py-4 shrink-0 border-t" style={{ borderColor: 'var(--border)' }}>
           {step > 0 && (
-            <button onClick={() => setStep(s => s - 1)} className="flex-1 rounded-xl py-3 border-[1.5px] text-sm font-bold" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+            <button onClick={() => setStep(s => s - 1)} className="flex-1 rounded-2xl py-3 border-[1.5px] text-sm font-bold" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
               Retour
             </button>
           )}
           {step < STEPS.length - 1 ? (
             <button onClick={() => setStep(s => s + 1)} disabled={step === 0 && !name.trim()}
-              className="flex-1 rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50" style={{ background: '#9B65F5' }}>
+              className="flex-1 rounded-2xl py-3 text-sm font-bold text-white disabled:opacity-50" style={{ background: '#9B65F5' }}>
               Suivant
             </button>
           ) : (
             <button onClick={handleCreate} disabled={!name.trim() || creating}
-              className="flex-1 rounded-xl py-3 text-sm font-bold text-white flex items-center justify-center disabled:opacity-50" style={{ background: '#9B65F5' }}>
+              className="flex-1 rounded-2xl py-3 text-sm font-bold text-white flex items-center justify-center disabled:opacity-50" style={{ background: '#9B65F5' }}>
               {creating ? <Spinner size="sm" /> : 'Créer'}
             </button>
           )}

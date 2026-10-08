@@ -70,10 +70,10 @@ export function MatchResultModal({ result, onClose }: { result: MatchResultData 
           </p>
           <p className="text-white/85 text-2xl lg:text-3xl font-black mt-1">{result.scoreA} — {result.scoreB}</p>
           {!!result.forfeitPenalty && result.forfeitByMe && (
-            <div className="flex items-center gap-1.5 rounded-xl px-3 py-2 mt-0.5"
+            <div className="flex items-center gap-1.5 rounded-2xl px-3 py-2 mt-0.5"
               style={{ background: 'rgba(240,54,90,0.12)', border: '1px solid rgba(240,54,90,0.3)' }}>
-              <ArrowUpRight size={14} color="#F0365A" />
-              <span className="text-[#F0365A] text-[11px] lg:text-xs font-bold">
+              <ArrowUpRight size={14} color="#EF4444" />
+              <span className="text-[#EF4444] text-[11px] lg:text-xs font-bold">
                 {result.forfeitPenalty.toLocaleString('fr-FR')} GoGold reversés à ton adversaire pour avoir quitté en menant
               </span>
             </div>
@@ -140,7 +140,7 @@ export function MatchResultModal({ result, onClose }: { result: MatchResultData 
           )}
 
           {!!result.forfeitPenalty && !result.forfeitByMe && (
-            <div className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 mt-0.5 max-w-[90%]" style={{ background: 'rgba(0,0,0,0.3)' }}>
+            <div className="flex items-center gap-1.5 rounded-2xl px-3 py-1.5 mt-0.5 max-w-[90%]" style={{ background: 'rgba(0,0,0,0.3)' }}>
               <Gift size={13} color="#fff" />
               <span className="text-white text-[11px] lg:text-xs font-bold text-center">
                 +{result.forfeitPenalty.toLocaleString('fr-FR')} GoGold bonus — l'adversaire a abandonné en menant

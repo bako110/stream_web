@@ -95,7 +95,7 @@ export function LiveAccessGate({ live, liveId, onAccessGranted, onLeave }: Props
         <div>
           <p className="text-white text-sm font-bold">{hostName}</p>
           <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded"
-            style={{ background: '#F0365A', color: '#fff', letterSpacing: '0.05em' }}>
+            style={{ background: '#EF4444', color: '#fff', letterSpacing: '0.05em' }}>
             <span className="w-1 h-1 rounded-full bg-white animate-pulse" /> LIVE
           </span>
         </div>
@@ -130,26 +130,26 @@ export function LiveAccessGate({ live, liveId, onAccessGranted, onLeave }: Props
           </div>
 
           {myBalance !== null && (
-            <div className="w-full flex items-center justify-between rounded-xl px-4 py-2.5 mb-4"
+            <div className="w-full flex items-center justify-between rounded-2xl px-4 py-2.5 mb-4"
               style={{
                 background: !hasEnough ? 'rgba(240,54,90,0.08)' : 'var(--bg-secondary)',
-                border: `1px solid ${!hasEnough ? '#F0365A' : 'var(--border)'}`,
+                border: `1px solid ${!hasEnough ? '#EF4444' : 'var(--border)'}`,
               }}>
               <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Ton solde</span>
-              <span className="text-sm font-black" style={{ color: !hasEnough ? '#F0365A' : '#3FEDB6' }}>
+              <span className="text-sm font-black" style={{ color: !hasEnough ? '#EF4444' : '#3FEDB6' }}>
                 {myBalance} GoGold{isGoGold && !hasEnough ? ` (manque ${requiredGoGold - myBalance})` : ''}
               </span>
             </div>
           )}
 
           {error && (
-            <p className="text-xs text-center mb-3" style={{ color: '#F0365A' }}>{error}</p>
+            <p className="text-xs text-center mb-3" style={{ color: '#EF4444' }}>{error}</p>
           )}
 
           {isGoGold && !hasEnough && myBalance !== null ? (
             <button onClick={() => navigate('/wallet')}
               className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-black text-white"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#9B65F5)' }}>
+              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               <GoGold size={18} /> Recharger mon solde
             </button>
           ) : (

@@ -88,7 +88,7 @@ export function StageAccessGate({ live, liveId, identity, onRequested, onClose, 
 
         <div className="flex items-center gap-3.5 mb-5">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: 'linear-gradient(135deg,#F0365A,#9B65F5)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <span className="text-lg">🎤</span>
           </div>
           <div>
@@ -108,16 +108,16 @@ export function StageAccessGate({ live, liveId, identity, onRequested, onClose, 
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl px-4 py-3 mb-4"
+        <div className="flex items-center justify-between rounded-2xl px-4 py-3 mb-4"
           style={{
             background: insufficientFunds ? 'rgba(240,54,90,0.07)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${insufficientFunds ? '#F0365A' : 'rgba(255,255,255,0.1)'}`,
+            border: `1px solid ${insufficientFunds ? '#EF4444' : 'rgba(255,255,255,0.1)'}`,
           }}>
           <span className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>Ton solde actuel</span>
           {balanceLoading ? (
             <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
           ) : (
-            <span className="text-sm font-black" style={{ color: insufficientFunds ? '#F0365A' : '#3FEDB6' }}>
+            <span className="text-sm font-black" style={{ color: insufficientFunds ? '#EF4444' : '#3FEDB6' }}>
               {myBalance} GoGold{insufficientFunds && effectiveCost > 0 ? ` · manque ${effectiveCost - myBalance}` : ''}
             </span>
           )}
@@ -129,18 +129,18 @@ export function StageAccessGate({ live, liveId, identity, onRequested, onClose, 
           </p>
         )}
 
-        {error && <p className="text-xs text-center mb-3" style={{ color: '#F0365A' }}>{error}</p>}
+        {error && <p className="text-xs text-center mb-3" style={{ color: '#EF4444' }}>{error}</p>}
 
         {insufficientFunds && !balanceLoading ? (
           <button onClick={() => navigate('/wallet')}
             className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-black text-white mb-2.5"
-            style={{ background: 'linear-gradient(135deg,#F0365A,#9B65F5)' }}>
+            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             <GoGold size={18} /> Recharger mon solde
           </button>
         ) : (
           <button onClick={handlePay} disabled={loading || balanceLoading}
             className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-black text-white mb-2.5 disabled:opacity-50"
-            style={{ background: isGoGold ? 'linear-gradient(135deg,#F59E0B,#F97316)' : 'linear-gradient(135deg,#F0365A,#9B65F5)' }}>
+            style={{ background: isGoGold ? 'linear-gradient(135deg,#F59E0B,#F97316)' : 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
             {loading || balanceLoading ? (
               <span className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
             ) : (

@@ -1,67 +1,67 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, Eye, ChevronLeft, User } from 'lucide-react';
+import { Zap, Eye, User, Award } from 'lucide-react';
 import { PageLoader, Spinner } from '../components/ui/Spinner';
 import { battlesApi, type ActiveBattle } from '../api/battles';
 import { useWs } from '../context/WebSocketContext';
 import { useAuthStore } from '../store/authStore';
 import { encodeId } from '../utils/slugId';
+import { LiveHeader, LivePage, PillButton, EmptyCard, InfoStrip, LiveBadge, LIVE_COLORS, CARD_SHADOW, CARD_SHADOW_HOVER } from '../components/live/liveKit';
 import { MatchResultModal, type MatchResultData } from '../components/live/MatchResultModal';
+
+// Les deux camps : violet (A) vs rose (B) — paire harmonisée avec la palette de l'app.
+const SIDE_A = LIVE_COLORS.violetSoft;
+const SIDE_B = LIVE_COLORS.rose;
+
+function Fighter({ avatar, name, color, fallback }: { avatar?: string | null; name?: string | null; color: string; fallback: string }) {
+  return (
+    <div className="relative flex-1 h-full flex flex-col items-center justify-center gap-2 px-2">
+      {avatar ? (
+        <img src={avatar} alt={name ?? ''} className="w-16 h-16 rounded-full object-cover"
+          style={{ border: `3px solid ${color}`, boxShadow: `0 0 18px ${color}88` }} />
+      ) : (
+        <div className="w-16 h-16 rounded-full flex items-center justify-center"
+          style={{ background: color, boxShadow: `0 0 18px ${color}88` }}>
+          <User size={24} color="#fff" />
+        </div>
+      )}
+      <span className="text-white text-xs font-bold truncate max-w-[90%]" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+        {name ?? fallback}
+      </span>
+    </div>
+  );
+}
 
 function BattleCard({ battle, onWatch }: { battle: ActiveBattle; onWatch: () => void }) {
   return (
     <button onClick={onWatch}
-      className="group rounded-[22px] overflow-hidden text-left transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
-      style={{ background: '#15101F', border: '1px solid rgba(155,101,245,0.22)', boxShadow: '0 4px 18px rgba(0,0,0,0.35)' }}>
-      <div className="relative flex items-center" style={{ aspectRatio: '16/10', background: 'linear-gradient(90deg,#3A1E73,#1A1024 48%,#5C1330 52%,#7A1F3E)' }}>
-        {/* Halo diagonal subtil, façon projecteur de scène */}
-        <div className="absolute inset-0 opacity-40" style={{ background: 'radial-gradient(circle at 22% 30%,#9B65F5,transparent 55%), radial-gradient(circle at 78% 70%,#F0365A,transparent 55%)' }} />
-
-        <div className="relative flex-1 h-full flex flex-col items-center justify-center gap-2 px-2">
-          {battle.host_a_avatar ? (
-            <img src={battle.host_a_avatar} alt={battle.host_a_name ?? ''} className="w-14 h-14 rounded-full object-cover border-2"
-              style={{ borderColor: '#9B65F5', boxShadow: '0 0 14px rgba(155,101,245,0.55)' }} />
-          ) : (
-            <div className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#9B65F5,#5B21B6)', boxShadow: '0 0 14px rgba(155,101,245,0.45)' }}>
-              <User size={22} color="#fff" />
-            </div>
-          )}
-          <span className="text-white text-xs font-bold truncate max-w-[92%]" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
-            {battle.host_a_name ?? 'Créateur A'}
-          </span>
+      className="group rounded-[28px] overflow-hidden text-left transition-all duration-200 hover:-translate-y-0.5"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: CARD_SHADOW }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = CARD_SHADOW; }}>
+      {/* Scène sombre : les deux combattants face à face */}
+      <div className="relative flex items-center" style={{ aspectRatio: '16/10', background: '#120b22' }}>
+        <div className="absolute inset-0" style={{
+          background: `radial-gradient(circle at 20% 35%,${SIDE_A}66,transparent 58%), radial-gradient(circle at 80% 65%,${SIDE_B}66,transparent 58%)`,
+        }} />
+        <Fighter avatar={battle.host_a_avatar} name={battle.host_a_name} color={SIDE_A} fallback="Créateur A" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center"
+          style={{ background: `linear-gradient(135deg,${SIDE_A},${SIDE_B})`, border: '3px solid #120b22', boxShadow: '0 4px 14px rgba(0,0,0,0.5)' }}>
+          <span className="text-white text-[11px] font-black tracking-wide">VS</span>
         </div>
-
-        {/* Badge VS flottant, centré, au-dessus de la ligne de fracture des deux camps */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: 'linear-gradient(135deg,#9B65F5,#F0365A)', border: '2px solid rgba(21,16,31,0.9)', boxShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-          <span className="text-white text-[10px] font-black tracking-wide">VS</span>
-        </div>
-
-        <div className="relative flex-1 h-full flex flex-col items-center justify-center gap-2 px-2">
-          {battle.host_b_avatar ? (
-            <img src={battle.host_b_avatar} alt={battle.host_b_name ?? ''} className="w-14 h-14 rounded-full object-cover border-2"
-              style={{ borderColor: '#F0365A', boxShadow: '0 0 14px rgba(240,54,90,0.55)' }} />
-          ) : (
-            <div className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#F0365A,#9B1C3F)', boxShadow: '0 0 14px rgba(240,54,90,0.45)' }}>
-              <User size={22} color="#fff" />
-            </div>
-          )}
-          <span className="text-white text-xs font-bold truncate max-w-[92%]" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
-            {battle.host_b_name ?? 'Créateur B'}
-          </span>
-        </div>
-
-        <span className="absolute top-2 left-2.5 flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full text-white"
-          style={{ background: '#F0365A', letterSpacing: '0.05em' }}>
-          <span className="w-1 h-1 rounded-full bg-white animate-pulse" /> LIVE
-        </span>
+        <Fighter avatar={battle.host_b_avatar} name={battle.host_b_name} color={SIDE_B} fallback="Créateur B" />
+        <div className="absolute top-3 left-3"><LiveBadge small /></div>
       </div>
 
-      <div className="flex items-center justify-between px-3.5 py-2.5" style={{ background: '#100C19', borderTop: '1px solid rgba(155,101,245,0.15)' }}>
-        <span className="text-sm font-black tabular-nums" style={{ color: '#F0EFF8' }}>{battle.score_a} — {battle.score_b}</span>
-        <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#9390AB' }}>
+      {/* Score + spectateurs */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="text-base font-black tabular-nums" style={{ color: 'var(--text-primary)' }}>
+          <span style={{ color: SIDE_A }}>{battle.score_a}</span>
+          <span style={{ color: 'var(--text-tertiary)' }}> — </span>
+          <span style={{ color: SIDE_B }}>{battle.score_b}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full"
+          style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
           <Eye size={12} /> {battle.viewer_count.toLocaleString('fr-FR')}
         </span>
       </div>
@@ -169,58 +169,42 @@ export default function LiveOneVsOnePage() {
   if (loading) return <PageLoader />;
 
   return (
-    <div className="min-h-[calc(100vh-57px)]" style={{ background: 'linear-gradient(180deg,#1C1033,#0B0812)' }}>
-      <div className="flex items-center gap-3 px-4 py-4 border-b" style={{ borderColor: 'rgba(155,101,245,0.25)', background: 'rgba(28,16,51,0.55)' }}>
-        <button onClick={() => navigate(-1)} className="text-white/70 hover:text-white transition-colors">
-          <ChevronLeft size={22} />
-        </button>
-        <h1 className="text-lg font-extrabold" style={{ color: '#F0EFF8' }}>1 vs 1</h1>
-      </div>
+    <LivePage>
+      <LiveHeader
+        icon={<Zap size={16} />}
+        title="1 vs 1"
+        subtitle={battles.length > 0 ? `${battles.length} match${battles.length > 1 ? 's' : ''} en direct` : 'Défis en direct entre créateurs'}
+        onBack={() => navigate(-1)}
+        actions={<PillButton variant="soft" icon={<Award size={14} />} onClick={() => navigate('/tournaments')}>Tournois</PillButton>}
+      />
 
-      <div className="w-full mx-auto p-4">
-        {battles.length > 0 && (
-          <div className="flex items-center gap-3 rounded-2xl p-4 mb-4"
-            style={{ background: 'linear-gradient(135deg,#9B65F522,#7B3FF210)', border: '1px solid rgba(155,101,245,0.3)' }}>
-            <div className="w-11 h-11 rounded-[13px] flex items-center justify-center shrink-0" style={{ background: 'rgba(155,101,245,0.18)' }}>
-              <Zap size={20} color="#9B65F5" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-extrabold" style={{ color: '#F0EFF8' }}>
-                {battles.length} match{battles.length > 1 ? 's' : ''} en direct
-              </p>
-              <p className="text-xs font-semibold mt-0.5" style={{ color: '#9390AB' }}>
-                {totalViewers.toLocaleString('fr-FR')} spectateur{totalViewers > 1 ? 's' : ''} en ce moment
-              </p>
-            </div>
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#EF4444' }} />
-          </div>
-        )}
+      {battles.length > 0 && (
+        <InfoStrip
+          icon={<Zap size={18} />}
+          title={`${battles.length} match${battles.length > 1 ? 's' : ''} en direct`}
+          subtitle={`${totalViewers.toLocaleString('fr-FR')} spectateur${totalViewers > 1 ? 's' : ''} en ce moment`}
+          trailing={<LiveBadge small />}
+        />
+      )}
 
-        {battles.length === 0 ? (
-          <div className="flex flex-col items-center gap-3.5 pt-16">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(155,101,245,0.12)' }}>
-              <Zap size={30} color="#9B65F5" />
-            </div>
-            <p className="text-sm font-semibold text-center px-8" style={{ color: '#9390AB' }}>
-              Aucun match 1 vs 1 en direct pour le moment.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {battles.map(b => (
-              <BattleCard key={b.id} battle={b} onWatch={() => navigate(`/battles/${encodeId(b.id)}`)} />
-            ))}
-          </div>
-        )}
+      {battles.length === 0 ? (
+        <EmptyCard icon={<Zap size={28} />} title="Aucun match en direct"
+          description="Les défis 1 vs 1 en cours apparaîtront ici dès qu'ils commenceront." />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+          {battles.map(b => (
+            <BattleCard key={b.id} battle={b} onWatch={() => navigate(`/battles/${encodeId(b.id)}`)} />
+          ))}
+        </div>
+      )}
 
-        {hasMore && battles.length > 0 && (
-          <div ref={sentinelRef} className="flex justify-center py-4">
-            {loadingMore && <Spinner size="sm" />}
-          </div>
-        )}
-      </div>
+      {hasMore && battles.length > 0 && (
+        <div ref={sentinelRef} className="flex justify-center py-6">
+          {loadingMore && <Spinner size="sm" />}
+        </div>
+      )}
 
       <MatchResultModal result={matchResult} onClose={() => setMatchResult(null)} />
-    </div>
+    </LivePage>
   );
 }
