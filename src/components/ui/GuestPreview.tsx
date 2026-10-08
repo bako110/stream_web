@@ -125,7 +125,6 @@ export function GuestPreview({
   const cfg = TYPE_CONFIG[type];
   const redirectParam = encodeURIComponent(window.location.pathname + window.location.search);
   const [showPlayPrompt, setShowPlayPrompt] = useState(false);
-  const [showBodyOverlay, setShowBodyOverlay] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [videoReady, setVideoReady] = useState(false);
@@ -241,720 +240,323 @@ export function GuestPreview({
     return () => clearInterval(iv);
   }, [images.length, autoPaused]);
 
-  // Ferme l'overlay de description avec Échap
-  useEffect(() => {
-    if (!showBodyOverlay) return;
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setShowBodyOverlay(false); }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showBodyOverlay]);
-
   const hasStats = likeCount != null || commentCount != null || viewCount != null;
+  const isReel   = type === 'reel';
+  // Description longue : repliée à 5 lignes avec « Voir plus » (plus d'overlay noir plein écran).
+  const longBody = (body?.length ?? 0) > 280;
+  const [bodyOpen, setBodyOpen] = useState(false);
 
   return (
     <>
       <style>{`
-        .gp-shell {
-          position: fixed;
-          inset: 0;
-          z-index: 1000;
-          background: #05000a;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
+        /* ── Page — thème de l'app (clair/sombre), contenu lisible sous le visuel ── */
+        .gp-page {
+          min-height: 100dvh;
+          background: var(--bg);
+          color: var(--text-primary);
+          padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
         }
+        .gp-bar {
+          position: sticky; top: 0.5rem; z-index: 30;
+          margin: 0.5rem auto 0;
+          width: calc(100% - 1rem); max-width: 760px;
+          display: flex; align-items: center; justify-content: space-between; gap: 10px;
+          padding: 8px 8px 8px 14px;
+          border-radius: 999px;
+          background: color-mix(in srgb, var(--surface) 88%, transparent);
+          -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%);
+          border: 1px solid var(--border);
+          box-shadow: 0 1px 2px rgba(11,11,16,0.05), 0 8px 20px rgba(11,11,16,0.08), 0 20px 40px -10px rgba(11,11,16,0.12);
+        }
+        .gp-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; min-width: 0; }
+        .gp-logo-text { font-size: 16px; font-weight: 800; letter-spacing: -0.4px; color: var(--text-primary); }
+        .gp-bar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .gp-pillbtn {
+          display: inline-flex; align-items: center; justify-content: center;
+          height: 38px; padding: 0 16px; border-radius: 999px;
+          font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap;
+          transition: transform .18s, box-shadow .18s, background .18s;
+        }
+        .gp-pillbtn-ghost { color: var(--text-primary); border: 1px solid var(--border); background: transparent; }
+        .gp-pillbtn-ghost:hover { background: var(--bg-secondary); }
+        .gp-pillbtn-solid { color: #fff; background: linear-gradient(135deg,#7B3FF2,#5B2EC4); box-shadow: 0 4px 14px rgba(123,63,242,0.35); }
+        .gp-pillbtn-solid:hover { transform: translateY(-1px); }
+
+        .gp-main { width: 100%; max-width: 760px; margin: 0 auto; padding: 16px 0.5rem 0; }
+        @media (min-width: 640px) { .gp-main { padding: 24px 1rem 0; } }
+
+        /* ── Visuel — seulement les CONTRÔLES (lecture, indicateurs, progression) sont dessus ── */
         .gp-hero {
-          position: absolute;
-          inset: 0;
-          z-index: 0;
-          overflow: hidden;
+          position: relative; overflow: hidden;
+          border-radius: 28px;
+          background: #0b0712;
+          border: 1px solid var(--border);
+          box-shadow: 0 2px 6px rgba(11,11,16,0.06), 0 18px 40px -12px rgba(11,11,16,0.25);
           touch-action: pan-y;
+          aspect-ratio: 16 / 10;
         }
-        .gp-hero-track {
-          display: flex;
-          width: 100%;
-          height: 100%;
-          transition: transform .35s cubic-bezier(0.22,1,0.36,1);
-        }
-        .gp-hero-slide-wrap {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          flex-shrink: 0;
-          overflow: hidden;
-        }
+        .gp-hero.is-reel { aspect-ratio: 9 / 16; max-height: 78vh; width: auto; margin: 0 auto; max-width: 100%; }
+        @media (min-width: 640px) { .gp-hero.is-reel { max-height: 72vh; } }
+        .gp-hero-track { display: flex; width: 100%; height: 100%; transition: transform .35s cubic-bezier(0.22,1,0.36,1); }
+        .gp-hero-slide-wrap { position: relative; width: 100%; height: 100%; flex-shrink: 0; overflow: hidden; }
         .gp-hero-slide-bg {
-          position: absolute;
-          inset: -6%;
-          width: 112%;
-          height: 112%;
-          object-fit: cover;
-          filter: blur(40px) saturate(1.3) brightness(0.55);
-          transform: scale(1.1);
+          position: absolute; inset: -6%; width: 112%; height: 112%; object-fit: cover;
+          filter: blur(36px) saturate(1.3) brightness(0.6); transform: scale(1.1);
         }
-        .gp-hero-slide {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          object-position: center center;
-          display: block;
-          filter: saturate(1.08);
-        }
+        .gp-hero-slide { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; }
         .gp-hero-dots {
-          position: absolute;
-          top: 14px;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 6;
-          display: flex;
-          gap: 6px;
+          position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+          z-index: 6; display: flex; gap: 6px; padding: 6px 10px; border-radius: 999px;
+          background: rgba(0,0,0,0.35); backdrop-filter: blur(8px);
         }
         .gp-hero-dot {
-          width: 22px; height: 3px;
-          border-radius: 3px;
-          background: rgba(255,255,255,0.3);
-          border: none;
-          padding: 0;
-          cursor: pointer;
-          transition: background .18s, transform .18s;
-          overflow: hidden;
-          position: relative;
+          width: 20px; height: 3px; border-radius: 3px; background: rgba(255,255,255,0.35);
+          border: none; padding: 0; cursor: pointer; overflow: hidden; position: relative;
         }
-        .gp-hero-dot.active {
-          background: rgba(255,255,255,0.3);
-        }
+        .gp-hero-dot.active { background: rgba(255,255,255,0.35); }
         .gp-hero-dot.active::after {
-          content: '';
-          position: absolute; inset: 0;
-          background: linear-gradient(90deg, #A855F7, #F0365A);
+          content: ''; position: absolute; inset: 0; background: #fff;
           animation: gp-dot-fill 4s linear forwards;
         }
-        @keyframes gp-dot-fill {
-          from { transform: scaleX(0); transform-origin: left; }
-          to   { transform: scaleX(1); transform-origin: left; }
-        }
-        .gp-gradient {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(5,0,10,0.65) 0%,
-            rgba(5,0,10,0.05) 20%,
-            rgba(5,0,10,0.02) 40%,
-            rgba(5,0,10,0.55) 62%,
-            rgba(5,0,10,0.96) 80%,
-            rgba(5,0,10,1.00) 100%
-          );
-        }
-        .gp-vignette {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.35) 100%);
-          pointer-events: none;
-        }
-        .gp-topbar {
-          position: relative;
-          z-index: 10;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 20px 0;
-          flex-shrink: 0;
-        }
-        .gp-logo {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          text-decoration: none;
-        }
-        .gp-logo-text {
-          font-size: 16px;
-          font-weight: 800;
-          letter-spacing: -0.4px;
-          color: #fff;
-          background: linear-gradient(135deg, #fff, #E8D5FF);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .gp-topbar-login {
-          font-size: 13px;
-          font-weight: 700;
-          color: rgba(255,255,255,0.85);
-          text-decoration: none;
-          padding: 7px 14px;
-          border-radius: 20px;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.14);
-          backdrop-filter: blur(8px);
-          transition: background .18s, border-color .18s;
-        }
-        .gp-topbar-login:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.28); }
-
-        /* Scrollable content zone */
-        .gp-scroll {
-          position: relative;
-          z-index: 10;
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-          -webkit-overflow-scrolling: touch;
-          display: flex;
-          flex-direction: column;
-          padding-bottom: 190px;
-        }
-        .gp-spacer { flex: 1; min-height: 180px; }
-
-        .gp-badges {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 0 20px;
-          margin-bottom: 14px;
-          flex-wrap: wrap;
-        }
-        .gp-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 5px 12px;
-          border-radius: 20px;
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: .08em;
-          text-transform: uppercase;
-          box-shadow: 0 4px 14px rgba(123,63,242,0.35);
-        }
-        .gp-badge-type { background: linear-gradient(135deg, #7B3FF2, #A855F7); color: #fff; }
-        .gp-badge-live { background: linear-gradient(135deg, #EF4444, #DC2626); color: #fff; box-shadow: 0 4px 14px rgba(239,68,68,0.4); }
-        .gp-dot {
-          width: 5px; height: 5px;
-          border-radius: 50%;
-          background: #fff;
-          animation: gp-pulse 1.1s ease-in-out infinite;
-        }
-        @keyframes gp-pulse {
-          0%,100% { opacity:1; transform:scale(1); }
-          50%      { opacity:.4; transform:scale(.7); }
-        }
-
-        .gp-meta { padding: 0 20px; }
-
+        @keyframes gp-dot-fill { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); transform-origin: left; } }
         .gp-hero-play {
-          position: absolute;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 5;
-          width: 80px; height: 80px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.12);
-          border: 2px solid rgba(255,255,255,0.65);
+          position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5;
+          width: 72px; height: 72px; border-radius: 50%;
+          background: rgba(0,0,0,0.45); border: 2px solid rgba(255,255,255,0.7);
           backdrop-filter: blur(8px);
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer;
-          transition: transform .2s, background .2s, box-shadow .2s;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 0 rgba(255,255,255,0.4);
-          animation: gp-play-breathe 2.4s ease-in-out infinite;
+          display: flex; align-items: center; justify-content: center; cursor: pointer;
+          transition: transform .2s, background .2s;
         }
-        @keyframes gp-play-breathe {
-          0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 0 rgba(255,255,255,0.25); }
-          50%      { box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 14px rgba(255,255,255,0); }
-        }
-        .gp-hero-play:hover {
-          transform: translate(-50%, -50%) scale(1.08);
-          background: rgba(255,255,255,0.2);
-        }
-        @media (min-width: 640px) {
-          .gp-hero-play { width: 96px; height: 96px; }
-        }
+        .gp-hero-play:hover { transform: translate(-50%, -50%) scale(1.08); background: rgba(0,0,0,0.6); }
+        .gp-preview-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,0.25); z-index: 6; }
+        .gp-preview-progress-fill { height: 100%; background: #fff; transition: width .2s linear; }
+        .gp-empty-hero { position: absolute; inset: 0; background: linear-gradient(135deg,#1a0533 0%,#3d1478 45%,#7B3FF2 70%,#0A0010 100%); }
 
-        .gp-preview-progress {
-          position: absolute;
-          left: 14px; right: 14px; bottom: 14px;
-          z-index: 6;
-          height: 3px;
-          border-radius: 3px;
-          background: rgba(255,255,255,0.22);
-          overflow: hidden;
+        /* ── Carte d'infos — sous le visuel, texte sur fond uni ── */
+        .gp-info {
+          margin-top: 14px; padding: 22px 20px;
+          background: var(--surface); border: 1px solid var(--border);
+          border-radius: 28px; box-shadow: 0 1px 2px rgba(11,11,16,0.04), 0 8px 24px rgba(11,11,16,0.05);
         }
-        .gp-preview-progress-fill {
-          height: 100%;
-          border-radius: 3px;
-          background: linear-gradient(90deg, #A855F7, #F0365A);
-          transition: width .12s linear;
+        @media (min-width: 640px) { .gp-info { padding: 28px 28px; } }
+        .gp-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .gp-badge {
+          display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 999px;
+          font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
         }
+        .gp-badge-type { background: rgba(123,63,242,0.12); color: #7B3FF2; }
+        .gp-badge-type svg path, .gp-badge-type svg circle, .gp-badge-type svg rect { stroke: currentColor; }
+        .gp-badge-live { background: #EF4444; color: #fff; }
+        .gp-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: gp-pulse 1.1s ease-in-out infinite; }
+        @keyframes gp-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.4; transform:scale(.7); } }
 
-        .gp-title {
-          font-size: clamp(20px, 4.2vw, 32px);
-          font-weight: 900;
-          line-height: 1.15;
-          letter-spacing: -0.5px;
-          color: #fff;
-          margin-bottom: 12px;
-          word-break: break-word;
-          text-shadow: 0 2px 20px rgba(0,0,0,0.5);
-        }
-
-        .gp-author {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          margin-bottom: 12px;
-          flex-wrap: wrap;
-        }
+        .gp-title { font-size: clamp(22px, 5vw, 32px); font-weight: 900; line-height: 1.2; letter-spacing: -0.02em; color: var(--text-primary); margin: 0 0 14px; word-break: break-word; }
+        .gp-author { display: flex; align-items: center; gap: 10px; }
         .gp-avatar {
-          width: 32px; height: 32px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #7B3FF2, #A855F7);
-          border: 1.5px solid rgba(255,255,255,0.4);
-          overflow: hidden;
-          flex-shrink: 0;
+          width: 40px; height: 40px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+          background: linear-gradient(135deg,#7B3FF2,#A855F7); color: #fff; font-weight: 800; font-size: 15px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 12px; font-weight: 800;
-          color: #fff;
-          box-shadow: 0 2px 10px rgba(123,63,242,0.4);
         }
-        .gp-avatar img { width:100%; height:100%; object-fit:cover; }
-        .gp-author-name { font-size: 14px; font-weight: 800; color: #fff; }
-        .gp-verified {
-          width: 15px; height: 15px;
-          border-radius: 50%;
-          background: #1D9BF0;
-          display: inline-flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-          box-shadow: 0 0 0 2px rgba(5,0,10,0.8);
-        }
-        .gp-date { font-size: 12px; color: rgba(255,255,255,0.4); font-weight: 500; }
-        .gp-date-sep { color: rgba(255,255,255,0.25); }
+        .gp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .gp-author-text { min-width: 0; }
+        .gp-author-name { display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 800; color: var(--text-primary); }
+        .gp-verified { width: 14px; height: 14px; border-radius: 50%; background: #7B3FF2; display: inline-flex; align-items: center; justify-content: center; }
+        .gp-date { font-size: 12px; color: var(--text-tertiary); font-weight: 500; }
 
-        .gp-stats {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          flex-wrap: wrap;
-          margin-bottom: 14px;
-        }
+        .gp-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
         .gp-stat {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 13px; font-weight: 700;
-          color: rgba(255,255,255,0.75);
+          display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px;
+          background: var(--bg-secondary); color: var(--text-secondary); font-size: 13px; font-weight: 700;
         }
-        .gp-stat svg { flex-shrink: 0; }
-
-        .gp-pills {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 14px;
-        }
+        .gp-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .gp-pill {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 6px 12px; border-radius: 20px;
-          font-size: 12px; font-weight: 700;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.14);
-          color: rgba(255,255,255,0.75);
-          white-space: nowrap;
-          backdrop-filter: blur(8px);
+          display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px;
+          background: var(--bg-secondary); color: var(--text-secondary); font-size: 13px; font-weight: 600;
         }
-        .gp-pill-accent {
-          background: rgba(123,63,242,0.16);
-          border-color: rgba(168,85,247,0.4);
-          color: #D4B8FF;
-        }
+        .gp-pill-accent { background: rgba(123,63,242,0.12); color: #7B3FF2; font-weight: 700; }
 
-        .gp-body-trigger {
-          font-size: 14px;
-          line-height: 1.6;
-          color: rgba(255,255,255,0.7);
-          margin-bottom: 16px;
-          word-break: break-word;
-          white-space: pre-line;
-          cursor: pointer;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .gp-body-more {
-          font-size: 13px;
-          font-weight: 800;
-          color: #D4B8FF;
-        }
+        .gp-divider { height: 1px; background: var(--border); margin: 18px 0; }
+        .gp-body { font-size: 15.5px; line-height: 1.7; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; margin: 0; }
+        .gp-body.is-clamped { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+        .gp-body a { color: var(--primary); text-decoration: underline; font-weight: 600; }
+        .gp-body-more { margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--primary); background: none; border: none; padding: 0; cursor: pointer; }
 
-        /* Overlay description plein écran — fond noir, texte lisible, clic pour fermer */
-        .gp-body-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 40;
-          background: rgba(2,0,6,0.96);
-          backdrop-filter: blur(4px);
-          display: flex;
-          flex-direction: column;
-          cursor: pointer;
-          animation: gp-fade-in 0.2s ease-out;
+        /* ── Carte d'invitation ── */
+        .gp-cta-card {
+          margin-top: 14px; padding: 24px 22px; text-align: center; color: #fff;
+          border-radius: 28px; background: linear-gradient(135deg,#7B3FF2,#5B2EC4);
+          box-shadow: 0 18px 40px -12px rgba(91,46,196,0.5);
+        }
+        .gp-cta-headline { font-size: 18px; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 6px; }
+        .gp-cta-sub { font-size: 13px; opacity: .85; margin: 0 0 16px; }
+        .gp-cta-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .gp-cta-btns .gp-pillbtn { height: 44px; padding: 0 24px; font-size: 14px; }
+        .gp-cta-btns .gp-pillbtn-solid { background: #fff; color: #5B2EC4; box-shadow: none; }
+        .gp-cta-btns .gp-pillbtn-ghost { color: #fff; border-color: rgba(255,255,255,0.5); }
+        .gp-cta-btns .gp-pillbtn-ghost:hover { background: rgba(255,255,255,0.12); }
+
+        /* Barre d'action flottante (mobile) */
+        .gp-dock {
+          position: fixed; left: 12px; right: 12px; z-index: 40;
+          bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+          display: flex; gap: 8px; padding: 8px; border-radius: 999px;
+          background: color-mix(in srgb, var(--surface) 92%, transparent);
+          -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+          border: 1px solid var(--border); box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+        }
+        .gp-dock .gp-pillbtn { flex: 1; height: 46px; font-size: 14px; }
+        @media (min-width: 768px) { .gp-dock { display: none; } .gp-page { padding-bottom: 40px; } }
+
+        /* Overlay « contenu réservé aux membres » (inchangé : modale sombre plein écran) */
+        .gp-lock-overlay {
+          position: fixed; inset: 0; z-index: 1100; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; text-align: center; padding: 32px 24px;
+          background: rgba(8,3,16,0.94); backdrop-filter: blur(18px); overflow: hidden;
+          animation: gp-fade-in .25s ease;
         }
         @keyframes gp-fade-in { from { opacity: 0; } to { opacity: 1; } }
-        .gp-body-overlay-inner {
-          flex: 1;
-          overflow-y: auto;
-          padding: 28px 22px 40px;
-          max-width: 720px;
-          width: 100%;
-          margin: 0 auto;
-        }
-        .gp-body-overlay-hint {
-          position: sticky;
-          top: 0;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 22px;
-          font-size: 12px;
-          font-weight: 700;
-          color: rgba(255,255,255,0.45);
-          letter-spacing: 0.02em;
-        }
-        .gp-body-overlay-close {
-          width: 32px; height: 32px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.14);
-          display: flex; align-items: center; justify-content: center;
-          color: #fff;
-          flex-shrink: 0;
-        }
-        .gp-body-full {
-          font-size: 16px;
-          line-height: 1.75;
-          color: rgba(255,255,255,0.92);
-          white-space: pre-line;
-          word-break: break-word;
-        }
-
-        /* CTA bar */
-        .gp-cta {
-          position: fixed;
-          bottom: 0; left: 0; right: 0;
-          z-index: 20;
-          background: linear-gradient(180deg, rgba(5,0,10,0.4), rgba(5,0,10,0.94) 30%, rgba(5,0,10,0.98));
-          backdrop-filter: blur(28px) saturate(160%);
-          -webkit-backdrop-filter: blur(28px) saturate(160%);
-          border-top: 1px solid rgba(255,255,255,0.10);
-          padding: 18px 20px;
-          padding-bottom: max(18px, env(safe-area-inset-bottom));
-        }
-        .gp-cta-headline {
-          font-size: 15px;
-          font-weight: 800;
-          color: #fff;
-          margin-bottom: 3px;
-          letter-spacing: -0.2px;
-          line-height: 1.3;
-        }
-        .gp-cta-sub {
-          font-size: 11.5px;
-          color: rgba(255,255,255,0.4);
-          margin-bottom: 15px;
-          line-height: 1.4;
-        }
-        .gp-btns {
-          display: flex;
-          gap: 10px;
-        }
-        .gp-btn {
-          flex: 1;
-          display: flex; align-items: center; justify-content: center; gap: 6px;
-          padding: 13px 14px;
-          border-radius: 14px;
-          font-size: 14px; font-weight: 800;
-          text-decoration: none;
-          letter-spacing: -0.1px;
-          transition: opacity .15s, transform .15s, box-shadow .15s;
-          white-space: nowrap;
-        }
-        .gp-btn:hover { opacity: .92; transform: scale(.985); }
-        .gp-btn-primary {
-          background: linear-gradient(135deg, #7B3FF2, #A855F7);
-          color: #fff;
-          box-shadow: 0 6px 20px rgba(123,63,242,0.45);
-        }
-        .gp-btn-ghost {
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.16);
-          color: #fff;
-        }
-
-        /* Overlay plein écran "premium" incitant à se connecter — remplace le
-           bottom-sheet simple pour un rendu plus haut de gamme et immersif. */
-        .gp-lock-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 50;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          padding: 32px 24px;
-          background: radial-gradient(ellipse at center, rgba(30,6,58,0.88) 0%, rgba(4,0,10,0.97) 70%);
-          backdrop-filter: blur(22px) saturate(140%);
-          -webkit-backdrop-filter: blur(22px) saturate(140%);
-          animation: gp-fade-in 0.3s ease-out;
-        }
+        @keyframes gp-lock-pop { 0% { transform: scale(.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         .gp-lock-glow {
-          position: absolute;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -50%);
-          width: 480px; height: 480px;
-          background: radial-gradient(circle, rgba(168,85,247,0.25) 0%, transparent 65%);
+          position: absolute; width: 420px; height: 420px; border-radius: 50%; top: 50%; left: 50%;
+          transform: translate(-50%,-60%); background: radial-gradient(circle, rgba(123,63,242,0.45), transparent 65%);
           pointer-events: none;
         }
-        .gp-lock-icon {
-          position: relative;
-          width: 76px; height: 76px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #7B3FF2, #F0365A);
-          display: flex; align-items: center; justify-content: center;
-          margin-bottom: 22px;
-          box-shadow: 0 0 0 1px rgba(255,255,255,0.15), 0 12px 40px rgba(123,63,242,0.55);
-          animation: gp-lock-pop 0.45s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @keyframes gp-lock-pop {
-          from { transform: scale(0.6); opacity: 0; }
-          to   { transform: scale(1); opacity: 1; }
-        }
         .gp-lock-badge {
-          position: relative;
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 6px 14px;
-          border-radius: 20px;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.16);
-          color: #D4B8FF;
-          font-size: 11px; font-weight: 800;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          margin-bottom: 18px;
+          position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
+          font-size: 11px; font-weight: 700; color: #E8D5FF; background: rgba(123,63,242,0.25);
+          border: 1px solid rgba(168,85,247,0.4); margin-bottom: 22px;
         }
-        .gp-lock-title {
-          position: relative;
-          font-size: clamp(22px, 5vw, 30px);
-          font-weight: 900;
-          color: #fff;
-          letter-spacing: -0.5px;
-          line-height: 1.2;
-          margin-bottom: 10px;
-          max-width: 380px;
+        .gp-lock-icon {
+          position: relative; width: 76px; height: 76px; border-radius: 50%; margin-bottom: 20px;
+          background: linear-gradient(135deg,#7B3FF2,#A855F7); display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 12px 40px rgba(123,63,242,0.55); animation: gp-lock-pop .4s cubic-bezier(.2,1.4,.4,1) both;
         }
-        .gp-lock-sub {
-          position: relative;
-          font-size: 14.5px;
-          color: rgba(255,255,255,0.55);
-          line-height: 1.5;
-          max-width: 340px;
-          margin-bottom: 30px;
-        }
-        .gp-lock-btns {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          width: 100%;
-          max-width: 320px;
-        }
+        .gp-lock-title { position: relative; font-size: 26px; font-weight: 900; letter-spacing: -0.5px; color: #fff; margin: 0 0 10px; }
+        .gp-lock-sub { position: relative; max-width: 360px; font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.6); margin: 0 0 26px; }
+        .gp-lock-btns { position: relative; display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; margin-bottom: 22px; }
         .gp-lock-btn-primary {
-          display: flex; align-items: center; justify-content: center; gap: 8px;
-          padding: 16px 20px;
-          border-radius: 16px;
-          font-size: 15.5px; font-weight: 800;
-          color: #fff;
-          text-decoration: none;
-          background: linear-gradient(135deg, #7B3FF2, #F0365A);
-          box-shadow: 0 10px 30px rgba(123,63,242,0.5);
-          transition: transform .15s, box-shadow .15s;
+          display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px 20px; border-radius: 999px;
+          font-size: 15px; font-weight: 800; color: #fff; text-decoration: none;
+          background: linear-gradient(135deg,#7B3FF2,#A855F7); box-shadow: 0 10px 30px rgba(123,63,242,0.5);
+          transition: transform .18s, box-shadow .18s;
         }
-        .gp-lock-btn-primary:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 14px 36px rgba(123,63,242,0.6); }
+        .gp-lock-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(123,63,242,0.6); }
         .gp-lock-btn-ghost {
-          display: flex; align-items: center; justify-content: center;
-          padding: 15px 20px;
-          border-radius: 16px;
-          font-size: 15px; font-weight: 700;
-          color: rgba(255,255,255,0.85);
-          text-decoration: none;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.16);
-          transition: background .15s, border-color .15s;
+          display: flex; align-items: center; justify-content: center; padding: 14px 20px; border-radius: 999px;
+          font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.85); text-decoration: none;
+          background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16);
         }
-        .gp-lock-btn-ghost:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
-        .gp-lock-perks {
-          position: relative;
-          display: flex;
-          gap: 18px;
-          margin-top: 26px;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        .gp-lock-perk {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 12px; font-weight: 600;
-          color: rgba(255,255,255,0.45);
-        }
-
-        /* Tablet / desktop */
-        @media (min-width: 640px) {
-          .gp-topbar { padding: 20px 32px 0; }
-          .gp-logo-text { font-size: 18px; }
-          .gp-badges { padding: 0 32px; }
-          .gp-meta { padding: 0 32px; }
-          .gp-cta { padding: 22px 32px; padding-bottom: max(22px, env(safe-area-inset-bottom)); }
-          .gp-cta-headline { font-size: 16px; }
-          .gp-cta-sub { font-size: 12px; }
-          .gp-btn { font-size: 15px; padding: 14px 16px; border-radius: 16px; }
-          .gp-scroll { padding-bottom: 200px; }
-        }
-        @media (min-width: 1024px) {
-          .gp-topbar { padding: 26px 48px 0; }
-          .gp-badges { padding: 0 48px; margin-bottom: 18px; }
-          .gp-meta { padding: 0 48px; }
-          .gp-cta { padding: 24px 48px; padding-bottom: max(24px, env(safe-area-inset-bottom)); max-width: 640px; left: 50%; transform: translateX(-50%); border-radius: 28px 28px 0 0; box-shadow: 0 -20px 60px rgba(0,0,0,0.5); }
-          .gp-title { font-size: clamp(26px, 3.2vw, 40px); }
-          .gp-scroll { padding-bottom: 210px; }
-        }
+        .gp-lock-btn-ghost:hover { background: rgba(255,255,255,0.12); }
+        .gp-lock-perks { position: relative; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+        .gp-lock-perk { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); }
       `}</style>
 
-      <div className="gp-shell">
+      <div className="gp-page">
 
-        {/* Hero — carrousel swipeable si plusieurs images (post multi-photos, galerie event) */}
-        <div className="gp-hero"
-          onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-          onMouseDown={onMouseDown} onMouseUp={onMouseUp}
-          onMouseLeave={() => { isDragging.current = false; dragStartX.current = null; }}
-          style={{ cursor: images.length > 1 ? 'grab' : undefined }}>
-          {images.length > 0 ? (
-            <div className="gp-hero-track"
-              style={{ transform: `translateX(-${slide * 100}%)` }}>
-              {images.map((src, i) => (
-                <div key={i} className="gp-hero-slide-wrap">
-                  <img src={src} alt="" className="gp-hero-slide-bg" draggable={false} aria-hidden="true" />
-                  <img src={src} alt="" className="gp-hero-slide" draggable={false} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1a0533 0%,#3d1478 45%,#7B3FF2 70%,#0A0010 100%)' }} />
-          )}
-
-          {/* Vidéo — lue en muet dès que prête, superposée au thumbnail qui reste
-              en fallback pendant le chargement HLS. */}
-          {type === 'reel' && videoUrl && (
-            <>
-              <video
-                ref={videoRef}
-                playsInline
-                muted={muted}
-                style={{
-                  position: 'absolute', inset: 0,
-                  width: '100%', height: '100%',
-                  objectFit: 'contain',
-                  opacity: videoReady ? 1 : 0,
-                  transition: 'opacity .25s ease',
-                }}
-              />
-
-              {videoReady && !previewEnded && (
-                <div className="gp-preview-progress">
-                  <div className="gp-preview-progress-fill" style={{ width: `${previewProgress * 100}%` }} />
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="gp-vignette" />
-          <div className="gp-gradient" />
-
-          {/* Indicateurs de position — barres façon stories, se remplissent avec l'auto-défilement */}
-          {images.length > 1 && (
-            <div className="gp-hero-dots">
-              {images.map((_, i) => (
-                <button key={`${i}-${slide === i}`} className={`gp-hero-dot${i === slide ? ' active' : i < slide ? ' active' : ''}`}
-                  onClick={() => goToSlide(i)} aria-label={`Image ${i + 1}`} />
-              ))}
-            </div>
-          )}
-
-          {/* Bouton play centré — masqué une fois la lecture auto démarrée (reel + vidéo prête) */}
-          {isMedia(type) && !(type === 'reel' && videoReady && !previewEnded) && (
-            <button className="gp-hero-play" onClick={() => setShowPlayPrompt(true)} aria-label="Lire la vidéo">
-              <svg width="30" height="30" viewBox="0 0 20 20" fill="white">
-                <path d="M5 3l12 7-12 7V3z"/>
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {/* Topbar */}
-        <div className="gp-topbar">
-          <div className="gp-logo">
-            <RoundLogo size={36} />
+        {/* Barre du haut — pilule flottante */}
+        <div className="gp-bar">
+          <Link to="/" className="gp-logo">
+            <RoundLogo size={32} />
             <span className="gp-logo-text">Gofolyx</span>
-          </div>
-          <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-topbar-login">
-            Se connecter
           </Link>
+          <div className="gp-bar-actions">
+            <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-ghost">Se connecter</Link>
+            <Link to={`/auth/register?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-solid">S'inscrire</Link>
+          </div>
         </div>
 
-        {/* Scrollable content */}
-        <div className="gp-scroll">
-          <div className="gp-spacer" />
+        <main className="gp-main">
 
-          {/* Badges */}
-          <div className="gp-badges">
-            {isLive && (
-              <span className="gp-badge gp-badge-live">
-                <span className="gp-dot" />
-                LIVE
-              </span>
+          {/* Visuel — rien d'écrit dessus : uniquement lecture, indicateurs et progression */}
+          <div className={`gp-hero${isReel ? ' is-reel' : ''}`}
+            onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+            onMouseDown={onMouseDown} onMouseUp={onMouseUp}
+            onMouseLeave={() => { isDragging.current = false; dragStartX.current = null; }}
+            style={{ cursor: images.length > 1 ? 'grab' : undefined }}>
+            {images.length > 0 ? (
+              <div className="gp-hero-track" style={{ transform: `translateX(-${slide * 100}%)` }}>
+                {images.map((src, i) => (
+                  <div key={i} className="gp-hero-slide-wrap">
+                    <img src={src} alt="" className="gp-hero-slide-bg" draggable={false} aria-hidden="true" />
+                    <img src={src} alt={title ?? ''} className="gp-hero-slide" draggable={false} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="gp-empty-hero" />
             )}
-            <span className="gp-badge gp-badge-type">
-              {cfg.icon}
-              {cfg.label}
-            </span>
-          </div>
 
-          <div className="gp-meta">
-            {/* Title */}
-            {title && <h1 className="gp-title">{title}</h1>}
+            {type === 'reel' && videoUrl && (
+              <>
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted={muted}
+                  style={{
+                    position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
+                    opacity: videoReady ? 1 : 0, transition: 'opacity .25s ease',
+                  }}
+                />
+                {videoReady && !previewEnded && (
+                  <div className="gp-preview-progress">
+                    <div className="gp-preview-progress-fill" style={{ width: `${previewProgress * 100}%` }} />
+                  </div>
+                )}
+              </>
+            )}
 
-            {/* Author */}
-            {author && (
-              <div className="gp-author">
-                <div className="gp-avatar">
-                  {author.avatar_url
-                    ? <img src={author.avatar_url} alt="" />
-                    : initials}
-                </div>
-                <span className="gp-author-name">{authorName ?? 'Utilisateur'}</span>
-                {author.is_verified && (
-                  <span className="gp-verified">
-                    <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
-                      <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                  </span>
-                )}
-                {date && (
-                  <>
-                    <span className="gp-date-sep">·</span>
-                    <span className="gp-date">
-                      {isLive ? 'En direct' : format(new Date(date), 'd MMM yyyy', { locale: fr })}
-                    </span>
-                  </>
-                )}
+            {images.length > 1 && (
+              <div className="gp-hero-dots">
+                {images.map((_, i) => (
+                  <button key={`${i}-${slide === i}`} className={`gp-hero-dot${i <= slide ? ' active' : ''}`}
+                    onClick={() => goToSlide(i)} aria-label={`Image ${i + 1}`} />
+                ))}
               </div>
             )}
 
-            {/* Stats — likes / commentaires / vues */}
+            {isMedia(type) && !(type === 'reel' && videoReady && !previewEnded) && (
+              <button className="gp-hero-play" onClick={() => setShowPlayPrompt(true)} aria-label="Lire la vidéo">
+                <svg width="28" height="28" viewBox="0 0 20 20" fill="white"><path d="M5 3l12 7-12 7V3z"/></svg>
+              </button>
+            )}
+          </div>
+
+          {/* Informations — sous le visuel, sur fond uni, lisibles */}
+          <section className="gp-info">
+            <div className="gp-badges">
+              {isLive && (
+                <span className="gp-badge gp-badge-live"><span className="gp-dot" />LIVE</span>
+              )}
+              <span className="gp-badge gp-badge-type">{cfg.icon}{cfg.label}</span>
+            </div>
+
+            {title && <h1 className="gp-title">{title}</h1>}
+
+            {author && (
+              <div className="gp-author">
+                <div className="gp-avatar">
+                  {author.avatar_url ? <img src={author.avatar_url} alt="" /> : initials}
+                </div>
+                <div className="gp-author-text">
+                  <span className="gp-author-name">
+                    {authorName ?? 'Utilisateur'}
+                    {author.is_verified && (
+                      <span className="gp-verified">
+                        <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                          <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                      </span>
+                    )}
+                  </span>
+                  {date && (
+                    <span className="gp-date">
+                      {isLive ? 'En direct' : format(new Date(date), 'd MMMM yyyy', { locale: fr })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {hasStats && (
               <div className="gp-stats">
                 {likeCount != null && (
@@ -968,7 +570,7 @@ export function GuestPreview({
                 {commentCount != null && (
                   <span className="gp-stat">
                     <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-                      <path d="M17 10a7 7 0 1 1-3-5.75L17 3l-1 3.5A6.98 6.98 0 0 1 17 10z" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5" fill="none" strokeLinejoin="round"/>
+                      <path d="M17 10a7 7 0 1 1-3-5.75L17 3l-1 3.5A6.98 6.98 0 0 1 17 10z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round"/>
                     </svg>
                     {formatCount(commentCount)}
                   </span>
@@ -976,8 +578,8 @@ export function GuestPreview({
                 {viewCount != null && (
                   <span className="gp-stat">
                     <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-                      <path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5" fill="none"/>
-                      <circle cx="10" cy="10" r="2.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5" fill="none"/>
+                      <path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                      <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
                     </svg>
                     {formatCount(viewCount)}
                   </span>
@@ -985,12 +587,11 @@ export function GuestPreview({
               </div>
             )}
 
-            {/* Info pills */}
             {(location || attendees != null || ticketPrice != null) && (
               <div className="gp-pills">
                 {location && (
                   <span className="gp-pill">
-                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <path d="M6 1a3.5 3.5 0 0 1 3.5 3.5C9.5 8 6 11 6 11S2.5 8 2.5 4.5A3.5 3.5 0 0 1 6 1z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
                       <circle cx="6" cy="4.5" r="1" fill="currentColor"/>
                     </svg>
@@ -999,7 +600,7 @@ export function GuestPreview({
                 )}
                 {attendees != null && (
                   <span className="gp-pill">
-                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <circle cx="4.5" cy="4" r="2" stroke="currentColor" strokeWidth="1.2" fill="none"/>
                       <path d="M1 10c0-1.9 1.6-3 3.5-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
                       <circle cx="8.5" cy="4" r="2" stroke="currentColor" strokeWidth="1.2" fill="none"/>
@@ -1010,7 +611,7 @@ export function GuestPreview({
                 )}
                 {ticketPrice != null && (
                   <span className="gp-pill gp-pill-accent">
-                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <rect x="1" y="3" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" fill="none"/>
                       <path d="M4 3V2M8 3V2" stroke="currentColor" strokeWidth="1.2"/>
                     </svg>
@@ -1020,40 +621,39 @@ export function GuestPreview({
               </div>
             )}
 
-            {/* Body — clic pour ouvrir l'overlay plein écran (fond noir, texte lisible) */}
             {body && (
-              <p className="gp-body-trigger" onClick={() => setShowBodyOverlay(true)}>
-                {body}
-                {' '}
-                <span className="gp-body-more">Voir plus</span>
-              </p>
+              <>
+                <div className="gp-divider" />
+                <p className={`gp-body${longBody && !bodyOpen ? ' is-clamped' : ''}`}>
+                  {renderTextWithLinks(body, 'underline font-semibold')}
+                </p>
+                {longBody && (
+                  <button className="gp-body-more" onClick={() => setBodyOpen(v => !v)}>
+                    {bodyOpen ? 'Voir moins' : 'Voir plus'}
+                  </button>
+                )}
+              </>
             )}
-          </div>
+          </section>
+
+          {/* Invitation à rejoindre */}
+          <section className="gp-cta-card">
+            <p className="gp-cta-headline">{cfg.cta}</p>
+            <p className="gp-cta-sub">Rejoins Gofolyx · concerts, events, reels et bien plus. Gratuit.</p>
+            <div className="gp-cta-btns">
+              <Link to={`/auth/register?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-solid">S'inscrire</Link>
+              <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-ghost">Se connecter</Link>
+            </div>
+          </section>
+        </main>
+
+        {/* Barre d'action flottante — mobile */}
+        <div className="gp-dock">
+          <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-ghost">Se connecter</Link>
+          <Link to={`/auth/register?redirect=${redirectParam}`} className="gp-pillbtn gp-pillbtn-solid">S'inscrire</Link>
         </div>
 
-        {/* Overlay description — fond noir plein écran, clic n'importe où pour refermer
-            (y compris dans le texte : seul un vrai lien à l'intérieur intercepte le clic) */}
-        {showBodyOverlay && (
-          <div className="gp-body-overlay" onClick={() => setShowBodyOverlay(false)}>
-            <div className="gp-body-overlay-hint">
-              <span>Touche l'écran pour fermer</span>
-              <button className="gp-body-overlay-close" onClick={() => setShowBodyOverlay(false)} aria-label="Fermer">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M1 1l12 12M13 1L1 13" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
-                </svg>
-              </button>
-            </div>
-            <div className="gp-body-overlay-inner" onClick={e => { if ((e.target as HTMLElement).closest('a')) e.stopPropagation(); }}>
-              {title && <h2 style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 14, letterSpacing: '-0.3px' }}>{title}</h2>}
-              <p className="gp-body-full">
-                {renderTextWithLinks(body ?? '', 'underline font-semibold', { color: '#fff' })}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Overlay premium incitant à se connecter — s'affiche à 30% de lecture pour un
-            reel, ou au clic sur le bouton play pour les autres types de contenu. */}
+        {/* Overlay « contenu réservé aux membres » — au clic sur lecture, ou à 30 % d'un reel */}
         {showPlayPrompt && (
           <div className="gp-lock-overlay">
             <div className="gp-lock-glow" />
@@ -1066,9 +666,7 @@ export function GuestPreview({
             </span>
 
             <div className="gp-lock-icon">
-              <svg width="30" height="30" viewBox="0 0 20 20" fill="white">
-                <path d="M5 3l12 7-12 7V3z"/>
-              </svg>
+              <svg width="30" height="30" viewBox="0 0 20 20" fill="white"><path d="M5 3l12 7-12 7V3z"/></svg>
             </div>
 
             <h2 className="gp-lock-title">
@@ -1091,39 +689,15 @@ export function GuestPreview({
             </div>
 
             <div className="gp-lock-perks">
-              <span className="gp-lock-perk">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#3FEDB6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                100% gratuit
-              </span>
-              <span className="gp-lock-perk">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#3FEDB6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Vidéos, concerts, events
-              </span>
-              <span className="gp-lock-perk">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#3FEDB6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Sans engagement
-              </span>
+              {['100% gratuit', 'Vidéos, concerts, events', 'Sans engagement'].map(t => (
+                <span key={t} className="gp-lock-perk">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#3FEDB6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {t}
+                </span>
+              ))}
             </div>
           </div>
         )}
-
-        {/* CTA bar fixe */}
-        <div className="gp-cta">
-          <p className="gp-cta-headline">{cfg.cta}</p>
-          <p className="gp-cta-sub">Rejoins Gofolyx · concerts, events, reels et bien plus. Gratuit.</p>
-          <div className="gp-btns">
-            <Link to={`/auth/login?redirect=${redirectParam}`} className="gp-btn gp-btn-primary">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                <path d="M8 1a4 4 0 1 1 0 8A4 4 0 0 1 8 1zm-6 13c0-2.8 2.7-5 6-5s6 2.2 6 5" stroke="white" strokeWidth="1.4"/>
-              </svg>
-              Se connecter
-            </Link>
-            <Link to={`/auth/register?redirect=${redirectParam}`} className="gp-btn gp-btn-ghost">
-              S'inscrire
-            </Link>
-          </div>
-        </div>
-
       </div>
     </>
   );
