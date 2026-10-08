@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import {
   Play, Music2, Calendar, Users, ArrowRight, ArrowUpRight,
-  Menu, X, MapPin, Star, Ticket, Radio, Film, Shield,
+  Menu, X, MapPin, Star, Ticket, Radio, Film, Shield, Eye, Volume2, VolumeX,
 } from 'lucide-react';
+import Hls from 'hls.js';
+import { toProxiedUrl } from '../utils/constants';
 import { publicClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import type { Concert, Content, Event } from '../types';
@@ -141,6 +143,116 @@ export function GateHeader({ navLinks = NAV_LINKS }: { navLinks?: typeof NAV_LIN
 }
 
 // ── Hero — texte centré, une seule bannière visuelle en dessous ──────────────
+// ── Panneau « En direct » — colonne droite du hero ───────────────────────────
+// Montre un live en cours sur Gofolyx : vidéo en lecture muette (aperçu), badge LIVE, nombre de
+// spectateurs, artiste, bouton « Regarder ». Priorité : concert réellement en direct, sinon le plus
+// récent avec une vidéo/replay, sinon sa vignette. Les autres lives s'affichent en pastilles dessous.
+function pickVideo(c: Concert): string | null {
+  return c.replay_url ?? c.video_url ?? null;
+}
+
+function LivePreviewVideo({ src, poster }: { src: string; poster?: string | null }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [ready, setReady] = useState(false);
+  const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    setReady(false);
+    const url = toProxiedUrl(src);
+    let hls: Hls | null = null;
+    const start = () => { setReady(true); v.play().catch(() => {}); };
+    if (url.includes('.m3u8') || url.includes('/hls/')) {
+      if (Hls.isSupported()) {
+        hls = new Hls({ autoStartLoad: true, maxBufferLength: 10 });
+        hls.loadSource(url);
+        hls.attachMedia(v);
+        hls.once(Hls.Events.MANIFEST_PARSED, start);
+      } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+        v.src = url;
+        v.addEventListener('loadedmetadata', start, { once: true });
+      }
+    } else {
+      v.src = url;
+      v.addEventListener('loadeddata', start, { once: true });
+    }
+    return () => { hls?.destroy(); v.removeAttribute('src'); v.load(); };
+  }, [src]);
+
+  return (
+    <>
+      <video ref={ref} muted={muted} loop playsInline autoPlay poster={poster ?? undefined}
+        className="gt-live-video" style={{ opacity: ready ? 1 : 0 }} />
+      <button type="button" className="gt-live-sound" onClick={() => setMuted(m => !m)}
+        aria-label={muted ? 'Activer le son' : 'Couper le son'}>
+        {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+      </button>
+    </>
+  );
+}
+
+function HeroLivePanel({ concerts }: { concerts: Concert[] }) {
+  const [liveNow, setLiveNow] = useState<Concert[]>([]);
+
+  // Concerts réellement en direct (endpoint public) — silencieux si indisponible.
+  useEffect(() => {
+    publicClient.get<any>(Endpoints.concerts.live)
+      .then(r => setLiveNow(Array.isArray(r.data) ? r.data : (r.data?.items ?? [])))
+      .catch(() => {});
+  }, []);
+
+  const pool  = [...liveNow, ...concerts.filter(c => !liveNow.some(l => l.id === c.id))];
+  const main  = pool.find(c => c.status === 'live') ?? pool.find(c => pickVideo(c)) ?? pool[0];
+  if (!main) return null;
+  const others  = pool.filter(c => c.id !== main.id).slice(0, 2);
+  const isLive  = main.status === 'live';
+  const video   = pickVideo(main);
+  const artist  = main.artist?.display_name ?? main.artist?.username;
+
+  return (
+    <aside className="gt-livepanel gt-rise" style={{ animationDelay: '200ms' }} aria-label="En direct sur Gofolyx">
+      <div className="gt-livepanel-media">
+        {main.thumbnail_url && <img src={main.thumbnail_url} alt="" className="gt-live-poster" />}
+        {video && <LivePreviewVideo src={video} poster={main.thumbnail_url} />}
+        <div className="gt-livepanel-scrim" />
+        <div className="gt-livepanel-top">
+          <span className="gt-livebadge"><span className="gt-livebadge-dot" />{isLive ? 'EN DIRECT' : 'À L\'AFFICHE'}</span>
+          {isLive && (
+            <span className="gt-liveviewers"><Eye size={12} /> {(main.current_viewers ?? 0).toLocaleString('fr-FR')}</span>
+          )}
+        </div>
+        <div className="gt-livepanel-info">
+          <p className="gt-livepanel-title">{main.title}</p>
+          {artist && <p className="gt-livepanel-artist">{artist}</p>}
+          <Link to={`/explore/concerts/${encodeId(main.id)}`} className="gt-livepanel-cta">
+            <Play size={14} fill="currentColor" /> {isLive ? 'Regarder le live' : 'Voir le concert'}
+          </Link>
+        </div>
+      </div>
+
+      {others.length > 0 && (
+        <div className="gt-livepanel-more">
+          <span className="gt-eyebrow">Aussi sur Gofolyx</span>
+          <div className="gt-livepanel-chips">
+            {others.map(c => (
+              <Link key={c.id} to={`/explore/concerts/${encodeId(c.id)}`} className="gt-livechip">
+                <span className="gt-livechip-thumb">
+                  {c.thumbnail_url ? <img src={c.thumbnail_url} alt="" /> : <Radio size={14} />}
+                </span>
+                <span className="gt-livechip-text">
+                  <strong>{c.title}</strong>
+                  <span>{c.status === 'live' ? 'En direct' : 'Bientôt'}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </aside>
+  );
+}
+
 function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[] }) {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
@@ -151,8 +263,9 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
   return (
     <section className="gt-hero">
       <div className="gt-container">
+        <div className="gt-hero-grid">
         <div className="gt-hero-intro">
-          <div className="gt-rise flex items-center justify-center gap-2 mb-6">
+          <div className="gt-rise flex items-center justify-center lg:justify-start gap-2 mb-6">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inset-0 rounded-full" style={{ background: 'var(--gt-accent)', opacity: 0.6 }} />
               <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: 'var(--gt-accent)' }} />
@@ -167,12 +280,12 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
             Tout se passe, en <span style={{ color: 'var(--gt-accent)' }}>direct</span>.
           </h1>
 
-          <p className="text-lg leading-relaxed max-w-xl mx-auto mb-9 gt-rise" style={{ color: 'var(--gt-text-2)', animationDelay: '160ms' }}>
+          <p className="text-lg leading-relaxed max-w-xl mx-auto lg:mx-0 mb-9 gt-rise" style={{ color: 'var(--gt-text-2)', animationDelay: '160ms' }}>
             Concerts live, films, séries, reels et communautés — un seul endroit pour
             vivre la scène, l'écran et le direct, où que tu sois.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-12 gt-rise" style={{ animationDelay: '240ms' }}>
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-12 lg:mb-0 gt-rise" style={{ animationDelay: '240ms' }}>
             {isAuthenticated ? (
               <button onClick={() => navigate('/feed')} className="gt-btn gt-btn-accent">
                 Mon espace <ArrowRight size={17} />
@@ -188,6 +301,8 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
               </>
             )}
           </div>
+        </div>
+        <HeroLivePanel concerts={concerts} />
         </div>
 
         <div className="gt-hero-banner gt-rise" style={{ animationDelay: '200ms' }}>
