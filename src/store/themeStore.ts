@@ -7,16 +7,19 @@ interface ThemeState {
   setDark: (v: boolean) => void;
 }
 
-const media = window.matchMedia('(prefers-color-scheme: dark)');
-
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
-      isDark: media.matches,
+      isDark: false,   // clair par défaut (le thème sombre reste un choix explicite)
       toggle: () => set(s => { applyTheme(!s.isDark); return { isDark: !s.isDark }; }),
       setDark: (v) => { applyTheme(v); set({ isDark: v }); },
     }),
-    { name: 'gofolyx-theme' },
+    {
+      name: 'gofolyx-theme',
+      version: 2,
+      // v2 : thème clair par défaut pour tous — ancien état (suivi du thème système) réinitialisé une fois.
+      migrate: () => ({ isDark: false }) as ThemeState,
+    },
   ),
 );
 
@@ -38,10 +41,3 @@ function applyTheme(dark: boolean) {
 
 // init on load
 applyTheme(useThemeStore.getState().isDark);
-
-// Détection automatique — suit les préférences système en direct, y compris
-// un changement pendant que l'app est ouverte (bascule OS jour/nuit
-// planifiée, etc.), sans dépendre d'un choix manuel resté persisté.
-media.addEventListener('change', (e) => {
-  useThemeStore.getState().setDark(e.matches);
-});

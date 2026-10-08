@@ -652,3 +652,67 @@
   .gt-sticker-icon { animation: none; }
   .gt-rise { transition: none; opacity: 1; transform: none; }
 }
+
+/* ═══ AUTH v2 — connexion / inscription / mot de passe / vérification / profil ═══════════
+   Même langage que le reste de l'app : cartes très arrondies, champs et boutons en pilule,
+   panneau de marque violet flottant sur desktop, carte unique sur mobile. Ne dépend d'aucune
+   structure JSX propre à une page : les 5 écrans partagent ces règles via .auth-v2. */
+.auth-v2 { background: var(--bg) !important; }
+@media (min-width: 1024px) {
+  .auth-v2 { padding: 12px; gap: 12px; }
+}
+
+/* Panneau de marque (gauche, desktop) */
+.auth-v2 > div:first-child.hidden {
+  border-radius: 32px;
+  background:
+    radial-gradient(90% 60% at 0% 0%, rgba(168,85,247,0.55) 0%, transparent 60%),
+    radial-gradient(80% 60% at 100% 100%, rgba(91,46,196,0.8) 0%, transparent 65%),
+    #1a0a40 !important;
+  box-shadow: 0 20px 50px -12px rgba(91,46,196,0.45);
+}
+.auth-v2 > div:first-child.hidden .rounded-xl { border-radius: 999px; }
+.auth-v2 > div:first-child.hidden .gt-display { letter-spacing: -0.03em; }
+
+/* Panneau formulaire (droite) : carte arrondie sur desktop */
+.auth-v2 > .flex-1 { background: transparent; }
+@media (min-width: 1024px) {
+  .auth-v2 > .flex-1 {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    box-shadow: 0 1px 2px rgba(11,11,16,0.04), 0 8px 24px rgba(11,11,16,0.06);
+  }
+}
+/* Mobile : le formulaire lui-même devient une carte posée sur le fond */
+@media (max-width: 1023px) {
+  .auth-v2 > .flex-1 { padding: 16px 12px 28px; justify-content: flex-start; }
+  .auth-v2 > .flex-1 > div,
+  .auth-v2.auth-solo > div {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 24px 20px;
+    box-shadow: 0 1px 2px rgba(11,11,16,0.04), 0 12px 32px rgba(11,11,16,0.08);
+  }
+}
+
+/* Champs : pilules hautes, lisibles */
+.auth-v2 .input {
+  border-radius: 999px;
+  min-height: 50px;
+  padding-left: 20px;
+  background: var(--bg-secondary);
+  border: 1.5px solid transparent;
+  font-size: 15px;
+}
+.auth-v2 .input:focus { background: var(--surface); }
+.auth-v2 label { font-weight: 700; font-size: 13px; color: var(--text-secondary); }
+
+/* Boutons : pilules */
+.auth-v2 .btn-primary { border-radius: 999px; min-height: 50px; font-size: 15px; font-weight: 800; }
+.auth-v2 button.rounded-xl, .auth-v2 a.rounded-xl { border-radius: 999px; }
+.auth-v2 button.py-3.rounded-xl { min-height: 50px; }
+/* Messages d'erreur / info : coins doux mais pas en pilule (texte sur plusieurs lignes) */
+.auth-v2 div.rounded-xl { border-radius: 20px; }
+.auth-v2 .gt-icon-btn { background: var(--bg-secondary); border-radius: 999px; }

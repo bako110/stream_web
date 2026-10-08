@@ -246,7 +246,7 @@ export default function RegisterPage() {
   const strengthLvl = strengthLevels[Math.max(0, strength - 1)];
 
   return (
-    <div className="gate-page min-h-screen flex overflow-hidden">
+    <div className="gate-page auth-v2 min-h-screen flex overflow-hidden">
 
       {/* ── Left panel — branding, sobre encre unie ── */}
       <div className="hidden lg:flex flex-col justify-between w-[42%] relative overflow-hidden p-10"

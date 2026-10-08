@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import '../landing.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Calendar, Sparkles } from 'lucide-react';
 import { RoundLogo } from '../../components/ui/RoundLogo';
@@ -66,7 +67,7 @@ export default function CompleteProfilePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
+    <div className="auth-v2 auth-solo min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <RoundLogo size={52} />

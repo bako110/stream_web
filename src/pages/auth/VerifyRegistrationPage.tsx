@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent, type ClipboardEvent } from 'react';
+import '../landing.css';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft, MailCheck, CheckCircle } from 'lucide-react';
 import { apiClient } from '../../api';
@@ -116,7 +117,7 @@ export default function VerifyRegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="auth-v2 min-h-screen flex overflow-hidden" style={{ background: 'var(--bg)' }}>
 
       {/* ── Left panel ── */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-10"

@@ -152,7 +152,7 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="gate-page min-h-screen flex overflow-hidden">
+    <div className="gate-page auth-v2 min-h-screen flex overflow-hidden">
 
       {/* Left panel — sobre, encre unie, un seul accent violet */}
       <div className="hidden lg:flex flex-col justify-between w-[42%] relative overflow-hidden p-10"

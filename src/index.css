@@ -19,7 +19,7 @@
     /* text */
     --text-primary:     #0E0D1F;
     --text-secondary:   #4E4C6A;
-    --text-tertiary:    #9290AE;
+    --text-tertiary:    #6B698A;
     /* borders */
     --border:           #E0DFF0;
     /* brand */
@@ -57,7 +57,7 @@
     --surface-elevated: #161628;
     --text-primary:     #F0EFF8;
     --text-secondary:   #A09DC0;
-    --text-tertiary:    #5C5A78;
+    --text-tertiary:    #8583A6;
     --border:           #1E1D35;
     --primary:          #9B65F5;
     --primary-light:    #BFA0F8;
@@ -473,3 +473,13 @@
 
 /* Posé par utils/pressFeedback.ts sur tout élément au curseur pointer (CSS ou inline) */
 [data-pressed] { filter: brightness(0.82); }
+
+/* ── Lisibilité mobile : les micro-textes (10-11 px) et les gris clairs étaient trop
+   difficiles à lire sur téléphone. Tailles relevées d'un cran sous 640 px. ── */
+@media (max-width: 639px) {
+  .text-\[9px\]  { font-size: 11px !important; }
+  .text-\[10px\] { font-size: 11.5px !important; }
+  .text-\[11px\] { font-size: 12.5px !important; }
+  .text-xs       { font-size: 0.8125rem; line-height: 1.2rem; }
+  body { -webkit-text-size-adjust: 100%; }
+}
