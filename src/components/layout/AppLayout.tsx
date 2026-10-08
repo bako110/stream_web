@@ -17,7 +17,8 @@ const CREATE_FAB_HIDDEN_PREFIXES = ['/my-stories', '/join/'];
 const IMMERSIVE_PREFIXES = ['/reels'];
 // Immersives seulement sur mobile/tablette — sur desktop (lg+) la sidebar/topbar de l'app
 // reste visible, le live s'affiche dans le contenu principal comme une page normale.
-const IMMERSIVE_MOBILE_ONLY_PREFIXES = ['/lives/', '/live/', '/battles/', '/join/'];
+// '/messages/' : une conversation ouverte occupe tout l'écran mobile (retour, saisie) — sans barre du haut ni du bas.
+const IMMERSIVE_MOBILE_ONLY_PREFIXES = ['/lives/', '/live/', '/battles/', '/join/', '/messages/'];
 
 export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
