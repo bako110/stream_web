@@ -18,26 +18,23 @@ export function toHref(url: string): string {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
+// Libellé d'un lien : domaine + chemin raccourci (« gofolyx.com/posts/23U8TJc5… ») plutôt que
+// le seul domaine — sinon tous les liens d'un même site se ressemblent et on ne sait pas où ils mènent.
 function getDomain(url: string): string {
-  try { return new URL(toHref(url)).hostname.replace(/^www\./, ''); }
-  catch { return url; }
+  try {
+    const u = new URL(toHref(url));
+    const label = u.hostname.replace(/^www\./, '') + (u.pathname !== '/' ? u.pathname.replace(/\/$/, '') : '');
+    return label.length > 38 ? label.slice(0, 37) + '…' : label;
+  } catch { return url; }
 }
 
 // *gras* (style WhatsApp, même règle que le RichText mobile) : pas d'espace collé aux
-// astérisques. Appliqué uniquement aux segments qui ne sont pas des URL.
+// astérisques. Le gras est détecté AVANT les liens : un lien peut donc se trouver à l'intérieur
+// d'un passage en gras (« *retrouvez vos photos ici : https://… * »), sinon les étoiles
+// restaient affichées telles quelles dès qu'une URL les séparait.
 const BOLD_RE = /(\*[^\s*][^*]*[^\s*]\*|\*[^\s*]\*)/g;
-export function renderBold(str: string) {
-  // split avec groupe capturant : les indices impairs sont les segments *gras*
-  return str.split(BOLD_RE).map((part, i) =>
-    i % 2 === 1
-      ? <strong key={i} style={{ fontWeight: 800 }}>{part.slice(1, -1)}</strong>
-      : <span key={i}>{part}</span>
-  );
-}
 
-/** Rend un texte brut en segments avec liens cliquables — réutilisable hors RichText
- *  pour les zones à style personnalisé (ex: caption de reel sur fond vidéo). */
-export function renderTextWithLinks(str: string, linkClassName = 'underline font-medium', linkStyle?: React.CSSProperties) {
+function renderLinks(str: string, linkClassName: string, linkStyle?: React.CSSProperties) {
   return str.split(URL_SPLIT).map((part, i) =>
     isUrl(part) ? (
       <a key={i} href={toHref(part)} target="_blank" rel="noopener noreferrer"
@@ -46,8 +43,18 @@ export function renderTextWithLinks(str: string, linkClassName = 'underline font
         {getDomain(part)}
       </a>
     ) : (
-      <span key={i}>{renderBold(part)}</span>
+      <span key={i}>{part}</span>
     )
+  );
+}
+
+/** Texte enrichi : *gras* + liens cliquables (liens possibles à l'intérieur du gras). */
+export function renderTextWithLinks(str: string, linkClassName = 'underline font-medium', linkStyle?: React.CSSProperties) {
+  // split avec groupe capturant : les indices impairs sont les segments *gras*
+  return str.split(BOLD_RE).map((part, i) =>
+    i % 2 === 1
+      ? <strong key={i} style={{ fontWeight: 800 }}>{renderLinks(part.slice(1, -1), linkClassName, linkStyle)}</strong>
+      : <span key={i}>{renderLinks(part, linkClassName, linkStyle)}</span>
   );
 }
 
@@ -68,25 +75,7 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
   // 1re URL du texte complet (pour la preview OG)
   const firstUrl = text.match(URL_SPLIT)?.[0] ?? null;
 
-  function renderSegments(str: string) {
-    return str.split(URL_SPLIT).map((part, i) =>
-      isUrl(part) ? (
-        <a
-          key={i}
-          href={toHref(part)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={e => e.stopPropagation()}
-          className="underline font-medium"
-          style={{ color: 'var(--primary)' }}
-        >
-          {getDomain(part)}
-        </a>
-      ) : (
-        <span key={i}>{renderBold(part)}</span>
-      )
-    );
-  }
+  const renderSegments = (str: string) => renderTextWithLinks(str, 'underline font-medium');
 
   return (
     <div>
