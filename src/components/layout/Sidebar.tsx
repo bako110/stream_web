@@ -47,23 +47,26 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         }}
         title={collapsed ? label : undefined}
         className={({ isActive }) => clsx(
-          'flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-150 cursor-pointer group relative',
+          'flex items-center rounded-2xl transition-all duration-150 cursor-pointer group relative',
+          // Replié : seule l'icône (carré 44px) porte le fond actif, centrée dans la barre —
+          // sinon le fond du lien + celui de l'icône se doublaient et débordaient des 68px.
+          collapsed ? 'justify-center py-1' : 'gap-3 px-2.5 py-2',
           isActive ? 'font-semibold' : 'font-normal',
         )}
         style={({ isActive }) => ({
-          background: isActive ? `${color}18` : 'transparent',
+          background: isActive && !collapsed ? `${color}18` : 'transparent',
           color:      isActive ? color : 'var(--text-secondary)',
         })}
         onMouseEnter={e => {
           const el = e.currentTarget as HTMLAnchorElement;
-          if (!el.getAttribute('aria-current')) {
+          if (!el.getAttribute('aria-current') && !collapsed) {
             el.style.background = 'var(--bg-secondary)';
             el.style.color = 'var(--text-primary)';
           }
         }}
         onMouseLeave={e => {
           const el = e.currentTarget as HTMLAnchorElement;
-          if (!el.getAttribute('aria-current')) {
+          if (!el.getAttribute('aria-current') && !collapsed) {
             el.style.background = 'transparent';
             el.style.color = 'var(--text-secondary)';
           }
@@ -72,10 +75,11 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         {({ isActive }) => (
           <>
             <div className={clsx(
-              'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-150',
+              'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-150',
               isActive ? 'scale-100' : 'scale-90 group-hover:scale-100',
+              collapsed && !isActive && 'group-hover:bg-[var(--bg-secondary)]',
             )}
-              style={{ background: isActive ? `${color}20` : 'transparent', color }}>
+              style={{ background: isActive && collapsed ? `${color}22` : 'transparent', color }}>
               <Icon size={22} />
             </div>
             {!collapsed && (
@@ -126,7 +130,7 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
       </div>
 
       {/* ── Nav — uniquement la section Découvrir ── */}
-      <nav className="flex-1 overflow-y-auto px-2 py-1">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1">
         <div>
           {!collapsed && (
             <p className="px-3 pt-2 pb-0.5 text-[9px] font-black tracking-widest"
@@ -145,11 +149,11 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
       {/* ── Footer — juste le bouton Plus ── */}
       <div className="px-2 pb-3 pt-2 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
         <button onClick={() => setShowMore(true)} title={collapsed ? 'Plus' : undefined}
-          className="flex items-center gap-3 px-2.5 py-2 rounded-xl w-full transition-all duration-150"
+          className={clsx('flex items-center rounded-2xl w-full transition-all duration-150', collapsed ? 'justify-center py-1' : 'gap-3 px-2.5 py-2')}
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = 'var(--text-secondary)'); }}>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
             style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
             <MoreHorizontal size={16} />
           </div>

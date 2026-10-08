@@ -1,3 +1,4 @@
+import { consumeReelsPrefetch } from '../utils/prefetch';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { commitReelSession } from '../hooks/useReelWatchStats';
 import { GuestPreview } from '../components/ui/GuestPreview';
@@ -637,8 +638,11 @@ function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
 const MAX_RETRIES   = 3;
 const STALL_TIMEOUT = 8000; // 8s identique mobile
 
-function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMuted, onCommentOpen, onMoreOpen, onRatioChange, onShareRequest }: {
-  reel: Reel; active: boolean; globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void; onMoreOpen: () => void;
+function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayFallbackMuted, onCommentOpen, onMoreOpen, onRatioChange, onShareRequest }: {
+  reel: Reel; active: boolean;
+  /** Distance (en slides) au reel actif — pilote la fenêtre de préchargement, comme PRELOAD_WINDOW du mobile. */
+  distance: number;
+  globalMuted: boolean; onUnmute: () => void; onCommentOpen: () => void; onMoreOpen: () => void;
   onRatioChange?: (ratio: number | null) => void;
   /** Le navigateur a bloqué l'autoplay avec son — informe le parent pour synchroniser l'icône volume. */
   onAutoplayFallbackMuted?: () => void;
@@ -818,6 +822,22 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
   const isMp4    = !!reel.mp4_url;
   const videoSrc = toProxiedUrl((reel.mp4_url || reel.hls_url) ?? '');
 
+  // Fenêtre de préchargement (mobile : PRELOAD_WINDOW=2 voisins, le 2e échelonné de
+  // 1,5 s pour ne jamais lancer deux flux complets au même instant). Hors fenêtre,
+  // AUCUN téléchargement : la source est retirée (libère mémoire + bande passante).
+  // Avant, tous les reels chargés (15+) téléchargeaient leur mp4 en parallèle.
+  const [stagger2Ok, setStagger2Ok] = useState(false);
+  useEffect(() => {
+    if (distance !== 2) { setStagger2Ok(false); return; }
+    const t = setTimeout(() => setStagger2Ok(true), 1500);
+    return () => clearTimeout(t);
+  }, [distance]);
+  const saveData = (navigator as any).connection?.saveData === true;
+  const inWindow = distance <= 1 || (distance === 2 && stagger2Ok && !saveData);
+  const loadSrc  = inWindow ? videoSrc : '';
+  // Voisin direct : on télécharge tout ; voisin à 2 : métadonnées + début seulement.
+  const preloadMode: 'auto' | 'metadata' = distance <= 1 ? 'auto' : 'metadata';
+
   // Retry avec backoff exponentiel (identique mobile)
   function doRetry() {
     const v = videoRef.current;
@@ -839,7 +859,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
 
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !videoSrc) return;
+    if (!v || !loadSrc) return;
     retryCount.current = 0;
     setVideoError(false);
 
@@ -875,17 +895,17 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
       // son propre cache disque, pas de bibliothèque tierce nécessaire.
       // preload="auto" (posé en JSX) démarre déjà le téléchargement dès le
       // montage, y compris pour les slides préchargées hors écran.
-      v.src = videoSrc;
+      v.src = loadSrc;
       v.addEventListener('loadedmetadata', playWhenReady, { once: true });
     } else if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30, maxMaxBufferLength: 60 });
       hlsRef.current = hls;
-      hls.loadSource(videoSrc);
+      hls.loadSource(loadSrc);
       hls.attachMedia(v);
       hls.once(Hls.Events.MANIFEST_PARSED, playWhenReady);
       hls.on(Hls.Events.ERROR, (_e, data) => { if (data.fatal) doRetry(); });
     } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
-      v.src = videoSrc;
+      v.src = loadSrc;
       v.addEventListener('loadedmetadata', playWhenReady, { once: true });
     }
 
@@ -901,7 +921,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
       setProgress(0);
       setBuffering(false);
     };
-  }, [videoSrc]); // eslint-disable-line
+  }, [loadSrc]); // eslint-disable-line
 
   // Active/inactive
   useEffect(() => {
@@ -913,7 +933,9 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
       v.pause(); v.currentTime = 0;
       setPlaying(false); setProgress(0);
       clearStall();
-    } else if (v.readyState >= 3) {
+    } else if (v.currentSrc || v.getAttribute('src')) {
+      // play() sur un média encore en cours de chargement est mis en file par le navigateur et
+      // démarre dès que possible — couvre un voisin préchargé pas encore prêt au moment du swipe.
       v.muted = hasMusic ? true : globalMuted;
       v.currentTime = 0;
       userPausedRef.current = false;
@@ -1177,7 +1199,7 @@ function ReelPlayer({ reel, active, globalMuted, onUnmute, onAutoplayFallbackMut
           <video ref={videoRef}
             className="relative w-full h-full object-contain"
             playsInline poster={reel.thumbnail_url ?? undefined}
-            preload="auto"
+            preload={preloadMode}
             onTimeUpdate={() => {
               const v = videoRef.current;
               if (v?.duration) setProgress((v.currentTime / v.duration) * 100);
@@ -1972,7 +1994,10 @@ export default function ReelsPage() {
       return;
     }
 
-    apiClient.get<any>(`${Endpoints.reels.feed}?limit=15&page=1`)
+    // 1ère page préchargée dès l'entrée dans l'app (utils/prefetch) — évite un second fetch
+    // et l'attente au clic sur l'onglet. Seulement sans reel ciblé (lien direct).
+    const pre = targetId ? null : consumeReelsPrefetch();
+    (pre ? Promise.resolve({ data: pre.data }) : apiClient.get<any>(`${Endpoints.reels.feed}?limit=15&page=1`) as Promise<{ data: any }>)
       .then(res => {
         let list = toArray<Reel>(res.data);
         const more = (res.data as any)?.has_more ?? list.length >= 15;
@@ -2775,6 +2800,7 @@ export default function ReelsPage() {
                   <ReelPlayer
                     reel={previewReel}
                     active={true}
+                    distance={0}
                     globalMuted={globalMuted}
                     onUnmute={() => setGlobalMuted(v => !v)}
                     onAutoplayFallbackMuted={() => setGlobalMuted(true)}
@@ -2874,6 +2900,7 @@ export default function ReelsPage() {
                   <ReelPlayer
                     reel={item.reel}
                     active={i === activeIndex}
+                    distance={Math.abs(i - activeIndex)}
                     globalMuted={globalMuted}
                     onUnmute={() => setGlobalMuted(v => !v)}
                     onAutoplayFallbackMuted={() => setGlobalMuted(true)}

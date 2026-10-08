@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef, Fragment, type ReactNode } from 'react';
+import { prefetchImages, imagesAhead } from '../utils/prefetch';
+import { useState, useCallback, useEffect, useRef, Fragment, type ReactNode, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTabReselect } from '../utils/tabReselect';
 import toast from 'react-hot-toast';
@@ -813,6 +814,7 @@ interface FeedAd {
   format: string;
   advertiser_name?: string | null;
   advertiser_avatar?: string | null;
+  advertiser_logo?: string | null;
 }
 
 type FeedItem =
@@ -1466,10 +1468,40 @@ function ActionBar({
 }
 
 // ── Native Ad Card ────────────────────────────────────────────────────────────
+// Même logique que AdCard (FeedScreen mobile) :
+//  - jamais d'autoplay : un visuel vidéo = miniature + bouton play, un clic ouvre le
+//    lecteur plein écran (/ads/:id) ;
+//  - impression comptée seulement quand la carte est réellement visible (≥ 50 %) ;
+//  - CTA discret au repos (« Découvrir <annonceur> »), qui se déplie en bouton riche
+//    une fois la carte restée visible quelques instants ; libellé adapté au lien
+//    (appel, installation, en savoir plus).
+function adDomainOf(url?: string | null): string {
+  const raw = (url ?? '').trim();
+  if (!raw) return '';
+  try { return new URL(raw).hostname.replace(/^www\./, ''); }
+  catch { return raw.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]; }
+}
+function adIsPhoneUrl(raw?: string | null): boolean {
+  const r = (raw ?? '').trim();
+  return !!r && !/^https?:\/\//i.test(r) && /^[+()\d\s.-]{6,}$/.test(r.replace(/^tel:/i, ''));
+}
+function adIsStoreUrl(raw?: string | null): boolean {
+  const r = (raw ?? '').trim().toLowerCase();
+  return r.includes('play.google.com/store/apps') || r.includes('apps.apple.com') || r.includes('itunes.apple.com');
+}
+function adCtaText(ad: { cta_text?: string | null; cta_url?: string | null }): string {
+  if (ad.cta_text) return ad.cta_text;
+  if (adIsPhoneUrl(ad.cta_url)) return 'Contactez-nous';
+  if (adIsStoreUrl(ad.cta_url)) return 'Installer';
+  return 'En savoir plus';
+}
+
 function FeedAdCard({ ad }: { ad: FeedAd }) {
+  const navigate       = useNavigate();
+  const cardRef        = useRef<HTMLDivElement>(null);
   const impressionSent = useRef(false);
-  const videoRef       = useRef<HTMLVideoElement>(null);
-  const hlsRef         = useRef<Hls | null>(null);
+  const [settled,   setSettled]   = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const isVideo = ad.format === 'video' || !!(ad.creative_url && (
     ad.creative_url.includes('.m3u8') ||
@@ -1477,129 +1509,112 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
     ad.creative_url.toLowerCase().includes('.mp4')
   ));
 
+  // Viewability : impression + "settled" (CTA riche) seulement quand la carte est vue.
   useEffect(() => {
-    if (!impressionSent.current) {
-      impressionSent.current = true;
-      apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
-    }
+    const node = cardRef.current;
+    if (!node) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+        if (!impressionSent.current) {
+          impressionSent.current = true;
+          apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+        }
+        timer = setTimeout(() => setSettled(true), 1200);
+      } else if (timer) { clearTimeout(timer); timer = undefined; }
+    }, { threshold: [0, 0.5] });
+    obs.observe(node);
+    return () => { obs.disconnect(); if (timer) clearTimeout(timer); };
   }, [ad.id]);
 
-  const setupVideo = useCallback((v: HTMLVideoElement | null) => {
-    (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = v;
-    if (!v || !isVideo || !ad.creative_url) return;
-    const src = toProxiedUrl(ad.creative_url);
-    if (Hls.isSupported()) {
-      const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30 });
-      hlsRef.current = hls;
-      hls.loadSource(src);
-      hls.attachMedia(v);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
-      hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal) { hls.destroy(); }
-      });
-    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
-      v.src = src;
-      v.play().catch(() => {});
-    } else {
-      v.src = src;
-      v.play().catch(() => {});
-    }
-  }, [ad.creative_url, isVideo]); // eslint-disable-line
-
-  function handleClick() {
+  function openFullscreen() { navigate(`/ads/${ad.id}`, { state: { ad } }); }
+  function openCta() {
+    if (isVideo) { openFullscreen(); return; }
     if (!ad.cta_url) return;
     apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
+    if (adIsPhoneUrl(ad.cta_url)) { window.location.href = `tel:${ad.cta_url.replace(/^tel:/i, '')}`; return; }
     window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
   }
 
-  const hasCreative = !!ad.thumbnail_url || !!ad.creative_url;
-  const advertiserInitial = (ad.advertiser_name ?? ad.title).charAt(0).toUpperCase();
-  const ctaDomain = (() => {
-    try { return ad.cta_url ? new URL(ad.cta_url).hostname.replace(/^www\./, '') : null; }
-    catch { return null; }
-  })();
+  const logo     = ad.advertiser_avatar ?? (ad as any).advertiser_logo ?? null;
+  const label    = (ad.advertiser_name ?? '').trim() || adDomainOf(ad.cta_url) || ad.title;
+  const initials = label.split(/[\s.-]+/).map(w => w[0] ?? '').filter(Boolean).join('').slice(0, 2).toUpperCase() || '?';
+  const creative = (isVideo ? ad.thumbnail_url : (ad.creative_url ?? ad.thumbnail_url)) ?? null;
+  const hasCreative = !!creative && !imgFailed;
+  const ctaText  = adCtaText(ad);
 
   return (
-    <div className="rounded-2xl overflow-hidden"
+    <div ref={cardRef} onClick={() => (isVideo ? openFullscreen() : ad.cta_url && openCta())}
+      className="rounded-3xl overflow-hidden cursor-pointer"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
 
-      {/* ── En-tête style Facebook ── */}
-      <div className="flex items-center gap-2.5 px-3 pt-3 pb-2">
-        {/* Avatar annonceur */}
-        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
-          style={{ background: 'rgba(123,63,242,0.1)', border: '1px solid var(--border)' }}>
-          {ad.advertiser_avatar ? (
-            <img src={ad.advertiser_avatar} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-sm font-black" style={{ color: 'var(--primary)' }}>{advertiserInitial}</span>
-          )}
+      {/* Annonceur */}
+      <div className="flex items-center gap-2.5 px-4 pt-4 pb-2">
+        <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 flex items-center justify-center"
+          style={{ background: 'var(--bg-secondary)' }}>
+          {logo
+            ? <img src={logo} alt="" className="w-full h-full object-cover" />
+            : <span className="text-[11px] font-bold" style={{ color: 'var(--text-secondary)' }}>{initials}</span>}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
-            {ad.advertiser_name ?? ad.title}
+          <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>{label}</p>
+          <p className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+            <span className="w-1 h-1 rounded-full" style={{ background: 'var(--text-tertiary)' }} /> Sponsorisé
           </p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-              style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
-              Sponsorisé ·
-            </span>
-            <Zap size={9} style={{ color: 'var(--text-tertiary)' }} />
-          </div>
         </div>
       </div>
 
-      {/* ── Titre + description (comme un post Facebook) ── */}
+      {/* Texte */}
       {(ad.title || ad.description) && (
-        <div className="px-3 pb-2">
-          {ad.advertiser_name && (
-            <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>
-          )}
-          {ad.description && (
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>
-          )}
+        <div className="px-4 pt-1 pb-3">
+          {ad.title && <p className="text-[15px] font-bold leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>{ad.title}</p>}
+          {ad.description && <p className="text-[13px] leading-relaxed mt-1 line-clamp-3" style={{ color: 'var(--text-secondary)' }}>{ad.description}</p>}
         </div>
       )}
 
-      {/* ── Visuel bord-à-bord ── */}
-      {hasCreative && (
-        <div className="overflow-hidden" style={{ aspectRatio: '1.91/1' }}>
-          {isVideo && ad.creative_url ? (
-            <video
-              ref={setupVideo}
-              className="w-full h-full object-cover"
-              playsInline muted autoPlay loop
-              poster={ad.thumbnail_url ?? undefined}
-            />
+      {/* Visuel — miniature figée + play pour les vidéos (jamais d'autoplay) */}
+      <div className="px-4">
+        <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: '1.6/1', background: 'rgba(123,63,242,0.07)' }}>
+          {hasCreative ? (
+            <img src={creative!} alt={ad.title} className="w-full h-full object-cover" loading="lazy"
+              onError={() => setImgFailed(true)} />
           ) : (
-            <img
-              src={ad.thumbnail_url ?? ad.creative_url!}
-              alt={ad.title}
-              className="w-full h-full object-cover"
-            />
+            <div className="w-full h-full flex items-center justify-center" style={{ background: isVideo ? '#1a1a2e' : undefined }}>
+              <Megaphone size={30} style={{ color: 'rgba(123,63,242,0.4)' }} />
+            </div>
+          )}
+          {isVideo && (
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.28)' }}>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.55)' }}>
+                <Play size={24} color="#fff" fill="#fff" style={{ marginLeft: 3 }} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* CTA — lien discret au repos, bouton riche une fois « settled » */}
+      {ad.cta_url && (
+        <div className="px-4 pt-3 pb-4 mt-3" style={{ borderTop: '1px solid var(--border)' }}
+          onClick={e => { e.stopPropagation(); openCta(); }}>
+          {settled ? (
+            <div className="flex items-center gap-3 animate-fade-in">
+              <p className="flex-1 min-w-0 text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
+                {ad.description || 'En savoir plus'}
+              </p>
+              <button className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold"
+                style={{ background: 'var(--text-primary)', color: 'var(--bg)' }}>
+                {ctaText} <ExternalLink size={12} />
+              </button>
+            </div>
+          ) : (
+            <button className="text-[13px] font-bold truncate max-w-full" style={{ color: 'var(--primary)' }}>
+              Découvrir {label}
+            </button>
           )}
         </div>
       )}
-
-      {/* ── Bande CTA Facebook-style (sous l'image, fond légèrement distinct) ── */}
-      {ad.cta_url && (
-        <div className="flex items-center justify-between px-3 py-2.5 gap-3"
-          style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
-          <div className="min-w-0">
-            {ctaDomain && (
-              <p className="text-[10px] uppercase tracking-wide font-semibold truncate"
-                style={{ color: 'var(--text-tertiary)' }}>{ctaDomain}</p>
-            )}
-            <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-secondary)' }}>
-              {ad.cta_text ?? 'En savoir plus'}
-            </p>
-          </div>
-          <button onClick={handleClick}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80"
-            style={{ background: 'var(--primary)', color: '#fff' }}>
-            {ad.cta_text ?? 'En savoir plus'} <ExternalLink size={11} />
-          </button>
-        </div>
-      )}
+      {!ad.cta_url && <div className="pb-4" />}
     </div>
   );
 }
@@ -2703,98 +2718,158 @@ function SectionHead({ icon, title, onMore }: {
   );
 }
 
+// ── Encarts de recommandation — même design que PeopleSuggestions (mobile) :
+// carte flottante arrondie, en-tête titre + sous-titre + action, carrousel de
+// cartes à cover dégradée, avatar chevauchant et bouton plein largeur. ──────────
+const REC_SHADOW = '0 1px 2px rgba(11,11,16,0.04), 0 8px 24px rgba(11,11,16,0.06)';
+
+function RecShell({ icon, title, subtitle, action, onAction, children }: {
+  icon: ReactNode; title: string; subtitle: string;
+  action: string; onAction: () => void; children: ReactNode;
+}) {
+  return (
+    <div className="rounded-3xl overflow-hidden py-4"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: REC_SHADOW }}>
+      <div className="flex items-center gap-3 px-4 mb-3">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', color: '#fff' }}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-black text-base leading-tight truncate" style={{ color: 'var(--text-primary)' }}>{title}</p>
+          <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{subtitle}</p>
+        </div>
+        <button onClick={onAction} className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0"
+          style={{ color: 'var(--primary)', background: 'rgba(123,63,242,0.1)' }}>
+          {action}
+        </button>
+      </div>
+      <div className="flex gap-2.5 px-4 pb-1 overflow-x-auto snap-x" style={{ scrollbarWidth: 'none' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Carte à cover dégradée + avatar/pastille chevauchant, comme le mobile.
+function RecCard({ onOpen, onDismiss, cover, badge, title, subtitle, pill, actionNode }: {
+  onOpen: () => void; onDismiss: () => void; cover?: string | null;
+  badge: ReactNode; title: ReactNode; subtitle?: string | null;
+  pill?: ReactNode; actionNode: ReactNode;
+}) {
+  return (
+    <div className="relative shrink-0 snap-start rounded-2xl overflow-hidden flex flex-col"
+      style={{ width: 168, background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <button onClick={onDismiss} title="Masquer"
+        className="absolute top-2 right-2 z-10 w-[22px] h-[22px] rounded-full flex items-center justify-center text-white"
+        style={{ background: 'rgba(0,0,0,0.5)' }}>
+        <X size={11} />
+      </button>
+      <div onClick={onOpen} className="cursor-pointer h-[84px] w-full"
+        style={cover
+          ? { backgroundImage: `url(${cover})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+          : { background: 'linear-gradient(135deg,rgba(123,63,242,0.87),rgba(123,63,242,0.27))' }} />
+      <div className="flex flex-col items-center px-3 pb-3 gap-1 -mt-8">
+        <div onClick={onOpen} className="cursor-pointer rounded-full"
+          style={{ border: '3px solid var(--surface)' }}>
+          {badge}
+        </div>
+        <div onClick={onOpen} className="cursor-pointer w-full text-center">
+          <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{title}</p>
+          {subtitle && <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{subtitle}</p>}
+        </div>
+        {pill}
+        <div className="w-full mt-1.5">{actionNode}</div>
+      </div>
+    </div>
+  );
+}
+
+const recBtn = (done: boolean): CSSProperties => done
+  ? { background: 'transparent', color: 'var(--text-secondary)', border: '1.5px solid var(--border)' }
+  : { background: 'var(--primary)', color: '#fff', border: '1.5px solid var(--primary)' };
+
 // ── Encart : rangée de reels ───────────────────────────────────────────────────
 function ReelRowCard({ reels }: { reels: Reel[] }) {
   const navigate = useNavigate();
   if (!reels.length) return null;
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-            <Film size={13} color="#fff" />
+    <RecShell icon={<Film size={16} />} title="Reels pour toi" subtitle="Des vidéos courtes choisies pour toi"
+      action="Voir tout" onAction={() => navigate('/reels')}>
+      {reels.map(r => (
+        <HoverVideoPreview key={r.id} src={r.mp4_url || r.hls_url} poster={r.thumbnail_url}
+          className="relative shrink-0 snap-start rounded-2xl overflow-hidden cursor-pointer"
+          style={{ width: 128, aspectRatio: '9/16', background: '#000' }}>
+          <div onClick={() => navigate(`/reels?id=${encodeId(r.id)}`)} className="absolute inset-0">
+            {!r.thumbnail_url && <MediaPlaceholder title={r.caption} icon={<Play size={20} color="#fff" />} />}
+            <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
+              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
+            {r.caption && (
+              <p className="absolute left-2 right-2 bottom-6 text-[11px] font-semibold text-white line-clamp-2 leading-tight">
+                {r.caption}
+              </p>
+            )}
+            {(r.view_count ?? 0) > 0 && (
+              <span className="absolute bottom-2 left-2 flex items-center gap-1 text-[10px] text-white font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(0,0,0,0.45)' }}>
+                <Play size={8} fill="#fff" />{fmtCount(r.view_count ?? 0)}
+              </span>
+            )}
           </div>
-          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Reels pour toi</p>
-        </div>
-        <button onClick={() => navigate('/reels')} className="text-xs font-bold" style={{ color: 'var(--primary)' }}>
-          Voir tout
-        </button>
-      </div>
-      <div className="flex gap-2.5 px-4 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-        {reels.map(r => (
-          <HoverVideoPreview key={r.id} src={r.mp4_url || r.hls_url} poster={r.thumbnail_url}
-            className="relative shrink-0 rounded-xl overflow-hidden cursor-pointer"
-            style={{ width: 108, aspectRatio: '9/16', background: '#000' }}>
-            <div onClick={() => navigate(`/reels?id=${encodeId(r.id)}`)} className="absolute inset-0">
-              {!r.thumbnail_url && <MediaPlaceholder title={r.caption} icon={<Play size={20} color="#fff" />} />}
-              <div className="absolute inset-x-0 bottom-0 h-14 pointer-events-none"
-                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)' }} />
-              {(r.view_count ?? 0) > 0 && (
-                <span className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 text-[10px] text-white font-bold">
-                  <Play size={8} fill="#fff" />{fmtCount(r.view_count ?? 0)}
-                </span>
-              )}
-            </div>
-          </HoverVideoPreview>
-        ))}
-      </div>
-    </div>
+        </HoverVideoPreview>
+      ))}
+    </RecShell>
   );
 }
 
 // ── Encart : suggestions d'amis ─────────────────────────────────────────────────
 function SuggestionsInlineCard({ users }: { users: UserPublic[] }) {
   const navigate = useNavigate();
-  const [followed, setFollowed] = useState<Set<string>>(new Set());
-  if (!users.length) return null;
+  const [followed, setFollowed]   = useState<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const visible = users.filter(u => !dismissed.has(u.id));
+  if (!visible.length) return null;
 
-  async function follow(id: string) {
-    setFollowed(prev => new Set(prev).add(id));
-    try { await apiClient.post(Endpoints.users.follow(id)); }
-    catch { setFollowed(prev => { const n = new Set(prev); n.delete(id); return n; }); }
+  async function toggle(id: string) {
+    const was = followed.has(id);
+    setFollowed(prev => { const n = new Set(prev); was ? n.delete(id) : n.add(id); return n; });
+    try { was ? await apiClient.delete(Endpoints.users.follow(id)) : await apiClient.post(Endpoints.users.follow(id)); }
+    catch { setFollowed(prev => { const n = new Set(prev); was ? n.add(id) : n.delete(id); return n; }); }
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <Sparkles size={15} style={{ color: 'var(--primary)' }} />
-          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Personnes à suivre</p>
-        </div>
-        <button onClick={() => navigate('/search?tab=users')} className="text-xs font-bold" style={{ color: 'var(--primary)' }}>
-          Voir plus
-        </button>
-      </div>
-      <div className="flex gap-3 px-4 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-        {users.map(u => (
-          <div key={u.id} className="flex flex-col items-center gap-2 shrink-0" style={{ width: 92 }}>
-            <div onClick={() => navigate(`/user/${encodeId(u.id)}`)} className="cursor-pointer relative"
-              style={{ width: 60, height: 60, borderRadius: '50%', padding: 2.5, background: 'linear-gradient(135deg,var(--primary),var(--primary-light))' }}>
-              <Avatar src={u.avatar_url} name={u.display_name ?? u.username ?? '?'} size="lg" verified={u.is_verified} />
-            </div>
-            <p className="text-[11px] font-bold text-center leading-tight line-clamp-1" style={{ color: 'var(--text-primary)' }}>
-              {u.display_name ?? u.username}
-            </p>
-            <button onClick={() => follow(u.id)} disabled={followed.has(u.id)}
-              className="text-[10.5px] font-bold rounded-full w-full py-1.5 text-center"
-              style={followed.has(u.id)
-                ? { background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }
-                : { background: 'var(--primary)', color: '#fff' }}>
-              {followed.has(u.id) ? 'Suivi' : 'Suivre'}
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
+    <RecShell icon={<Sparkles size={16} />} title="Des gens qui te ressemblent ✨"
+      subtitle="Élargis ton cercle, un abonnement à la fois"
+      action="Voir plus" onAction={() => navigate('/discover/people')}>
+      {visible.map(u => {
+        const done = followed.has(u.id);
+        const name = u.display_name ?? u.username ?? 'Utilisateur';
+        const open = () => navigate(`/user/${encodeId(u.id)}`);
+        return (
+          <RecCard key={u.id} onOpen={open}
+            onDismiss={() => setDismissed(prev => new Set(prev).add(u.id))}
+            badge={<Avatar src={u.avatar_url} name={name} size="xl" verified={u.is_verified} />}
+            title={name} subtitle={u.username ? `@${u.username}` : null}
+            actionNode={
+              <button onClick={() => toggle(u.id)}
+                className="w-full flex items-center justify-center gap-1.5 text-[13px] font-bold py-2 rounded-full"
+                style={recBtn(done)}>
+                {done ? <><UserCheck size={14} /> Abonné ✓</> : <><UserPlus size={14} /> Suivre</>}
+              </button>
+            } />
+        );
+      })}
+    </RecShell>
   );
 }
 
 // ── Encart : suggestions de communautés ─────────────────────────────────────────
 function CommunitiesInlineCard({ communities }: { communities: Community[] }) {
   const navigate = useNavigate();
-  const [joined, setJoined] = useState<Set<string>>(new Set());
-  if (!communities.length) return null;
+  const [joined, setJoined]       = useState<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const visible = communities.filter(c => !dismissed.has(c.id));
+  if (!visible.length) return null;
 
   async function join(id: string) {
     setJoined(prev => new Set(prev).add(id));
@@ -2803,41 +2878,33 @@ function CommunitiesInlineCard({ communities }: { communities: Community[] }) {
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-            <Users size={13} color="#fff" />
-          </div>
-          <p className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Ta tribu t'attend</p>
-        </div>
-        <button onClick={() => navigate('/communities')} className="text-xs font-bold" style={{ color: 'var(--primary)' }}>
-          Explorer
-        </button>
-      </div>
-      <div className="flex flex-col px-2 pb-2">
-        {communities.map(c => (
-          <div key={c.id} className="flex items-center gap-3 px-2 py-2 rounded-xl">
-            <div className="shrink-0 rounded-xl flex items-center justify-center font-black text-white text-base"
-              style={{ width: 44, height: 44, background: `linear-gradient(135deg,${placeholderPalette(c.name)[1]},${placeholderPalette(c.name)[2]})` }}>
-              {c.avatar_url ? <img src={c.avatar_url} className="w-full h-full rounded-xl object-cover" alt="" /> : c.name[0]?.toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-bold truncate" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
-              <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{fmtCount(c.members_count ?? 0)} membres</p>
-            </div>
-            <button onClick={() => join(c.id)} disabled={joined.has(c.id)}
-              className="shrink-0 text-[10.5px] font-bold rounded-full px-3 py-1.5 flex items-center gap-1"
-              style={joined.has(c.id)
-                ? { background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }
-                : { border: '1.3px solid var(--primary)', color: 'var(--primary)' }}>
-              {joined.has(c.id) ? <><Check size={10} /> Membre</> : 'Rejoindre'}
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
+    <RecShell icon={<Users size={16} />} title="Ta tribu t'attend"
+      subtitle="Des communautés qui partagent tes passions"
+      action="Explorer" onAction={() => navigate('/communities')}>
+      {visible.map(c => {
+        const done = joined.has(c.id);
+        const pal  = placeholderPalette(c.name);
+        return (
+          <RecCard key={c.id} onOpen={() => navigate(`/communities/${encodeId(c.id)}`)}
+            onDismiss={() => setDismissed(prev => new Set(prev).add(c.id))}
+            cover={(c as any).cover_url ?? null}
+            badge={
+              <div className="rounded-full flex items-center justify-center font-black text-white text-2xl overflow-hidden"
+                style={{ width: 64, height: 64, background: `linear-gradient(135deg,${pal[1]},${pal[2]})` }}>
+                {c.avatar_url ? <img src={c.avatar_url} className="w-full h-full object-cover" alt="" /> : c.name[0]?.toUpperCase()}
+              </div>
+            }
+            title={c.name} subtitle={`${fmtCount(c.members_count ?? 0)} membres`}
+            actionNode={
+              <button onClick={() => !done && join(c.id)} disabled={done}
+                className="w-full flex items-center justify-center gap-1.5 text-[13px] font-bold py-2 rounded-full"
+                style={recBtn(done)}>
+                {done ? <><Check size={14} /> Membre</> : <><Plus size={14} /> Rejoindre</>}
+              </button>
+            } />
+        );
+      })}
+    </RecShell>
   );
 }
 
@@ -2862,6 +2929,42 @@ export default function FeedPage() {
     title?: string; image?: string; desc?: string;
   } | null>(null);
   const [feedAd,          setFeedAd]          = useState<FeedAd | null>(null);
+
+  // ── Préchargement des images du feed (équivalent prefetchUpcomingImages du mobile) :
+  // dès qu'un lot d'items arrive, on télécharge leurs visuels à l'avance pour que le
+  // scroll n'attende jamais le réseau. Dédupliqué et allégé sur connexion lente.
+  useEffect(() => {
+    if (imagesAhead() === 0) return;
+    const urls: Array<string | null | undefined> = [];
+    for (const it of items) {
+      const d: any = it.data;
+      if (!d) continue;
+      switch (it.kind) {
+        case 'post':
+          urls.push(d.thumbnail_url, d.image_url, ...(d.image_urls ?? []).slice(0, 2), d.author?.avatar_url);
+          break;
+        case 'concert': case 'event':
+          urls.push(d.thumbnail_url, d.banner_url);
+          break;
+        case 'reel':
+          urls.push(d.thumbnail_url, d.author?.avatar_url);
+          break;
+        case 'reel_row':
+          for (const r of d as any[]) urls.push(r?.thumbnail_url);
+          break;
+        case 'suggestions':
+          for (const u of d as any[]) urls.push(u?.avatar_url);
+          break;
+        case 'communities':
+          for (const c of d as any[]) urls.push(c?.avatar_url, c?.cover_url);
+          break;
+        case 'ad':
+          urls.push(d.thumbnail_url, d.advertiser_avatar ?? d.advertiser_logo);
+          break;
+      }
+    }
+    prefetchImages(urls);
+  }, [items]);
 
   // ── Menu "..." et signalement — un seul modal partagé par toutes les cards,
   // pas une instance par card (le feed n'est pas virtualisé côté web). ──────────

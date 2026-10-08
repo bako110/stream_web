@@ -449,3 +449,18 @@
   }
   .app-main-pad { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; }
 }
+
+/* ── Feedback au toucher/clic — équivalent web du TouchableOpacity mobile :
+   l'élément s'assombrit tant qu'il est pressé. :where() = spécificité 0, donc
+   n'écrase aucun style existant ; filtre brightness plutôt que opacity pour
+   assombrir aussi sur fond clair. ── */
+:where(button, a[href], [role='button'], summary, label[for], .cursor-pointer):where(:active):not(:disabled):not([aria-disabled='true']) {
+  filter: brightness(0.82);
+  transition: filter 0.08s ease-out;
+}
+:where(button, a[href], [role='button'], summary, label[for], .cursor-pointer) {
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(button, a[href], [role='button'], .cursor-pointer):where(:active) { transition: none; }
+}

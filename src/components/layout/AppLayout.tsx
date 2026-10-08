@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { clsx } from 'clsx';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { CreateFAB } from './CreateFAB';
 import { BattleInviteModal } from '../live/BattleInviteModal';
+import { startReelsPrefetch } from '../../utils/prefetch';
 
 // Pages avec leur propre bouton flottant dédié — évite le doublon visuel avec le FAB global
 const CREATE_FAB_HIDDEN_PREFIXES = ['/my-stories', '/join/'];
@@ -22,6 +23,8 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false);
   const { pathname } = useLocation();
+  // Précharge la 1ère page Reels + 1ère vidéo dès l'entrée dans l'app (cf. reelsPrefetchService mobile).
+  useEffect(() => { startReelsPrefetch(); }, []);
   const isImmersive         = IMMERSIVE_PREFIXES.some(p => pathname.startsWith(p));
   const isImmersiveMobile   = IMMERSIVE_MOBILE_ONLY_PREFIXES.some(p => pathname.startsWith(p));
   const hideCreateFab = isImmersive || isImmersiveMobile || CREATE_FAB_HIDDEN_PREFIXES.some(p => pathname.startsWith(p));
