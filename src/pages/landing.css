@@ -256,7 +256,12 @@
   aspect-ratio: 4 / 5; box-shadow: 0 2px 6px rgba(11,11,16,0.08), 0 28px 60px -16px rgba(91,46,196,0.45);
   border: 1px solid var(--gt-line);
 }
-@media (max-width: 1023px) { .gt-livepanel-media { aspect-ratio: 16 / 11; } }
+@media (max-width: 1023px) { .gt-livepanel-media { aspect-ratio: 4 / 5; border-radius: 28px; } }
+@media (max-width: 480px) {
+  .gt-livepanel-info { left: 18px; right: 18px; bottom: 18px; }
+  .gt-livepanel-title { font-size: 1.5rem; }
+  .gt-livepanel-cta { width: 100%; justify-content: center; }
+}
 .gt-live-poster, .gt-live-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .gt-live-video { transition: opacity .4s ease; }
 .gt-livepanel-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,3,18,0.88) 0%, rgba(8,3,18,0.2) 50%, rgba(8,3,18,0.35) 100%); pointer-events: none; }
@@ -306,8 +311,18 @@
   overflow: hidden;
   background: var(--gt-line-2);
 }
+/* Mobile : plus de seconde image (doublon du panneau live) — les chiffres clés
+   deviennent une carte nette, 3 colonnes égales. */
 @media (max-width: 640px) {
-  .gt-hero-banner { aspect-ratio: 4/3; }
+  .gt-hero-banner { aspect-ratio: auto; background: var(--gt-surface); border: 1px solid var(--gt-line); border-radius: 1.25rem; }
+  .gt-hero-banner img, .gt-hero-banner-fallback, .gt-hero-banner-scrim { display: none; }
+  .gt-hero-banner .gt-hero-banner-stats {
+    position: static; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 1.1rem 0.5rem; margin: 0;
+  }
+  .gt-hero-banner .gt-hero-banner-stats > div { text-align: center; padding: 0 0.4rem; }
+  .gt-hero-banner .gt-hero-banner-stats > div + div { border-left: 1px solid var(--gt-line); }
+  .gt-hero-banner .gt-hero-banner-stats .gt-stat-value { color: var(--gt-text); font-size: 1.3rem; }
+  .gt-hero-banner .gt-hero-banner-stats .gt-stat-label { color: var(--gt-text-3); font-size: 0.72rem; line-height: 1.25; }
 }
 .gt-hero-banner img {
   width: 100%; height: 100%; object-fit: cover;
@@ -367,6 +382,13 @@
   border-radius: 999px;
   border: 1.5px solid var(--gt-line);
   transition: gap 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+@media (max-width: 640px) {
+  .gt-section-head { margin-bottom: 1.25rem; }
+  .gt-section-title { font-size: 1.35rem; white-space: nowrap; }
+  .gt-section-sub { font-size: 0.8rem; }
+  .gt-section-link { font-size: 0; gap: 0; padding: 0; width: 38px; height: 38px; justify-content: center; }
+  .gt-section-link svg { width: 16px; height: 16px; }
 }
 .gt-section-link:hover { gap: 0.55rem; border-color: var(--gt-accent); color: var(--gt-accent); }
 

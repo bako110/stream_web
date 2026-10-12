@@ -216,10 +216,9 @@ function AppShell() {
         <Route path="/films/:id"    element={<SharedRoute page={<FilmDetailPage />} />} />
         <Route path="/series/:id"   element={<SharedRoute page={<SerieDetailPage />} />} />
 
-        {/* Reels — dans AppLayout (sidebar visible, style TikTok desktop), accessible sans connexion */}
-        <Route element={<AppLayout />}>
-          <Route path="/reels" element={<ReelsPage />} />
-        </Route>
+        {/* Reels — connecté : AppLayout (sidebar, style TikTok desktop) ; invité : page
+            standalone (aperçu + invite de connexion), sans la sidebar de l'app. */}
+        <Route path="/reels" element={<SharedRoute page={<ReelsPage />} />} />
 
         {/* Pub plein écran (ouverte depuis la recherche) — page dédiée, pas de sidebar */}
         <Route path="/ads/:id" element={<AdFullscreenPage />} />

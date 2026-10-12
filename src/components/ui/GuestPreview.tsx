@@ -281,6 +281,12 @@ export function GuestPreview({
           color: var(--text-primary);
           padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
         }
+        /* Reels : l'aperçu est rendu dans AppLayout (sidebar de l'app, inutile pour un invité) —
+           on le sort en plein écran, par-dessus, comme les pages post/event. */
+        .gp-page.is-fullscreen {
+          position: fixed; inset: 0; z-index: 60; min-height: 0; overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
         .gp-bar {
           position: sticky; top: 0.5rem; z-index: 30;
           margin: 0.5rem auto 0;
@@ -495,7 +501,7 @@ export function GuestPreview({
         .gp-lock-perk { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); }
       `}</style>
 
-      <div className="gp-page">
+      <div className={`gp-page${isReel ? ' is-fullscreen' : ''}`}>
 
         {/* Barre du haut — pilule flottante */}
         <div className="gp-bar">
