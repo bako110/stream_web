@@ -281,8 +281,8 @@ export function GuestPreview({
           color: var(--text-primary);
           padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
         }
-        /* Reels : l'aperçu est rendu dans AppLayout (sidebar de l'app, inutile pour un invité) —
-           on le sort en plein écran, par-dessus, comme les pages post/event. */
+        /* Toujours en plein écran, par-dessus tout layout parent (sidebar, topbar, bottom nav de
+           l'app) : un invité n'a pas à voir la navigation des membres, quelle que soit la route. */
         .gp-page.is-fullscreen {
           position: fixed; inset: 0; z-index: 60; min-height: 0; overflow-y: auto;
           -webkit-overflow-scrolling: touch;
@@ -528,7 +528,7 @@ export function GuestPreview({
         .gp-lock-perk { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); }
       `}</style>
 
-      <div className={`gp-page${isReel ? ' is-fullscreen' : ''}`}>
+      <div className="gp-page is-fullscreen">
 
         {/* Barre du haut — pilule flottante */}
         <div className="gp-bar">
