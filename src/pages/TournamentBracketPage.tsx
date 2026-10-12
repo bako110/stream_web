@@ -5,6 +5,7 @@ import {
   Calendar, Clock, Globe, Award, Zap, Play, Check, User, Settings, UserPlus, X, Radio,
 } from 'lucide-react';
 import { PageLoader, Spinner } from '../components/ui/Spinner';
+import { StructuredText } from '../components/ui/StructuredText';
 import { decodeId, encodeId } from '../utils/slugId';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
@@ -374,7 +375,7 @@ export default function TournamentBracketPage() {
 
         <div className="card p-4 flex flex-col gap-2.5">
           <p className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>À propos de ce tournoi</p>
-          {tournament.description && <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{tournament.description}</p>}
+          {tournament.description && <StructuredText text={tournament.description} />}
 
           <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
             <Users size={14} className="text-[var(--text-tertiary)] shrink-0" /> {REGISTRATION_MODE_LABELS[tournament.registration_mode]}
