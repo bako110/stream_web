@@ -368,7 +368,7 @@ function FilmShowcase({ item, onClick }: { item: Content; onClick: () => void })
       </div>
       <div className="gt-showcase-footer">
         <span className="gt-showcase-meta"><Film size={13} /> Disponible en streaming</span>
-        <span className="gt-showcase-cta">Regarder <ArrowUpRight size={14} /></span>
+        <span className="gt-showcase-cta"><Play size={12} fill="currentColor" /> Regarder</span>
       </div>
     </div>
   );
