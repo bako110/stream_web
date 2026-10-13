@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Maximize2, Minus, X, MessageCircle } from 'lucide-react';
@@ -19,8 +19,10 @@ export function MessagesDock({ onClose }: { onClose: () => void }) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+  // (pathname d'ouverture mémorisé : l'effet ne doit pas se déclencher au montage, sinon la fenêtre se fermait aussitôt)
+  const openedAt = useRef(pathname);
   useEffect(() => {
-    if (window.matchMedia('(max-width: 640px)').matches) onClose();
+    if (pathname !== openedAt.current && window.matchMedia('(max-width: 640px)').matches) onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
