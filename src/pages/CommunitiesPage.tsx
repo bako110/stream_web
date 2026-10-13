@@ -35,9 +35,9 @@ function gradientFor(name: string): [string, string] {
   return GRADIENTS[i] as [string, string];
 }
 
-// ── CommunityRow ──────────────────────────────────────────────────────────────
+// ── CommunityCard ─────────────────────────────────────────────────────────────
 
-function CommunityRow({
+function CommunityCard({
   community, isMine, onJoin, onLeave,
 }: {
   community: Community;
@@ -49,77 +49,98 @@ function CommunityRow({
   const count      = community.members_count ?? (community as any).member_count ?? 0;
   const [g1, g2]   = gradientFor(community.name);
   const isBoosted  = (community as any).is_boosted ?? false;
+  const open       = () => navigate(`/communities/${encodeId(community.id)}`);
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3 transition-all cursor-pointer"
-      onClick={() => navigate(`/communities/${encodeId(community.id)}`)}
-      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-      style={{ borderBottom: '1px solid var(--border)' }}
+      onClick={open}
+      className="group relative flex flex-col overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1"
+      style={{
+        borderRadius: '1.5rem',
+        background: 'var(--surface)',
+        border: '1.5px solid var(--border)',
+        boxShadow: '0 1px 2px rgba(11,11,16,0.04)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = g1; e.currentTarget.style.boxShadow = `0 18px 40px -14px ${g1}66`; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,11,16,0.04)'; }}
     >
-      {/* Avatar */}
-      {community.avatar_url
-        ? <img src={community.avatar_url}
-            className="w-11 h-11 rounded-xl object-cover shrink-0"
-            style={{ border: '1px solid var(--border)' }} alt="" />
-        : <div className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-lg shrink-0"
-            style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }}>
-            {community.name[0]?.toUpperCase()}
-          </div>
-      }
-
-      {/* Infos */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="text-sm font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
-            {community.name}
-          </p>
-          {community.is_verified && <VerifiedBadge size={13} />}
-          {community.is_private && <Lock size={10} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />}
-          {isBoosted && (
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0"
-              style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>
-              <Zap size={9} fill="currentColor" /> Boosté
-            </span>
-          )}
-        </div>
-        <div className="flex items-center mt-0.5 min-w-0" style={{ color: 'var(--text-tertiary)' }}>
-          <span className="text-xs shrink-0">{fmtCount(count)} membre{count > 1 ? 's' : ''}</span>
-          {community.description && (
-            <span className="text-xs ml-1.5 truncate min-w-0">· {community.description}</span>
-          )}
-        </div>
+      {/* Bandeau couleur */}
+      <div className="relative h-20 shrink-0"
+        style={{ background: `radial-gradient(120% 140% at 0% 0%, ${g2}cc 0%, transparent 60%), linear-gradient(135deg, ${g1}, ${g2})` }}>
+        {isBoosted && (
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black"
+            style={{ background: 'rgba(255,255,255,0.92)', color: '#D97706' }}>
+            <Zap size={10} fill="currentColor" /> Boosté
+          </span>
+        )}
+        {community.is_private && (
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white"
+            style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(6px)' }}>
+            <Lock size={10} /> Privée
+          </span>
+        )}
       </div>
 
-      {/* Action */}
-      {isMine ? (
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={e => { e.stopPropagation(); navigate(`/communities/${encodeId(community.id)}`); }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
-            style={{ background: `linear-gradient(90deg, ${g1}, ${g2})` }}>
-            <MessageCircle size={11} /> Ouvrir
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); onLeave(); }}
-            className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors shrink-0"
-            style={{ border: '1px solid var(--border)', color: 'var(--text-tertiary)' }}
-            onMouseEnter={e => { e.stopPropagation(); (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.08)'; (e.currentTarget as HTMLElement).style.color = '#EF4444'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.3)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-tertiary)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}>
-            <LogOut size={12} />
-          </button>
+      {/* Avatar chevauchant */}
+      <div className="px-4 -mt-7 shrink-0">
+        {community.avatar_url
+          ? <img src={community.avatar_url} alt=""
+              className="w-14 h-14 rounded-2xl object-cover"
+              style={{ border: '3px solid var(--surface)', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }} />
+          : <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-white text-xl"
+              style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '3px solid var(--surface)', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}>
+              {community.name[0]?.toUpperCase()}
+            </div>
+        }
+      </div>
+
+      {/* Infos */}
+      <div className="flex-1 px-4 pt-2.5 pb-3 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-base font-extrabold truncate leading-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+            {community.name}
+          </p>
+          {community.is_verified && <VerifiedBadge size={14} />}
         </div>
-      ) : (
-        <button
-          onClick={e => { e.stopPropagation(); onJoin(); }}
-          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-          style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--primary)'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(123,63,242,0.1)'; (e.currentTarget as HTMLElement).style.color = 'var(--primary)'; }}>
-          <UserPlus size={11} /> Rejoindre
-        </button>
-      )}
+        <p className="text-[13px] mt-1 line-clamp-2 leading-snug min-h-[2.4em]" style={{ color: 'var(--text-secondary)' }}>
+          {community.description || 'Une communauté Gofolyx à découvrir.'}
+        </p>
+      </div>
+
+      {/* Pied : membres + action */}
+      <div className="flex items-center justify-between gap-2 px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+          style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+          <Users size={12} style={{ color: g1 }} /> {fmtCount(count)} membre{count > 1 ? 's' : ''}
+        </span>
+
+        {isMine ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={e => { e.stopPropagation(); open(); }}
+              className="flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-bold text-white transition-transform active:scale-95"
+              style={{ background: `linear-gradient(90deg, ${g1}, ${g2})`, boxShadow: `0 6px 14px ${g1}55` }}>
+              <MessageCircle size={13} /> Ouvrir
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); onLeave(); }}
+              aria-label="Quitter la communauté"
+              className="w-9 h-9 flex items-center justify-center rounded-full transition-colors shrink-0"
+              style={{ border: '1.5px solid var(--border)', color: 'var(--text-tertiary)' }}
+              onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+              <LogOut size={13} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={e => { e.stopPropagation(); onJoin(); }}
+            className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-bold text-white transition-transform active:scale-95"
+            style={{ background: 'var(--primary)', boxShadow: '0 6px 14px rgba(123,63,242,0.3)' }}>
+            <UserPlus size={13} /> Rejoindre
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -341,123 +362,129 @@ export default function CommunitiesPage() {
 
   return (
     <div className="flex flex-col h-full">
-
-      {/* ── Header ── */}
-      <div className="shrink-0 px-4 pt-4 pb-0" style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(123,63,242,0.12)' }}>
-              <Users size={16} style={{ color: 'var(--primary)' }} />
-            </div>
-            <h1 className="text-base font-black" style={{ color: 'var(--text-primary)' }}>Communautés</h1>
-          </div>
-          <button onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold text-white"
-            style={{ background: 'var(--primary)' }}>
-            <Plus size={14} /> Créer
-          </button>
-        </div>
-
-        {/* Recherche */}
-        <div className="relative mb-3">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
-          <input value={query} onChange={e => setQuery(e.target.value)}
-            placeholder="Rechercher une communauté…"
-            className="input w-full pl-9 pr-9 text-sm" />
-          {query && (
-            <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2"
-              style={{ color: 'var(--text-tertiary)' }}>
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex">
-          {(['discover', 'mine'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className="flex-1 py-3 text-sm font-bold relative transition-colors"
-              style={{ color: tab === t ? 'var(--primary)' : 'var(--text-tertiary)' }}>
-              {t === 'discover' ? 'Découvrir' : 'Mes communautés'}
-              {tab === t && (
-                <div className="absolute bottom-0 left-[15%] right-[15%] h-0.5 rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #7B3FF2, #5B2EC4)' }} />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Liste ── */}
       <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>
-        {loading ? (
-          <PageLoader />
-        ) : communities.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: 'rgba(123,63,242,0.08)' }}>
-              <Users size={28} style={{ color: 'var(--primary)' }} />
-            </div>
-            <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-              {tab === 'mine' ? 'Aucune communauté' : query ? 'Aucun résultat' : 'Aucune communauté'}
-            </p>
-            <p className="text-xs text-center max-w-xs" style={{ color: 'var(--text-tertiary)' }}>
-              {tab === 'mine'
-                ? 'Créez ou rejoignez une communauté'
-                : query ? `Aucun résultat pour "${query}"` : 'Soyez le premier à créer !'}
-            </p>
-            {tab === 'mine' && (
-              <button onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white text-sm mt-1"
-                style={{ background: 'var(--primary)' }}>
-                <Plus size={14} /> Créer une communauté
-              </button>
-            )}
-            {tab === 'discover' && !query && (
-              <button onClick={() => navigate('/discover/communities')}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm mt-1"
-                style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}>
-                Explorer toutes les communautés <ChevronRight size={14} />
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            {/* Label section */}
-            <div className="px-4 pt-3 pb-1.5">
-              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
-                {tab === 'discover' ? `${communities.length} communauté${communities.length > 1 ? 's' : ''}` : `Mes communautés · ${communities.length}`}
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-5 pb-28 lg:pb-10">
+
+          {/* ── En-tête ── */}
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div className="min-w-0">
+              <span className="text-[11px] font-semibold uppercase"
+                style={{ color: 'var(--text-tertiary)', letterSpacing: '0.13em', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace' }}>
+                Communautés
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-black mt-1" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+                Trouve ta tribu
+              </h1>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                Groupes thématiques, discussions et événements entre passionnés
               </p>
             </div>
+            <button onClick={() => setShowCreate(true)}
+              className="shrink-0 flex items-center gap-1.5 h-11 px-5 rounded-full text-sm font-bold text-white transition-transform active:scale-95"
+              style={{ background: 'var(--primary)', boxShadow: '0 8px 20px rgba(123,63,242,0.3)' }}>
+              <Plus size={16} /> Créer
+            </button>
+          </div>
 
-            {/* Rows */}
-            <div>
-              {communities.map(c => (
-                <CommunityRow key={c.id} community={c} isMine={tab === 'mine'}
-                  onJoin={() => handleJoin(c.id)} onLeave={() => handleLeave(c.id)} />
-              ))}
-            </div>
-
-            {/* Scroll infini — sentinel observé, chargement automatique */}
-            {hasMore && !query && (
-              <div ref={sentinelRef} className="flex justify-center py-6">
-                {loadingMore && <Spinner size="sm" />}
-              </div>
+          {/* ── Recherche ── */}
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
+            <input value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Rechercher une communauté…"
+              className="w-full h-12 pl-11 pr-11 text-sm rounded-full outline-none transition-all"
+              style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', color: 'var(--text-primary)' }}
+              onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 4px rgba(123,63,242,0.12)'; }}
+              onBlur={e  => { e.target.style.borderColor = 'var(--border)';  e.target.style.boxShadow = 'none'; }} />
+            {query && (
+              <button onClick={() => setQuery('')} aria-label="Effacer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
+                <X size={14} />
+              </button>
             )}
+          </div>
 
-            {/* Lien vers discover */}
-            {tab === 'discover' && !hasMore && !query && (
-              <div className="flex justify-center py-4">
-                <button onClick={() => navigate('/discover/communities')}
-                  className="flex items-center gap-1.5 text-xs font-bold"
-                  style={{ color: 'var(--text-tertiary)' }}>
-                  Explorer toutes les communautés <ChevronRight size={12} />
+          {/* ── Onglets (contrôle segmenté en pilule) ── */}
+          <div className="flex p-1 rounded-full mb-5" style={{ background: 'var(--bg-secondary)' }}>
+            {(['discover', 'mine'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className="flex-1 h-10 rounded-full text-sm font-bold transition-all"
+                style={tab === t
+                  ? { background: 'var(--surface)', color: 'var(--primary)', boxShadow: '0 2px 10px rgba(11,11,16,0.1)' }
+                  : { color: 'var(--text-tertiary)' }}>
+                {t === 'discover' ? 'Découvrir' : 'Mes communautés'}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Contenu ── */}
+          {loading ? (
+            <PageLoader />
+          ) : communities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 rounded-3xl"
+              style={{ border: '1.5px dashed var(--border)' }}>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{ background: 'rgba(123,63,242,0.08)' }}>
+                <Users size={28} style={{ color: 'var(--primary)' }} />
+              </div>
+              <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                {tab === 'mine' ? 'Aucune communauté' : query ? 'Aucun résultat' : 'Aucune communauté'}
+              </p>
+              <p className="text-xs text-center max-w-xs" style={{ color: 'var(--text-tertiary)' }}>
+                {tab === 'mine'
+                  ? 'Créez ou rejoignez une communauté'
+                  : query ? `Aucun résultat pour "${query}"` : 'Soyez le premier à créer !'}
+              </p>
+              {tab === 'mine' && (
+                <button onClick={() => setShowCreate(true)}
+                  className="flex items-center gap-2 h-11 px-6 rounded-full font-bold text-white text-sm mt-1"
+                  style={{ background: 'var(--primary)' }}>
+                  <Plus size={14} /> Créer une communauté
                 </button>
+              )}
+              {tab === 'discover' && !query && (
+                <button onClick={() => navigate('/discover/communities')}
+                  className="flex items-center gap-2 h-11 px-6 rounded-full font-bold text-sm mt-1"
+                  style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)', border: '1px solid rgba(123,63,242,0.2)' }}>
+                  Explorer toutes les communautés <ChevronRight size={14} />
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <p className="text-[11px] font-black uppercase mb-3 px-1" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.12em' }}>
+                {tab === 'discover'
+                  ? `${communities.length} communauté${communities.length > 1 ? 's' : ''}`
+                  : `Mes communautés · ${communities.length}`}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {communities.map(c => (
+                  <CommunityCard key={c.id} community={c} isMine={tab === 'mine'}
+                    onJoin={() => handleJoin(c.id)} onLeave={() => handleLeave(c.id)} />
+                ))}
               </div>
-            )}
-          </>
-        )}
+
+              {/* Scroll infini — sentinel observé, chargement automatique */}
+              {hasMore && !query && (
+                <div ref={sentinelRef} className="flex justify-center py-6">
+                  {loadingMore && <Spinner size="sm" />}
+                </div>
+              )}
+
+              {/* Lien vers discover */}
+              {tab === 'discover' && !hasMore && !query && (
+                <div className="flex justify-center pt-6">
+                  <button onClick={() => navigate('/discover/communities')}
+                    className="flex items-center gap-1.5 h-10 px-5 rounded-full text-xs font-bold"
+                    style={{ border: '1.5px solid var(--border)', color: 'var(--text-secondary)' }}>
+                    Explorer toutes les communautés <ChevronRight size={12} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={() => load(true)} />}

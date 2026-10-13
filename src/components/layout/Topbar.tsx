@@ -1,24 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Search, Bell, MessageCircle } from 'lucide-react';
-import { Avatar } from '../ui/Avatar';
 import { RoundLogo } from '../ui/RoundLogo';
-import { useAuthStore } from '../../store/authStore';
 import { useWs } from '../../context/WebSocketContext';
-import { MessagesPopover } from './MessagesPopover';
+import { MessagesDock } from './MessagesDock';
 import { NotificationsPopover } from './NotificationsPopover';
 import { AccountSwitcherDropdown } from './AccountSwitcherDropdown';
 
 interface Props { onMenuClick: () => void; }
 
 export function Topbar({ onMenuClick }: Props) {
-  const { user }  = useAuthStore();
   const { unreadMessages } = useWs();
   const navigate  = useNavigate();
   const location  = useLocation();
   const [query, setQuery]           = useState('');
-  const [msgPopover,   setMsgPopover]   = useState(false);
   const [notifPopover, setNotifPopover] = useState(false);
+  const [dockOpen,     setDockOpen]     = useState(false);
+
+  // La page /messages remplace la fenêtre flottante (évite deux messageries à l'écran)
+  useEffect(() => { if (location.pathname.startsWith('/messages')) setDockOpen(false); }, [location.pathname]);
 
   // Sync le champ desktop avec le param URL quand on est sur /search
   useEffect(() => {
@@ -116,16 +116,21 @@ export function Topbar({ onMenuClick }: Props) {
           <Search size={19} />
         </button>
 
-        {/* Messages */}
+        {/* Messages — page de messagerie unique (chiffrée de bout en bout) */}
         <button
-          onClick={() => setMsgPopover(v => !v)}
+          onClick={() => {
+            // Fenêtre de messagerie (flottante en desktop, plein écran en mobile) — comme les notifications.
+            if (location.pathname.startsWith('/messages')) return;
+            setDockOpen(v => !v);
+          }}
+          aria-label="Messages"
           className="relative p-1.5 sm:p-2 rounded-xl transition-all shrink-0"
           style={{
-            color: msgPopover ? 'var(--primary)' : 'var(--text-secondary)',
-            background: msgPopover ? 'rgba(123,63,242,0.1)' : 'transparent',
+            color: dockOpen || location.pathname.startsWith('/messages') ? 'var(--primary)' : 'var(--text-secondary)',
+            background: location.pathname.startsWith('/messages') ? 'rgba(123,63,242,0.1)' : 'transparent',
           }}
-          onMouseEnter={e => { if (!msgPopover) { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
-          onMouseLeave={e => { if (!msgPopover) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+          onMouseLeave={e => { const on = location.pathname.startsWith('/messages'); e.currentTarget.style.background = on ? 'rgba(123,63,242,0.1)' : 'transparent'; e.currentTarget.style.color = on ? 'var(--primary)' : 'var(--text-secondary)'; }}
         >
           <MessageCircle size={19} />
           {unreadMessages > 0 && (
@@ -135,7 +140,8 @@ export function Topbar({ onMenuClick }: Props) {
             </span>
           )}
         </button>
-        {msgPopover && <MessagesPopover onClose={() => setMsgPopover(false)} />}
+
+        {dockOpen && <MessagesDock onClose={() => setDockOpen(false)} />}
 
         {/* Notifications */}
         <button
@@ -156,16 +162,6 @@ export function Topbar({ onMenuClick }: Props) {
 
         {/* Avatar — desktop (flèche → bascule rapide entre comptes) */}
         <AccountSwitcherDropdown />
-
-        {/* Avatar — mobile only (tap → profile) */}
-        {user && (
-          <button
-            onClick={() => navigate('/profile')}
-            className="lg:hidden shrink-0 pl-1 pr-0.5"
-          >
-            <Avatar src={user.avatar_url} name={user.display_name ?? user.username} size="sm" verified={user.is_verified} />
-          </button>
-        )}
       </div>
     </header>
   );

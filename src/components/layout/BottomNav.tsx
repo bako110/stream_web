@@ -1,13 +1,13 @@
 import { useState, Fragment } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Play, Film, MessageCircle, Plus, FileText, Calendar, Music2 } from 'lucide-react';
+import { Home, Play, Film, Compass, User, Plus, FileText, Calendar, Music2 } from 'lucide-react';
 import { emitTabReselect } from '../../utils/tabReselect';
 
 const tabs = [
   { to: '/feed',     icon: Home,          label: 'Accueil'  },
+  { to: '/communities', icon: Compass,    label: 'Découvrir' },
   { to: '/reels',    icon: Play,          label: 'Reels'    },
-  { to: '/films',    icon: Film,          label: 'Films'    },
-  { to: '/messages', icon: MessageCircle, label: 'Messages' },
+  { to: '/profile',  icon: User,          label: 'Profil'   },
 ];
 
 // Même 4 actions que CreateFAB.tsx (desktop), en navigation directe — pas de
@@ -108,7 +108,7 @@ export function BottomNav() {
               </>
             )}
           </NavLink>
-          {/* Bouton Créer — entre Reels (index 1) et Films (index 2), même
+          {/* Bouton Créer — entre Découvrir (index 1) et Reels (index 2), même
               position relative que AppTabBar.tsx mobile natif (2 tabs de
               chaque côté). */}
           {index === 1 && <CreateNavButton />}

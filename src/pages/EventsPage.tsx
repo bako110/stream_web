@@ -7,6 +7,7 @@ import {
   Heart, Share2, Plus, Trash2, Music2,
 } from 'lucide-react';
 import type { Event, PaginatedResponse } from '../types';
+import { getEventTiming, sortEventsByProximity } from '../utils/eventTiming';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { usePaginatedApi, useApi } from '../hooks/useApi';
@@ -41,6 +42,7 @@ function EventCard({
   const [deleting, setDeleting] = useState(false);
   const { confirm, ConfirmDialog } = useConfirm();
 
+  const timing = getEventTiming(event);
   const color = TYPE_COLORS[event.event_type] ?? '#7B3FF2';
   const label = TYPE_LABELS[event.event_type] ?? event.event_type;
 
@@ -80,7 +82,9 @@ function EventCard({
 
   return (
     <div className="group overflow-hidden transition-all duration-300 cursor-pointer relative"
-      style={{ borderRadius: '1.25rem', border: '1px solid var(--border)', background: 'var(--surface)' }}
+      style={{ borderRadius: '1.25rem', border: '1px solid var(--border)', background: 'var(--surface)',
+        ...(timing.isPast ? { filter: 'grayscale(1)', opacity: 0.65 } : {}),
+        ...(timing.isNear ? { boxShadow: `0 0 0 2px ${timing.color}` } : {}) }}
       onClick={() => navigate(`/events/${encodeId(event.id)}`)}
       onMouseEnter={e => {
         (e.currentTarget as HTMLDivElement).style.borderColor = color;
@@ -107,6 +111,8 @@ function EventCard({
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
         <span className="absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full text-white"
           style={{ background: color }}>{label}</span>
+        <span className="absolute right-3 text-[11px] font-extrabold px-2.5 py-1 rounded-full text-white shadow-lg"
+          style={{ background: timing.color, top: event.access_type === 'free' ? '2.75rem' : '0.75rem' }}>{timing.label}</span>
         {event.access_type === 'free' && (
           <span className="absolute top-3 right-3 text-[11px] font-semibold px-2.5 py-1 rounded-full"
             style={{ background: 'rgba(34,197,94,0.22)', color: '#22c55e', border: '1px solid #22c55e55' }}>
@@ -235,7 +241,7 @@ function AllEventsTab() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map(ev => <EventCard key={ev.id} event={ev} />)}
+            {sortEventsByProximity(items).map(ev => <EventCard key={ev.id} event={ev} />)}
           </div>
           {page < pages && (
             <div className="flex justify-center pt-2">
@@ -313,7 +319,7 @@ function MyEventsTab() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map(ev => (
+          {sortEventsByProximity(items).map(ev => (
             <EventCard key={ev.id} event={ev} mine onDelete={handleDelete} />
           ))}
         </div>

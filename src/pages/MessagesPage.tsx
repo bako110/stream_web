@@ -1563,9 +1563,15 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function MessagesPage() {
+  return <MessagesWorkspace />;
+}
+
+/** Messagerie complète. `embedded` : fenêtre flottante (MessagesDock) — la conversation
+ *  sélectionnée reste locale, l'URL ne change pas, l'utilisateur continue de naviguer. */
+export function MessagesWorkspace({ embedded = false }: { embedded?: boolean }) {
   const navigate              = useNavigate();
   const { userId: userSlug }  = useParams<{ userId?: string }>();
-  const userId                = userSlug ? decodeId(userSlug) : undefined;
+  const userId                = !embedded && userSlug ? decodeId(userSlug) : undefined;
   const [selectedId,    setSelectedId]    = useState<string | undefined>(userId);
   const [showNewConvo,  setShowNewConvo]  = useState(false);
   const [lastWsPayload, setLastWsPayload] = useState<WsPayload | null>(null);
@@ -1590,12 +1596,12 @@ export default function MessagesPage() {
 
   function handleSelect(id: string) {
     setSelectedId(id);
-    navigate(`/messages/${encodeId(id)}`, { replace: true });
+    if (!embedded) navigate(`/messages/${encodeId(id)}`, { replace: true });
   }
 
   function handleBack() {
     setSelectedId(undefined);
-    navigate('/messages', { replace: true });
+    if (!embedded) navigate('/messages', { replace: true });
   }
 
   return (

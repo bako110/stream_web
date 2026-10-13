@@ -10,6 +10,7 @@ import { Endpoints } from '../../api/endpoints';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
 import { ExploreBackButton } from '../../components/ui/ExploreBackButton';
 import type { Event, PaginatedResponse } from '../../types';
+import { getEventTiming, sortEventsByProximity } from '../../utils/eventTiming';
 
 const TYPE_LABELS: Record<string, string> = {
   concert: 'Concert', birthday: 'Anniversaire', festival: 'Festival',
@@ -41,8 +42,10 @@ export default function ExploreEventsPage() {
   const items: Event[] = Array.isArray(data) ? data : (data?.items ?? []);
   const now      = new Date();
   const filtered = items.filter(ev => !search || ev.title.toLowerCase().includes(search.toLowerCase()));
-  const upcoming = filtered.filter(ev => new Date(ev.starts_at) >= now);
-  const past     = filtered.filter(ev => new Date(ev.starts_at) < now);
+  const sorted   = sortEventsByProximity(filtered, now);
+  const near     = sorted.filter(ev => getEventTiming(ev, now).isNear);
+  const upcoming = sorted.filter(ev => { const t = getEventTiming(ev, now); return !t.isNear && !t.isPast; });
+  const past     = sorted.filter(ev => getEventTiming(ev, now).isPast);
 
   return (
     <div className="xp-container">
@@ -69,6 +72,14 @@ export default function ExploreEventsPage() {
         <div className="xp-empty">{search ? `Aucun résultat pour "${search}"` : 'Aucun événement disponible'}</div>
       ) : (
         <>
+          {near.length > 0 && (
+            <section className="mb-10 xp-rise">
+              <div className="xp-rule"><span className="xp-eyebrow shrink-0" style={{ color: '#F59E0B' }}>Bientôt · 7 prochains jours</span></div>
+              <div className="xp-grid-wide grid gap-6">
+                {near.map((ev, i) => <div key={ev.id} className="xp-rise" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}><EventCard event={ev} /></div>)}
+              </div>
+            </section>
+          )}
           {upcoming.length > 0 && (
             <section className="mb-10 xp-rise">
               <div className="xp-rule"><span className="xp-eyebrow shrink-0">À venir</span></div>
@@ -80,7 +91,7 @@ export default function ExploreEventsPage() {
           {past.length > 0 && (
             <section className="xp-rise">
               <div className="xp-rule"><span className="xp-eyebrow shrink-0">Passés</span></div>
-              <div className="xp-grid-wide grid gap-6 opacity-55">
+              <div className="xp-grid-wide grid gap-6">
                 {past.map(ev => <EventCard key={ev.id} event={ev} isPast />)}
               </div>
             </section>
@@ -103,9 +114,13 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
   const startDate = new Date(event.starts_at);
   const location  = [event.venue_name, event.venue_city].filter(Boolean).join(', ');
   const label     = TYPE_LABELS[event.event_type] ?? event.event_type;
+  const timing    = getEventTiming(event);
+  isPast = isPast || timing.isPast;
 
   return (
-    <Link to={`/explore/events/${encodeId(event.id)}`} className="xp-card block">
+    <Link to={`/explore/events/${encodeId(event.id)}`} className="xp-card block"
+      style={{ ...(isPast ? { filter: 'grayscale(1)', opacity: 0.6 } : {}),
+               ...(timing.isNear ? { boxShadow: `0 0 0 2px ${timing.color}` } : {}) }}>
       <div className="xp-card-media xp-card-media--wide">
         {event.thumbnail_url && !imgErr ? (
           <img src={event.thumbnail_url} alt={event.title} onError={() => setImgErr(true)} />
@@ -114,13 +129,17 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
         )}
         <div className="xp-card-scrim" />
         <span className="xp-card-badge" style={{ background: 'var(--xp-ink)' }}>{label}</span>
+        {!isPast && (
+          <span className="absolute top-3 right-3 text-[11px] font-extrabold px-2.5 py-1 rounded-full text-white shadow-lg"
+            style={{ background: timing.color }}>{timing.label}</span>
+        )}
         <div className="xp-card-date">
           <span className="xp-card-date-day">{format(startDate, 'd')}</span>
           <span className="xp-card-date-month">{format(startDate, 'MMM', { locale: fr })}</span>
         </div>
         {isPast && (
           <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
-            <span className="text-white text-xs font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(0,0,0,0.6)' }}>Terminé</span>
+            <span className="text-white text-xs font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(0,0,0,0.6)' }}>{timing.label}</span>
           </div>
         )}
         <div className="xp-card-overlay">

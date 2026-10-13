@@ -1438,84 +1438,86 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
   return (
     <>
       {/* Header */}
-      <div className="flex items-center gap-3 px-3 py-2.5 shrink-0"
-        style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-xl shrink-0 transition-all"
-          style={{ color: 'var(--text-primary)' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <ArrowLeft size={20} />
+      <div className="shrink-0 px-2 pt-2 pb-1" style={{ background: 'var(--bg)' }}>
+      <div className="flex items-center gap-2.5 pl-2 pr-2 py-2 rounded-[28px]"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 1px 2px rgba(11,11,16,0.04), 0 8px 24px rgba(11,11,16,0.06)' }}>
+        <button onClick={() => navigate(-1)} aria-label="Retour"
+          className="w-10 h-10 flex items-center justify-center rounded-full shrink-0 transition-all active:scale-95"
+          style={{ color: 'var(--text-primary)', background: 'var(--bg-secondary)' }}>
+          <ArrowLeft size={16} />
         </button>
         <button onClick={() => setShowInfo(v => !v)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
           {community.avatar_url
-            ? <img src={community.avatar_url} className="w-9 h-9 rounded-xl object-cover shrink-0" alt="" />
-            : <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white shrink-0"
-                style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }}>
+            ? <img src={community.avatar_url} className="w-11 h-11 rounded-2xl object-cover shrink-0" style={{ boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }} alt="" />
+            : <div className="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-white text-lg shrink-0"
+                style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, boxShadow: `0 6px 16px ${g1}55` }}>
                 {community.name[0]?.toUpperCase()}
               </div>
           }
           <div className="min-w-0">
             <div className="flex items-center gap-1">
-              <p className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</p>
+              <p className="font-extrabold text-[15px] truncate" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{community.name}</p>
               {community.is_verified && <VerifiedBadge size={13} />}
             </div>
-            <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{fmtCount(count)} membres</p>
+            <p className="text-[11px] flex items-center gap-1 mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+              <Users size={10} /> {fmtCount(count)} membre{count > 1 ? 's' : ''}{community.is_private ? ' · Privée' : ''}
+            </p>
           </div>
         </button>
 
-        <div className="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-hide" style={{ maxWidth: '48vw' }}>
+        <div className="flex items-center gap-0.5 shrink-0 overflow-x-auto scrollbar-hide p-1 rounded-full" style={{ maxWidth: '46vw', background: 'var(--bg-secondary)' }}>
           {canManage && (
-            <button onClick={() => setShowPins(true)} className="p-1.5 rounded-xl transition-all shrink-0" title="Épinglés"
+            <button onClick={() => setShowPins(true)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0" title="Épinglés"
               style={{ color: 'var(--text-tertiary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <Pin size={18} />
+              <Pin size={16} />
             </button>
           )}
-          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/events`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Événements"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/events`)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0" title="Événements"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <Calendar size={18} />
+            <Calendar size={16} />
           </button>
-          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/channels`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Canaux"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/channels`)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0" title="Canaux"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <Hash size={18} />
+            <Hash size={16} />
           </button>
-          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/leaderboard`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Classement"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/leaderboard`)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0" title="Classement"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <Trophy size={18} />
+            <Trophy size={16} />
           </button>
           {canManage && (
             <>
-              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/stats`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Statistiques"
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/stats`)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0" title="Statistiques"
                 style={{ color: 'var(--text-tertiary)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <BarChart2 size={18} />
+                <BarChart2 size={16} />
               </button>
-              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/treasury`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Trésorerie"
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/treasury`)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0" title="Trésorerie"
                 style={{ color: 'var(--text-tertiary)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <Briefcase size={18} />
+                <Briefcase size={16} />
               </button>
-              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/invite`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Inviter"
+              <button onClick={() => navigate(`/communities/${encodeId(community.id)}/invite`)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0" title="Inviter"
                 style={{ color: 'var(--text-tertiary)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <Link size={18} />
+                <Link size={16} />
               </button>
               <div className="relative shrink-0">
-                <button onClick={() => navigate(`/communities/${encodeId(community.id)}/join-requests`)} className="p-1.5 rounded-xl transition-all" title="Demandes"
+                <button onClick={() => navigate(`/communities/${encodeId(community.id)}/join-requests`)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all" title="Demandes"
                   style={{ color: 'var(--text-tertiary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  <UserCheck size={18} />
+                  <UserCheck size={16} />
                 </button>
                 {pendingCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black text-white flex items-center justify-center"
@@ -1524,48 +1526,52 @@ function CommunityChat({ community, myRole, members, onRefresh }: {
               </div>
             </>
           )}
-          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/members`)} className="p-1.5 rounded-xl transition-all shrink-0" title="Membres"
+          <button onClick={() => navigate(`/communities/${encodeId(community.id)}/members`)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0" title="Membres"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <Users size={18} />
+            <Users size={16} />
           </button>
-          <button onClick={() => setShowInfo(v => !v)} className="p-1.5 rounded-xl transition-all shrink-0"
+          <button onClick={() => setShowInfo(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0"
             style={{ color: showInfo ? 'var(--primary)' : 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <Info size={18} />
+            <Info size={16} />
           </button>
           {canManage && (
-            <button onClick={() => setShowSettings(true)} className="p-1.5 rounded-xl transition-all shrink-0"
+            <button onClick={() => setShowSettings(true)} className="w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0"
               style={{ color: 'var(--text-tertiary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <Settings size={18} />
+              <Settings size={16} />
             </button>
           )}
         </div>
       </div>
+      </div>
 
       {/* Tabs Discussion / Annonces / Médias / Sondages */}
-      <div className="flex shrink-0 overflow-x-auto scrollbar-hide"
-        style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-        {TABS.map(t => {
-          const Icon = t.icon;
-          return (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold whitespace-nowrap relative shrink-0"
-              style={{ color: tab === t.key ? 'var(--primary)' : 'var(--text-tertiary)' }}>
-              <Icon size={13} /> {t.label}
-              {tab === t.key && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: 'var(--primary)' }} />}
-            </button>
-          );
-        })}
+      <div className="shrink-0 px-2 pb-2" style={{ background: 'var(--bg)' }}>
+        <div className="flex gap-1 p-1 rounded-full overflow-x-auto scrollbar-hide" style={{ background: 'var(--bg-secondary)' }}>
+          {TABS.map(t => {
+            const Icon = t.icon;
+            const active = tab === t.key;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className="flex-1 flex items-center justify-center gap-1.5 h-9 px-4 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all"
+                style={active
+                  ? { background: 'var(--surface)', color: 'var(--primary)', boxShadow: '0 2px 10px rgba(11,11,16,0.1)' }
+                  : { color: 'var(--text-tertiary)' }}>
+                <Icon size={14} /> {t.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Panel info latéral */}
       {showInfo && (
-        <div className="absolute inset-0 z-30 flex" style={{ top: 100 }}>
+        <div className="absolute inset-0 z-30 flex" style={{ top: 132 }}>
           <div className="flex-1" onClick={() => setShowInfo(false)} />
           <div className="w-72 h-full overflow-y-auto flex flex-col"
             style={{ background: 'var(--surface)', borderLeft: '1px solid var(--border)', boxShadow: '-8px 0 32px rgba(0,0,0,0.12)' }}>

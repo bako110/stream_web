@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
+import { getEventTiming, sortEventsByProximity } from '../utils/eventTiming';
 import {
   Play, Music2, Calendar, Users, ArrowRight, ArrowUpRight,
   Menu, X, MapPin, Star, Ticket, Radio, Film, Shield, Eye, Volume2, VolumeX,
@@ -414,9 +415,10 @@ function EventShowcase({ event, onClick }: { event: Event; onClick: () => void }
   const dd = date.getDate().toString().padStart(2, '0');
   const mo = date.toLocaleString('fr', { month: 'short' }).toUpperCase();
   const location = [event.venue_name, event.venue_city].filter(Boolean).join(', ');
+  const timing = getEventTiming(event);
 
   return (
-    <div className="gt-showcase-card" onClick={onClick}>
+    <div className={`gt-showcase-card gt-event-${timing.phase}`} onClick={onClick}>
       <div className="gt-showcase-media">
         {event.thumbnail_url && !imgErr ? (
           <img src={event.thumbnail_url} alt={event.title} onError={() => setImgErr(true)} />
@@ -428,14 +430,20 @@ function EventShowcase({ event, onClick }: { event: Event; onClick: () => void }
           <span className="gt-showcase-date-day">{dd}</span>
           <span className="gt-showcase-date-month">{mo}</span>
         </div>
+        <span className="gt-timing-chip" style={{ background: timing.color }}>
+          {timing.phase === 'live' && <span className="gt-timing-dot" />}
+          {timing.label}
+        </span>
         <div className="gt-showcase-overlay">
           <p className="gt-showcase-title truncate">{event.title}</p>
           {location && <p className="gt-showcase-sub truncate"><MapPin size={12} /> {location}</p>}
         </div>
       </div>
       <div className="gt-showcase-footer">
-        <span className="gt-showcase-meta"><Calendar size={13} /> Billetterie intégrée</span>
-        {event.ticket_price != null ? (
+        <span className="gt-showcase-meta"><Calendar size={13} /> {timing.isPast ? 'Événement terminé' : timing.isNear ? 'Bientôt — ne le manque pas' : 'Billetterie intégrée'}</span>
+        {timing.isPast ? (
+          <span className="gt-showcase-price gt-showcase-price--past">Terminé</span>
+        ) : event.ticket_price != null ? (
           <span className="gt-showcase-price">{event.ticket_price === 0 ? 'Gratuit' : `${event.ticket_price}€`}</span>
         ) : (
           <span className="gt-showcase-cta">Voir <ArrowUpRight size={14} /></span>
@@ -664,7 +672,7 @@ export default function LandingPage() {
       publicClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=6&status=published`)
         .then(r => setConcerts(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))),
       publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=6&status=published`)
-        .then(r => setEvents(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))),
+        .then(r => setEvents(sortEventsByProximity<Event>(Array.isArray(r.data) ? r.data : (r.data?.items ?? [])))),
     ]).finally(() => setLoading(false));
   }, []);
 

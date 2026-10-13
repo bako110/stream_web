@@ -6,6 +6,7 @@ import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import { encodeId } from '../../utils/slugId';
 import type { Event } from '../../types';
+import { getEventTiming, sortEventsByProximity } from '../../utils/eventTiming';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -43,10 +44,13 @@ function EventRow({ ev, onClick }: { ev: Event; onClick: () => void }) {
   const typeColor = TYPE_COLORS[ev.event_type ?? ''] ?? '#6B7280';
   const typeLabel = TYPE_LABELS[ev.event_type ?? ''] ?? 'Autre';
   const location  = [ev.venue_name, ev.venue_city].filter(Boolean).join(', ');
-  const isPast    = date < new Date();
+  const timing    = getEventTiming(ev);
+  const isPast    = timing.isPast;
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 transition-all cursor-pointer"
+      style={{ ...(isPast ? { opacity: 0.55, filter: 'grayscale(0.9)' } : {}),
+               ...(timing.isNear ? { borderLeft: `3px solid ${timing.color}` } : {}) }}
       onClick={onClick}
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -85,6 +89,10 @@ function EventRow({ ev, onClick }: { ev: Event; onClick: () => void }) {
           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
             style={{ background: `${typeColor}15`, color: typeColor }}>
             {typeLabel}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white"
+            style={{ background: timing.color }}>
+            {timing.label}
           </span>
           <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
             <Clock size={10} />{time}
@@ -138,8 +146,10 @@ export default function DiscoverEventsPage() {
     : all;
 
   const boosted  = filtered.filter(ev => ev.is_boosted);
-  const upcoming = filtered.filter(ev => !ev.is_boosted && new Date(ev.starts_at) >= now);
-  const past     = filtered.filter(ev => !ev.is_boosted && new Date(ev.starts_at) < now);
+  const rest     = sortEventsByProximity(filtered.filter(ev => !ev.is_boosted), now);
+  const near     = rest.filter(ev => getEventTiming(ev, now).isNear);
+  const upcoming = rest.filter(ev => { const t = getEventTiming(ev, now); return !t.isNear && !t.isPast; });
+  const past     = rest.filter(ev => getEventTiming(ev, now).isPast);
 
   function renderSection(list: Event[], icon: React.ReactNode, label: string, sub: string) {
     if (list.length === 0) return null;
@@ -202,6 +212,7 @@ export default function DiscoverEventsPage() {
       ) : (
         <div>
           {renderSection(boosted,  <Zap size={14} style={{ color: '#F59E0B' }} />, 'Événements boostés', 'Ces événements ont boosté leur visibilité')}
+          {renderSection(near,     <Zap size={14} style={{ color: '#F59E0B' }} />, 'Bientôt', 'Dans les 7 prochains jours, du plus proche au plus lointain')}
           {renderSection(upcoming, <Calendar size={14} style={{ color: 'var(--primary)' }} />, 'À venir', 'Prochains événements')}
           {renderSection(past,     <Clock size={14} style={{ color: 'var(--text-tertiary)' }} />, 'Passés', 'Événements terminés')}
 
