@@ -162,11 +162,19 @@ export function GuestPreview({
     const onLoadedMetadata = () => {
       cutoff = v.duration * PREVIEW_WATCH_RATIO;
     };
+    // Mobile : l'autoplay avec son est refusé hors geste utilisateur → on retombe sur
+    // une lecture muette (autorisée), l'utilisateur réactive le son d'un tap.
     const playMuted = () => {
-      setVideoReady(true);
       v.muted = false;
-      v.play().catch(() => {});
+      setMuted(false);
+      v.play().catch(() => {
+        v.muted = true;
+        setMuted(true);
+        v.play().catch(() => {});
+      });
     };
+    const onPlaying = () => setVideoReady(true);
+    v.addEventListener('playing', onPlaying);
 
     v.addEventListener('loadedmetadata', onLoadedMetadata);
     v.addEventListener('timeupdate', onTimeUpdate);
@@ -192,10 +200,29 @@ export function GuestPreview({
     return () => {
       v.removeEventListener('loadedmetadata', onLoadedMetadata);
       v.removeEventListener('timeupdate', onTimeUpdate);
+      v.removeEventListener('playing', onPlaying);
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
   }, [videoUrl, type]);
+
+  // Tap sur lecture (geste utilisateur) : démarre l'aperçu avec le son ; reel sans vidéo / aperçu fini → invite de connexion
+  function handlePlayTap() {
+    const v = videoRef.current;
+    if (type === 'reel' && videoUrl && v && !previewEnded) {
+      v.muted = false;
+      setMuted(false);
+      v.play().catch(() => { v.muted = true; setMuted(true); v.play().catch(() => setShowPlayPrompt(true)); });
+      return;
+    }
+    setShowPlayPrompt(true);
+  }
+  function unmute() {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    setMuted(false);
+  }
 
   const authorName = author?.display_name ?? author?.username ?? null;
   const initials   = authorName ? authorName[0].toUpperCase() : '?';
@@ -570,12 +597,20 @@ export function GuestPreview({
                 <video
                   ref={videoRef}
                   playsInline
+                  preload="auto"
                   muted={muted}
                   style={{
                     position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
                     opacity: videoReady ? 1 : 0, transition: 'opacity .25s ease',
                   }}
                 />
+                {videoReady && !previewEnded && muted && (
+                  <button className="gp-hero-expand" onClick={unmute} aria-label="Activer le son">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/>
+                    </svg>
+                  </button>
+                )}
                 {videoReady && !previewEnded && (
                   <div className="gp-preview-progress">
                     <div className="gp-preview-progress-fill" style={{ width: `${previewProgress * 100}%` }} />
@@ -607,7 +642,7 @@ export function GuestPreview({
             )}
 
             {isMedia(type) && !(type === 'reel' && videoReady && !previewEnded) && (
-              <button className="gp-hero-play" onClick={() => setShowPlayPrompt(true)} aria-label="Lire la vidéo">
+              <button className="gp-hero-play" onClick={handlePlayTap} aria-label="Lire la vidéo">
                 <svg width="28" height="28" viewBox="0 0 20 20" fill="white"><path d="M5 3l12 7-12 7V3z"/></svg>
               </button>
             )}
