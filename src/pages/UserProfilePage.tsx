@@ -11,7 +11,8 @@ import { fr } from 'date-fns/locale';
 import type { UserPublicProfile, Reel, Event, Concert, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { useApi, usePaginatedApi } from '../hooks/useApi';
+import { useApi } from '../hooks/useApi';
+import { useInfiniteList } from '../hooks/useInfiniteList';
 import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
@@ -52,19 +53,12 @@ function Stat({ value, label, onClick }: { value: number; label: string; onClick
 // ── Publications grid ─────────────────────────────────────────────────────────
 function PublicationsTab({ userId }: { userId: string }) {
   const navigate = useNavigate();
-  const { data: eventsData,   loading: evL } = useApi<any>(
-    () => apiClient.get<any>(`${Endpoints.events.byUser(userId)}?limit=20`), [userId],
-  );
-  const { data: concertsData, loading: coL } = useApi<any>(
-    () => apiClient.get<any>(`${Endpoints.concerts.byUser(userId)}?limit=20`), [userId],
-  );
-  const { data: postsData,    loading: poL } = useApi<any>(
-    () => apiClient.get<any>(`${Endpoints.posts.byUser(userId)}?limit=20`), [userId],
-  );
-
-  const events:   any[] = eventsData?.items   ?? (Array.isArray(eventsData)   ? eventsData   : []);
-  const concerts: any[] = concertsData?.items ?? (Array.isArray(concertsData) ? concertsData : []);
-  const posts:    any[] = postsData?.items    ?? (Array.isArray(postsData)    ? postsData    : []);
+  const evS = useInfiniteList<any>((p, l) => apiClient.get<any>(`${Endpoints.events.byUser(userId)}?page=${p}&limit=${l}`),   [userId]);
+  const coS = useInfiniteList<any>((p, l) => apiClient.get<any>(`${Endpoints.concerts.byUser(userId)}?page=${p}&limit=${l}`), [userId]);
+  const poS = useInfiniteList<any>((p, l) => apiClient.get<any>(`${Endpoints.posts.byUserFull(userId)}?page=${p}&limit=${l}`), [userId]);
+  const evL = evS.loading, coL = coS.loading, poL = poS.loading;
+  const events: any[] = evS.items, concerts: any[] = coS.items, posts: any[] = poS.items;
+  const loadingMore = evS.loadingMore || coS.loadingMore || poS.loadingMore;
 
   const items = [
     ...events.map(e  => ({ ...e,  _kind: 'event'   as const })),
@@ -143,6 +137,12 @@ function PublicationsTab({ userId }: { userId: string }) {
           </button>
         );
       })}
+
+      {/* Sentinelles : chaque source (événements, concerts, posts) charge sa page suivante au scroll */}
+      <div ref={evS.sentinelRef} className="col-span-3 h-px" />
+      <div ref={coS.sentinelRef} className="col-span-3 h-px" />
+      <div ref={poS.sentinelRef} className="col-span-3 h-px" />
+      {loadingMore && <div className="col-span-3 flex justify-center py-4"><Spinner size="sm" /></div>}
     </div>
   );
 }
@@ -294,8 +294,8 @@ function fmtCount(n: number): string {
 
 function ReelsTab({ userId }: { userId: string }) {
   const navigate = useNavigate();
-  const { items: reels, loading } = usePaginatedApi<Reel>(
-    (p) => apiClient.get<PaginatedResponse<Reel>>(`${Endpoints.users.userReels(userId)}?page=${p}&limit=18`), [userId],
+  const { items: reels, loading, loadingMore, sentinelRef } = useInfiniteList<Reel>(
+    (p, l) => apiClient.get<any>(`${Endpoints.users.userReels(userId)}?page=${p}&limit=${l}`), [userId], 18,
   );
 
   if (loading && reels.length === 0) {
@@ -343,6 +343,8 @@ function ReelsTab({ userId }: { userId: string }) {
           </button>
         </HoverVideoPreview>
       ))}
+      <div ref={sentinelRef} className="col-span-3 h-px" />
+      {loadingMore && <div className="col-span-3 flex justify-center py-4"><Spinner size="sm" /></div>}
     </div>
   );
 }

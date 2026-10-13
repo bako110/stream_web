@@ -14,7 +14,8 @@ import type { User, Reel, Event, Concert, PaginatedResponse } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
-import { useApi, usePaginatedApi } from '../hooks/useApi';
+import { useApi } from '../hooks/useApi';
+import { useInfiniteList } from '../hooks/useInfiniteList';
 import { useConfirm } from '../components/ui/Dialog';
 import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
@@ -309,8 +310,9 @@ function FollowListModal({ userId, type, onClose }: {
 }) {
   const navigate = useNavigate();
   const endpoint = type === 'followers' ? Endpoints.users.followers(userId) : Endpoints.users.following(userId);
-  const { data, loading } = useApi<any[]>(() => apiClient.get<any[]>(`${endpoint}?limit=50`), [userId, type]);
-  const items = data ?? [];
+  const { items, loading, loadingMore, sentinelRef } = useInfiniteList<any>(
+    (p, l) => apiClient.get<any>(`${endpoint}?page=${p}&limit=${l}`), [userId, type], 30,
+  );
 
   return (
     <Modal open onClose={onClose} title={type === 'followers' ? 'Abonnés' : 'Abonnements'} size="md">
@@ -340,6 +342,7 @@ function FollowListModal({ userId, type, onClose }: {
               </button>
             );
           })}
+          <div ref={sentinelRef} className="flex justify-center py-2">{loadingMore && <Spinner size="sm" />}</div>
         </div>
       )}
     </Modal>
@@ -353,19 +356,12 @@ function PublicationsTab({ userId }: { userId: string }) {
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [menuItem, setMenuItem] = useState<{ id: string; kind: 'event' | 'concert' | 'post' } | null>(null);
 
-  const { data: eventsData,   loading: evL } = useApi<any>(
-    () => apiClient.get<any>(`${Endpoints.events.byUser(userId)}?limit=20`), [userId],
-  );
-  const { data: concertsData, loading: coL } = useApi<any>(
-    () => apiClient.get<any>(`${Endpoints.concerts.byUser(userId)}?limit=20`), [userId],
-  );
-  const { data: postsData,    loading: poL } = useApi<any>(
-    () => apiClient.get<any>(`${Endpoints.posts.byUser(userId)}?limit=20`), [userId],
-  );
-
-  const events:   any[] = eventsData?.items   ?? (Array.isArray(eventsData)   ? eventsData   : []);
-  const concerts: any[] = concertsData?.items ?? (Array.isArray(concertsData) ? concertsData : []);
-  const posts:    any[] = postsData?.items    ?? (Array.isArray(postsData)    ? postsData    : []);
+  const evS = useInfiniteList<any>((p, l) => apiClient.get<any>(`${Endpoints.events.byUser(userId)}?page=${p}&limit=${l}`),   [userId]);
+  const coS = useInfiniteList<any>((p, l) => apiClient.get<any>(`${Endpoints.concerts.byUser(userId)}?page=${p}&limit=${l}`), [userId]);
+  const poS = useInfiniteList<any>((p, l) => apiClient.get<any>(`${Endpoints.posts.byUserFull(userId)}?page=${p}&limit=${l}`), [userId]);
+  const evL = evS.loading, coL = coS.loading, poL = poS.loading;
+  const events: any[] = evS.items, concerts: any[] = coS.items, posts: any[] = poS.items;
+  const loadingMore = evS.loadingMore || coS.loadingMore || poS.loadingMore;
 
   const items = [
     ...events.map(e  => ({ ...e,  _kind: 'event'   as const })),
@@ -477,6 +473,13 @@ function PublicationsTab({ userId }: { userId: string }) {
           </div>
         );
       })}
+
+
+      {/* Sentinelles : chaque source (événements, concerts, posts) charge sa page suivante au scroll */}
+      <div ref={evS.sentinelRef} className="col-span-3 h-px" />
+      <div ref={coS.sentinelRef} className="col-span-3 h-px" />
+      <div ref={poS.sentinelRef} className="col-span-3 h-px" />
+      {loadingMore && <div className="col-span-3 flex justify-center py-4"><Spinner size="sm" /></div>}
 
       <CardMoreMenu open={!!menuItem} onClose={() => setMenuItem(null)} actions={menuActions} />
       {ConfirmDialog}
@@ -633,9 +636,9 @@ function ReelsTab({ userId }: { userId: string }) {
   const { confirm, ConfirmDialog } = useConfirm();
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [menuReelId, setMenuReelId] = useState<string | null>(null);
-  const { items: allReels, loading } = usePaginatedApi<Reel>(
-    (p) => apiClient.get<PaginatedResponse<Reel>>(`${Endpoints.users.userReels(userId)}?page=${p}&limit=18`),
-    [userId],
+  const { items: allReels, loading, loadingMore, sentinelRef } = useInfiniteList<Reel>(
+    (p, l) => apiClient.get<any>(`${Endpoints.users.userReels(userId)}?page=${p}&limit=${l}`),
+    [userId], 18,
   );
   const reels = allReels.filter(r => !removedIds.has(r.id));
 
@@ -710,6 +713,9 @@ function ReelsTab({ userId }: { userId: string }) {
           </button>
         </HoverVideoPreview>
       ))}
+
+      <div ref={sentinelRef} className="col-span-3 h-px" />
+      {loadingMore && <div className="col-span-3 flex justify-center py-4"><Spinner size="sm" /></div>}
 
       <CardMoreMenu open={!!menuReelId} onClose={() => setMenuReelId(null)} actions={menuActions} />
       {ConfirmDialog}

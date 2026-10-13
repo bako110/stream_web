@@ -77,8 +77,10 @@ export default function LoginPage() {
   // mémoire), même principe que le switch/remove de compte.
   function completeAuth() {
     if (isAddAccountMode) {
-      accountsService.addCurrentSessionAsAccount();
-      window.location.href = '/settings/account';
+      const added = accountsService.addCurrentSessionAsAccount();
+      // La page est rechargée : le message est affiché par AppLayout à l'arrivée sur l'accueil.
+      try { sessionStorage.setItem('account_added', added.display_name || added.username || ''); } catch { /* ignore */ }
+      window.location.href = '/feed';
       return;
     }
     navigate(redirectTo, { replace: true });

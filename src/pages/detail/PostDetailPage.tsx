@@ -287,6 +287,12 @@ export default function PostDetailPage() {
   const [sending,         setSending]         = useState(false);
   const [menuOpen,        setMenuOpen]        = useState(false);
   const [otherPosts,      setOtherPosts]      = useState<Post[]>([]);
+  const [otherPage,       setOtherPage]       = useState(0);
+  const [otherHasMore,    setOtherHasMore]    = useState(true);
+  const [otherLoading,    setOtherLoading]    = useState(false);
+  const otherListRef     = useRef<HTMLDivElement>(null);
+  const otherSentinelRef = useRef<HTMLDivElement>(null);
+  const OTHER_PAGE_SIZE  = 10;
   const [lightbox,           setLightbox]           = useState<number | null>(null);
   const [showCommentsSheet,  setShowCommentsSheet]  = useState(false);
   const [commentLikedIds,    setCommentLikedIds]    = useState<Set<string>>(new Set());
@@ -357,16 +363,46 @@ export default function PostDetailPage() {
     return () => obs.disconnect();
   }, [commentsLoading, commentsHasMore, loadMoreComments]);
 
+  // « Autres publications » : liste paginée de l'auteur, chargée au fil du scroll.
+  const authorId = post?.author?.id;
   useEffect(() => {
-    if (!post?.author?.id || !me) return;
-    apiClient.get<any>(Endpoints.posts.byUser(post.author.id))
+    setOtherPosts([]); setOtherPage(0); setOtherHasMore(true); setOtherLoading(false);
+  }, [authorId, id]);
+
+  const loadMoreOthers = useCallback(() => {
+    if (!authorId || !me || otherLoading || !otherHasMore) return;
+    setOtherLoading(true);
+    const next = otherPage + 1;
+    apiClient.get<any>(`${Endpoints.posts.byUserFull(authorId)}?page=${next}&limit=${OTHER_PAGE_SIZE}`)
       .then(res => {
         const raw = res.data;
-        const all = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
-        setOtherPosts(all.filter((p: Post) => p.id !== id).slice(0, 5));
+        const items: Post[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? [];
+        setOtherPosts(prev => {
+          const seen = new Set(prev.map(p => p.id));
+          return [...prev, ...items.filter(p => p.id !== id && !seen.has(p.id))];
+        });
+        setOtherHasMore(items.length === OTHER_PAGE_SIZE);
+        setOtherPage(next);
       })
-      .catch(() => {});
-  }, [post?.author?.id, id]);
+      .catch(() => setOtherHasMore(false))
+      .finally(() => setOtherLoading(false));
+  }, [authorId, me, id, otherLoading, otherHasMore, otherPage]);
+
+  // Première page dès que l'auteur est connu (le panneau n'existe pas encore, donc pas de sentinelle).
+  useEffect(() => {
+    if (authorId && otherPage === 0) loadMoreOthers();
+  }, [authorId, otherPage, loadMoreOthers]);
+
+  useEffect(() => {
+    const node = otherSentinelRef.current;
+    if (!node || !authorId || !otherHasMore) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreOthers(); },
+      { root: otherListRef.current, rootMargin: '120px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [authorId, otherHasMore, loadMoreOthers, otherPosts.length]);
 
   async function toggleLike() {
     if (!id) return;
@@ -716,7 +752,7 @@ export default function PostDetailPage() {
             )}
 
             {/* Autres publications */}
-            {otherPosts.length > 0 && (
+            {(otherPosts.length > 0 || otherLoading) && (
               <div className="rounded-2xl"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <div className="px-4 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -724,8 +760,14 @@ export default function PostDetailPage() {
                     Autres publications
                   </p>
                 </div>
-                <div className="p-2">
+                <div ref={otherListRef} className="p-2 overflow-y-auto overscroll-contain"
+                  style={{ maxHeight: 'min(70vh, 560px)' }}>
                   {otherPosts.map(p => <MiniPostCard key={p.id} post={p} />)}
+                  {otherHasMore && (
+                    <div ref={otherSentinelRef} className="flex justify-center py-3">
+                      {otherLoading && <Spinner size="sm" />}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

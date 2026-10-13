@@ -9,6 +9,7 @@ import { BottomNav } from './BottomNav';
 import { CreateFAB } from './CreateFAB';
 import { BattleInviteModal } from '../live/BattleInviteModal';
 import { startReelsPrefetch } from '../../utils/prefetch';
+import toast from 'react-hot-toast';
 
 // Pages avec leur propre bouton flottant dédié — évite le doublon visuel avec le FAB global
 const CREATE_FAB_HIDDEN_PREFIXES = ['/my-stories', '/join/'];
@@ -26,6 +27,12 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const { pathname } = useLocation();
   // Précharge la 1ère page Reels + 1ère vidéo dès l'entrée dans l'app (cf. reelsPrefetchService mobile).
   useEffect(() => { startReelsPrefetch(); }, []);
+  // Compte ajouté via « Ajouter un compte » : message de confirmation sur l'accueil.
+  useEffect(() => {
+    let name: string | null = null;
+    try { name = sessionStorage.getItem('account_added'); sessionStorage.removeItem('account_added'); } catch { /* ignore */ }
+    if (name !== null) toast.success(name ? `Compte ${name} activé` : 'Compte activé', { duration: 4000 });
+  }, []);
   const isImmersive         = IMMERSIVE_PREFIXES.some(p => pathname.startsWith(p));
   const isImmersiveMobile   = IMMERSIVE_MOBILE_ONLY_PREFIXES.some(p => pathname.startsWith(p));
   const hideCreateFab = isImmersive || isImmersiveMobile || CREATE_FAB_HIDDEN_PREFIXES.some(p => pathname.startsWith(p));
