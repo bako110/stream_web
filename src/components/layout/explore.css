@@ -103,7 +103,7 @@
 .xp-header .xp-container { max-width: none; padding-left: 1.25rem; padding-right: 1.25rem; }
 @media (min-width: 640px) { .xp-header .xp-container { padding-left: 1.75rem; padding-right: 1.75rem; } }
 .xp-header-top {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: space-between;
   padding-top: 1rem;
@@ -113,6 +113,8 @@
 .xp-header-brand { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
 .xp-header-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .xp-header-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+/* Sur mobile : toute la rangée logo + actions est masquée, seules les catégories restent. */
+@media (min-width: 640px) { .xp-header-top { display: flex; } }
 .xp-icon-btn {
   width: 38px; height: 38px; border-radius: 999px;
   color: var(--xp-text-3);
@@ -125,9 +127,14 @@
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
+  padding-top: 1rem;
   padding-bottom: 1rem;
   scrollbar-width: none;
 }
+/* Centré quand ça tient ; reste défilable (sans rogner le début) quand ça déborde. */
+.xp-tabs > :first-child { margin-left: auto; }
+.xp-tabs > :last-child  { margin-right: auto; }
+@media (min-width: 640px) { .xp-tabs { padding-top: 0; } }
 .xp-tabs::-webkit-scrollbar { display: none; }
 .xp-tab {
   flex-shrink: 0;

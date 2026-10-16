@@ -40,9 +40,9 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
 
   return (
     <div className="xp-container pt-2 md:pt-4">
-      <Link to={backPath} className="xp-back">
+      <Link to="/" className="xp-back">
         <ArrowLeft size={15} />
-        {backLabel}
+        Accueil
       </Link>
 
       {/* Hero */}

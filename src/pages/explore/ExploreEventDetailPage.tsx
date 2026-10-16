@@ -37,9 +37,9 @@ export default function ExploreEventDetailPage() {
 
   return (
     <div className="xp-container pt-2 md:pt-4">
-      <Link to="/explore/events" className="xp-back">
+      <Link to="/" className="xp-back">
         <ArrowLeft size={15} />
-        Événements
+        Accueil
       </Link>
 
       {/* Hero */}

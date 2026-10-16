@@ -52,9 +52,9 @@ export default function ExploreConcertDetailPage() {
 
   return (
     <div className="xp-container pt-2 md:pt-4 pb-16">
-      <Link to="/explore/concerts" className="xp-back">
+      <Link to="/" className="xp-back">
         <ArrowLeft size={15} />
-        Concerts
+        Accueil
       </Link>
 
       <div className="grid lg:grid-cols-[1.35fr_1fr] gap-6 lg:gap-10 items-start mt-2">
