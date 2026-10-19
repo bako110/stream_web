@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { AppToaster } from './components/ui/AppToaster';
 import { Suspense, useEffect } from 'react';
 
 import { AppLayout }       from './components/layout/AppLayout';
@@ -362,16 +362,7 @@ export default function App() {
       <MobileGate>
         <WebSocketProvider>
           <RouteProgressBar />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: 'var(--surface)',
-                color:      'var(--text-primary)',
-                border:     '1px solid var(--border)',
-              },
-            }}
-          />
+          <AppToaster />
           <AppShell />
         </WebSocketProvider>
       </MobileGate>
