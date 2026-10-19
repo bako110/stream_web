@@ -2040,6 +2040,50 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
 }
 
 // ── Post card ─────────────────────────────────────────────────────────────────
+// Grille d'images façon Facebook : 1 image pleine, 2 côte à côte,
+// 3 = une grande + deux empilées, 4+ = grille 2x2 avec "+N" sur la dernière.
+function PostImageGrid({ urls, onClick }: { urls: string[]; onClick: () => void }) {
+  const shown = urls.slice(0, 4);
+  const extra = urls.length - shown.length;
+  const n = shown.length;
+  const cell = (src: string, i: number, style?: CSSProperties) => (
+    <div key={i} className="relative overflow-hidden group" style={{ background: 'var(--bg-secondary)', ...style }}>
+      <img src={src} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      {i === 3 && extra > 0 && (
+        <div className="absolute inset-0 flex items-center justify-center text-white text-3xl font-semibold"
+          style={{ background: 'rgba(0,0,0,0.5)' }}>
+          +{extra}
+        </div>
+      )}
+    </div>
+  );
+
+  if (n === 1) {
+    return (
+      <div onClick={onClick} className="relative overflow-hidden cursor-pointer group"
+        style={{ background: 'var(--bg-secondary)', aspectRatio: '4/3' }}>
+        <img src={shown[0]} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      </div>
+    );
+  }
+
+  const gap = 2;
+  let gridStyle: CSSProperties;
+  if (n === 2) {
+    gridStyle = { gridTemplateColumns: '1fr 1fr', aspectRatio: '4/3' };
+  } else if (n === 3) {
+    gridStyle = { gridTemplateColumns: '2fr 1fr', gridTemplateRows: '1fr 1fr', aspectRatio: '4/3' };
+  } else {
+    gridStyle = { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', aspectRatio: '1/1' };
+  }
+
+  return (
+    <div onClick={onClick} className="grid cursor-pointer" style={{ gap, ...gridStyle }}>
+      {shown.map((src, i) => cell(src, i, n === 3 && i === 0 ? { gridRow: 'span 2' } : undefined))}
+    </div>
+  );
+}
+
 function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOpenShare, commentCountOverride, onHide, openMore, openReport, openAiStatus }: {
   post: Post; delay?: number;
   followedIds: Set<string>; onFollow: (id: string, e: React.MouseEvent) => void;
@@ -2128,18 +2172,10 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
           image_url absent) n'affichait STRICTEMENT AUCUNE image dans le feed,
           seuls les détails du post (PostDetailPage.tsx) géraient image_urls. */}
       {(post.image_url || post.image_urls?.[0]) && !post.video_url && (
-        <div onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
-          className="relative overflow-hidden cursor-pointer group"
-          style={{ background: 'var(--bg-secondary)', aspectRatio: '4/3' }}>
-          <img src={post.image_url ?? post.image_urls![0]} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          {/* Badge "1/N" — indique qu'il y a d'autres images à voir dans le détail du post */}
-          {(post.image_urls?.length ?? 0) > 1 && (
-            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-white text-xs font-semibold"
-              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-              1/{post.image_urls!.length}
-            </span>
-          )}
-        </div>
+        <PostImageGrid
+          urls={post.image_urls?.length ? post.image_urls : [post.image_url!]}
+          onClick={() => navigate(`/posts/${encodeId(post.id)}`)}
+        />
       )}
 
       <FriendsWhoLiked entityId={post.id} kind="post" totalLikes={post.like_count ?? 0} />
