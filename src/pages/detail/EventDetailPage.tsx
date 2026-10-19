@@ -561,15 +561,15 @@ export default function EventDetailPage() {
         <DetailBackHeader onBack={goBack} />
 
         {/* ── Banner ── */}
-        <div className="relative rounded-2xl overflow-hidden mb-6"
-          style={{ aspectRatio: '21/8', minHeight: 160, background: 'var(--bg-secondary)' }}>
+        <div className="relative rounded-2xl overflow-hidden mb-4 sm:mb-6 aspect-[16/9] sm:aspect-[21/8]"
+          style={{ minHeight: 160, background: 'var(--bg-secondary)' }}>
           {ev.banner_url || ev.thumbnail_url
             ? <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} className="w-full h-full object-cover cursor-zoom-in" alt={ev.title}
                 onClick={() => setLightbox(ev.gallery_urls?.length ? ev.gallery_urls.length : 0)} />
             : <div className="w-full h-full flex items-center justify-center">
                 <Calendar size={48} style={{ color, opacity: 0.3 }} />
               </div>}
-          <div className="absolute inset-0"
+          <div className="absolute inset-0 hidden sm:block"
             style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 55%)' }} />
           <span className="absolute top-4 left-4 text-xs font-bold px-3 py-1.5 rounded-full text-white"
             style={{ background: color }}>
@@ -581,7 +581,7 @@ export default function EventDetailPage() {
               Gratuit
             </span>
           )}
-          <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
+          <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 hidden sm:block">
             <h1 className="text-2xl font-black text-white leading-tight"
               style={{ textShadow: '0 2px 16px rgba(0,0,0,0.6)' }}>
               {ev.title}
@@ -592,6 +592,18 @@ export default function EventDetailPage() {
               {format(new Date(ev.starts_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
             </p>
           </div>
+        </div>
+
+        {/* Titre + date sous la bannière (mobile) — évite de superposer le texte
+            à l'affiche de l'événement, illisible sur petit écran. */}
+        <div className="sm:hidden mb-4 px-1">
+          <h1 className="text-xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>
+            {ev.title}
+          </h1>
+          <p className="text-sm mt-1.5 flex items-center gap-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            <Clock size={13} />
+            {format(new Date(ev.starts_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+          </p>
         </div>
 
         {/* ── Grid 2 colonnes ── */}

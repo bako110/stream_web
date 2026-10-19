@@ -491,9 +491,10 @@ export default function WalletBuyPage() {
               const price      = priceOf(pkg);
               const popular    = isPopular(pkg);
               return (
-                <button key={pkg.id}
-                  onClick={() => setSelected(isSelected ? null : pkg.id)}
-                  className="relative rounded-2xl p-4 text-left transition-all"
+                <div key={pkg.id} role="button" tabIndex={0}
+                  onClick={e => { setSelected(isSelected ? null : pkg.id); const el = e.currentTarget; if (!isSelected) setTimeout(() => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 50); }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(isSelected ? null : pkg.id); } }}
+                  className="relative rounded-2xl p-4 text-left transition-all cursor-pointer"
                   style={{
                     background: isSelected
                       ? 'linear-gradient(135deg,rgba(123,63,242,0.15),rgba(123,63,242,0.1))'
@@ -525,29 +526,23 @@ export default function WalletBuyPage() {
                   <p className="text-base font-black mt-2" style={{ color: 'var(--primary)' }}>
                     {price.toFixed(2)} €
                   </p>
-                </button>
+                  {isSelected && (
+                    <button
+                      onClick={e => { e.stopPropagation(); handleBuyPackage(pkg); }}
+                      disabled={initiating || payMethod === 'stripe'}
+                      className="w-full mt-3 py-2.5 rounded-xl font-black text-white text-xs flex items-center justify-center gap-1.5 disabled:opacity-60 transition-all"
+                      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 18px rgba(123,63,242,0.35)' }}>
+                      {initiating
+                        ? <Spinner size="sm" />
+                        : payMethod === 'stripe'
+                          ? <><CreditCard size={13} /> Bientôt</>
+                          : <><ExternalLink size={13} /> Acheter</>}
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
-
-          {/* Buy button */}
-          {selected && (() => {
-            const pkg   = packages.find(p => p.id === selected)!;
-            const total = pkg.gogold + bonusOf(pkg);
-            const price = priceOf(pkg);
-            const disabled = initiating || payMethod === 'stripe';
-            return (
-              <button onClick={() => handleBuyPackage(pkg)} disabled={disabled}
-                className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
-                style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.35)' }}>
-                {initiating
-                  ? <Spinner size="sm" />
-                  : payMethod === 'stripe'
-                    ? <><CreditCard size={15} /> Paiement carte bientôt disponible</>
-                    : <><ExternalLink size={15} /> Payer {total.toLocaleString('fr-FR')} GoGold — {price.toFixed(2)} €</>}
-              </button>
-            );
-          })()}
         </>
       ) : (
         /* Montant libre */
