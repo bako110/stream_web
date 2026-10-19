@@ -3303,6 +3303,17 @@ export default function FeedPage() {
   // initial terminé, et loadMoreFeed ne change pas forcément d'identité à ce
   // moment-là — sans ça l'effet peut tourner une seule fois avec la ref encore
   // null et ne jamais ré-observer le marqueur une fois réellement monté.
+  // Préférence : afficher ou non la colonne de droite (suggestions/communautés).
+  // Masquée → la colonne du fil prend toute la place disponible.
+  const [showSuggestions, setShowSuggestions] = useState(() => {
+    try { return localStorage.getItem('feed_show_suggestions') !== '0'; } catch { return true; }
+  });
+  const toggleSuggestions = () => setShowSuggestions(v => {
+    const next = !v;
+    try { localStorage.setItem('feed_show_suggestions', next ? '1' : '0'); } catch { /* ignore */ }
+    return next;
+  });
+
   useEffect(() => {
     const node = prefetchMarkerRef.current;
     if (!node || loading || !hasMoreFeed) return;
@@ -3342,26 +3353,40 @@ export default function FeedPage() {
       <div className="flex gap-4 items-start justify-center lg:h-full lg:items-stretch">
 
         {/* ── Left panel (lg+) — statique, ne scrolle jamais ── */}
-        <div className="w-56 shrink-0 hidden lg:flex flex-col gap-4">
-          <UpcomingEventsPanel />
-          <TrendingPanel />
-        </div>
+        {showSuggestions && (
+          <div className="w-56 shrink-0 hidden lg:flex flex-col gap-4">
+            <UpcomingEventsPanel />
+            <TrendingPanel />
+          </div>
+        )}
 
         {/* ── Feed column — largeur de lecture confortable, comme Facebook, pour que
              les images de post (souvent portrait) ne flottent pas dans un vide immense
              maintenant que la page occupe toute la largeur d'écran.
              lg+ : seule cette colonne scrolle, indépendamment des sidebars. ── */}
-        <div ref={feedScrollRef} className="flex-1 min-w-0 max-w-2xl space-y-3 lg:space-y-5 lg:h-full lg:overflow-y-auto lg:pr-1"
+        <div ref={feedScrollRef} className={`flex-1 min-w-0 ${showSuggestions ? 'max-w-2xl' : 'max-w-5xl'} space-y-3 lg:space-y-5 lg:h-full lg:overflow-y-auto lg:pr-1`}
           style={{ scrollbarWidth: 'thin' }}>
 
           {/* Greeting — desktop uniquement, superflu sur mobile */}
           <div className="hidden lg:block animate-reveal-up">
-            <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
-              {(() => { const h = new Date().getHours(); return h < 12 ? 'Bonjour,' : h < 18 ? 'Bon après-midi,' : 'Bonsoir,'; })()}{' '}
-              <span className="gradient-text">
-                {user?.display_name ?? user?.first_name ?? user?.username}
-              </span>
-            </h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
+                {(() => { const h = new Date().getHours(); return h < 12 ? 'Bonjour,' : h < 18 ? 'Bon après-midi,' : 'Bonsoir,'; })()}{' '}
+                <span className="gradient-text">
+                  {user?.display_name ?? user?.first_name ?? user?.username}
+                </span>
+              </h1>
+              <button onClick={toggleSuggestions} role="switch" aria-checked={showSuggestions}
+                className="shrink-0 flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                Panneaux latéraux
+                <span className="relative inline-block w-8 h-4 rounded-full transition-colors"
+                  style={{ background: showSuggestions ? 'var(--primary)' : 'var(--border)' }}>
+                  <span className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all"
+                    style={{ left: showSuggestions ? 18 : 2 }} />
+                </span>
+              </button>
+            </div>
             <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
               {items.length > 0
                 ? `${items.length} éléments dans ton fil`
@@ -3491,10 +3516,12 @@ export default function FeedPage() {
         </div>
 
         {/* ── Right sidebar (lg+) — statique, ne scrolle jamais ── */}
-        <div className="w-60 shrink-0 hidden lg:flex flex-col gap-4">
-          <SuggestionsPanel />
-          <CommunitiesSidePanel />
-        </div>
+        {showSuggestions && (
+          <div className="w-60 shrink-0 hidden lg:flex flex-col gap-4">
+            <SuggestionsPanel />
+            <CommunitiesSidePanel />
+          </div>
+        )}
 
       </div>
 
