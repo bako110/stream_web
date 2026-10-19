@@ -35,7 +35,11 @@ export interface Ad {
   clicks: number;
   ctr_pct: number;
   target_countries: string[] | null;
+  target_regions:   string[] | null;
+  target_genders:   string[] | null;
   target_interests: string[] | null;
+  target_age_min:   number | null;
+  target_age_max:   number | null;
   starts_at: string | null;
   ends_at: string | null;
   created_at: string;

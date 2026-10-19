@@ -31,6 +31,21 @@ const CPM_OPTIONS = [
   { label: 'Top',        cpm: 10, gogold: 1000, color: '#EF4444' },
 ];
 
+const GENDER_OPTIONS: { key: string; label: string }[] = [
+  { key: 'male',             label: 'Hommes' },
+  { key: 'female',           label: 'Femmes' },
+  { key: 'other',            label: 'Autre' },
+  { key: 'prefer_not_to_say',label: 'Non précisé' },
+];
+
+// Texte libre "Côte d'Ivoire, Sénégal" → ["Côte d'Ivoire", "Sénégal"] — le
+// backend tokenise lui-même pour le matching (cf. _matches_country/
+// _matches_region côté serveur), pas besoin d'un sélecteur à choix fermé ici.
+function parseTargetList(raw: string): string[] | undefined {
+  const items = raw.split(',').map(s => s.trim()).filter(Boolean);
+  return items.length ? items : undefined;
+}
+
 export default function WalletCreateAdPage() {
   const navigate    = useNavigate();
   const location    = useLocation();
@@ -50,6 +65,15 @@ export default function WalletCreateAdPage() {
   const [cpmEur,         setCpmEur]         = useState(editAd?.cpm_eur        ?? 2);
   const [budgetEur,      setBudgetEur]      = useState(editAd ? String(editAd.budget_eur) : '');
   const [dailyBudgetEur, setDailyBudgetEur] = useState(editAd?.daily_budget_eur ? String(editAd.daily_budget_eur) : '');
+
+  // Ciblage — uniquement modifiable à la création (le backend n'accepte pas de
+  // changer le ciblage d'une campagne existante via PATCH), pré-rempli en
+  // lecture seule en édition pour que l'annonceur voie ce qui est actif.
+  const [targetCountries, setTargetCountries] = useState(editAd?.target_countries?.join(', ') ?? '');
+  const [targetRegions,   setTargetRegions]   = useState(editAd?.target_regions?.join(', ') ?? '');
+  const [targetGenders,   setTargetGenders]   = useState<string[]>(editAd?.target_genders ?? []);
+  const [targetAgeMin,    setTargetAgeMin]    = useState(editAd?.target_age_min != null ? String(editAd.target_age_min) : '');
+  const [targetAgeMax,    setTargetAgeMax]    = useState(editAd?.target_age_max != null ? String(editAd.target_age_max) : '');
 
   // Upload state
   const [uploading,     setUploading]     = useState(false);
@@ -131,6 +155,15 @@ export default function WalletCreateAdPage() {
     if (!budgetEur || budgetNum <= 0) { setError('Le budget doit être supérieur à 0'); return; }
     if (ctaUrl && !ctaUrl.startsWith('http')) { setError("L'URL doit commencer par http(s)://"); return; }
     if (insufficient)   { setError('Solde insuffisant'); return; }
+    const ageMinNum = targetAgeMin.trim() ? parseInt(targetAgeMin, 10) : null;
+    const ageMaxNum = targetAgeMax.trim() ? parseInt(targetAgeMax, 10) : null;
+    if ((ageMinNum !== null && (isNaN(ageMinNum) || ageMinNum < 13 || ageMinNum > 100))
+      || (ageMaxNum !== null && (isNaN(ageMaxNum) || ageMaxNum < 13 || ageMaxNum > 100))) {
+      setError('Âge cible invalide (entre 13 et 100 ans)'); return;
+    }
+    if (ageMinNum !== null && ageMaxNum !== null && ageMinNum > ageMaxNum) {
+      setError("Âge minimum supérieur à l'âge maximum"); return;
+    }
     setLoading(true); setError(null);
 
     const payload = {
@@ -144,7 +177,16 @@ export default function WalletCreateAdPage() {
       placement,
       budget_eur:      budgetNum,
       cpm_eur:         cpmEur,
-      daily_budget_eur:dailyBudgetEur ? parseFloat(dailyBudgetEur) : undefined };
+      daily_budget_eur:dailyBudgetEur ? parseFloat(dailyBudgetEur) : undefined,
+      // Ciblage — uniquement à la création (le backend ne permet pas de modifier
+      // le ciblage d'une campagne existante via PATCH, cf. AdUpdate côté serveur).
+      ...(isEdit ? {} : {
+        target_countries: parseTargetList(targetCountries),
+        target_regions:   parseTargetList(targetRegions),
+        target_genders:   targetGenders.length ? targetGenders : undefined,
+        target_age_min:   ageMinNum ?? undefined,
+        target_age_max:   ageMaxNum ?? undefined,
+      }) };
 
     try {
       if (isEdit) {
@@ -365,6 +407,76 @@ export default function WalletCreateAdPage() {
               <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>GoGold</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Ciblage de l'audience — uniquement modifiable à la création (le backend
+          ne permet pas de changer le ciblage d'une campagne existante). En
+          édition, affiché en lecture seule pour que l'annonceur voie ce qui
+          est actif sans pouvoir le casser accidentellement. */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+          Audience ciblée {isEdit ? '(lecture seule)' : '(optionnel)'}
+        </label>
+        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+          Laisse vide pour toucher tout le monde. Chaque critère rempli restreint l'audience.
+        </p>
+
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-tertiary)' }}>Sexe</label>
+          <div className="flex flex-wrap gap-2">
+            {GENDER_OPTIONS.map(g => {
+              const active = targetGenders.includes(g.key);
+              return (
+                <button key={g.key} type="button" disabled={isEdit}
+                  onClick={() => setTargetGenders(prev => prev.includes(g.key) ? prev.filter(k => k !== g.key) : [...prev, g.key])}
+                  className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                  style={{
+                    border: `1.5px solid ${active ? '#7B3FF2' : 'var(--border)'}`,
+                    background: active ? '#7B3FF222' : 'var(--bg-secondary)',
+                    color: active ? '#7B3FF2' : 'var(--text-secondary)',
+                    opacity: isEdit ? 0.6 : 1, cursor: isEdit ? 'default' : 'pointer' }}>
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-tertiary)' }}>Âge min</label>
+            <input value={targetAgeMin} onChange={e => setTargetAgeMin(e.target.value)} type="number" min="13" max="100"
+              disabled={isEdit} placeholder="Ex: 18"
+              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', opacity: isEdit ? 0.6 : 1 }} />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-tertiary)' }}>Âge max</label>
+            <input value={targetAgeMax} onChange={e => setTargetAgeMax(e.target.value)} type="number" min="13" max="100"
+              disabled={isEdit} placeholder="Ex: 45"
+              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', opacity: isEdit ? 0.6 : 1 }} />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-tertiary)' }}>Pays</label>
+          <input value={targetCountries} onChange={e => setTargetCountries(e.target.value)}
+            disabled={isEdit} placeholder="Côte d'Ivoire, Sénégal, Mali…"
+            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', opacity: isEdit ? 0.6 : 1 }} />
+        </div>
+
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-tertiary)' }}>Région / ville</label>
+          <input value={targetRegions} onChange={e => setTargetRegions(e.target.value)}
+            disabled={isEdit} placeholder="Abidjan, Bouaké…"
+            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', opacity: isEdit ? 0.6 : 1 }} />
+          <p className="text-[10px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            Séparés par des virgules. Comparé au lieu renseigné sur le profil de chaque utilisateur.
+          </p>
         </div>
       </div>
 
