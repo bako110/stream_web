@@ -1418,7 +1418,16 @@ function ActionBar({
 
   return (
     <>
-      <div className="flex items-center gap-1 px-2 py-2" style={{ borderTop: '1px solid var(--border)' }}
+      {/* Pilule flottante translucide — même design glassmorphism que Topbar/BottomNav
+          (glass-strong-bg + blur) au lieu d'une barre plate collée au bord de la carte. */}
+      <div className="flex items-center gap-1 px-2 py-2 mx-2 mb-2 rounded-full"
+        style={{
+          background:           'var(--glass-strong-bg)',
+          backdropFilter:       'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          border:               '1px solid var(--glass-border)',
+          boxShadow:            '0 4px 20px rgba(0,0,0,0.08)',
+        }}
         onClick={e => e.stopPropagation()}>
         {/* Like */}
         <button onClick={handleLike}
