@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { renderTextWithLinks } from './RichText';
 
 interface Props {
   text: string;
@@ -12,8 +13,11 @@ interface Props {
 }
 
 /**
- * Affiche un texte avec bouton "Voir plus / Voir moins"
- * si le texte dépasse `limit` caractères.
+ * Affiche un texte avec bouton "Voir plus / Voir moins" si le texte dépasse
+ * `limit` caractères — *gras* (style WhatsApp) et liens interprétés via
+ * renderTextWithLinks, même rendu que RichText (posts) mais sans la carte
+ * de preview de lien (utilisé dans des contextes compacts : messages,
+ * events, communautés, canaux).
  */
 export function ExpandableText({ text, limit = 280, className = '', style, preWrap = true }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -32,7 +36,7 @@ export function ExpandableText({ text, limit = 280, className = '', style, preWr
         style={{ ...(preWrap ? { whiteSpace: 'pre-wrap' } : {}), ...style }}
         onClick={toggle}
       >
-        {displayed}
+        {renderTextWithLinks(displayed)}
         {isLong && !expanded && (
           <span className="font-semibold ml-1" style={{ color: 'var(--primary)' }}>
             Voir plus
