@@ -612,8 +612,17 @@ export default function EventDetailPage() {
           {/* ═══ Colonne gauche ═══ */}
           <div className="flex flex-col gap-4">
 
-            {/* Barre d'actions */}
-            <div style={{ ...CARD, padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            {/* Barre d'actions — pilule flottante translucide, même design
+                glassmorphism que Topbar/BottomNav (cohérent avec FeedPage). */}
+            <div style={{
+              padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center',
+              borderRadius: 9999,
+              background:           'var(--glass-strong-bg)',
+              backdropFilter:       'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              border:               '1px solid var(--glass-border)',
+              boxShadow:            '0 4px 20px rgba(0,0,0,0.08)',
+            }}>
               {/* Like */}
               <button onClick={toggleLike}
                 className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"

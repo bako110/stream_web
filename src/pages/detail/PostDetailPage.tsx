@@ -657,9 +657,16 @@ export default function PostDetailPage() {
                 );
               })()}
 
-              {/* Action bar */}
-              <div className="flex items-center gap-0.5 px-4 py-3"
-                style={{ borderTop: '1px solid var(--border)' }}>
+              {/* Action bar — pilule flottante translucide, même design
+                  glassmorphism que Topbar/BottomNav (cohérent avec FeedPage). */}
+              <div className="flex items-center gap-0.5 px-4 py-3 mx-2 mb-2 rounded-full"
+                style={{
+                  background:           'var(--glass-strong-bg)',
+                  backdropFilter:       'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  border:               '1px solid var(--glass-border)',
+                  boxShadow:            '0 4px 20px rgba(0,0,0,0.08)',
+                }}>
                 {/* Like */}
                 <button onClick={toggleLike}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
