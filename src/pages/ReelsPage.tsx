@@ -29,6 +29,7 @@ import { useAuthStore } from '../store/authStore';
 import { useWs } from '../context/WebSocketContext';
 import { AiAnalysisStatusModal } from '../components/ui/AiAnalysisStatusModal';
 import { ShareModal } from '../components/ui/ShareModal';
+import { RepostModal } from '../components/ui/RepostModal';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getApiErrorDetail } from '../utils/apiError';
@@ -2344,16 +2345,24 @@ export default function ReelsPage() {
     } catch { /* silencieux */ }
   }, [confirm]);
 
-  // ── Repost ──
-  const handleRepost = useCallback(async () => {
+  // ── Repost ── passe par une modale de confirmation (aperçu + bouton
+  // explicite) au lieu de republier instantanément au clic du menu "...".
+  const [repostModalOpen, setRepostModalOpen] = useState(false);
+  const handleRepostPress = useCallback(() => {
+    if (!activeReel || reposting) return;
+    setMoreSheetOpen(false);
+    setRepostModalOpen(true);
+  }, [activeReel, reposting]);
+
+  const handleRepostConfirm = useCallback(async () => {
     const cur = activeReel;
     if (!cur || reposting) return;
     setReposting(true);
-    setMoreSheetOpen(false);
     try {
       await apiClient.post(Endpoints.reels.repost(cur.id));
       setActiveRepostCount(c => c + 1);
       setReels(prev => prev.map(r => r.id === cur.id ? { ...r, repost_count: (r.repost_count ?? 0) + 1 } : r));
+      setRepostModalOpen(false);
     } catch (e: any) {
       const msg = getApiErrorDetail(e) ?? e?.message ?? 'Impossible de republier';
       toast.error(msg);
@@ -3231,7 +3240,7 @@ export default function ReelsPage() {
                 {!isMine ? (
                   <>
                     {/* Republier */}
-                    <button onClick={handleRepost} disabled={reposting}
+                    <button onClick={handleRepostPress} disabled={reposting}
                       className="w-full flex items-center gap-4 px-5 py-3.5 transition-all disabled:opacity-50 text-left"
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -3393,6 +3402,16 @@ export default function ReelsPage() {
           targetId={shareTarget.reelId}
         />
       )}
+
+      <RepostModal
+        open={repostModalOpen}
+        kind="reel"
+        author={activeReel?.author}
+        thumb={activeReel?.thumbnail_url}
+        reposting={reposting}
+        onConfirm={handleRepostConfirm}
+        onClose={() => { if (!reposting) setRepostModalOpen(false); }}
+      />
 
       {ConfirmDialog}
     </div>

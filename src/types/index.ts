@@ -136,6 +136,11 @@ export interface Concert {
   replay_url?: string | null;
   replay_expires_at?: string | null;
   is_recording?: boolean;
+  // Repost (republication avec attribution de source) — même pattern que Reel/Post.
+  repost_count?: number;
+  remix_type?: string | null;
+  source_concert_id?: string | null;
+  source_concert?: { id: string; title: string; thumbnail_url?: string | null; artist?: User | null } | null;
 }
 
 export interface StreamToken { token: string; room_name: string; livekit_url: string; }
@@ -211,6 +216,11 @@ export interface Event {
   is_boosted?: boolean;
   category?: string | null;
   ai_analysis_status?: 'pending' | 'done' | null;
+  // Repost (republication avec attribution de source) — même pattern que Reel/Post.
+  repost_count?: number;
+  remix_type?: string | null;
+  source_event_id?: string | null;
+  source_event?: { id: string; title: string; thumbnail_url?: string | null; organizer?: User | null } | null;
 }
 
 // ── Sound ─────────────────────────────────────────────────────────────────
@@ -275,6 +285,11 @@ export interface Post {
   category?: string | null;
   ai_analysis_status?: 'pending' | 'done' | null;
   is_private?: boolean;
+  // Repost (republication avec attribution de source) — même pattern que Reel.
+  repost_count?: number;
+  remix_type?: string | null;
+  source_post_id?: string | null;
+  source_post?: { id: string; thumbnail_url?: string | null; image_url?: string | null; author?: PostAuthor | null } | null;
 }
 export interface PostCreate { body?: string; image_url?: string; feeling?: string; is_private?: boolean; }
 

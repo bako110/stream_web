@@ -8,7 +8,7 @@ import { encodeId } from '../utils/slugId';
 import {
   Music, MapPin, Clock, Users, Play, Calendar,
   Flame, ChevronRight, UserPlus, UserCheck, Sparkles, Radio,
-  Heart, MessageCircle, Share2, Bookmark, Film,
+  Heart, MessageCircle, Share2, Bookmark, Film, Repeat2,
   X, Send, Check, Plus, ChevronLeft, Eye, Trash2, Edit3, Copy,
   Image as ImageIcon, Video, Type, MoreHorizontal, Lock,
   Megaphone, ExternalLink, Zap, EyeOff, Flag, Bell, BellOff,
@@ -20,6 +20,8 @@ import { uploadVideoHls } from '../api/uploadVideo';
 import { toProxiedUrl } from '../utils/constants';
 import { formatTimeAgo } from '../utils/date';
 import { ShareModal } from '../components/ui/ShareModal';
+import { RepostModal } from '../components/ui/RepostModal';
+import { getApiErrorDetail } from '../utils/apiError';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
 import type { Concert, Event, Post, Reel, StoryGroup, Community, UserPublic } from '../types';
@@ -1330,10 +1332,19 @@ function ShareToast({ onDone }: { onDone: () => void }) {
 }
 
 // ── Action bar — per-card state ───────────────────────────────────────────────
+interface RepostTarget {
+  endpoint: string;
+  author: { display_name?: string | null; username?: string | null; avatar_url?: string | null; is_verified?: boolean | null } | null | undefined;
+  title?: string | null;
+  body?: string | null;
+  thumb?: string | null;
+  onReposted: () => void;
+}
+
 function ActionBar({
   id, kind, initialLiked, initialLikeCount, initialCommentCount = 0,
   commentCountOverride, shareCount = 0,
-  titleForShare, imageForShare, descForShare, onOpenComments, onOpenShare }: {
+  titleForShare, imageForShare, descForShare, onOpenComments, onOpenShare, repost }: {
   id: string;
   kind: 'event' | 'concert' | 'post' | 'reel';
   initialLiked: boolean;
@@ -1346,6 +1357,9 @@ function ActionBar({
   descForShare?: string;
   onOpenComments: (id: string, kind: 'event' | 'concert' | 'post' | 'reel', count: number) => void;
   onOpenShare: (id: string, kind: 'event' | 'concert' | 'post' | 'reel', title?: string, image?: string, desc?: string) => void;
+  /** Présent uniquement pour post/event/concert — republication avec aperçu
+      et confirmation (reel a son propre repost dans ReelsPage.tsx). */
+  repost?: RepostTarget;
 }) {
   const [liked,      setLiked]      = useState(initialLiked);
   const [likeCount,  setLikeCount]  = useState(initialLikeCount);
@@ -1353,9 +1367,26 @@ function ActionBar({
   const [favId,      setFavId]      = useState<string | null>(null);
   const [savingFav,  setSavingFav]  = useState(false);
   const [shareToast, setShareToast] = useState(false);
+  const [repostModalOpen, setRepostModalOpen] = useState(false);
+  const [reposting,       setReposting]       = useState(false);
   const inFlight = useRef(false);
 
   const saved = !!favId;
+
+  async function handleRepostConfirm() {
+    if (!repost || reposting) return;
+    setReposting(true);
+    try {
+      await apiClient.post(repost.endpoint);
+      repost.onReposted();
+      setRepostModalOpen(false);
+      toast.success('Republié sur votre profil.');
+    } catch (e: any) {
+      toast.error(getApiErrorDetail(e) ?? e?.message ?? 'Impossible de repartager.');
+    } finally {
+      setReposting(false);
+    }
+  }
 
   async function handleSave(e: React.MouseEvent) {
     e.stopPropagation();
@@ -1459,6 +1490,18 @@ function ActionBar({
           {(shareCount ?? 0) > 0 && <span>{fmtCount(shareCount!)}</span>}
         </button>
 
+        {/* Repost — post/event/concert uniquement, passe par une modale de
+            confirmation (aperçu + bouton explicite), jamais instantané. */}
+        {repost && (
+          <button onClick={e => { e.stopPropagation(); setRepostModalOpen(true); }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+            style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <Repeat2 size={15} />
+          </button>
+        )}
+
         {/* Save */}
         <button onClick={handleSave} disabled={savingFav}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ml-auto"
@@ -1472,6 +1515,19 @@ function ActionBar({
       {/* Share toast — local */}
       {shareToast && <ShareToast onDone={() => setShareToast(false)} />}
 
+      {repost && (
+        <RepostModal
+          open={repostModalOpen}
+          kind={kind as 'post' | 'event' | 'concert'}
+          author={repost.author}
+          title={repost.title}
+          body={repost.body}
+          thumb={repost.thumb}
+          reposting={reposting}
+          onConfirm={handleRepostConfirm}
+          onClose={() => { if (!reposting) setRepostModalOpen(false); }}
+        />
+      )}
     </>
   );
 }
@@ -1809,6 +1865,13 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         descForShare={concert.description?.slice(0, 120) ?? concert.genre ?? undefined}
         onOpenComments={onOpenComments}
         onOpenShare={onOpenShare}
+        repost={isOwn ? undefined : {
+          endpoint: Endpoints.concerts.repost(concert.id),
+          author: concert.artist,
+          title: concert.title,
+          thumb: concert.thumbnail_url,
+          onReposted: () => {},
+        }}
       />
     </div>
   );
@@ -1911,6 +1974,13 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, on
         descForShare={event.description?.slice(0, 120) ?? undefined}
         onOpenComments={onOpenComments}
         onOpenShare={onOpenShare}
+        repost={isOwn ? undefined : {
+          endpoint: Endpoints.events.repost(event.id),
+          author: event.organizer,
+          title: event.title,
+          thumb: event.thumbnail_url ?? event.banner_url,
+          onReposted: () => {},
+        }}
       />
     </div>
   );
@@ -2200,6 +2270,13 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
         descForShare={post.body?.slice(0, 120) ?? undefined}
         onOpenComments={onOpenComments}
         onOpenShare={onOpenShare}
+        repost={isOwn ? undefined : {
+          endpoint: Endpoints.posts.repost(post.id),
+          author: post.author,
+          body: post.body,
+          thumb: post.image_urls?.[0] ?? post.image_url,
+          onReposted: () => {},
+        }}
       />
     </div>
     {ConfirmDialog}

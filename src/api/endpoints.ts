@@ -70,6 +70,7 @@ export const Endpoints = {
     buyTicket: (concertId: string) => `${V1}/concerts/${concertId}/tickets`,
     myTickets: `${V1}/concerts/tickets/me`,
     remind:    (id: string) => `${V1}/concerts/${id}/remind`,
+    repost:    (id: string) => `${V1}/concerts/${id}/repost`,
   },
   streaming: {
     token:     (concertId: string) => `${V1}/stream/${concertId}/token`,
@@ -89,6 +90,7 @@ export const Endpoints = {
     buyTicket: (eventId: string) => `${V1}/events/${eventId}/tickets`,
     myTickets: `${V1}/events/tickets/me`,
     remind:    (id: string) => `${V1}/events/${id}/remind`,
+    repost:    (id: string) => `${V1}/events/${id}/repost`,
   },
   reels: {
     feed:           `${V1}/reels`,
@@ -123,6 +125,7 @@ export const Endpoints = {
     byId:   (id: string) => `${V1}/posts/${id}`,
     react:  (id: string) => `${V1}/posts/${id}/react`,
     update: (id: string) => `${V1}/posts/${id}`,
+    repost: (id: string) => `${V1}/posts/${id}/repost`,
   },
   stories: {
     feed:    `${V1}/stories/feed`,
