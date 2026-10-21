@@ -2,7 +2,7 @@ import { prefetchImages, imagesAhead } from '../utils/prefetch';
 import { AdContactButtons, adContactButtons, adHasContact, runAdButton } from '../components/ads/AdContactButtons';
 import { applyHlsQualityPref } from '../utils/hlsQuality';
 import { usePlaybackPrefs } from '../hooks/usePlaybackPrefs';
-import { useState, useCallback, useEffect, useRef, Fragment, type ReactNode, type CSSProperties } from 'react';
+import { useState, useCallback, useEffect, useRef, useContext, createContext, Fragment, type ReactNode, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTabReselect } from '../utils/tabReselect';
 import toast from 'react-hot-toast';
@@ -1347,6 +1347,11 @@ interface RepostTarget {
   onReposted: () => void;
 }
 
+type RepostKind = 'post' | 'event' | 'concert';
+/** Ouvre l'unique bottom sheet de republication du fil (voir FeedPage) — une
+    seule instance pour toute la page, pas une par carte. */
+const RepostContext = createContext<((kind: RepostKind, target: RepostTarget) => void) | null>(null);
+
 function ActionBar({
   id, kind, initialLiked, initialLikeCount, initialCommentCount = 0,
   commentCountOverride, shareCount = 0,
@@ -1373,26 +1378,10 @@ function ActionBar({
   const [favId,      setFavId]      = useState<string | null>(null);
   const [savingFav,  setSavingFav]  = useState(false);
   const [shareToast, setShareToast] = useState(false);
-  const [repostModalOpen, setRepostModalOpen] = useState(false);
-  const [reposting,       setReposting]       = useState(false);
+  const openRepost = useContext(RepostContext);
   const inFlight = useRef(false);
 
   const saved = !!favId;
-
-  async function handleRepostConfirm() {
-    if (!repost || reposting) return;
-    setReposting(true);
-    try {
-      await apiClient.post(repost.endpoint);
-      repost.onReposted();
-      setRepostModalOpen(false);
-      toast.success('Republié sur votre profil.');
-    } catch (e: any) {
-      toast.error(getApiErrorDetail(e) ?? e?.message ?? 'Impossible de repartager.');
-    } finally {
-      setReposting(false);
-    }
-  }
 
   async function handleSave(e: React.MouseEvent) {
     e.stopPropagation();
@@ -1499,7 +1488,7 @@ function ActionBar({
         {/* Repost — post/event/concert uniquement, passe par une modale de
             confirmation (aperçu + bouton explicite), jamais instantané. */}
         {repost && (
-          <button onClick={e => { e.stopPropagation(); setRepostModalOpen(true); }}
+          <button onClick={e => { e.stopPropagation(); openRepost?.(kind as RepostKind, repost); }}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
             style={{ color: 'var(--text-secondary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
@@ -1520,20 +1509,6 @@ function ActionBar({
 
       {/* Share toast — local */}
       {shareToast && <ShareToast onDone={() => setShareToast(false)} />}
-
-      {repost && (
-        <RepostModal
-          open={repostModalOpen}
-          kind={kind as 'post' | 'event' | 'concert'}
-          author={repost.author}
-          title={repost.title}
-          body={repost.body}
-          thumb={repost.thumb}
-          reposting={reposting}
-          onConfirm={handleRepostConfirm}
-          onClose={() => { if (!reposting) setRepostModalOpen(false); }}
-        />
-      )}
     </>
   );
 }
@@ -3026,6 +3001,25 @@ function CommunitiesInlineCard({ communities }: { communities: Community[] }) {
 export default function FeedPage() {
   const { user }   = useAuthStore();
   const navigate   = useNavigate();
+  // Republication : une seule bottom sheet pour tout le fil (contexte), au lieu
+  // d'une instance montée dans chaque carte.
+  const [repostTarget, setRepostTarget] = useState<{ kind: RepostKind; target: RepostTarget } | null>(null);
+  const [reposting,    setReposting]    = useState(false);
+  const openRepost = useCallback((kind: RepostKind, target: RepostTarget) => setRepostTarget({ kind, target }), []);
+  async function handleRepostConfirm() {
+    if (!repostTarget || reposting) return;
+    setReposting(true);
+    try {
+      await apiClient.post(repostTarget.target.endpoint);
+      repostTarget.target.onReposted();
+      setRepostTarget(null);
+      toast.success('Republié sur votre profil.');
+    } catch (e: any) {
+      toast.error(getApiErrorDetail(e) ?? e?.message ?? 'Impossible de repartager.');
+    } finally {
+      setReposting(false);
+    }
+  }
   const [tab, setTab]       = useState<'all' | 'concerts' | 'events' | 'friends'>('all');
   const [items, setItems]   = useState<FeedItem[]>([]);
   const [live,  setLive]    = useState<Concert[]>([]);
@@ -3434,6 +3428,7 @@ export default function FeedPage() {
   }, [loading, hasMoreFeed, loadMoreFeed, items.length]);
 
   return (
+    <RepostContext.Provider value={openRepost}>
     <div className="px-2 sm:px-4 py-2 lg:py-6 w-full mx-auto lg:h-full lg:overflow-hidden">
       {/* Sur desktop (lg+) : hauteur contrainte au viewport visible, chaque
           colonne gère son propre scroll indépendamment — les sidebars
@@ -3671,6 +3666,18 @@ export default function FeedPage() {
         contentId={aiStatusTarget?.id ?? ''}
         initialStatus={aiStatusTarget?.status}
       />
+      <RepostModal
+        open={!!repostTarget}
+        kind={repostTarget?.kind ?? 'post'}
+        author={repostTarget?.target.author}
+        title={repostTarget?.target.title}
+        body={repostTarget?.target.body}
+        thumb={repostTarget?.target.thumb}
+        reposting={reposting}
+        onConfirm={handleRepostConfirm}
+        onClose={() => { if (!reposting) setRepostTarget(null); }}
+      />
     </div>
+    </RepostContext.Provider>
   );
 }
