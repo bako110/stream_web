@@ -599,7 +599,7 @@ export default function PostDetailPage() {
               {/* Contenu texte */}
               {post.body && (
                 <div className="px-5 pb-4">
-                  <RichText text={post.body}
+                  <RichText text={post.body} maxLines={2}
                     style={{ color: 'var(--text-primary)', lineHeight: 1.7, fontSize: 15 }} />
                   {post.feeling && (
                     <span className="inline-block mt-3 text-xs px-3 py-1 rounded-full font-semibold"

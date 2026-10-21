@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { LinkPreviewCard } from './LinkPreviewCard';
 
 // Détecte les URLs avec protocole (https://...) ET les domaines nus (site.com,
@@ -64,10 +64,50 @@ interface Props {
   className?: string;
   style?: React.CSSProperties;
   showLinkPreview?: boolean;
+  /** Si défini : texte tronqué à N lignes (au lieu de `limit` caractères) avec « Voir plus ». */
+  maxLines?: number;
 }
 
-export function RichText({ text, limit = 280, className = '', style, showLinkPreview = true }: Props) {
+export function RichText({ text, limit = 280, className = '', style, showLinkPreview = true, maxLines }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const pRef = useRef<HTMLParagraphElement>(null);
+
+  // Mode "N lignes" : on mesure si le texte déborde une fois clampé.
+  useLayoutEffect(() => {
+    if (!maxLines || expanded) return;
+    const el = pRef.current;
+    if (el) setOverflowing(el.scrollHeight > el.clientHeight + 1);
+  }, [maxLines, expanded, text]);
+
+  if (maxLines) {
+    const clamped = !expanded;
+    return (
+      <div>
+        <p
+          ref={pRef}
+          className={`text-sm leading-relaxed whitespace-pre-line break-words ${className}`}
+          style={clamped
+            ? { ...style, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: maxLines, overflow: 'hidden' }
+            : style}
+        >
+          {renderTextWithLinks(text, 'underline font-medium')}
+        </p>
+        {(overflowing || expanded) && (
+          <button
+            onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
+            className="text-sm font-semibold mt-1 transition-opacity hover:opacity-70"
+            style={{ color: 'var(--primary)' }}
+          >
+            {expanded ? 'Voir moins ↑' : 'Voir plus'}
+          </button>
+        )}
+        {showLinkPreview && text.match(URL_SPLIT)?.[0] && (
+          <LinkPreviewCard url={text.match(URL_SPLIT)![0]} />
+        )}
+      </div>
+    );
+  }
 
   const isLong = text.length > limit;
   const displayed = isLong && !expanded ? text.slice(0, limit).trimEnd() + '…' : text;

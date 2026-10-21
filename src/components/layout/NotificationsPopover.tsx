@@ -42,11 +42,21 @@ function NotifIcon({ type }: { type: string }) {
   const color = NOTIF_COLOR[type]  ?? '#9290AE';
   return (
     <div
-      className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white"
+      className="w-11 h-11 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 text-white"
       style={{ background: color, boxShadow: `0 0 10px ${color}55` }}>
       {icon}
     </div>
   );
+}
+
+function groupLabel(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const t = d.getTime();
+  if (t >= startToday) return "Aujourd'hui";
+  if (t >= startToday - 6 * 86400000) return 'Cette semaine';
+  return 'Plus ancien';
 }
 
 export function NotificationsPopover({ onClose }: { onClose: () => void }) {
@@ -104,6 +114,13 @@ export function NotificationsPopover({ onClose }: { onClose: () => void }) {
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const notifications = data.map(n => readIds.has(n.id) ? { ...n, is_read: true } : n);
   const unread = notifications.filter(n => !n.is_read).length;
+  const groups: { label: string; items: typeof notifications }[] = [];
+  for (const n of notifications) {
+    const label = groupLabel(n.created_at);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.items.push(n);
+    else groups.push({ label, items: [n] });
+  }
 
   // Fermeture au clic extérieur — même comportement que MessagesPopover.
   useEffect(() => {
@@ -170,12 +187,12 @@ export function NotificationsPopover({ onClose }: { onClose: () => void }) {
       `}</style>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0"
+      <div className="flex items-center justify-between px-4 pb-3 sm:py-3 pt-[max(12px,env(safe-area-inset-top))] shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div className="flex items-center gap-2">
-          <h3 className="font-black text-sm" style={{ color: 'var(--text-primary)' }}>Notifications</h3>
+          <h3 className="font-black text-xl sm:text-sm" style={{ color: 'var(--text-primary)' }}>Notifications</h3>
           {unread > 0 && (
-            <span className="text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"
+            <span className="text-white text-[11px] sm:text-[9px] font-bold rounded-full min-w-[22px] h-[22px] sm:min-w-[18px] sm:h-[18px] flex items-center justify-center px-1"
               style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
               {unread > 99 ? '99+' : unread}
             </span>
@@ -184,25 +201,25 @@ export function NotificationsPopover({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-1">
           {unread > 0 && (
             <button onClick={markAllRead} title="Tout lire"
-              className="p-1.5 rounded-lg transition-all"
+              className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg transition-all"
               style={{ color: 'var(--text-tertiary)' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--primary)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)'; }}>
-              <Check size={15} />
+              <Check size={18} />
             </button>
           )}
           <button onClick={() => { navigate('/notifications'); onClose(); }} title="Voir tout"
-            className="p-1.5 rounded-lg transition-all text-[10px] font-semibold px-2.5"
+            className="hidden sm:block p-1.5 rounded-lg transition-all text-[10px] font-semibold px-2.5"
             style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; }}
             onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; }}>
             Voir tout
           </button>
-          <button onClick={onClose} className="p-1.5 rounded-lg transition-all"
+          <button onClick={onClose} className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg transition-all"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)'; }}>
-            <X size={15} />
+            <X size={20} />
           </button>
         </div>
       </div>
@@ -220,31 +237,47 @@ export function NotificationsPopover({ onClose }: { onClose: () => void }) {
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Aucune notification</p>
           </div>
         ) : (
-          <div className="p-2 space-y-1">
-            {notifications.map(n => (
-              <div
-                key={n.id}
-                onClick={() => handleClickNotif(n)}
-                className="flex items-start gap-2.5 p-3 rounded-xl cursor-pointer transition-all"
-                style={{ background: n.is_read ? 'transparent' : 'rgba(123,63,242,0.06)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = n.is_read ? 'transparent' : 'rgba(123,63,242,0.06)'; }}>
-                <NotifIcon type={n.notification_type} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
-                    {n.title}
-                  </p>
-                  <p className="text-xs mt-0.5 leading-snug line-clamp-1" style={{ color: 'var(--text-secondary)' }}>
-                    {n.body}
-                  </p>
-                  <p className="text-[10px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                    {formatDistanceToNow(new Date(n.created_at), { locale: fr, addSuffix: true })}
-                  </p>
+          <div className="px-3 sm:px-2 pb-6">
+            {groups.map(g => (
+              <section key={g.label}>
+                <p className="px-2 pt-4 pb-2 text-xs sm:text-[10px] font-black uppercase tracking-wider"
+                  style={{ color: 'var(--text-tertiary)' }}>
+                  {g.label}
+                </p>
+                <div className="space-y-1.5 sm:space-y-1">
+                  {g.items.map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => handleClickNotif(n)}
+                      className="relative flex items-start gap-3 sm:gap-2.5 p-3.5 sm:p-3 rounded-2xl sm:rounded-xl cursor-pointer transition-all active:scale-[0.99]"
+                      style={{
+                        background: n.is_read ? 'transparent' : 'rgba(123,63,242,0.07)',
+                        border: n.is_read ? '1px solid transparent' : '1px solid rgba(123,63,242,0.14)',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = n.is_read ? 'transparent' : 'rgba(123,63,242,0.07)'; }}>
+                      <NotifIcon type={n.notification_type} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className={`text-[15px] sm:text-xs leading-snug line-clamp-2 ${n.is_read ? 'font-semibold' : 'font-bold'}`}
+                            style={{ color: 'var(--text-primary)' }}>
+                            {n.title}
+                          </p>
+                          {!n.is_read && (
+                            <span className="w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full shrink-0 mt-1.5 sm:mt-1" style={{ background: 'var(--primary)' }} />
+                          )}
+                        </div>
+                        <p className="text-sm sm:text-xs mt-0.5 leading-snug line-clamp-2 sm:line-clamp-1" style={{ color: 'var(--text-secondary)' }}>
+                          {n.body}
+                        </p>
+                        <p className="text-xs sm:text-[10px] mt-1.5 sm:mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                          {formatDistanceToNow(new Date(n.created_at), { locale: fr, addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {!n.is_read && (
-                  <span className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ background: 'var(--primary)' }} />
-                )}
-              </div>
+              </section>
             ))}
             <div ref={sentinelRef} />
             {loadingMore && <div className="flex justify-center py-2"><Spinner size="sm" /></div>}

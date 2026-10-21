@@ -2222,7 +2222,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
       {/* Body */}
       {body && (
         <div className="px-3 pt-1 pb-2 cursor-pointer" onClick={() => navigate(`/posts/${encodeId(post.id)}`)}>
-          <RichText text={body} limit={280} style={{ color: 'var(--text-primary)' }} />
+          <RichText text={body} maxLines={2} style={{ color: 'var(--text-primary)' }} />
           {post.feeling && (
             <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
