@@ -111,7 +111,6 @@ function MobileBlockedPage({ ios }: { ios: boolean }) {
             Télécharge Gofolyx pour profiter de toutes les fonctionnalités
           </p>
         </div>
-
         <a href={storeUrl} target="_blank" rel="noreferrer" style={{
           width:'100%', maxWidth:320,
           display:'flex', alignItems:'center', gap:14,

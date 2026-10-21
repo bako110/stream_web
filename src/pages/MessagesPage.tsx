@@ -472,6 +472,14 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
                   {msg.edited_at && <span className="text-[9px] ml-1.5 opacity-60">modifié</span>}
                 </div>
               )}
+
+              {/* Rien d'affichable (média sans URL, type inconnu…) : évite la bulle vide */}
+              {!body && !(msg as any).attachment_url && !(msg as any).attachment_meta?.hls_url && !msg.reply_to && (
+                <div className="px-4 py-2.5 text-xs italic opacity-60">
+                  {{ image: '📷 Photo', video: '🎬 Vidéo', voice: '🎤 Message vocal', audio: '🎤 Message vocal', file: '📎 Fichier' }[msg.message_type as string]
+                    ?? 'Message non affichable'}
+                </div>
+              )}
             </div>
 
             {/* Réaction */}

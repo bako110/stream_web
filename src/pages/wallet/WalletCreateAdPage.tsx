@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Upload, X, Zap, Image as ImageIcon, Video, Globe,
-  Play, BarChart2, CheckCircle, Loader2, Megaphone } from 'lucide-react';
+  Play, BarChart2, CheckCircle, Loader2, Megaphone, Search, ChevronDown } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import { useAuthStore } from '../../store/authStore';
+import { ALL_COUNTRIES } from '../../data/countries';
 import type { Ad, AdFormat, AdPlacement } from './WalletAdsPage';
 
 const EUR_TO_GOGOLD = 100;
@@ -38,12 +39,90 @@ const GENDER_OPTIONS: { key: string; label: string }[] = [
   { key: 'prefer_not_to_say',label: 'Non précisé' },
 ];
 
-// Texte libre "Côte d'Ivoire, Sénégal" → ["Côte d'Ivoire", "Sénégal"] — le
-// backend tokenise lui-même pour le matching (cf. _matches_country/
-// _matches_region côté serveur), pas besoin d'un sélecteur à choix fermé ici.
+// Texte libre "Abidjan, Bouaké" → ["Abidjan", "Bouaké"] — pour la région/ville
+// uniquement (le pays utilise CountryMultiSelect ci-dessous, liste fermée).
+// Le backend tokenise lui-même pour le matching (cf. _matches_region côté
+// serveur).
 function parseTargetList(raw: string): string[] | undefined {
   const items = raw.split(',').map(s => s.trim()).filter(Boolean);
   return items.length ? items : undefined;
+}
+
+// Sélecteur multi-pays à liste fermée (dropdown + recherche + checkboxes) —
+// les codes doivent correspondre exactement à _COUNTRY_NAME_HINTS côté
+// backend (app/routers/ads.py), sinon un pays sélectionné ici ne matcherait
+// jamais personne (cf. ALL_COUNTRIES, même liste que login/inscription).
+function CountryMultiSelect({ selected, onChange, disabled }: {
+  selected: string[]; onChange: (codes: string[]) => void; disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q ? ALL_COUNTRIES.filter(c => c.name.toLowerCase().includes(q)) : ALL_COUNTRIES;
+  }, [search]);
+
+  const toggle = (code: string) =>
+    onChange(selected.includes(code) ? selected.filter(c => c !== code) : [...selected, code]);
+
+  const selectedCountries = ALL_COUNTRIES.filter(c => selected.includes(c.code));
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" disabled={disabled} onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-left"
+        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', opacity: disabled ? 0.6 : 1 }}>
+        <Globe size={14} style={{ color: 'var(--text-tertiary)' }} />
+        <span className="flex-1 truncate">
+          {selectedCountries.length > 0
+            ? selectedCountries.map(c => `${c.flag} ${c.code}`).join('  ')
+            : <span style={{ color: 'var(--text-tertiary)' }}>Tous les pays</span>}
+        </span>
+        <ChevronDown size={14} style={{ color: 'var(--text-tertiary)' }} />
+      </button>
+
+      {open && (
+        <div className="absolute z-20 mt-1.5 w-full rounded-xl overflow-hidden shadow-xl"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+            <Search size={14} style={{ color: 'var(--text-tertiary)' }} />
+            <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher un pays" className="flex-1 bg-transparent outline-none text-sm"
+              style={{ color: 'var(--text-primary)' }} />
+          </div>
+          {selected.length > 0 && (
+            <button type="button" onClick={() => onChange([])}
+              className="w-full text-left px-3 py-2 text-xs font-semibold" style={{ color: '#EF4444' }}>
+              Effacer la sélection ({selected.length})
+            </button>
+          )}
+          <div className="max-h-56 overflow-y-auto">
+            {filtered.map(c => {
+              const isSel = selected.includes(c.code);
+              return (
+                <button key={c.code} type="button" onClick={() => toggle(c.code)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors"
+                  style={{ color: 'var(--text-primary)', background: isSel ? 'rgba(123,63,242,0.08)' : 'transparent' }}>
+                  <span>{c.flag}</span>
+                  <span className="flex-1 truncate">{c.name}</span>
+                  {isSel && <CheckCircle size={14} style={{ color: '#7B3FF2' }} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function WalletCreateAdPage() {
@@ -69,7 +148,7 @@ export default function WalletCreateAdPage() {
   // Ciblage — uniquement modifiable à la création (le backend n'accepte pas de
   // changer le ciblage d'une campagne existante via PATCH), pré-rempli en
   // lecture seule en édition pour que l'annonceur voie ce qui est actif.
-  const [targetCountries, setTargetCountries] = useState(editAd?.target_countries?.join(', ') ?? '');
+  const [targetCountries, setTargetCountries] = useState<string[]>(editAd?.target_countries ?? []);
   const [targetRegions,   setTargetRegions]   = useState(editAd?.target_regions?.join(', ') ?? '');
   const [targetGenders,   setTargetGenders]   = useState<string[]>(editAd?.target_genders ?? []);
   const [targetAgeMin,    setTargetAgeMin]    = useState(editAd?.target_age_min != null ? String(editAd.target_age_min) : '');
@@ -181,7 +260,7 @@ export default function WalletCreateAdPage() {
       // Ciblage — uniquement à la création (le backend ne permet pas de modifier
       // le ciblage d'une campagne existante via PATCH, cf. AdUpdate côté serveur).
       ...(isEdit ? {} : {
-        target_countries: parseTargetList(targetCountries),
+        target_countries: targetCountries.length ? targetCountries : undefined,
         target_regions:   parseTargetList(targetRegions),
         target_genders:   targetGenders.length ? targetGenders : undefined,
         target_age_min:   ageMinNum ?? undefined,
@@ -462,10 +541,7 @@ export default function WalletCreateAdPage() {
 
         <div>
           <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-tertiary)' }}>Pays</label>
-          <input value={targetCountries} onChange={e => setTargetCountries(e.target.value)}
-            disabled={isEdit} placeholder="Côte d'Ivoire, Sénégal, Mali…"
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', opacity: isEdit ? 0.6 : 1 }} />
+          <CountryMultiSelect selected={targetCountries} onChange={setTargetCountries} disabled={isEdit} />
         </div>
 
         <div>
