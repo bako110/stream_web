@@ -22,10 +22,12 @@ export interface PlaybackPrefs {
   autoplay: boolean;
   /** Aperçu muet automatique des reels rencontrés dans le fil. */
   feed_autoplay_reels: boolean;
+  /** Streaming HD : sans limite de qualité HLS ; désactivé = plafonné à 720p. */
+  hd_streaming: boolean;
 }
 
 const STORAGE_KEY = 'playback_prefs_v1';
-const DEFAULTS: PlaybackPrefs = { autoplay: true, feed_autoplay_reels: false };
+const DEFAULTS: PlaybackPrefs = { autoplay: true, feed_autoplay_reels: false, hd_streaming: false };
 
 function readCache(): PlaybackPrefs {
   try {
@@ -35,6 +37,7 @@ function readCache(): PlaybackPrefs {
       return {
         autoplay: typeof p.autoplay === 'boolean' ? p.autoplay : DEFAULTS.autoplay,
         feed_autoplay_reels: typeof p.feed_autoplay_reels === 'boolean' ? p.feed_autoplay_reels : DEFAULTS.feed_autoplay_reels,
+        hd_streaming: typeof p.hd_streaming === 'boolean' ? p.hd_streaming : DEFAULTS.hd_streaming,
       };
     }
   } catch { /* localStorage indisponible */ }
@@ -53,7 +56,7 @@ export function getPlaybackPrefs(): PlaybackPrefs { return current; }
 /** Met à jour le cache local (et notifie les lecteurs) — n'appelle pas l'API. */
 export function setPlaybackPrefs(partial: Partial<PlaybackPrefs>): void {
   const next = { ...current, ...partial };
-  if (next.autoplay === current.autoplay && next.feed_autoplay_reels === current.feed_autoplay_reels) return;
+  if (next.autoplay === current.autoplay && next.feed_autoplay_reels === current.feed_autoplay_reels && next.hd_streaming === current.hd_streaming) return;
   current = next;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(current)); } catch { /* ignore */ }
   emit();
@@ -63,14 +66,20 @@ async function refreshFromApi(userId: string): Promise<void> {
   if (fetchedForUser === userId) return;
   fetchedForUser = userId;
   const [pb, app] = await Promise.allSettled([
-    apiClient.get<{ autoplay?: boolean }>(Endpoints.users.playback),
+    apiClient.get<{ autoplay?: boolean; hd_streaming?: boolean }>(Endpoints.users.playback),
     apiClient.get<{ feed_autoplay_reels?: boolean }>(Endpoints.users.appPreferences),
   ]);
   const patch: Partial<PlaybackPrefs> = {};
   if (pb.status === 'fulfilled' && typeof pb.value.data?.autoplay === 'boolean') patch.autoplay = pb.value.data.autoplay;
+  if (pb.status === 'fulfilled' && typeof pb.value.data?.hd_streaming === 'boolean') patch.hd_streaming = pb.value.data.hd_streaming;
   if (app.status === 'fulfilled' && typeof app.value.data?.feed_autoplay_reels === 'boolean') patch.feed_autoplay_reels = app.value.data.feed_autoplay_reels;
   if (pb.status === 'rejected' && app.status === 'rejected') fetchedForUser = null; // réessaiera au prochain montage
   setPlaybackPrefs(patch);
+}
+
+/** Abonnement hors React (ex. instances hls.js). Retourne la fonction de désabonnement. */
+export function subscribePlaybackPrefs(cb: () => void): () => void {
+  return subscribe(cb);
 }
 
 function subscribe(cb: () => void) {

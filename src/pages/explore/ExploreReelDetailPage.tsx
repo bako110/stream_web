@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { applyHlsQualityPref } from '../../utils/hlsQuality';
 import { useParams, useNavigate } from 'react-router-dom';
 import Hls from 'hls.js';
 import { encodeId, decodeId } from '../../utils/slugId';
@@ -162,6 +163,7 @@ function ReelStage({ reel, locked }: { reel: Reel; locked: boolean }) {
     let hls: Hls | null = null;
     if (Hls.isSupported()) {
       hls = new Hls({ autoStartLoad: true });
+      applyHlsQualityPref(hls);
       hls.loadSource(videoSrc);
       hls.attachMedia(v);
       hls.on(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });

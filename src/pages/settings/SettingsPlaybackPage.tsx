@@ -44,7 +44,7 @@ export default function SettingsPlaybackPage() {
     setPrefs(updated);
     setSaving(field);
     // Répercussion immédiate sur les lecteurs (fil, reels, films) sans rechargement.
-    if (field === 'autoplay' || field === 'feed_autoplay_reels') setPlaybackPrefs({ [field]: updated[field] });
+    if (field === 'autoplay' || field === 'feed_autoplay_reels' || field === 'hd_streaming') setPlaybackPrefs({ [field]: updated[field] });
     try {
       if (field === 'feed_autoplay_reels') {
         await apiClient.put(Endpoints.users.appPreferences, {
@@ -56,7 +56,7 @@ export default function SettingsPlaybackPage() {
       }
     } catch {
       setPrefs(prefs);
-      if (field === 'autoplay' || field === 'feed_autoplay_reels') setPlaybackPrefs({ [field]: prefs[field] });
+      if (field === 'autoplay' || field === 'feed_autoplay_reels' || field === 'hd_streaming') setPlaybackPrefs({ [field]: prefs[field] });
       toast.error('Impossible de sauvegarder la préférence.');
     } finally {
       setSaving(null);
@@ -80,7 +80,7 @@ export default function SettingsPlaybackPage() {
       key: 'hd_streaming',
       icon: <Shield size={16} />,
       label: 'Streaming HD',
-      sub: 'Utilise plus de données mobiles',
+      sub: 'Qualité maximale (plus de données). Désactivé : limité à 720p',
     },
     {
       key: 'record_live_enabled',
@@ -121,7 +121,7 @@ export default function SettingsPlaybackPage() {
             <button onClick={() => toggle(row.key)} disabled={!!saving}
               className="relative rounded-full transition-colors shrink-0 disabled:opacity-50"
               style={{ background: prefs[row.key] ? 'var(--primary)' : 'var(--border)', height: 22, width: 40 }}>
-              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${prefs[row.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              <span className={`absolute top-0.5 left-0 w-4 h-4 bg-white rounded-full shadow transition-transform ${prefs[row.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
           </div>
         ))}

@@ -1,4 +1,5 @@
 import { consumeReelsPrefetch } from '../utils/prefetch';
+import { applyHlsQualityPref } from '../utils/hlsQuality';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { commitReelSession } from '../hooks/useReelWatchStats';
 import { usePlaybackPrefs, getPlaybackPrefs } from '../hooks/usePlaybackPrefs';
@@ -915,6 +916,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
     } else if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, maxBufferLength: 30, maxMaxBufferLength: 60 });
       hlsRef.current = hls;
+      applyHlsQualityPref(hls);
       hls.loadSource(loadSrc);
       hls.attachMedia(v);
       hls.once(Hls.Events.MANIFEST_PARSED, playWhenReady);

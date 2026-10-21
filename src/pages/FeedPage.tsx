@@ -1,4 +1,6 @@
 import { prefetchImages, imagesAhead } from '../utils/prefetch';
+import { AdContactButtons, adContactButtons, adHasContact, runAdButton } from '../components/ads/AdContactButtons';
+import { applyHlsQualityPref } from '../utils/hlsQuality';
 import { usePlaybackPrefs } from '../hooks/usePlaybackPrefs';
 import { useState, useCallback, useEffect, useRef, Fragment, type ReactNode, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -818,6 +820,9 @@ interface FeedAd {
   advertiser_name?: string | null;
   advertiser_avatar?: string | null;
   advertiser_logo?: string | null;
+  contact_phone?: string | null;
+  contact_call?: boolean | null;
+  contact_whatsapp?: boolean | null;
 }
 
 type FeedItem =
@@ -1547,26 +1552,10 @@ function adDomainOf(url?: string | null): string {
   try { return new URL(raw).hostname.replace(/^www\./, ''); }
   catch { return raw.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]; }
 }
-function adIsPhoneUrl(raw?: string | null): boolean {
-  const r = (raw ?? '').trim();
-  return !!r && !/^https?:\/\//i.test(r) && /^[+()\d\s.-]{6,}$/.test(r.replace(/^tel:/i, ''));
-}
-function adIsStoreUrl(raw?: string | null): boolean {
-  const r = (raw ?? '').trim().toLowerCase();
-  return r.includes('play.google.com/store/apps') || r.includes('apps.apple.com') || r.includes('itunes.apple.com');
-}
-function adCtaText(ad: { cta_text?: string | null; cta_url?: string | null }): string {
-  if (ad.cta_text) return ad.cta_text;
-  if (adIsPhoneUrl(ad.cta_url)) return 'Contactez-nous';
-  if (adIsStoreUrl(ad.cta_url)) return 'Installer';
-  return 'En savoir plus';
-}
-
 function FeedAdCard({ ad }: { ad: FeedAd }) {
   const navigate       = useNavigate();
   const cardRef        = useRef<HTMLDivElement>(null);
   const impressionSent = useRef(false);
-  const [settled,   setSettled]   = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
 
   const isVideo = ad.format === 'video' || !!(ad.creative_url && (
@@ -1575,31 +1564,28 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
     ad.creative_url.toLowerCase().includes('.mp4')
   ));
 
-  // Viewability : impression + "settled" (CTA riche) seulement quand la carte est vue.
+  // Viewability : impression envoyée une seule fois, quand la carte est réellement vue.
   useEffect(() => {
     const node = cardRef.current;
     if (!node) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
     const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && e.intersectionRatio >= 0.5) {
-        if (!impressionSent.current) {
-          impressionSent.current = true;
-          apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
-        }
-        timer = setTimeout(() => setSettled(true), 1200);
-      } else if (timer) { clearTimeout(timer); timer = undefined; }
+      if (e.isIntersecting && e.intersectionRatio >= 0.5 && !impressionSent.current) {
+        impressionSent.current = true;
+        apiClient.post(Endpoints.ads.impression(ad.id)).catch(() => {});
+      }
     }, { threshold: [0, 0.5] });
     obs.observe(node);
-    return () => { obs.disconnect(); if (timer) clearTimeout(timer); };
+    return () => obs.disconnect();
   }, [ad.id]);
 
   function openFullscreen() { navigate(`/ads/${ad.id}`, { state: { ad } }); }
-  function openCta() {
+  // Boutons directs (Appeler / WhatsApp / lien) — comme AdCTA côté mobile.
+  function onCardClick() {
     if (isVideo) { openFullscreen(); return; }
-    if (!ad.cta_url) return;
-    apiClient.post(Endpoints.ads.click(ad.id)).catch(() => {});
-    if (adIsPhoneUrl(ad.cta_url)) { window.location.href = `tel:${ad.cta_url.replace(/^tel:/i, '')}`; return; }
-    window.open(ad.cta_url, '_blank', 'noopener,noreferrer');
+    // Sans contact direct, le clic sur la carte ouvre le lien (comportement historique).
+    if (adHasContact(ad)) return;
+    const first = adContactButtons(ad)[0];
+    if (first) runAdButton(first, ad);
   }
 
   const logo     = ad.advertiser_avatar ?? (ad as any).advertiser_logo ?? null;
@@ -1607,10 +1593,9 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
   const initials = label.split(/[\s.-]+/).map(w => w[0] ?? '').filter(Boolean).join('').slice(0, 2).toUpperCase() || '?';
   const creative = (isVideo ? ad.thumbnail_url : (ad.creative_url ?? ad.thumbnail_url)) ?? null;
   const hasCreative = !!creative && !imgFailed;
-  const ctaText  = adCtaText(ad);
 
   return (
-    <div ref={cardRef} onClick={() => (isVideo ? openFullscreen() : ad.cta_url && openCta())}
+    <div ref={cardRef} onClick={onCardClick}
       className="rounded-3xl overflow-hidden cursor-pointer"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
 
@@ -1659,28 +1644,12 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
         </div>
       </div>
 
-      {/* CTA — lien discret au repos, bouton riche une fois « settled » */}
-      {ad.cta_url && (
-        <div className="px-4 pt-3 pb-4 mt-3" style={{ borderTop: '1px solid var(--border)' }}
-          onClick={e => { e.stopPropagation(); openCta(); }}>
-          {settled ? (
-            <div className="flex items-center gap-3 animate-fade-in">
-              <p className="flex-1 min-w-0 text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
-                {ad.description || 'En savoir plus'}
-              </p>
-              <button className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold"
-                style={{ background: 'var(--text-primary)', color: 'var(--bg)' }}>
-                {ctaText} <ExternalLink size={12} />
-              </button>
-            </div>
-          ) : (
-            <button className="text-[13px] font-bold truncate max-w-full" style={{ color: 'var(--primary)' }}>
-              Découvrir {label}
-            </button>
-          )}
+      {/* CTA — boutons directs (Appeler / WhatsApp / lien), comme AdCTA mobile */}
+      {adContactButtons(ad).length > 0 ? (
+        <div className="mx-4 mt-3 pt-3 pb-4 flex" style={{ borderTop: '1px solid var(--border)' }}>
+          <AdContactButtons ad={ad} />
         </div>
-      )}
-      {!ad.cta_url && <div className="pb-4" />}
+      ) : <div className="pb-4" />}
     </div>
   );
 }
@@ -2014,6 +1983,7 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
     import('hls.js').then(({ default: Hls }) => {
       if (src.includes('.m3u8') && Hls.isSupported()) {
         hls = new Hls();
+        applyHlsQualityPref(hls);
         hls.loadSource(proxied);
         hls.attachMedia(v);
       } else {
@@ -2312,6 +2282,7 @@ function ReelCard({ reel, delay = 0 }: {
     import('hls.js').then(({ default: Hls }) => {
       if (Hls.isSupported()) {
         hlsInstance = new Hls({ autoStartLoad: true });
+        applyHlsQualityPref(hlsInstance);
         hlsInstance.loadSource(videoSrc);
         hlsInstance.attachMedia(v);
       } else if (v.canPlayType('application/vnd.apple.mpegurl')) {

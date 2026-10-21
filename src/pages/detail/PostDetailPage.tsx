@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { applyHlsQualityPref } from '../../utils/hlsQuality';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
 import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Edit3, Play, X, ChevronDown, Users } from 'lucide-react';
@@ -28,6 +29,7 @@ function VideoPlayer({ src, thumbnail }: { src: string; thumbnail?: string }) {
     import('hls.js').then(({ default: Hls }) => {
       if (src.includes('.m3u8') && Hls.isSupported()) {
         hls = new Hls();
+        applyHlsQualityPref(hls);
         hls.loadSource(src);
         hls.attachMedia(v);
       } else {

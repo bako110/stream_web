@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { applyHlsQualityPref } from '../../utils/hlsQuality';
 import Hls from 'hls.js';
 
 // ── MIME type par extension ───────────────────────────────────────────────────
@@ -83,6 +84,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
         if (Hls.isSupported()) {
           const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
           hlsRef.current = hls;
+          applyHlsQualityPref(hls);
           hls.loadSource(url);
           hls.attachMedia(video);
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
