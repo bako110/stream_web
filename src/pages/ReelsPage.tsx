@@ -1879,6 +1879,16 @@ export default function ReelsPage() {
   const [hasMore,       setHasMore]     = useState(true);
   const [error,         setError]       = useState<string | null>(null);
   const [activeIndex,   setActiveIndex] = useState(0);
+  // Tant que true, AUCUN reel n'est actif (active forcé à false partout) et un
+  // spinner plein écran masque le lecteur — évite qu'un autre reel que celui
+  // ciblé par ?id= ne démarre sa lecture pendant la course entre le fetch du
+  // reel manquant (apiClient.get(byId(targetId)), async, cf. fetchReels) et sa
+  // véritable injection en tête de liste : setReels(list) s'exécute SYNCHRONE
+  // dès la 1ère page chargée, activeIndex=0 pointe alors sur list[0] (un reel
+  // normal, pas la cible) jusqu'à ce que le fetch résolve et réinjecte le bon
+  // reel en tête. Initialisé à true dès qu'on arrive avec ?id=, remis à false
+  // seulement une fois reels[activeIndex] confirmé === targetId.
+  const [awaitingTarget, setAwaitingTarget] = useState(!!targetId);
   // Verrou pendant un saut programmatique (jumpToReel) — l'IntersectionObserver
   // peut capturer un état transitoire pendant le scroll instantané (plusieurs
   // éléments partiellement visibles au même frame) et réécrire activeIndex sur
@@ -2129,6 +2139,18 @@ export default function ReelsPage() {
     ? reels.findIndex(r => r.id === (activeItem._isAd ? undefined : activeItem.reel.id))
     : -1;
   const activeReel = activeItem && !activeItem._isAd ? activeItem.reel : null;
+
+  // Libère awaitingTarget dès que activeReel pointe confirmé sur targetId —
+  // re-tenté à chaque changement de activeReel/reels (l'arrivée de la cible
+  // peut prendre plusieurs rendus : setReels(list) d'abord, puis l'injection
+  // async une fois le fetch résolu). Secours à 3s pour ne jamais bloquer
+  // l'écran si la cible reste introuvable (ex: reel supprimé entre-temps).
+  useEffect(() => {
+    if (!awaitingTarget) return;
+    if (!targetId || activeReel?.id === targetId) { setAwaitingTarget(false); return; }
+    const timer = setTimeout(() => setAwaitingTarget(false), 3000);
+    return () => clearTimeout(timer);
+  }, [awaitingTarget, activeReel, targetId]);
 
   // ── Recherche ──
   const openSearch = useCallback(() => {
@@ -2910,11 +2932,11 @@ export default function ReelsPage() {
                 data-reel-id={item._isAd ? undefined : item.reel.id}
                 className="w-full snap-start snap-always shrink-0 h-full">
                 {item._isAd ? (
-                  <ReelAdSlide ad={item.ad} active={i === activeIndex} globalMuted={globalMuted} />
+                  <ReelAdSlide ad={item.ad} active={i === activeIndex && !awaitingTarget} globalMuted={globalMuted} />
                 ) : (
                   <ReelPlayer
                     reel={item.reel}
-                    active={i === activeIndex}
+                    active={i === activeIndex && !awaitingTarget}
                     distance={Math.abs(i - activeIndex)}
                     globalMuted={globalMuted}
                     onUnmute={() => setGlobalMuted(v => !v)}
@@ -2936,6 +2958,18 @@ export default function ReelsPage() {
               </div>
             )}
           </div>
+
+          {/* Masque plein écran pendant la navigation vers un reel ciblé par ?id=
+              (ex: clic sur un reel suggéré du feed) — tant qu'awaitingTarget est
+              vrai, `active` est forcé à false sur tous les players (cf. ci-dessus),
+              donc rien ne joue en dessous ; cet overlay évite juste que
+              l'utilisateur voie la frame figée d'un autre reel pendant la course
+              fetch/injection du reel cible. */}
+          {awaitingTarget && (
+            <div className="absolute inset-0 bg-black flex items-center justify-center" style={{ zIndex: 50 }}>
+              <div className="w-9 h-9 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+            </div>
+          )}
 
           {/* Overlay recherche plein écran (fixed, couvre toute la fenêtre — pas juste
               le cadre du player) : sans ça, sur desktop le dropdown était borné à la
