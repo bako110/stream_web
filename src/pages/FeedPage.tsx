@@ -2350,6 +2350,18 @@ function ReelCard({ reel, delay = 0 }: {
       <div className="absolute inset-x-0 bottom-0 h-24 pointer-events-none"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)' }} />
 
+      {/* Bouton play centré, pulsation en boucle — même design que la tuile
+          mobile équivalente (FeedScreen.tsx ReelSuggestionTile), signale
+          "c'est une vidéo, clique pour l'ouvrir" même si l'aperçu joue déjà
+          en autoplay muet au survol visible. */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span className="reel-play-pulse-ring" />
+        <span className="reel-play-pulse-core flex items-center justify-center rounded-full"
+          style={{ width: 50, height: 50, background: 'rgba(0,0,0,0.45)', border: '1.5px solid rgba(255,255,255,0.9)' }}>
+          <Play size={22} color="#fff" style={{ marginLeft: 3 }} fill="#fff" />
+        </span>
+      </div>
+
       {/* Reel badge */}
       <div className="absolute top-2.5 left-2.5">
         <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full text-white"
@@ -3198,8 +3210,19 @@ export default function FeedPage() {
             if (adRes?.data && nonSpecialCount > 0 && nonSpecialCount % 8 === 0) {
               mapped.push({ kind: 'ad', id: `__ad__${++adCountRef.current}`, data: adRes.data });
             }
-          } else if (d.kind === 'reel_row') {
-            mapped.push({ kind: 'reel_row', id: String(d.id), data: (d.reels ?? []) as Reel[] });
+          } else if (d.kind === 'reels') {
+            // Backend (InjectionPlanner) : jusqu'à 7 blocs par page, CHACUN à
+            // un seul reel, déjà à des positions distinctes et espacées —
+            // jamais de paquet groupé (2026-10, demande explicite : "je veux
+            // que ça soit beaucoup" mais "jamais ensemble"). Chaque bloc
+            // devient un item 'reel' individuel, même rendu que ReelCard
+            // utilisé ailleurs dans ce fichier — pas 'reel_row' (rangée
+            // groupée, qui ne correspond plus au format envoyé par le
+            // backend).
+            for (const r of (d.reels ?? []) as Reel[]) {
+              if (!r?.id) continue;
+              mapped.push({ kind: 'reel', id: String(r.id), data: r });
+            }
           } else if (d.kind === 'suggestions') {
             mapped.push({ kind: 'suggestions', id: String(d.id), data: (d.users ?? []) as UserPublic[] });
           } else if (d.kind === 'communities') {
@@ -3284,8 +3307,12 @@ export default function FeedPage() {
             const slotId = `__ad__${++adCountRef.current}`;
             appended.push({ kind: 'ad', id: slotId, data: null });
           }
-        } else if (d.kind === 'reel_row') {
-          appended.push({ kind: 'reel_row', id: String(d.id), data: (d.reels ?? []) as Reel[] });
+        } else if (d.kind === 'reels') {
+          // Même éclatement que page 1 — cf. commentaire plus haut.
+          for (const r of (d.reels ?? []) as Reel[]) {
+            if (!r?.id) continue;
+            appended.push({ kind: 'reel', id: String(r.id), data: r });
+          }
         } else if (d.kind === 'suggestions') {
           appended.push({ kind: 'suggestions', id: String(d.id), data: (d.users ?? []) as UserPublic[] });
         } else if (d.kind === 'communities') {

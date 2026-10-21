@@ -202,11 +202,30 @@
   50%       { opacity: 0.55; transform: scale(1.06); }
 }
 
+/* Bouton play des reels (ReelCard) — même ratio scale/opacity que la tuile
+   mobile équivalente (FeedScreen.tsx ReelSuggestionTile, reanimated). */
+@keyframes reel-play-ring {
+  0%   { opacity: 0.5;  transform: scale(1);    }
+  60%  { opacity: 0.18; transform: scale(1.21); }
+  100% { opacity: 0;    transform: scale(1.35); }
+}
+@keyframes reel-play-core {
+  0%, 100% { transform: scale(1);    }
+  50%       { transform: scale(1.06); }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    UTILITY ANIMATION CLASSES
    ══════════════════════════════════════════════════════════════════════════════ */
 /* stagger helper */
 .delay-50  { animation-delay: 0.05s; }
+
+.reel-play-pulse-ring {
+  position: absolute; width: 64px; height: 64px; border-radius: 9999px;
+  background: rgba(255,255,255,0.5);
+  animation: reel-play-ring 1.4s ease-out infinite;
+}
+.reel-play-pulse-core { animation: reel-play-core 1.4s ease-in-out infinite; }
 
 .animate-float-slow  { animation: float-slow  12s ease-in-out infinite; }
 .animate-float-mid   { animation: float-mid    9s ease-in-out infinite; }
