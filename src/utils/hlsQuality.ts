@@ -18,7 +18,9 @@ interface HlsLike {
   on: (event: string, cb: () => void) => void;
 }
 
-export function applyHlsQualityPref(hls: HlsLike): void {
+export function applyHlsQualityPref(instance: object): void {
+  // Cast : le typage strict de hls.js (événements typés) n'est pas assignable à HlsLike.
+  const hls = instance as unknown as HlsLike;
   const apply = () => {
     if (getPlaybackPrefs().hd_streaming) { hls.autoLevelCapping = -1; return; }
     const levels = hls.levels ?? [];
