@@ -58,6 +58,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
   function VideoPlayer({ url, poster, autoPlay = true, className, onTimeUpdate, onPause, onEnded }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef   = useRef<Hls | null>(null);
+    // Ref : changer le réglage de lecture auto pendant la lecture ne doit pas
+    // recharger le flux (et donc perdre la position) — seul `url` le fait.
+    const autoPlayRef = useRef(autoPlay);
+    autoPlayRef.current = autoPlay;
 
     useImperativeHandle(ref, () => ({
       currentTime: () => videoRef.current?.currentTime ?? 0,
@@ -82,7 +86,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
           hls.loadSource(url);
           hls.attachMedia(video);
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            if (autoPlay) video.play().catch(() => {});
+            if (autoPlayRef.current) video.play().catch(() => {});
           });
           hls.on(Hls.Events.ERROR, (_: unknown, data: any) => {
             if (data.fatal) hls.destroy();
@@ -90,19 +94,19 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           // Safari — HLS natif
           video.src = url;
-          if (autoPlay) video.play().catch(() => {});
+          if (autoPlayRef.current) video.play().catch(() => {});
         }
       } else {
         // Fichier direct — on laisse le navigateur détecter
         video.src = url;
-        if (autoPlay) video.play().catch(() => {});
+        if (autoPlayRef.current) video.play().catch(() => {});
       }
 
       return () => {
         if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
         video.src = '';
       };
-    }, [url, autoPlay]);
+    }, [url]);
 
     // Callbacks
     const handleTimeUpdate = useCallback(() => {

@@ -1,6 +1,7 @@
 import { consumeReelsPrefetch } from '../utils/prefetch';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { commitReelSession } from '../hooks/useReelWatchStats';
+import { usePlaybackPrefs, getPlaybackPrefs } from '../hooks/usePlaybackPrefs';
 import { GuestPreview } from '../components/ui/GuestPreview';
 import { renderTextWithLinks } from '../components/ui/RichText';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -668,6 +669,13 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
   // "playing" du navigateur s'il survient malgré tout (resync HLS interne),
   // pour ne pas annuler la pause demandée par l'utilisateur.
   const userPausedRef = useRef(false);
+  // Réglages > Lecture > "Lecture automatique" désactivée : un reel qui devient
+  // actif pour la 1re fois (arrivée par swipe) démarre en pause, comme si
+  // l'utilisateur avait tapé pause — il doit taper pour lire. Une fois lancé
+  // (par lui), un retour sur ce reel ou un replay ne se re-fige pas.
+  const everPlayedRef = useRef(false);
+  usePlaybackPrefs(); // déclenche le chargement des préférences depuis l'API (cache localStorage sinon)
+  const autoplayBlocked = () => !everPlayedRef.current && !getPlaybackPrefs().autoplay;
 
   const hasMusic = !!(reel.music_url);
 
@@ -877,6 +885,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
 
     const playWhenReady = () => {
       if (!active) return;
+      if (autoplayBlocked()) { userPausedRef.current = true; setPlaying(false); return; }
       v.currentTime = 0;
       v.muted = globalMuted;
       userPausedRef.current = false;
@@ -939,6 +948,10 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
       v.pause(); v.currentTime = 0;
       setPlaying(false); setProgress(0);
       clearStall();
+    } else if (autoplayBlocked()) {
+      v.currentTime = 0;
+      userPausedRef.current = true;
+      setPlaying(false);
     } else if (v.currentSrc || v.getAttribute('src')) {
       // play() sur un média encore en cours de chargement est mis en file par le navigateur et
       // démarre dès que possible — couvre un voisin préchargé pas encore prêt au moment du swipe.
@@ -1007,6 +1020,9 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
     if (!v) return;
     if (v.paused) {
       userPausedRef.current = false;
+      everPlayedRef.current = true;
+      if (!startTimeRef.current) startTimeRef.current = Date.now();
+      if (!sessionStartRef.current) sessionStartRef.current = Date.now();
       v.play().then(() => setPlaying(true)).catch(() => {});
     } else {
       userPausedRef.current = true;
@@ -1220,6 +1236,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
                 videoRef.current?.pause();
                 return;
               }
+              everPlayedRef.current = true;
               setPlaying(true);
               if (!sessionStartRef.current) sessionStartRef.current = Date.now();
             }}

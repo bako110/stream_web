@@ -1,4 +1,5 @@
 import { prefetchImages, imagesAhead } from '../utils/prefetch';
+import { usePlaybackPrefs } from '../hooks/usePlaybackPrefs';
 import { useState, useCallback, useEffect, useRef, Fragment, type ReactNode, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTabReselect } from '../utils/tabReselect';
@@ -2002,6 +2003,9 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
   const [playing,    setPlaying]    = useState(false);
   const [muted,      setMuted]      = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  // Réglages > Lecture > "Lecture automatique" (défaut activé). Désactivé : la
+  // vidéo reste sur sa miniature avec le bouton play, l'utilisateur lance lui-même.
+  const { autoplay } = usePlaybackPrefs();
 
   useEffect(() => {
     const v = videoRef.current;
@@ -2019,9 +2023,9 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
     return () => { hls?.destroy(); };
   }, [proxied]);
 
-  // Autoplay muet au scroll (comme avant) — mais respecte maintenant l'état
-  // "started" : une fois que l'utilisateur a lui-même mis pause, on ne le
-  // relance pas de force au prochain passage dans le viewport.
+  // Autoplay muet au scroll (si activé dans les réglages) ; la pause hors
+  // viewport reste active dans tous les cas (une vidéo lancée à la main ne
+  // continue pas à jouer une fois sortie de l'écran).
   useEffect(() => {
     const el = wrapRef.current;
     const v  = videoRef.current;
@@ -2029,6 +2033,7 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
+          if (!autoplay) return;
           v.play().then(() => { setStarted(true); setPlaying(true); }).catch(() => {});
         } else {
           v.pause();
@@ -2039,7 +2044,7 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [autoplay]);
 
   function togglePlay(e: React.MouseEvent) {
     e.stopPropagation();
@@ -2293,10 +2298,14 @@ function ReelCard({ reel, delay = 0 }: {
   const cardRef   = useRef<HTMLDivElement>(null);
   const isMp4     = !!reel.mp4_url;
   const videoSrc  = toProxiedUrl((reel.mp4_url || reel.hls_url) ?? '');
+  // Réglages > Lecture > "Aperçu automatique des reels" (opt-in, défaut
+  // désactivé, comme le mobile). Désactivé : miniature fixe, aucune vidéo
+  // téléchargée tant que l'utilisateur n'ouvre pas le reel.
+  const { feed_autoplay_reels: autoplayOn } = usePlaybackPrefs();
 
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !videoSrc) return;
+    if (!v || !videoSrc || !autoplayOn) return;
     // MP4 : lecture native directe, pas de hls.js à charger.
     if (isMp4) { v.src = videoSrc; return; }
     let hlsInstance: import('hls.js').default | null = null;
@@ -2310,20 +2319,20 @@ function ReelCard({ reel, delay = 0 }: {
       }
     });
     return () => { hlsInstance?.destroy(); };
-  }, [videoSrc, isMp4]);
+  }, [videoSrc, isMp4, autoplayOn]);
 
   // Autoplay when visible, pause when out of view
   useEffect(() => {
     const el = cardRef.current;
     const video = videoRef.current;
-    if (!el || !video) return;
+    if (!el || !video || !autoplayOn) return;
     const obs = new IntersectionObserver(
       ([entry]) => { entry.isIntersecting ? video.play().catch(() => {}) : video.pause(); },
       { threshold: 0.5 },
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [autoplayOn]);
 
   return (
     <div ref={cardRef} className="rounded-2xl overflow-hidden animate-reveal-up"
@@ -2331,7 +2340,7 @@ function ReelCard({ reel, delay = 0 }: {
       onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}>
 
       {/* Video autoplay muted — pointer-events-none so clicks go to the wrapper */}
-      {videoSrc ? (
+      {videoSrc && autoplayOn ? (
         <video
           ref={videoRef}
           poster={reel.thumbnail_url ?? undefined}

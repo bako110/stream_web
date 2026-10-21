@@ -17,6 +17,7 @@ import { useSmartBack } from '../../hooks/useSmartBack';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import { usePlaybackPrefs } from '../../hooks/usePlaybackPrefs';
 import { ShareModal } from '../../components/ui/ShareModal';
 
 // 1 EUR = 100 GoGold (taux unifié plateforme)
@@ -158,6 +159,7 @@ function PaywallModal({ serie, onClose, onPurchased }: {
 function VideoPlayerWithTracking({ url, poster, videoId, contentId }: {
   url: string; poster?: string; videoId?: string; contentId?: string;
 }) {
+  const { autoplay } = usePlaybackPrefs();
   const lastSent  = useRef<number>(0);
   const lastTime  = useRef<number>(0);
   const lastTotal = useRef<number>(0);
@@ -199,7 +201,7 @@ function VideoPlayerWithTracking({ url, poster, videoId, contentId }: {
       <VideoPlayer
         url={url}
         poster={poster}
-        autoPlay
+        autoPlay={autoplay}
         className="w-full h-full"
         onTimeUpdate={handleTimeUpdate}
         onPause={handlePause}

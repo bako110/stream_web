@@ -4,24 +4,38 @@ import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import toast from 'react-hot-toast';
+import { setPlaybackPrefs } from '../../hooks/usePlaybackPrefs';
 
 interface PlaybackPrefs {
   autoplay: boolean;
   hd_streaming: boolean;
   record_live_enabled: boolean;
+  /** Réglage mobile, non éditable ici — conservé pour que le PUT ne le réinitialise pas. */
+  reels_show_interface?: boolean;
+  /** Stocké côté backend dans /users/me/app-preferences (pas /playback). */
+  feed_autoplay_reels: boolean;
 }
 
-const DEFAULT_PREFS: PlaybackPrefs = { autoplay: true, hd_streaming: false, record_live_enabled: false };
+// Le PUT /app-preferences écrase TOUTES ses colonnes avec ce qui est envoyé :
+// on garde donc l'écran de démarrage lu depuis l'API et on le renvoie tel quel.
+const DEFAULT_PREFS: PlaybackPrefs = { autoplay: true, hd_streaming: false, record_live_enabled: false, reels_show_interface: true, feed_autoplay_reels: false };
 
 export default function SettingsPlaybackPage() {
   const navigate = useNavigate();
   const [prefs, setPrefs] = useState<PlaybackPrefs>(DEFAULT_PREFS);
   const [saving, setSaving] = useState<keyof PlaybackPrefs | null>(null);
+  const [startScreen, setStartScreen] = useState('feed');
 
   useEffect(() => {
-    apiClient.get<PlaybackPrefs>(Endpoints.users.playback)
-      .then(r => setPrefs({ ...DEFAULT_PREFS, ...r.data }))
+    apiClient.get<Omit<PlaybackPrefs, 'feed_autoplay_reels'>>(Endpoints.users.playback)
+      .then(r => setPrefs(p => ({ ...p, ...r.data })))
       .catch(() => {/* garde les valeurs par défaut */});
+    apiClient.get<{ preferred_start_screen: string; feed_autoplay_reels: boolean }>(Endpoints.users.appPreferences)
+      .then(r => {
+        setStartScreen(r.data.preferred_start_screen || 'feed');
+        setPrefs(p => ({ ...p, feed_autoplay_reels: !!r.data.feed_autoplay_reels }));
+      })
+      .catch(() => {});
   }, []);
 
   const toggle = useCallback(async (field: keyof PlaybackPrefs) => {
@@ -29,10 +43,20 @@ export default function SettingsPlaybackPage() {
     const updated = { ...prefs, [field]: !prefs[field] };
     setPrefs(updated);
     setSaving(field);
+    // Répercussion immédiate sur les lecteurs (fil, reels, films) sans rechargement.
+    if (field === 'autoplay' || field === 'feed_autoplay_reels') setPlaybackPrefs({ [field]: updated[field] });
     try {
-      await apiClient.put(Endpoints.users.playback, updated);
+      if (field === 'feed_autoplay_reels') {
+        await apiClient.put(Endpoints.users.appPreferences, {
+          preferred_start_screen: startScreen, feed_autoplay_reels: updated.feed_autoplay_reels,
+        });
+      } else {
+        const { feed_autoplay_reels: _omit, ...playback } = updated;
+        await apiClient.put(Endpoints.users.playback, playback);
+      }
     } catch {
       setPrefs(prefs);
+      if (field === 'autoplay' || field === 'feed_autoplay_reels') setPlaybackPrefs({ [field]: prefs[field] });
       toast.error('Impossible de sauvegarder la préférence.');
     } finally {
       setSaving(null);
@@ -44,7 +68,13 @@ export default function SettingsPlaybackPage() {
       key: 'autoplay',
       icon: <Play size={16} />,
       label: 'Lecture automatique',
-      sub: 'Lance automatiquement la vidéo suivante',
+      sub: 'Lance automatiquement les vidéos (posts, films, séries, reels)',
+    },
+    {
+      key: 'feed_autoplay_reels',
+      icon: <Video size={16} />,
+      label: 'Aperçu des reels dans le fil',
+      sub: 'Joue en muet les reels croisés au fil du défilement',
     },
     {
       key: 'hd_streaming',
