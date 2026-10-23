@@ -15,6 +15,7 @@ import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -148,6 +149,7 @@ export default function ConcertDetailPage() {
   const navigate      = useNavigate();
   const goBack        = useSmartBack('/concerts');
   const { user } = useAuthStore();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const { data: concert, loading, refetch } = useApi<Concert>(
     () => apiClient.get<Concert>(Endpoints.concerts.byId(id!)), [id],
@@ -216,6 +218,26 @@ export default function ConcertDetailPage() {
     } catch {}
     finally { setRemindLoading(false); }
   }, [id, remindLoading]);
+
+  const handleBuyTicket = useCallback(async () => {
+    if (!concert) return;
+    // Repost — celui qui a republié n'est pas l'artiste original et ne peut
+    // pas vendre de billets dessus (demande explicite : renvoyer vers le
+    // vrai artiste). Même pattern côté mobile, ConcertDetailScreen.
+    if (concert.remix_type === 'repost' && concert.source_concert?.artist) {
+      const original = concert.source_concert.artist;
+      const name = original.display_name ?? original.username ?? 'l\'artiste original';
+      const ok = await confirm({
+        title: 'Billets non disponibles ici',
+        message: `Ceci est une republication. Pour acheter un billet, rends-toi sur le profil de ${name}, l'artiste original de ce concert.`,
+        confirmLabel: 'Voir le profil',
+        cancelLabel: 'Fermer',
+      });
+      if (ok) navigate(`/user/${encodeId(original.id)}`);
+      return;
+    }
+    setPaySheet(true);
+  }, [concert, confirm, navigate]);
 
   if (loading) return <PageLoader />;
   if (!concert) return (
@@ -516,13 +538,13 @@ export default function ConcertDetailPage() {
                   Ce concert est terminé. Le replay sera bientôt disponible.
                 </p>
               ) : c.access_type === 'ticket' || c.access_type === 'ppv' ? (
-                <button onClick={() => setPaySheet(true)}
+                <button onClick={handleBuyTicket}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
                   style={{ background: activeTierColor }}>
                   <Ticket size={15} /> Acheter un billet
                 </button>
               ) : c.access_type === 'free' ? (
-                <button onClick={() => setPaySheet(true)}
+                <button onClick={handleBuyTicket}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
                   style={{ background: '#10B981' }}>
                   <Ticket size={15} /> Réserver ma place
@@ -647,6 +669,8 @@ export default function ConcertDetailPage() {
         contentId={c.id}
         initialStatus={c.ai_analysis_status}
       />
+
+      {ConfirmDialog}
     </div>
   );
 }

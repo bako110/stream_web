@@ -21,6 +21,7 @@ import { Lightbox } from '../../components/ui/Lightbox';
 import { formatTimeAgo } from '../../utils/date';
 import { ShareModal } from '../../components/ui/ShareModal';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
+import { useConfirm } from '../../components/ui/Dialog';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -380,6 +381,7 @@ export default function EventDetailPage() {
   const navigate       = useNavigate();
   const goBack         = useSmartBack('/events');
   const { user: me } = useAuthStore();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const { data: event, loading } = useApi<Event>(
     () => apiClient.get<Event>(Endpoints.events.byId(id!)), [id]
@@ -513,6 +515,25 @@ export default function EventDetailPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const openShare = useCallback(() => setShowShareModal(true), []);
 
+  const handleBuyTicket = useCallback(async () => {
+    if (!event) return;
+    // Repost — celui qui a republié n'est pas l'organisateur original et ne
+    // peut pas vendre de billets dessus (demande explicite : renvoyer vers
+    // le vrai organisateur). Même pattern côté mobile, EventDetailScreen.
+    if (event.remix_type === 'repost' && event.source_event?.organizer) {
+      const original = event.source_event.organizer;
+      const name = original.display_name ?? original.username ?? 'l\'organisateur original';
+      const ok = await confirm({
+        title: 'Billets non disponibles ici',
+        message: `Ceci est une republication. Pour acheter un billet, rends-toi sur le profil de ${name}, l'organisateur original de cet événement.`,
+        confirmLabel: 'Voir le profil',
+        cancelLabel: 'Fermer',
+      });
+      if (ok) navigate(`/user/${encodeId(original.id)}`);
+      return;
+    }
+    setPaySheet(true);
+  }, [event, confirm, navigate]);
 
   if (loading) return <PageLoader />;
   if (!event)  return <div className="p-6" style={{ color: 'var(--text-secondary)' }}>Événement introuvable.</div>;
@@ -879,7 +900,7 @@ export default function EventDetailPage() {
                   </div>
                 )}
                 {ev.access_type === 'ticket' && (
-                  <button onClick={() => setPaySheet(true)}
+                  <button onClick={handleBuyTicket}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white"
                     style={{ background: tierColor }}>
                     <Ticket size={14} /> Acheter un billet
@@ -949,6 +970,8 @@ export default function EventDetailPage() {
         contentId={ev.id}
         initialStatus={ev.ai_analysis_status}
       />
+
+      {ConfirmDialog}
     </div>
   );
 }
