@@ -135,7 +135,7 @@ function MiniConcertCard({ c }: { c: Concert }) {
         </p>
         {c.status === 'live' && (
           <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-            style={{ background: '#7B3FF2' }}>LIVE</span>
+            style={{ background: '#EF4444' }}>LIVE</span>
         )}
       </div>
     </button>
@@ -312,7 +312,7 @@ export default function ConcertDetailPage() {
           {isLive && (
             <div className="absolute top-4 left-4 flex items-center gap-2">
               <span className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-                style={{ background: '#7B3FF2' }}>
+                style={{ background: '#EF4444' }}>
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 LIVE
               </span>
@@ -494,7 +494,7 @@ export default function ConcertDetailPage() {
                   style={{ color: 'var(--text-tertiary)' }}>Accès</p>
                 <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>
                   {c.access_type === 'free'         ? 'Gratuit'
-                   : c.access_type === 'ticket'     ? `À partir de ${c.ticket_price ?? '?'} €`
+                   : c.access_type === 'ticket'     ? `À partir de ${c.ticket_price != null ? Number(c.ticket_price).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '?'} €`
                    : c.access_type === 'subscription'? 'Abonnement'
                    : 'PPV'}
                 </p>
@@ -520,9 +520,9 @@ export default function ConcertDetailPage() {
               {/* CTA principal */}
               {isLive ? (
                 <button onClick={() => navigate(`/live/${encodeId(c.id)}`)}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
-                  style={{ background: '#7B3FF2' }}>
-                  <Radio size={15} /> Regarder en direct
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white mb-3 transition-transform active:scale-[0.98]"
+                  style={{ background: '#EF4444', boxShadow: '0 6px 18px rgba(239,68,68,0.35)' }}>
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> Regarder en direct
                 </button>
               ) : isEnded && (c.video_url || c.replay_url) ? (
                 <button onClick={() => navigate(`/live/${encodeId(c.id)}`)}
@@ -561,9 +561,11 @@ export default function ConcertDetailPage() {
                 </p>
               )}
 
+              {/* Actions secondaires */}
+              <div className={`grid gap-2 ${!isArtist && !isEnded ? 'grid-cols-2' : 'grid-cols-1'}`}>
               {/* Favoris */}
               <button onClick={handleSaveFav} disabled={savingFav}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
                 style={{
                   background: favId ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)',
                   border: `1px solid ${favId ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
@@ -577,7 +579,7 @@ export default function ConcertDetailPage() {
               {/* Rappel */}
               {!isArtist && !isEnded && (
                 <button onClick={toggleReminder} disabled={remindLoading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
                   style={{
                     background: reminder ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)',
                     border: `1px solid ${reminder ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
@@ -587,6 +589,7 @@ export default function ConcertDetailPage() {
                   {reminder ? 'Rappel actif' : 'Me rappeler'}
                 </button>
               )}
+              </div>
 
               {/* Actions artiste */}
               {isArtist && (

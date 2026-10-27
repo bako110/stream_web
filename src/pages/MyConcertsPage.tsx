@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 function LiveBadge() {
   return (
     <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-      style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+      style={{ background: '#EF4444' }}>
       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
       LIVE
     </span>

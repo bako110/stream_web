@@ -13,9 +13,11 @@ import {
   useParticipants,
   useLocalParticipant,
   useTracks,
+  useConnectionState,
   RoomAudioRenderer,
+  StartAudio,
 } from '@livekit/components-react';
-import { Track, VideoPresets } from 'livekit-client';
+import { Track, VideoPresets, ConnectionState } from 'livekit-client';
 import type { Concert, StreamToken, StreamStatus } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
@@ -41,68 +43,159 @@ const VIEWER_ROOM_OPTIONS = {
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
 
-interface ChatMsg { id: string; user: string; avatar?: string | null; text: string; ts: number; }
+interface ChatMsg {
+  id: string; userId: string | null; user: string; avatar?: string | null; text: string;
+  pending?: boolean; failed?: boolean;
+}
 
-function LiveChat({ concertId, accessToken }: { concertId: string; accessToken: string | null }) {
+function toChatMsg(c: any): ChatMsg {
+  return {
+    id:     String(c.id),
+    userId: c.author?.id ?? null,
+    user:   c.author?.display_name ?? c.author?.username ?? 'Anonyme',
+    avatar: c.author?.avatar_url ?? null,
+    text:   c.body ?? '',
+  };
+}
+
+// Chat temps réel : historique via REST, nouveaux messages via WebSocket
+// (événement `comment_added`), envoi via POST /social/comments — le WebSocket
+// commentaires est en lecture seule côté client, le serveur diffuse l'écho.
+function LiveChat({ concertId, liveId, accessToken }: { concertId: string; liveId: string | null; accessToken: string | null }) {
+  const me = useAuthStore(s => s.user);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput]       = useState('');
-  const wsRef    = useRef<WebSocket | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [online, setOnline]     = useState(false);
+  const [sending, setSending]   = useState(false);
+  const listRef  = useRef<HTMLDivElement>(null);
+  const stickRef = useRef(true);
 
+  const target = liveId ? { type: 'live', id: liveId, key: 'live_id' } : { type: 'concert', id: concertId, key: 'concert_id' };
+
+  const pushMsg = useCallback((m: ChatMsg) => {
+    setMessages(prev => {
+      if (prev.some(x => x.id === m.id)) return prev;
+      // Écho de notre propre message : remplace l'entrée optimiste.
+      const idx = m.userId ? prev.findIndex(x => x.pending && x.userId === m.userId && x.text === m.text) : -1;
+      if (idx >= 0) { const next = prev.slice(); next[idx] = m; return next; }
+      return [...prev.slice(-199), m];
+    });
+  }, []);
+
+  // Historique
+  useEffect(() => {
+    let cancelled = false;
+    apiClient.get<any[]>(`${Endpoints.social.comments}?${target.key}=${target.id}&limit=50`)
+      .then(r => { if (!cancelled) setMessages(prev => {
+        const hist = [...r.data].reverse().map(toChatMsg);
+        const ids = new Set(hist.map(h => h.id));
+        return [...hist, ...prev.filter(p => !ids.has(p.id))];
+      }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [target.id]);
+
+  // WebSocket avec reconnexion automatique
   useEffect(() => {
     if (!accessToken) return;
-    const ws = openAuthenticatedWs(`${WS_BASE_URL}/api/v1/social/comments/ws/concert/${concertId}`, accessToken);
-    wsRef.current = ws;
-    ws.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setMessages(prev => [...prev.slice(-149), {
-          id:     data.id ?? String(Date.now()),
-          user:   data.author?.display_name ?? data.author?.username ?? 'Anonyme',
-          avatar: data.author?.avatar_url ?? null,
-          text:   data.body,
-          ts:     Date.now(),
-        }]);
-      } catch { /* ignore */ }
+    let cancelled = false;
+    let ws: WebSocket | null = null;
+    let retry = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const base = WS_BASE_URL || window.location.origin.replace(/^http/, 'ws');
+
+    const connect = () => {
+      ws = openAuthenticatedWs(`${base}/api/v1/social/comments/ws/${target.type}/${target.id}`, accessToken);
+      ws.onopen = () => { retry = 0; setOnline(true); };
+      ws.onmessage = (e) => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.type === 'comment_added' && d.comment) pushMsg(toChatMsg(d.comment));
+          else if (d.type === 'comment_deleted' && d.comment_id) setMessages(prev => prev.filter(m => m.id !== String(d.comment_id)));
+        } catch { /* ignore */ }
+      };
+      ws.onclose = () => {
+        setOnline(false);
+        if (cancelled) return;
+        timer = setTimeout(connect, Math.min(1000 * 2 ** retry++, 15000));
+      };
     };
-    return () => ws.close();
-  }, [concertId]);
+    connect();
+    const ping = setInterval(() => { if (ws?.readyState === WebSocket.OPEN) ws.send('{"type":"ping"}'); }, 25000);
+    return () => { cancelled = true; clearTimeout(timer); clearInterval(ping); ws?.close(); };
+  }, [accessToken, target.type, target.id, pushMsg]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  // Auto-scroll uniquement si l'utilisateur est déjà en bas
+  useEffect(() => {
+    const el = listRef.current;
+    if (el && stickRef.current) el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
-  function send() {
-    if (!input.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
-    wsRef.current.send(JSON.stringify({ body: input.trim(), concert_id: concertId }));
+  async function send() {
+    const text = input.trim();
+    if (!text || sending || !me) return;
+    const localId = `local-${Date.now()}`;
     setInput('');
+    setSending(true);
+    stickRef.current = true;
+    setMessages(prev => [...prev, {
+      id: localId, userId: me.id, text, pending: true,
+      user: me.display_name ?? me.username ?? 'Moi', avatar: me.avatar_url ?? null,
+    }]);
+    try {
+      const r = await apiClient.post<any>(Endpoints.social.comments, { body: text, [target.key]: target.id });
+      const saved = toChatMsg(r.data);
+      setMessages(prev => {
+        // L'écho WebSocket a pu arriver avant la réponse : on dédoublonne.
+        const without = prev.filter(m => m.id !== localId);
+        return without.some(m => m.id === saved.id) ? without : [...without, saved];
+      });
+    } catch {
+      setMessages(prev => prev.map(m => m.id === localId ? { ...m, pending: false, failed: true } : m));
+    } finally { setSending(false); }
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-        {messages.length === 0 && (
-          <p className="text-center text-xs text-[var(--text-tertiary)] pt-8">Aucun message pour l'instant</p>
-        )}
-        {messages.map(m => (
-          <div key={m.id} className="flex gap-2 items-start">
-            <Avatar src={m.avatar} name={m.user} size="xs" className="mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <span className="text-xs font-semibold text-brand-primary">{m.user} </span>
-              <span className="text-xs text-[var(--text-primary)] break-words whitespace-pre-line">{m.text}</span>
-            </div>
-          </div>
-        ))}
-        <div ref={bottomRef} />
+      <div className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] shrink-0"
+        style={{ color: online ? '#22C55E' : 'var(--text-tertiary)' }}>
+        <span className={`w-1.5 h-1.5 rounded-full ${online ? '' : 'animate-pulse'}`}
+          style={{ background: online ? '#22C55E' : '#F59E0B' }} />
+        {online ? 'Connecté en direct' : 'Reconnexion…'}
       </div>
-      <div className="p-3 border-t border-[var(--border)] flex gap-2 shrink-0">
+      <div ref={listRef} className="flex-1 overflow-y-auto px-3 pb-3 space-y-2.5 min-h-0"
+        onScroll={e => { const el = e.currentTarget; stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; }}>
+        {messages.length === 0 && (
+          <p className="text-center text-xs text-[var(--text-tertiary)] pt-8">Sois le premier à commenter 👋</p>
+        )}
+        {messages.map(m => {
+          const mine = !!me && m.userId === me.id;
+          return (
+            <div key={m.id} className="flex gap-2 items-start" style={{ opacity: m.pending ? 0.55 : 1 }}>
+              <Avatar src={m.avatar} name={m.user} size="xs" className="mt-0.5 shrink-0" />
+              <div className="min-w-0 rounded-2xl rounded-tl-sm px-3 py-1.5"
+                style={{ background: mine ? 'rgba(123,63,242,0.14)' : 'var(--bg-secondary)' }}>
+                <p className="text-[11px] font-bold" style={{ color: mine ? '#7B3FF2' : 'var(--text-secondary)' }}>{m.user}</p>
+                <p className="text-sm text-[var(--text-primary)] break-words whitespace-pre-line">{m.text}</p>
+                {m.failed && <p className="text-[10px] text-red-400 mt-0.5">Échec de l'envoi</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="p-3 border-t border-[var(--border)] flex gap-2 shrink-0"
+        style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}>
         <input
-          className="input text-sm py-1.5 flex-1 min-w-0"
-          placeholder="Commenter en direct..."
-          value={input}
+          className="input text-sm py-2 flex-1 min-w-0"
+          placeholder={me ? 'Commenter en direct...' : 'Connecte-toi pour commenter'}
+          value={input} maxLength={500} disabled={!me}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') send(); }}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
         />
-        <button onClick={send} className="btn-primary p-2 aspect-square shrink-0">
-          <Send size={14} />
+        <button onClick={send} disabled={!input.trim() || !me}
+          className="p-2.5 aspect-square shrink-0 rounded-xl text-white disabled:opacity-40 transition-opacity"
+          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
+          <Send size={15} />
         </button>
       </div>
     </div>
@@ -111,40 +204,91 @@ function LiveChat({ concertId, accessToken }: { concertId: string; accessToken: 
 
 // ── LiveKit viewer — reçoit les tracks de la room ─────────────────────────────
 
-function LiveKitViewer() {
+function LiveKitViewer({ concert, onCount }: { concert: Concert; onCount?: (n: number) => void }) {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare], { onlySubscribed: true });
   const participants = useParticipants();
+  const connection = useConnectionState();
   const videoTrack = tracks.find(t => !t.participant.isLocal);
+  const artistName = concert.artist?.display_name ?? concert.artist?.username ?? '';
+
+  useEffect(() => { onCount?.(participants.length); }, [participants.length, onCount]);
 
   if (!videoTrack) {
+    const connecting = connection === ConnectionState.Connecting || connection === ConnectionState.Reconnecting;
+    const lost = connection === ConnectionState.Disconnected;
+    const title = connecting ? 'Connexion au direct…' : lost ? 'Connexion interrompue' : 'Le direct va démarrer';
+    const sub = connecting
+      ? 'Nous préparons le flux, ça ne prend qu’un instant.'
+      : lost
+        ? 'Vérifie ta connexion puis recharge la page.'
+        : `${artistName ? artistName + ' arrive' : 'L’artiste arrive'} — le flux s’affichera automatiquement.`;
+    const others = Math.max(participants.length - 1, 0);
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
-        <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center animate-pulse">
-          <Radio size={32} className="opacity-60" />
+      <div className="absolute inset-0 flex items-center justify-center px-6 text-white bg-black">
+        {concert.thumbnail_url && (
+          <img src={concert.thumbnail_url} alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm" />
+        )}
+        <style>{`
+          @keyframes lv-ring { 0% { transform: scale(.6); opacity: .55 } 100% { transform: scale(1.9); opacity: 0 } }
+          @keyframes lv-dots { 0%,20% { opacity: .2 } 50% { opacity: 1 } 100% { opacity: .2 } }
+        `}</style>
+        <div className="flex flex-col items-center text-center gap-5 max-w-sm w-full rounded-3xl px-8 py-9"
+          style={{ background: 'rgba(15,12,28,0.55)', backdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.45)' }}>
+          <div className="relative w-24 h-24 flex items-center justify-center">
+            {!lost && [0, 1, 2].map(i => (
+              <span key={i} className="absolute inset-0 rounded-full"
+                style={{ border: '2px solid rgba(123,63,242,0.7)', animation: `lv-ring 2.4s ease-out ${i * 0.8}s infinite` }} />
+            ))}
+            <div className="relative rounded-full p-1" style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 30px rgba(123,63,242,0.55)' }}>
+              <Avatar src={concert.artist?.avatar_url} name={artistName} size="lg" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <p className="font-extrabold text-lg leading-tight">{title}</p>
+            <p className="text-sm text-white/60 leading-snug">{sub}</p>
+          </div>
+          {!lost && (
+            <div className="flex items-center gap-1.5">
+              {[0, 1, 2].map(i => (
+                <span key={i} className="w-2 h-2 rounded-full bg-white"
+                  style={{ animation: `lv-dots 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+              ))}
+            </div>
+          )}
+          <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <Users size={12} />
+            {others > 0 ? `${others} spectateur${others > 1 ? 's' : ''} en attente` : 'Tu es le premier arrivé'}
+          </span>
         </div>
-        <p className="text-sm opacity-70">En attente de la diffusion...</p>
-        <p className="text-xs opacity-40">{participants.length} participant(s) connecté(s)</p>
       </div>
     );
   }
 
   return (
     <>
-      <RoomAudioRenderer />
-      <VideoTrack trackRef={videoTrack} className="w-full h-full object-contain" />
+      <VideoTrack trackRef={videoTrack} className="absolute inset-0 w-full h-full object-contain bg-black" />
+      <StartAudio label="Activer le son"
+        className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full text-sm font-bold text-white"
+        style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 20px rgba(123,63,242,0.5)' }} />
     </>
   );
 }
 
-// ── Compteur de viewers temps réel ───────────────────────────────────────────
-
-function ViewerCount() {
-  const participants = useParticipants();
-  return (
-    <span className="bg-black/60 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm">
-      <Eye size={11} /> {participants.length.toLocaleString()}
-    </span>
-  );
+// Aperçu local de l'artiste (même connexion que les contrôles : une seule
+// identité LiveKit par room, sinon la 2e connexion éjecte la 1re).
+function ArtistPreview({ concert }: { concert: Concert }) {
+  const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
+  const local = tracks.find(t => t.participant.isLocal && t.publication);
+  if (!local) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center text-white px-6 text-center">
+        <p className="text-sm text-white/60">Active ta caméra pour apparaître en direct, {concert.artist?.display_name ?? ''}</p>
+      </div>
+    );
+  }
+  return <VideoTrack trackRef={local} className="absolute inset-0 w-full h-full object-contain bg-black" />;
 }
 
 // ── Panneau artiste — contrôle du live ────────────────────────────────────────
@@ -244,7 +388,7 @@ export default function LivePage() {
   const [stopping,       setStopping]       = useState(false);
   const [buying,         setBuying]         = useState(false);
   const [viewers,        setViewers]        = useState(0);
-  const [lkConnected,    setLkConnected]    = useState(false);
+  const [lkCount,        setLkCount]        = useState<number | null>(null);
 
   const concertApi = useApi<Concert>(() => apiClient.get<Concert>(Endpoints.concerts.byId(id!)), [id]);
   const statusApi  = useApi<StreamStatus>(() => apiClient.get<StreamStatus>(Endpoints.streaming.status(id!)), [id]);
@@ -270,32 +414,50 @@ export default function LivePage() {
     if (status) setViewers(status.current_viewers);
   }, [status]);
 
+  // Chemin unifié (Live) quand le concert en a un — seul lui permet scène/
+  // cadeaux côté mobile et reste cohérent room-wise ("live-{id}" vs
+  // "concert-{id}") ; fallback sur l'ancien streaming.py pour les concerts
+  // créés avant cette bascule (pas de live_id).
+  const liveId = concert?.live_id ?? null;
+
   // Token viewer (subscriber)
   const fetchViewerToken = useCallback(async () => {
     if (!id || !isLive) return;
     try {
-      const r = await apiClient.get<StreamToken>(Endpoints.streaming.token(id));
+      const r = liveId
+        ? await apiClient.get<StreamToken>(Endpoints.lives.token(liveId))
+        : await apiClient.get<StreamToken>(Endpoints.streaming.token(id));
       setToken(r.data);
     } catch { /* accès refusé ou pas encore live */ }
-  }, [id, isLive]);
+  }, [id, isLive, liveId]);
 
   useEffect(() => { fetchViewerToken(); }, [fetchViewerToken]);
+
+  // Le live peut etre marque "live" avant que le token soit emis : on retente
+  // jusqu'a l'obtenir au lieu de rester bloque sur le spinner.
+  useEffect(() => {
+    if (!isLive || token || isArtist) return;
+    const iv = setInterval(fetchViewerToken, 4000);
+    return () => clearInterval(iv);
+  }, [isLive, token, isArtist, fetchViewerToken]);
 
   // Artiste — token publisher
   useEffect(() => {
     if (!isArtist || !id || !isLive) return;
-    apiClient.get<StreamToken>(Endpoints.streaming.token(id))
-      .then(r => setPublisherToken(r.data))
-      .catch(() => {});
-  }, [isArtist, id, isLive]);
+    const req = liveId
+      ? apiClient.get<StreamToken>(Endpoints.lives.token(liveId))
+      : apiClient.get<StreamToken>(Endpoints.streaming.token(id));
+    req.then(r => setPublisherToken(r.data)).catch(() => {});
+  }, [isArtist, id, isLive, liveId]);
 
   async function handleStart(record: boolean) {
     if (!id) return;
     setShowRecordConfirm(false);
     setStarting(true);
     try {
-      const url = `${Endpoints.streaming.start(id)}?record=${record}`;
-      const r = await apiClient.post<StreamToken>(url);
+      const r = liveId
+        ? await apiClient.post<StreamToken>(`${Endpoints.lives.goLive(liveId)}?record=${record}`)
+        : await apiClient.post<StreamToken>(`${Endpoints.streaming.start(id)}?record=${record}`);
       setPublisherToken(r.data);
       setToken(r.data);
       await concertApi.refetch?.();
@@ -307,7 +469,8 @@ export default function LivePage() {
     if (!id) return;
     setStopping(true);
     try {
-      await apiClient.post(Endpoints.streaming.stop(id));
+      if (liveId) await apiClient.post(Endpoints.lives.stop(liveId));
+      else await apiClient.post(Endpoints.streaming.stop(id));
       setToken(null);
       setPublisherToken(null);
       await concertApi.refetch?.();
@@ -395,20 +558,12 @@ export default function LivePage() {
             {isLive ? (
               <>
                 <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
+                  style={{ background: '#EF4444', boxShadow: '0 0 10px rgba(239,68,68,0.5)' }}>
                   <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
                 </span>
-                {!lkConnected ? (
-                  <span className="bg-black/60 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Eye size={11} /> {viewers.toLocaleString()}
-                  </span>
-                ) : (
-                  token && livekitUrl ? (
-                    <LiveKitRoom token={token.token} serverUrl={livekitUrl} connect={isLive} onConnected={() => setLkConnected(true)}>
-                      <ViewerCount />
-                    </LiveKitRoom>
-                  ) : null
-                )}
+                <span className="bg-black/60 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-sm">
+                  <Eye size={11} /> {(lkCount ?? viewers).toLocaleString()}
+                </span>
               </>
             ) : concert.status === 'draft' || concert.status === 'published' ? (
               <span className="flex items-center gap-1 text-xs text-white/60 bg-white/10 px-2.5 py-1 rounded-full">
@@ -428,7 +583,7 @@ export default function LivePage() {
         <div className="flex-1 relative bg-black overflow-hidden">
 
           {/* Thumbnail de fond (quand pas encore live) */}
-          {concert.thumbnail_url && (
+          {concert.thumbnail_url && !(isLive && ((token && livekitUrl) || publisherToken)) && (
             <img src={concert.thumbnail_url} alt=""
               className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm" />
           )}
@@ -473,18 +628,17 @@ export default function LivePage() {
               </button>
             </div>
 
-          ) : isLive && token && livekitUrl ? (
+          ) : isLive && token && livekitUrl && !(isArtist && publisherToken) ? (
             /* LiveKit Room */
             <LiveKitRoom
               token={token.token}
               serverUrl={livekitUrl}
               connect={true}
-              onConnected={() => setLkConnected(true)}
               options={VIEWER_ROOM_OPTIONS}
               className="w-full h-full"
             >
               <RoomAudioRenderer />
-              <LiveKitViewer />
+              <LiveKitViewer concert={concert} onCount={setLkCount} />
             </LiveKitRoom>
 
           ) : !isLive && (concert.status === 'draft' || concert.status === 'published') ? (
@@ -527,8 +681,10 @@ export default function LivePage() {
 
           {/* Contrôles artiste (overlay bas) */}
           {isArtist && isLive && publisherToken && livekitUrl && (
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
-              <LiveKitRoom token={publisherToken.token} serverUrl={livekitUrl} connect={true}>
+            <LiveKitRoom token={publisherToken.token} serverUrl={livekitUrl} connect={true} className="absolute inset-0">
+              <RoomAudioRenderer />
+              <ArtistPreview concert={concert} />
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
                 <ArtistControls
                   concert={concert}
                   publisherToken={publisherToken}
@@ -539,8 +695,8 @@ export default function LivePage() {
                   starting={starting}
                   stopping={stopping}
                 />
-              </LiveKitRoom>
-            </div>
+              </div>
+            </LiveKitRoom>
           )}
 
           {/* Bouton stop si artiste + live mais pas encore dans la room */}
@@ -616,7 +772,7 @@ export default function LivePage() {
             </button>
           </div>
           <div className="flex-1 min-h-0">
-            <LiveChat concertId={id!} accessToken={accessToken} />
+            <LiveChat concertId={id!} liveId={liveId} accessToken={accessToken} />
           </div>
         </div>
       )}
@@ -652,7 +808,7 @@ export default function LivePage() {
           </button>
         </div>
         <div className="flex-1 min-h-0">
-          {chatDrawerOpen && <LiveChat concertId={id!} accessToken={accessToken} />}
+          {chatDrawerOpen && <LiveChat concertId={id!} liveId={liveId} accessToken={accessToken} />}
         </div>
       </div>
     </div>

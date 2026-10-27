@@ -103,7 +103,7 @@ export function Avatar({ src, name, size = 'md', className, style, verified, isL
       <div className={clsx('relative inline-flex shrink-0', sizes[size], className)} style={style}>
         <div
           className={clsx('absolute inset-0 rounded-full animate-live-ring', LIVE_RING_PADDING[size])}
-          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A,#7B3FF2)' }}
+          style={{ background: 'linear-gradient(135deg,#EF4444,#DC2626)' }}
         >
           <div className="w-full h-full rounded-full overflow-hidden" style={{ background: 'var(--surface, #000)' }}>
             {image}
@@ -111,7 +111,7 @@ export function Avatar({ src, name, size = 'md', className, style, verified, isL
         </div>
         <span
           className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] font-black text-white px-1 rounded-full uppercase tracking-wide"
-          style={{ background: 'linear-gradient(135deg,#F0365A,#E0389A)', lineHeight: '1.4', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+          style={{ background: '#EF4444', lineHeight: '1.4', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
         >
           Live
         </span>

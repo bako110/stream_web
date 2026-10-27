@@ -1656,8 +1656,7 @@ function LiveHero({ concert }: { concert: Concert }) {
   return (
     <div
       onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
-      className="relative overflow-hidden rounded-2xl cursor-pointer group animate-reveal-up"
-      style={{ aspectRatio: '21/9' }}
+      className="relative overflow-hidden rounded-2xl cursor-pointer group animate-reveal-up flex flex-col justify-between min-h-[280px] sm:min-h-[300px] lg:aspect-[21/9]"
     >
       {concert.thumbnail_url ? (
         <img src={concert.thumbnail_url} alt={concert.title}
@@ -1672,9 +1671,9 @@ function LiveHero({ concert }: { concert: Concert }) {
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
         style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }} />
 
-      <div className="absolute top-4 left-4 right-4 flex items-center gap-2">
+      <div className="relative z-10 p-3 sm:p-4 flex flex-wrap items-center gap-2">
         <span className="flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full text-white tracking-wide"
-          style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 24px rgba(123,63,242,0.6)' }}>
+          style={{ background: '#EF4444', boxShadow: '0 0 24px rgba(239,68,68,0.6)' }}>
           <Radio size={11} strokeWidth={3} />EN DIRECT
         </span>
         {(concert.current_viewers ?? 0) > 0 && (
@@ -1685,24 +1684,24 @@ function LiveHero({ concert }: { concert: Concert }) {
         )}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-5">
+      <div className="relative z-10 p-3 sm:p-5 pt-6">
         {concert.genre && (
           <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full mb-2 uppercase tracking-wider"
             style={{ background: 'rgba(123,63,242,0.6)', color: '#E8D5FF', backdropFilter: 'blur(4px)' }}>
             {concert.genre}
           </span>
         )}
-        <h2 className="text-white font-black text-xl sm:text-2xl leading-tight drop-shadow-lg">{concert.title}</h2>
-        <div className="flex items-center gap-3 mt-2">
+        <h2 className="text-white font-black text-lg sm:text-2xl leading-tight drop-shadow-lg line-clamp-2 break-words">{concert.title}</h2>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 min-w-0">
           <Avatar src={concert.artist?.avatar_url} name={concert.artist?.display_name ?? concert.artist?.username ?? ''} size="xs" />
-          <span className="text-white/80 text-sm font-medium">{concert.artist?.display_name ?? concert.artist?.username}</span>
+          <span className="text-white/80 text-sm font-medium truncate max-w-full">{concert.artist?.display_name ?? concert.artist?.username}</span>
           {concert.venue_city && (
             <span className="flex items-center gap-1 text-white/60 text-xs"><MapPin size={10} />{concert.venue_city}</span>
           )}
         </div>
         <div className="mt-3">
           <button onClick={e => e.stopPropagation()}
-            className="flex items-center gap-2 text-sm font-black px-5 py-2.5 rounded-xl text-white transition-all active:scale-95 hover:scale-105"
+            className="flex items-center justify-center gap-2 text-sm font-black px-5 py-2.5 rounded-xl text-white transition-all active:scale-95 hover:scale-105 w-full sm:w-auto"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 6px 24px rgba(123,63,242,0.55)' }}>
             <Play size={14} fill="white" />Regarder maintenant
           </button>
@@ -1776,7 +1775,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {isLive && (
             <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full text-white"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 10px rgba(123,63,242,0.5)' }}>
+              style={{ background: '#EF4444', boxShadow: '0 0 10px rgba(239,68,68,0.5)' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
             </span>
           )}
@@ -2247,6 +2246,9 @@ function ReelCard({ reel, delay = 0 }: {
   // désactivé, comme le mobile). Désactivé : miniature fixe, aucune vidéo
   // téléchargée tant que l'utilisateur n'ouvre pas le reel.
   const { feed_autoplay_reels: autoplayOn } = usePlaybackPrefs();
+  // La vidéo joue réellement : on masque alors le badge play (il ne sert qu'à
+  // signaler « clique pour ouvrir » sur une miniature fixe ou une vidéo à l'arrêt).
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -2293,6 +2295,9 @@ function ReelCard({ reel, delay = 0 }: {
           muted
           loop
           playsInline
+          onPlaying={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onWaiting={() => setIsPlaying(false)}
           className="w-full h-full object-contain pointer-events-none"
         />
       ) : reel.thumbnail_url ? (
@@ -2309,7 +2314,8 @@ function ReelCard({ reel, delay = 0 }: {
           mobile équivalente (FeedScreen.tsx ReelSuggestionTile), signale
           "c'est une vidéo, clique pour l'ouvrir" même si l'aperçu joue déjà
           en autoplay muet au survol visible. */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300"
+        style={{ opacity: isPlaying ? 0 : 1 }}>
         <span className="reel-play-pulse-ring" />
         <span className="reel-play-pulse-core flex items-center justify-center rounded-full"
           style={{ width: 50, height: 50, background: 'rgba(0,0,0,0.45)', border: '1.5px solid rgba(255,255,255,0.9)' }}>
@@ -3507,7 +3513,7 @@ export default function FeedPage() {
               <SectionHead
                 icon={
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-full text-white"
-                    style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 0 14px rgba(123,63,242,0.5)' }}>
+                    style={{ background: '#EF4444', boxShadow: '0 0 14px rgba(239,68,68,0.5)' }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
                   </span>
                 }

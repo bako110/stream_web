@@ -141,6 +141,10 @@ export interface Concert {
   remix_type?: string | null;
   source_concert_id?: string | null;
   source_concert?: { id: string; title: string; thumbnail_url?: string | null; artist?: User | null } | null;
+  // Live réservé automatiquement à la création si concert_type inclut "live"
+  // (voir create_scheduled_live côté backend) — null pour les concerts créés
+  // avant cette bascule, ou en replay seul.
+  live_id?: string | null;
 }
 
 export interface StreamToken { token: string; room_name: string; livekit_url: string; }
