@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { OpaqueRouter } from './components/layout/OpaqueRouter';
 import { AppToaster } from './components/ui/AppToaster';
 import { Suspense, useEffect } from 'react';
 
@@ -358,7 +359,7 @@ function AppShell() {
 // ── Export ─────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
-    <BrowserRouter>
+    <OpaqueRouter>
       <MobileGate>
         <WebSocketProvider>
           <RouteProgressBar />
@@ -366,6 +367,6 @@ export default function App() {
           <AppShell />
         </WebSocketProvider>
       </MobileGate>
-    </BrowserRouter>
+    </OpaqueRouter>
   );
 }
