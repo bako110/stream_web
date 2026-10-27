@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -21,10 +22,18 @@ const NAV_LINKS = [
 export function ExploreLayout() {
   const { isAuthenticated } = useAuthStore();
   const { isDark, toggle }  = useThemeStore();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 8);
+    fn();
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
 
   return (
     <div className="explore-v3">
-      <header className="xp-header">
+      <header className={`xp-header${scrolled ? ' is-scrolled' : ''}`}>
         <div className="xp-container xp-header-top">
           <Link to="/" className="xp-header-brand">
             <GateLogo size={30} />
@@ -61,6 +70,7 @@ export function ExploreLayout() {
           </div>
         </div>
       </header>
+      <div className="xp-header-spacer" />
 
       <main>
         <Outlet />
