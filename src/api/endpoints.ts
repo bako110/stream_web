@@ -246,6 +246,12 @@ export const Endpoints = {
     cancel:         `${V1}/subscriptions/me`,
     history:        `${V1}/subscriptions/history`,
   },
+  // Texte complet à la demande : les listes (feed, posts, events, concerts, reels,
+  // commentaires) renvoient un texte tronqué côté serveur (is_*_truncated).
+  contentText: {
+    fullText: (type: 'post' | 'event' | 'concert' | 'reel' | 'comment', id: string) => `${V1}/content-text/${type}/${id}`,
+  },
+
   notifications: {
     list:       `${V1}/notifications`,
     unreadCount:`${V1}/notifications/unread-count`,

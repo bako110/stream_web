@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { commitReelSession } from '../hooks/useReelWatchStats';
 import { usePlaybackPrefs, getPlaybackPrefs } from '../hooks/usePlaybackPrefs';
 import { GuestPreview } from '../components/ui/GuestPreview';
-import { renderTextWithLinks } from '../components/ui/RichText';
+import { RichText, renderTextWithLinks, resolveFullText, useFullText } from '../components/ui/RichText';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/ui/Dialog';
@@ -355,7 +355,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                   <div className="flex items-center gap-1 shrink-0">
                     {user?.id === c.author?.id && (
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
-                        <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }}
+                        <button onClick={async () => { setEditingId(c.id); setEditBody(await resolveFullText(c.body, c.is_body_truncated, 'comment', c.id)); }}
                           className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
                           onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
                           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
@@ -395,7 +395,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm mt-0.5 leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-primary)' }}>{c.body}</p>
+                  <div className="text-sm mt-0.5 leading-relaxed break-words" style={{ color: 'var(--text-primary)' }}><RichText text={c.body} limit={280} showLinkPreview={false} isTruncated={c.is_body_truncated} entityType="comment" entityId={c.id} /></div>
                 )}
                 {editingId !== c.id && (
                   <div className="flex items-center gap-3 mt-1">
@@ -439,7 +439,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                               </div>
                               {user?.id === rc.author?.id && editingId !== rc.id && (
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 shrink-0">
-                                  <button onClick={() => { setEditingId(rc.id); setEditBody(rc.body); }}
+                                  <button onClick={async () => { setEditingId(rc.id); setEditBody(await resolveFullText(rc.body, rc.is_body_truncated, 'comment', rc.id)); }}
                                     className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
                                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
                                     onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
@@ -472,7 +472,7 @@ function CommentsSidebar({ reelId, count, onClose }: { reelId: string; count: nu
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-sm mt-0.5 leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-primary)' }}>{rc.body}</p>
+                              <div className="text-sm mt-0.5 leading-relaxed break-words" style={{ color: 'var(--text-primary)' }}><RichText text={rc.body} limit={280} showLinkPreview={false} isTruncated={rc.is_body_truncated} entityType="comment" entityId={rc.id} /></div>
                             )}
                           </div>
                         </div>
@@ -783,6 +783,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
   }, [active, authorId, isMine]); // eslint-disable-line
 
   const caption    = reel.caption ?? '';
+  const fullCaption = useFullText(caption, reel.is_caption_truncated, 'reel', reel.id);
 
   // Retourne les secondes de la session courante SANS remettre à zéro
   function currentSessionSeconds(): number {
@@ -1460,12 +1461,18 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
             <div>
               <p className={`text-white text-xs sm:text-sm leading-snug whitespace-pre-line ${captionExpanded ? '' : 'line-clamp-2'}`}
                 style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
-                {renderTextWithLinks(caption, 'underline font-semibold', { color: '#fff' })}
+                {renderTextWithLinks(fullCaption.shown, 'underline font-semibold', { color: '#fff' })}
               </p>
-              {caption.length > 80 && (
-                <button onClick={e => { e.stopPropagation(); setCaptionExpanded(v => !v); }}
+              {(caption.length > 80 || fullCaption.needsFetch) && (
+                <button disabled={fullCaption.loading}
+                  onClick={async e => {
+                    e.stopPropagation();
+                    if (captionExpanded) { setCaptionExpanded(false); return; }
+                    if (fullCaption.needsFetch) await fullCaption.load();
+                    setCaptionExpanded(true);
+                  }}
                   className="text-white/50 text-[10px] mt-0.5 font-medium">
-                  {captionExpanded ? 'Réduire' : 'Voir plus'}
+                  {fullCaption.loading ? '…' : captionExpanded ? 'Réduire' : 'Voir plus'}
                 </button>
               )}
             </div>
@@ -2358,10 +2365,10 @@ export default function ReelsPage() {
   }, [searchParams, reels, activeReel, jumpToReel]);
 
   // ── Menu 3 points ──
-  const handleOpenEdit = useCallback((r: Reel) => {
+  const handleOpenEdit = useCallback(async (r: Reel) => {
     setMenuReel(null);
     setEditReel(r);
-    setEditCaption(r.caption ?? '');
+    setEditCaption(await resolveFullText(r.caption ?? '', r.is_caption_truncated, 'reel', r.id));
   }, []);
   const handleSaveEdit = useCallback(async () => {
     if (!editReel) return;
@@ -3383,7 +3390,7 @@ export default function ReelsPage() {
                   /* Owner actions */
                   <>
                     {/* Modifier la description */}
-                    <button onClick={() => { setMoreSheetOpen(false); setEditReel(activeReel); setEditCaption(activeReel.caption ?? ''); }}
+                    <button onClick={async () => { setMoreSheetOpen(false); setEditReel(activeReel); setEditCaption(await resolveFullText(activeReel.caption ?? '', activeReel.is_caption_truncated, 'reel', activeReel.id)); }}
                       className="w-full flex items-center gap-4 px-5 py-3.5 transition-all text-left"
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>

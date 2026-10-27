@@ -226,9 +226,9 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
                             </span>
                           )}
                         </div>
-                        <p className="text-sm leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-secondary)' }}>
-                          {c.body ?? c.content}
-                        </p>
+                        <div className="text-sm leading-relaxed break-words" style={{ color: 'var(--text-secondary)' }}>
+                          <RichText text={c.body ?? c.content ?? ''} limit={280} showLinkPreview={false} isTruncated={c.is_body_truncated} entityType="comment" entityId={c.id} />
+                        </div>
                       </div>
                       {/* Actions */}
                       <div className="flex items-center gap-3 mt-1.5 px-1">

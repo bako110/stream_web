@@ -1,5 +1,7 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import { LinkPreviewCard } from './LinkPreviewCard';
+import { apiClient } from '../../api';
+import { Endpoints } from '../../api/endpoints';
 
 // Détecte les URLs avec protocole (https://...) ET les domaines nus (site.com,
 // truc.net, exemple.org...) sans http(s):// devant. Pas de flag `g` sur la version
@@ -66,10 +68,46 @@ interface Props {
   showLinkPreview?: boolean;
   /** Si défini : texte tronqué à N lignes (au lieu de `limit` caractères) avec « Voir plus ». */
   maxLines?: number;
+  /** true si le serveur a tronqué `text` dans cette réponse de liste (is_*_truncated) :
+   *  « Voir plus » charge alors le texte complet via entityType/entityId au lieu
+   *  d'un simple dépliage. Jamais calculé côté client. */
+  isTruncated?: boolean;
+  entityType?: 'post' | 'event' | 'concert' | 'reel' | 'comment';
+  entityId?: string;
 }
 
-export function RichText({ text, limit = 280, className = '', style, showLinkPreview = true, maxLines }: Props) {
+/** Texte complet avant édition : évite d'enregistrer la version tronquée d'une liste. */
+export async function resolveFullText(
+  text: string, isTruncated: boolean | undefined, type: 'post' | 'event' | 'concert' | 'reel' | 'comment', id: string,
+): Promise<string> {
+  if (!isTruncated) return text;
+  try {
+    const r = await apiClient.get<{ text: string | null }>(Endpoints.contentText.fullText(type, id));
+    return r.data?.text ?? text;
+  } catch { return text; }
+}
+
+/** Texte complet à la demande (liste → version tronquée serveur). */
+export function useFullText(text: string, isTruncated?: boolean, entityType?: string, entityId?: string) {
+  const [fullText, setFullText] = useState<string | null>(null);
+  const [loading, setLoading]   = useState(false);
+  const canFetch = !!(isTruncated && entityType && entityId);
+  const load = async () => {
+    if (!canFetch || fullText !== null || loading) return;
+    setLoading(true);
+    try {
+      const r = await apiClient.get<{ text: string | null }>(Endpoints.contentText.fullText(entityType as any, entityId!));
+      setFullText(r.data?.text ?? text);
+    } catch { /* on déplie quand même la version reçue */ }
+    finally { setLoading(false); }
+  };
+  return { shown: fullText ?? text, needsFetch: canFetch && fullText === null, loading, load };
+}
+
+export function RichText({ text: rawText, limit = 280, className = '', style, showLinkPreview = true, maxLines, isTruncated, entityType, entityId }: Props) {
+  const { shown: text, needsFetch, loading, load } = useFullText(rawText, isTruncated, entityType, entityId);
   const [expanded, setExpanded] = useState(false);
+  const expand = async () => { if (needsFetch) await load(); setExpanded(true); };
   const [overflowing, setOverflowing] = useState(false);
   const pRef = useRef<HTMLParagraphElement>(null);
 
@@ -93,13 +131,14 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
         >
           {renderTextWithLinks(text, 'underline font-medium')}
         </p>
-        {(overflowing || expanded) && (
+        {(overflowing || expanded || needsFetch) && (
           <button
-            onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
+            disabled={loading}
+            onClick={e => { e.stopPropagation(); if (expanded) setExpanded(false); else expand(); }}
             className="text-sm font-semibold mt-1 transition-opacity hover:opacity-70"
             style={{ color: 'var(--primary)' }}
           >
-            {expanded ? 'Voir moins ↑' : 'Voir plus'}
+            {loading ? '…' : expanded ? 'Voir moins ↑' : 'Voir plus'}
           </button>
         )}
         {showLinkPreview && text.match(URL_SPLIT)?.[0] && (
@@ -109,7 +148,7 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
     );
   }
 
-  const isLong = text.length > limit;
+  const isLong = needsFetch || text.length > limit;
   const displayed = isLong && !expanded ? text.slice(0, limit).trimEnd() + '…' : text;
 
   // 1re URL du texte complet (pour la preview OG)
@@ -122,12 +161,12 @@ export function RichText({ text, limit = 280, className = '', style, showLinkPre
       <p
         className={`text-sm leading-relaxed whitespace-pre-line ${className} ${isLong ? 'cursor-pointer select-none' : ''}`}
         style={style}
-        onClick={e => { e.stopPropagation(); if (isLong) setExpanded(v => !v); }}
+        onClick={e => { e.stopPropagation(); if (!isLong) return; if (expanded) setExpanded(false); else expand(); }}
       >
         {renderSegments(displayed)}
         {isLong && !expanded && (
           <span className="font-semibold ml-1" style={{ color: 'var(--primary)' }}>
-            Voir plus
+            {loading ? '…' : 'Voir plus'}
           </span>
         )}
       </p>

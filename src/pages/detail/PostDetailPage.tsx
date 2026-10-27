@@ -11,7 +11,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner } from '../../components/ui/Spinner';
-import { RichText } from '../../components/ui/RichText';
+import { RichText, resolveFullText } from '../../components/ui/RichText';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { ShareModal } from '../../components/ui/ShareModal';
@@ -196,13 +196,13 @@ function CommentsSheet({
                           <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
                             {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
                           </p>
-                          <p className="text-sm leading-relaxed whitespace-pre-line break-words" style={{ color: 'var(--text-secondary)' }}>
-                            {c.body}
-                          </p>
+                          <div className="text-sm leading-relaxed break-words" style={{ color: 'var(--text-secondary)' }}>
+                            <RichText text={c.body} limit={280} showLinkPreview={false} isTruncated={c.is_body_truncated} entityType="comment" entityId={c.id} />
+                          </div>
                         </div>
                         {me?.id === c.author?.id && (
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 mt-1 shrink-0">
-                            <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }}
+                            <button onClick={async () => { setEditingId(c.id); setEditBody(await resolveFullText(c.body, c.is_body_truncated, 'comment', c.id)); }}
                               className="p-1 rounded-lg" style={{ color: 'var(--text-tertiary)' }}
                               onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
                               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>

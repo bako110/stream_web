@@ -246,7 +246,7 @@ export type ReelStatus = 'processing' | 'published' | 'archived' | 'limited';
 export type ReelRemixType = 'remix' | 'repost' | null;
 
 export interface Reel {
-  id: string; user_id: string; caption: string | null;
+  id: string; user_id: string; caption: string | null; is_caption_truncated?: boolean;
   // hls_url : legacy, uniquement présent sur d'anciens reels — le backend a
   // basculé sur MP4 unique (voir reel_render_service.py). mp4_url est la
   // source de lecture réelle pour tout nouveau reel.
@@ -279,7 +279,7 @@ export interface Reel {
 // ── Post ──────────────────────────────────────────────────────────────────
 export interface PostAuthor { id: string; username?: string | null; display_name?: string | null; avatar_url?: string | null; is_verified?: boolean; }
 export interface Post {
-  id: string; user_id: string; body?: string | null;
+  id: string; user_id: string; body?: string | null; is_body_truncated?: boolean;
   image_url?: string | null; image_urls?: string[] | null;
   video_url?: string | null; hls_url?: string | null; thumbnail_url?: string | null;
   video_width?: number | null; video_height?: number | null;
@@ -316,7 +316,7 @@ export interface StoryGroup { user: StoryAuthor; stories: Story[]; has_unseen: b
 
 // ── Social ────────────────────────────────────────────────────────────────
 export interface Comment {
-  id: string; user_id: string; body: string; is_edited: boolean;
+  id: string; user_id: string; body: string; is_body_truncated?: boolean; is_edited: boolean;
   like_count: number; reply_count?: number; parent_id: string | null;
   created_at: string; updated_at: string;
   liked?: boolean;

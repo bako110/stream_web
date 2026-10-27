@@ -32,7 +32,7 @@ import { Avatar, VerifiedBadge } from '../components/ui/Avatar';
 import { Spinner } from '../components/ui/Spinner';
 import { useConfirm } from '../components/ui/Dialog';
 import { ExpandableText } from '../components/ui/ExpandableText';
-import { RichText, renderTextWithLinks } from '../components/ui/RichText';
+import { RichText, renderTextWithLinks, resolveFullText } from '../components/ui/RichText';
 import { FriendsWhoLiked } from '../components/ui/FriendsWhoLiked';
 import { CardMoreMenu, type CardMenuAction } from '../components/ui/CardMoreMenu';
 import { ReportModal, type ReportContentType } from '../components/ui/ReportModal';
@@ -1243,13 +1243,13 @@ function CommentsModal({
                         <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
                           {c.author?.display_name ?? c.author?.username ?? 'Utilisateur'}
                         </p>
-                        <p className="text-sm leading-relaxed break-words whitespace-pre-line" style={{ color: 'var(--text-primary)' }}>
-                          {c.body}
-                        </p>
+                        <div className="text-sm leading-relaxed break-words" style={{ color: 'var(--text-primary)' }}>
+                          <RichText text={c.body} limit={280} showLinkPreview={false} isTruncated={c.is_body_truncated} entityType="comment" entityId={c.id} />
+                        </div>
                       </div>
                       {user?.id === c.author?.id && (
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 mt-1">
-                          <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }}
+                          <button onClick={async () => { setEditingId(c.id); setEditBody(await resolveFullText(c.body, c.is_body_truncated, 'comment', c.id)); }}
                             className="p-1 rounded-lg"
                             style={{ color: 'var(--text-tertiary)' }}
                             onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
@@ -2171,7 +2171,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
       {/* Body */}
       {body && (
         <div className="px-3 pt-1 pb-2 cursor-pointer" onClick={() => navigate(`/posts/${encodeId(post.id)}`)}>
-          <RichText text={body} maxLines={2} style={{ color: 'var(--text-primary)' }} />
+          <RichText text={body} maxLines={2} style={{ color: 'var(--text-primary)' }} isTruncated={post.is_body_truncated} entityType="post" entityId={post.id} />
           {post.feeling && (
             <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(123,63,242,0.1)', color: 'var(--primary)' }}>
