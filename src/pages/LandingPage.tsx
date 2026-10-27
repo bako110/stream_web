@@ -669,9 +669,9 @@ export default function LandingPage() {
         .then(r => setFilms(r.data?.items ?? [])),
       publicClient.get<any>(`${Endpoints.content.series}?page=1&limit=8&status=published`)
         .then(r => setSeries(r.data?.items ?? [])),
-      publicClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=6&status=published`)
+      publicClient.get<any>(`${Endpoints.concerts.list}?page=1&limit=6&status=published&originals_only=true`)
         .then(r => setConcerts(Array.isArray(r.data) ? r.data : (r.data?.items ?? []))),
-      publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=6&status=published`)
+      publicClient.get<any>(`${Endpoints.events.list}?page=1&limit=6&status=published&originals_only=true`)
         .then(r => setEvents(sortEventsByProximity<Event>(Array.isArray(r.data) ? r.data : (r.data?.items ?? [])))),
     ]).finally(() => setLoading(false));
   }, []);

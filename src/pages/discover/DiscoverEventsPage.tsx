@@ -127,7 +127,7 @@ export default function DiscoverEventsPage() {
     if (reset) { setLoading(true); setAll([]); setPage(1); }
     else setLoadingMore(true);
     try {
-      const res = await apiClient.get<any>(`${Endpoints.events.list}?page=${nextPage}&limit=20`);
+      const res = await apiClient.get<any>(`${Endpoints.events.list}?page=${nextPage}&limit=20&originals_only=true`);
       const raw = res.data;
       const items: Event[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? raw?.results ?? [];
       if (reset) setAll(items); else setAll(prev => [...prev, ...items]);

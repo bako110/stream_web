@@ -2363,7 +2363,7 @@ function UpcomingEventsPanel() {
     // starts_at >= now dans la requête SQL), peu importe leur score de
     // pertinence (boost/follow/featured peuvent dépasser la pénalité
     // temporelle d'un événement passé).
-    apiClient.get<any>(`${Endpoints.events.list}?page=${p}&limit=${UPCOMING_PAGE_SIZE}&status=published&upcoming_only=true`)
+    apiClient.get<any>(`${Endpoints.events.list}?page=${p}&limit=${UPCOMING_PAGE_SIZE}&status=published&upcoming_only=true&originals_only=true`)
       .then(res => {
         // Le backend trie par score de pertinence (pas par date) — on retrie
         // l'ensemble cumulé à chaque page pour garder un ordre chronologique
@@ -2453,7 +2453,7 @@ function TrendingPanel() {
 
   const loadPage = useCallback((p: number) => {
     setLoading(true);
-    apiClient.get<any>(`${Endpoints.concerts.list}?page=${p}&limit=${TRENDING_PAGE_SIZE}&status=published`)
+    apiClient.get<any>(`${Endpoints.concerts.list}?page=${p}&limit=${TRENDING_PAGE_SIZE}&status=published&originals_only=true`)
       .then(res => {
         const list = toArray<any>(res.data);
         setConcerts(prev => p === 1 ? list : [...prev, ...list]);
