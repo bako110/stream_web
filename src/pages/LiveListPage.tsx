@@ -5,7 +5,7 @@ import { Radio, Clock, Users, Zap, Ticket, Music, X } from 'lucide-react';
 import type { Concert } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { useApi } from '../hooks/useApi';
+import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
 import { format } from 'date-fns';
@@ -188,15 +188,18 @@ export default function LiveListPage() {
   const navigate = useNavigate();
 
   const livesApi    = useApi<Concert[]>(() => apiClient.get<Concert[]>(Endpoints.concerts.live));
-  const upcomingApi = useApi<Concert[]>(() => apiClient.get<Concert[]>(Endpoints.concerts.upcoming));
+  const upcomingApi = usePaginatedApi<Concert>(
+    (p) => apiClient.get<Concert[]>(`${Endpoints.concerts.upcoming}?page=${p}&limit=12`),
+    [], 12,
+  );
 
   const lives    = livesApi.data    ?? [];
-  const upcoming = upcomingApi.data ?? [];
+  const upcoming = upcomingApi.items;
   const boosted  = [...lives, ...upcoming].filter(c => c.is_featured);
 
   const [boostTarget, setBoostTarget] = useState<Concert | null>(null);
 
-  const loading = livesApi.loading && upcomingApi.loading;
+  const loading = livesApi.loading && upcomingApi.loading && upcoming.length === 0;
 
   // Polling toutes les 15s comme le mobile
   useEffect(() => {
@@ -250,6 +253,9 @@ export default function LiveListPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {upcoming.map(c => <ConcertCard key={c.id} concert={c} onBoost={setBoostTarget} />)}
             </div>
+          )}
+          {upcomingApi.page < upcomingApi.pages && (
+            <div ref={upcomingApi.sentinelRef} className="flex justify-center py-6"><Spinner size="sm" /></div>
           )}
         </section>
       </div>

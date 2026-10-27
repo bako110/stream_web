@@ -209,9 +209,9 @@ const TYPE_FILTERS = [
 
 function AllEventsTab() {
   const [filter, setFilter] = useState('');
-  const { items, loading, loadMore, page, pages } = usePaginatedApi<Event>(
+  const { items, loading, loadMore, page, pages, sentinelRef } = usePaginatedApi<Event>(
     (p) => apiClient.get<PaginatedResponse<Event>>(
-      `${Endpoints.events.list}?page=${p}&limit=20&status=published${filter ? `&event_type=${filter}` : ''}`
+      `${Endpoints.events.list}?page=${p}&limit=20&status=published&originals_only=true${filter ? `&event_type=${filter}` : ''}`
     ),
     [filter],
   );
@@ -244,7 +244,7 @@ function AllEventsTab() {
             {sortEventsByProximity(items).map(ev => <EventCard key={ev.id} event={ev} />)}
           </div>
           {page < pages && (
-            <div className="flex justify-center pt-2">
+            <div ref={sentinelRef} className="flex justify-center pt-2">
               <button onClick={loadMore} disabled={loading} className="btn-secondary px-10">
                 {loading ? <Spinner size="sm" className="mx-auto" /> : 'Voir plus'}
               </button>
@@ -260,25 +260,17 @@ function AllEventsTab() {
 function MyEventsTab() {
   const navigate   = useNavigate();
   const { user }   = useAuthStore();
-  const [items, setItems] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [deleted, setDeleted] = useState<Set<string>>(new Set());
 
-  const { data, loading: apiLoading } = useApi<Event[]>(
-    () => user ? apiClient.get<Event[]>(Endpoints.events.byUser(user.id)) : Promise.resolve({ data: [] } as any),
+  const { items: all, loading: apiLoading, page, pages, sentinelRef } = usePaginatedApi<Event>(
+    (p) => user ? apiClient.get<Event[]>(`${Endpoints.events.byUser(user.id)}?page=${p}&limit=20`) : Promise.resolve({ data: [] } as any),
     [user?.id],
   );
+  const items = all.filter(e => !deleted.has(e.id));
 
-  // Sync state so we can delete locally
-  useState(() => {
-    if (!apiLoading && data) setItems(data);
-  });
+  const handleDelete = (id: string) => setDeleted(prev => new Set(prev).add(id));
 
-  // Keep items in sync with API data
-  if (!apiLoading && data && items.length === 0 && data.length > 0) setItems(data);
-
-  const handleDelete = (id: string) => setItems(prev => prev.filter(e => e.id !== id));
-
-  if (loading || apiLoading) return <PageLoader />;
+  if (apiLoading && all.length === 0) return <PageLoader />;
 
   return (
     <div className="space-y-5">
@@ -323,6 +315,9 @@ function MyEventsTab() {
             <EventCard key={ev.id} event={ev} mine onDelete={handleDelete} />
           ))}
         </div>
+      )}
+      {page < pages && (
+        <div ref={sentinelRef} className="flex justify-center py-6"><Spinner size="sm" /></div>
       )}
     </div>
   );

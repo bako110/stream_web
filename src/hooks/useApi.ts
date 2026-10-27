@@ -51,6 +51,7 @@ type PaginatedResult<T> = {
 export function usePaginatedApi<T>(
   fetcher: (page: number) => Promise<{ data: PaginatedResult<T> | T[] }>,
   deps: unknown[] = [],
+  pageSize = 20,
 ) {
   const [items,   setItems]   = useState<T[]>([]);
   const [page,    setPage]    = useState(1);
@@ -59,8 +60,10 @@ export function usePaginatedApi<T>(
   const [error,   setError]   = useState<string | null>(null);
   const ref = useRef(fetcher);
   ref.current = fetcher;
+  const loadingRef = useRef(false);
 
   const load = useCallback((p: number, replace = false) => {
+    loadingRef.current = true;
     setLoading(true);
     ref.current(p)
       .then(r => {
@@ -71,18 +74,27 @@ export function usePaginatedApi<T>(
 
         if (Array.isArray(raw)) {
           list = raw;
+          // L'API renvoie un simple tableau (pas de total) : une page pleine
+          // laisse supposer qu'il y en a une autre.
+          totalPages = list.length >= pageSize ? p + 1 : p;
         } else if (raw && typeof raw === 'object') {
           const obj = raw as PaginatedResult<T>;
           list       = obj.items ?? obj.results ?? obj.data ?? [];
-          totalPages = obj.pages ?? obj.total_pages ?? 1;
+          totalPages = obj.pages ?? obj.total_pages
+            ?? (obj.total != null ? Math.max(1, Math.ceil(obj.total / pageSize)) : (list.length >= pageSize ? p + 1 : p));
         }
 
-        setItems(prev => replace ? list : [...prev, ...list]);
+        setItems(prev => {
+          if (replace) return list;
+          const seen = new Set(prev.map((x: any) => x?.id));
+          return [...prev, ...list.filter((x: any) => x?.id == null || !seen.has(x.id))];
+        });
         setPage(p);
         setPages(totalPages);
+        loadingRef.current = false;
         setLoading(false);
       })
-      .catch(e => { setError(e instanceof Error ? e.message : 'Erreur'); setLoading(false); });
+      .catch(e => { setError(e instanceof Error ? e.message : 'Erreur'); loadingRef.current = false; setLoading(false); });
   }, []);
 
   useEffect(() => {
@@ -94,13 +106,29 @@ export function usePaginatedApi<T>(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
+  const loadMore = useCallback(() => { if (!loadingRef.current && page < pages) load(page + 1); }, [page, pages, load]);
+
+  // Chargement automatique quand la sentinelle (fin de liste) devient visible
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || page >= pages) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: '400px' },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loading, page, pages, items.length, loadMore]);
+
   return {
     items,
     page,
     pages,
     loading,
     error,
-    loadMore: () => { if (page < pages) load(page + 1); },
+    sentinelRef,
+    loadMore,
     refetch:  () => load(1, true),
   };
 }

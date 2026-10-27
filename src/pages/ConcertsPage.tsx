@@ -165,8 +165,8 @@ function ConcertCard({
 // ── All concerts tab ──────────────────────────────────────────────────────────
 function AllConcertsTab() {
   const live = useApi<Concert[]>(() => apiClient.get<Concert[]>(Endpoints.concerts.live));
-  const { items, loading, loadMore, page, pages } = usePaginatedApi<Concert>(
-    (p) => apiClient.get<PaginatedResponse<Concert>>(`${Endpoints.concerts.list}?page=${p}&limit=20&status=published`),
+  const { items, loading, loadMore, page, pages, sentinelRef } = usePaginatedApi<Concert>(
+    (p) => apiClient.get<PaginatedResponse<Concert>>(`${Endpoints.concerts.list}?page=${p}&limit=20&status=published&originals_only=true`),
   );
 
   return (
@@ -207,7 +207,7 @@ function AllConcertsTab() {
               {items.map(c => <ConcertCard key={c.id} concert={c} />)}
             </div>
             {page < pages && (
-              <div className="flex justify-center mt-8">
+              <div ref={sentinelRef} className="flex justify-center mt-8">
                 <button onClick={loadMore} disabled={loading} className="btn-secondary px-10">
                   {loading ? <Spinner size="sm" className="mx-auto" /> : 'Voir plus'}
                 </button>
@@ -224,18 +224,17 @@ function AllConcertsTab() {
 function MyConcertsTab() {
   const navigate  = useNavigate();
   const { user }  = useAuthStore();
-  const [items, setItems] = useState<Concert[]>([]);
+  const [deleted, setDeleted] = useState<Set<string>>(new Set());
 
-  const { data, loading } = useApi<Concert[]>(
-    () => user ? apiClient.get<Concert[]>(Endpoints.concerts.byUser(user.id)) : Promise.resolve({ data: [] } as any),
+  const { items: all, loading, page, pages, sentinelRef } = usePaginatedApi<Concert>(
+    (p) => user ? apiClient.get<Concert[]>(`${Endpoints.concerts.byUser(user.id)}?page=${p}&limit=20`) : Promise.resolve({ data: [] } as any),
     [user?.id],
   );
+  const items = all.filter(c => !deleted.has(c.id));
 
-  if (!loading && data && items.length === 0 && data.length > 0) setItems(data);
+  const handleDelete = (id: string) => setDeleted(prev => new Set(prev).add(id));
 
-  const handleDelete = (id: string) => setItems(prev => prev.filter(c => c.id !== id));
-
-  if (loading) return <PageLoader />;
+  if (loading && all.length === 0) return <PageLoader />;
 
   return (
     <div className="space-y-5">
@@ -276,6 +275,9 @@ function MyConcertsTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map(c => <ConcertCard key={c.id} concert={c} mine onDelete={handleDelete} />)}
         </div>
+      )}
+      {page < pages && (
+        <div ref={sentinelRef} className="flex justify-center py-6"><Spinner size="sm" /></div>
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { encodeId } from '../../utils/slugId';
 import { Search, Music2, MapPin, Calendar, Radio, Users, Ticket } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useApi } from '../../hooks/useApi';
+import { usePaginatedApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import type { Concert, PaginatedResponse } from '../../types';
@@ -30,12 +30,10 @@ export default function ExploreConcertsPage() {
   const [search, setSearch] = useState('');
   useScrollReveal();
 
-  const { data, loading, error } = useApi<PaginatedResponse<Concert> | Concert[]>(
-    () => publicClient.get<PaginatedResponse<Concert> | Concert[]>(Endpoints.concerts.list),
-    []
+  const { items, loading, error, page, pages, sentinelRef } = usePaginatedApi<Concert>(
+    (p) => publicClient.get<PaginatedResponse<Concert> | Concert[]>(`${Endpoints.concerts.list}?page=${p}&limit=20&originals_only=true`),
   );
 
-  const items: Concert[] = Array.isArray(data) ? data : (data?.items ?? []);
   const now = new Date();
   const filtered = items.filter(concert => {
     const artistName = concert.artist?.display_name ?? concert.artist?.username ?? '';
@@ -81,7 +79,7 @@ export default function ExploreConcertsPage() {
           <Music2 size={32} />
           <p>{error}</p>
         </div>
-      ) : loading ? (
+      ) : loading && items.length === 0 ? (
         <div className="xp-grid-wide grid gap-6">
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="xp-card"><div className="xp-card-media xp-card-media--wide xp-skeleton" /></div>)}
         </div>
@@ -104,6 +102,11 @@ export default function ExploreConcertsPage() {
           ) : upNext.length > 0 && (
             <div className="xp-grid-wide grid gap-6">
               {upNext.map((c, i) => <div key={c.id} className="xp-rise" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}><ConcertCard concert={c} /></div>)}
+            </div>
+          )}
+          {page < pages && (
+            <div ref={sentinelRef} className="flex justify-center py-8">
+              <span className="xp-skeleton" style={{ width: 120, height: 8, borderRadius: 999 }} />
             </div>
           )}
         </>

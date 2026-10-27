@@ -177,7 +177,7 @@ export default function FilmsPage({ type = 'film' }: Props) {
     return `${endpoint}?${params.toString()}`;
   };
 
-  const { items, loading, loadMore, page, pages } = usePaginatedApi<Content>(
+  const { items, loading, loadMore, page, pages, sentinelRef } = usePaginatedApi<Content>(
     (p) => apiClient.get<PaginatedResponse<Content>>(buildUrl(p)),
     [type, sort, filter, genre],
   );
@@ -291,7 +291,7 @@ export default function FilmsPage({ type = 'film' }: Props) {
             ))}
           </div>
           {page < pages && (
-            <div className="flex justify-center pt-2">
+            <div ref={sentinelRef} className="flex justify-center pt-2">
               <button onClick={loadMore} disabled={loading} className="btn-secondary px-10">
                 {loading ? <Spinner size="sm" className="mx-auto" /> : 'Voir plus'}
               </button>

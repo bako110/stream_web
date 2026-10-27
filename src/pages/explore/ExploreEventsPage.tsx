@@ -4,7 +4,7 @@ import { encodeId } from '../../utils/slugId';
 import { Search, Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useApi } from '../../hooks/useApi';
+import { usePaginatedApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
@@ -34,12 +34,10 @@ export default function ExploreEventsPage() {
   const [search, setSearch] = useState('');
   useScrollReveal();
 
-  const { data, loading } = useApi<PaginatedResponse<Event> | Event[]>(
-    () => publicClient.get<PaginatedResponse<Event> | Event[]>(Endpoints.events.list),
-    []
+  const { items, loading, page, pages, sentinelRef } = usePaginatedApi<Event>(
+    (p) => publicClient.get<PaginatedResponse<Event> | Event[]>(`${Endpoints.events.list}?page=${p}&limit=20&originals_only=true`),
   );
 
-  const items: Event[] = Array.isArray(data) ? data : (data?.items ?? []);
   const now      = new Date();
   const filtered = items.filter(ev => !search || ev.title.toLowerCase().includes(search.toLowerCase()));
   const sorted   = sortEventsByProximity(filtered, now);
@@ -64,7 +62,7 @@ export default function ExploreEventsPage() {
         </div>
       </div>
 
-      {loading ? (
+      {loading && items.length === 0 ? (
         <div className="xp-grid-wide grid gap-6">
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="xp-card"><div className="xp-card-media xp-card-media--wide xp-skeleton" /></div>)}
         </div>
@@ -95,6 +93,11 @@ export default function ExploreEventsPage() {
                 {past.map(ev => <EventCard key={ev.id} event={ev} isPast />)}
               </div>
             </section>
+          )}
+          {page < pages && (
+            <div ref={sentinelRef} className="flex justify-center py-8">
+              <span className="xp-skeleton" style={{ width: 120, height: 8, borderRadius: 999 }} />
+            </div>
           )}
         </>
       )}

@@ -4,7 +4,7 @@ import { Bell, Check, Trash2, Heart, UserPlus, MessageCircle, Radio, CheckSquare
 import type { Notification } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
-import { useApi } from '../hooks/useApi';
+import { usePaginatedApi } from '../hooks/useApi';
 import { useWs } from '../context/WebSocketContext';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { AiAnalysisStatusModal, type AiContentType } from '../components/ui/AiAnalysisStatusModal';
@@ -126,8 +126,9 @@ function NotifBody({ text }: { text: string }) {
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
-  const { data, loading, refetch } = useApi<Notification[]>(
-    () => apiClient.get<Notification[]>(`${Endpoints.notifications.list}?limit=100`),
+  const { items: fetched, loading, refetch, page, pages, sentinelRef } = usePaginatedApi<Notification>(
+    (p) => apiClient.get<Notification[]>(`${Endpoints.notifications.list}?page=${p}&limit=30`),
+    [], 30,
   );
   const { addListener, removeListener, clearUnreadNotifications } = useWs();
 
@@ -141,7 +142,19 @@ export default function NotificationsPage() {
   // notifications reçues en temps réel par WS sans reload complet (data,
   // lui, n'est réécrit que par refetch()).
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  useEffect(() => { setNotifications(data ?? []); }, [data]);
+  // Pages suivantes (loadMore) : on conserve l'état local (lu, ajouts WS) ;
+  // refetch() (liste réécrite, plus courte) : on repart des données serveur.
+  const lastLen = useRef(0);
+  useEffect(() => {
+    const grew = fetched.length > lastLen.current;
+    lastLen.current = fetched.length;
+    setNotifications(prev => {
+      if (!grew || prev.length === 0) return fetched;
+      const local = new Map(prev.map(n => [n.id, n]));
+      const ids = new Set(fetched.map(n => n.id));
+      return [...prev.filter(n => !ids.has(n.id) && !fetched.some(f => f.id === n.id)), ...fetched.map(n => local.get(n.id) ?? n)];
+    });
+  }, [fetched]);
 
   useEffect(() => { clearUnreadNotifications(); }, [clearUnreadNotifications]);
 
@@ -329,7 +342,7 @@ export default function NotificationsPage() {
       )}
 
       {/* ── Liste ── */}
-      {loading ? (
+      {loading && notifications.length === 0 ? (
         <PageLoader />
       ) : notifications.length === 0 ? (
         <div className="text-center py-24">
@@ -414,6 +427,9 @@ export default function NotificationsPage() {
               </div>
             );
           })}
+          {page < pages && (
+            <div ref={sentinelRef} className="flex justify-center py-4"><Spinner size="sm" /></div>
+          )}
         </div>
       )}
 
