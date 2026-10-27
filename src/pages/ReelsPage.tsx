@@ -1456,6 +1456,14 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
             )}
           </div>
 
+          {/* Vues — pastille discrète au lieu d'un bouton dans la colonne d'actions */}
+          {viewCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-white/80 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
+              <Eye size={11} /> {fmt(viewCount)}
+            </span>
+          )}
+
           {/* Caption */}
           {caption && (
             <div>
@@ -1480,19 +1488,19 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
         </div>
 
         {/* Right: actions — boutons plus petits sur mobile */}
-        <div className="shrink-0 flex flex-col items-center gap-4 sm:gap-5 pb-1">
+        <div className="shrink-0 flex flex-col items-center gap-2.5 sm:gap-4 pb-1">
 
           {/* Volume — identique mobile : en haut de la colonne */}
           <button onClick={e => { e.stopPropagation(); onUnmute(); }} className="flex flex-col items-center gap-0.5">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              {globalMuted ? <VolumeX size={21} /> : <Volume2 size={21} />}
+              {globalMuted ? <VolumeX size={19} /> : <Volume2 size={19} />}
             </div>
           </button>
 
           {/* Like */}
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
               style={{
                 background: liked ? 'rgba(123,63,242,0.25)' : 'rgba(0,0,0,0.45)',
                 backdropFilter: 'blur(12px)',
@@ -1500,69 +1508,60 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
                 color: liked ? '#7B3FF2' : '#fff',
                 boxShadow: liked ? '0 0 14px rgba(123,63,242,0.5)' : 'none',
               }}>
-              <Heart size={21} fill={liked ? 'currentColor' : '#fff'} />
+              <Heart size={19} fill={liked ? 'currentColor' : '#fff'} />
             </div>
             {likeCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(likeCount)}</span>}
           </button>
 
           {/* Commentaires */}
           <button onClick={e => { e.stopPropagation(); onCommentOpen(); }} className="flex flex-col items-center gap-0.5">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <MessageCircle size={21} fill="#fff" />
+              <MessageCircle size={19} fill="#fff" />
             </div>
             {commentCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(commentCount)}</span>}
           </button>
 
           {/* Partage */}
           <button onClick={handleShare} className="flex flex-col items-center gap-0.5">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <Share2 size={21} fill="#fff" />
+              <Share2 size={19} fill="#fff" />
             </div>
             {shareCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(shareCount)}</span>}
           </button>
 
-          {/* Vues (identique mobile) */}
-          <div className="flex flex-col items-center gap-0.5">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <Eye size={21} fill="#fff" />
-            </div>
-            {viewCount > 0 && <span className="text-[10px] font-semibold text-white">{fmt(viewCount)}</span>}
-          </div>
-
           {/* Sauvegarder */}
           <button onClick={handleSaveFav} disabled={savingFav} className="flex flex-col items-center gap-0.5" style={{ opacity: savingFav ? 0.6 : 1 }}>
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
               style={{
                 background: saved ? 'rgba(123,63,242,0.25)' : 'rgba(0,0,0,0.45)',
                 backdropFilter: 'blur(12px)',
                 border: `1.5px solid ${saved ? '#7B3FF2' : 'rgba(255,255,255,0.2)'}`,
                 color: saved ? '#7B3FF2' : '#fff',
               }}>
-              <Bookmark size={21} fill={saved ? 'currentColor' : '#fff'} />
+              <Bookmark size={19} fill={saved ? 'currentColor' : '#fff'} />
             </div>
           </button>
 
           {/* Plus d'options "..." */}
           <button onClick={e => { e.stopPropagation(); onMoreOpen(); }} className="flex flex-col items-center gap-0.5">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1.5px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-              <MoreVertical size={21} />
+              <MoreVertical size={19} />
             </div>
           </button>
 
           {/* Cadeau */}
           {!isMine && (
             <button onClick={e => { e.stopPropagation(); setShowGiftPicker(true); }} className="flex flex-col items-center gap-0.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all"
                 style={{
                   background: 'rgba(255,215,0,0.18)', backdropFilter: 'blur(12px)',
                   border: '1.5px solid rgba(255,215,0,0.5)', color: '#FFD700',
                   boxShadow: '0 0 10px rgba(255,215,0,0.3)',
                 }}>
-                <Gift size={21} />
+                <Gift size={19} />
               </div>
               <span className="text-[10px] font-semibold" style={{ color: '#FFD700' }}>Cadeau</span>
             </button>
