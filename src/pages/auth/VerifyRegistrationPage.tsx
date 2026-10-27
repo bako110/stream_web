@@ -142,7 +142,7 @@ export default function VerifyRegistrationPage() {
           <div>
             <h1 className="text-3xl font-black text-white leading-tight mb-3">
               Plus qu'une étape<br />
-              <span style={{ background: 'linear-gradient(90deg,#A78BFA,#F472B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <span style={{ background: 'linear-gradient(90deg,#A78BFA,#E0389A)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 pour finaliser
               </span>
             </h1>
