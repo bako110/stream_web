@@ -10,15 +10,15 @@ import { emitTabReselect } from '../../utils/tabReselect';
 const MAIN_SECTION = {
   label: 'DÉCOUVRIR',
   items: [
-    { to: '/feed',    label: 'Accueil',       desc: 'Ton fil d\'actualité',              icon: Home,   color: '#7B3FF2', end: true },
-    { to: '/communities', label: 'Communautés', desc: 'Rejoins et anime des communautés', icon: Users,  color: '#7B3FF2' },
-    { to: '/reels',   label: 'Reels',         desc: 'Vidéos courtes à la une',           icon: Play,   color: '#7B3FF2' },
-    { to: '/films',   label: 'Films',         desc: 'Le catalogue de films',             icon: Film,   color: '#7B3FF2' },
-    { to: '/series',  label: 'Séries',        desc: 'Le catalogue de séries',            icon: Film,   color: '#9B65F5' },
-    { to: '/live',    label: 'Live concerts', desc: 'Concerts diffusés en direct',       icon: Radio,  color: '#7B3FF2' },
-    { to: '/lives',   label: 'Lives',         desc: 'Diffusions en direct des créateurs',icon: Video,  color: '#7B3FF2' },
-    { to: '/battles', label: '1 vs 1',        desc: 'Défis en direct entre créateurs',   icon: Zap,    color: '#9B65F5' },
-    { to: '/tournaments', label: 'Tournois',  desc: 'Compétitions et classements',       icon: Award,  color: '#FFD700' },
+    { to: '/feed',    label: 'Accueil',       desc: 'Ton fil d\'actualité personnalisé, posts et contenus recommandés', icon: Home,   color: '#7B3FF2', end: true },
+    { to: '/communities', label: 'Communautés', desc: 'Rejoins des groupes qui te ressemblent ou anime les tiens',    icon: Users,  color: '#7B3FF2' },
+    { to: '/reels',   label: 'Reels',         desc: 'Vidéos courtes à défiler à l\'infini, recommandées pour toi',   icon: Play,   color: '#7B3FF2' },
+    { to: '/films',   label: 'Films',         desc: 'Catalogue de films en streaming, par genre ou popularité',      icon: Film,   color: '#7B3FF2' },
+    { to: '/series',  label: 'Séries',        desc: 'Tes séries en cours, épisode par épisode',                     icon: Film,   color: '#9B65F5' },
+    { to: '/live',    label: 'Live concerts', desc: 'Concerts programmés ou en cours, billetterie et replay',        icon: Radio,  color: '#7B3FF2' },
+    { to: '/lives',   label: 'Lives',         desc: 'Diffusions spontanées en direct des créateurs, triées par audience', icon: Video, color: '#7B3FF2' },
+    { to: '/battles', label: '1 vs 1',        desc: 'Défis et battles en direct entre créateurs',                    icon: Zap,    color: '#9B65F5' },
+    { to: '/tournaments', label: 'Tournois',  desc: 'Compétitions à élimination et classements entre créateurs',     icon: Award,  color: '#FFD700' },
   ],
 };
 
