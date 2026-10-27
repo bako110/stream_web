@@ -576,8 +576,8 @@ export default function EventDetailPage() {
     : [{ key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: ev.ticket_price ?? 0, sub: 'Accès standard' }];
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <div className="w-full mx-auto px-4 py-8">
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)' }}>
+      <div className="w-full max-w-full mx-auto px-4 py-5 sm:py-8">
 
         <DetailBackHeader onBack={goBack} />
 
@@ -592,13 +592,13 @@ export default function EventDetailPage() {
               </div>}
           <div className="absolute inset-0 hidden sm:block"
             style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 55%)' }} />
-          <span className="absolute top-4 left-4 text-xs font-bold px-3 py-1.5 rounded-full text-white"
-            style={{ background: color }}>
+          <span className="absolute top-3 left-3 sm:top-4 sm:left-4 text-xs font-bold px-3 py-1.5 rounded-full text-white"
+            style={{ background: color, boxShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>
             {label}
           </span>
           {ev.access_type === 'free' && (
-            <span className="absolute top-4 right-4 text-xs font-semibold px-3 py-1.5 rounded-full"
-              style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}>
+            <span className="absolute top-3 right-3 sm:top-4 sm:right-4 text-xs font-bold px-3 py-1.5 rounded-full text-white"
+              style={{ background: '#16A34A', boxShadow: '0 2px 10px rgba(22,163,74,0.4)' }}>
               Gratuit
             </span>
           )}
@@ -636,8 +636,8 @@ export default function EventDetailPage() {
             {/* Barre d'actions — pilule flottante translucide, même design
                 glassmorphism que Topbar/BottomNav (cohérent avec FeedPage). */}
             <div style={{
-              padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center',
-              borderRadius: 9999,
+              padding: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center',
+              borderRadius: 24,
               background:           'var(--glass-strong-bg)',
               backdropFilter:       'blur(20px) saturate(180%)',
               WebkitBackdropFilter: 'blur(20px) saturate(180%)',
@@ -646,7 +646,7 @@ export default function EventDetailPage() {
             }}>
               {/* Like */}
               <button onClick={toggleLike}
-                className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 flex-1 min-w-0 h-11 sm:flex-none sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
                   background: liked ? 'rgba(240,62,62,0.1)' : 'var(--bg-secondary)',
                   color: liked ? '#f03e3e' : 'var(--text-secondary)',
@@ -658,7 +658,7 @@ export default function EventDetailPage() {
               </button>
               {/* Commenter */}
               <button onClick={() => setShowComments(v => !v)}
-                className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 flex-1 min-w-0 h-11 sm:flex-none sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
                   background: showComments ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
                   color: showComments ? 'var(--primary)' : 'var(--text-secondary)',
@@ -670,7 +670,7 @@ export default function EventDetailPage() {
               </button>
               {/* Partager */}
               <button onClick={openShare}
-                className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 flex-1 min-w-0 h-11 sm:flex-none sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                 <Share2 size={15} />
                 {shareCount > 0 && <span>{shareCount}</span>}
@@ -678,7 +678,7 @@ export default function EventDetailPage() {
               </button>
               {/* Favoris */}
               <button onClick={handleSaveFav} disabled={savingFav}
-                className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 flex-1 min-w-0 h-11 sm:flex-none sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                 style={{
                   background: favId ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
                   color: favId ? 'var(--primary)' : 'var(--text-secondary)',
@@ -691,7 +691,7 @@ export default function EventDetailPage() {
               {/* Rappel */}
               {!isOwner && (
                 <button onClick={toggleReminder} disabled={remindLoading}
-                  className="flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
+                  className="flex items-center justify-center gap-1.5 flex-1 min-w-0 h-11 sm:flex-none sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
                   style={{
                     background: reminder ? 'rgba(123,63,242,0.1)' : 'var(--bg-secondary)',
                     color: reminder ? 'var(--primary)' : 'var(--text-secondary)',
@@ -703,21 +703,21 @@ export default function EventDetailPage() {
               )}
               {/* Boutons owner à droite */}
               {isOwner ? (
-                <div className="ml-auto flex items-center gap-2">
+                <div className="w-full sm:w-auto sm:ml-auto grid grid-cols-2 sm:flex items-center gap-2">
                   <button onClick={() => navigate(`/events/${slug}/attendees`)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
+                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl text-sm font-semibold"
                     style={{ background: 'var(--bg-secondary)', color: '#10B981', border: '1px solid var(--border)' }}>
                     <Users size={14} /> Inscrits
                   </button>
                   <button onClick={() => navigate(`/create/event?edit=${id}`)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
+                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl text-sm font-semibold"
                     style={{ background: 'var(--bg-secondary)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
                     <Edit3 size={14} /> Modifier
                   </button>
                 </div>
               ) : ev.organizer && (
                 <button onClick={toggleFollow}
-                  className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
+                  className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-3 sm:py-2 rounded-xl text-sm font-semibold"
                   style={{
                     background: following ? 'rgba(123,63,242,0.1)' : 'var(--primary)',
                     color: following ? 'var(--primary)' : '#fff',
