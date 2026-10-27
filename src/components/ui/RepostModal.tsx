@@ -53,12 +53,12 @@ export function RepostModal({ open, kind, author, title, body, thumb, reposting,
     <>
       <div className="fixed inset-0 z-[9998]" onClick={close}
         style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} />
-      <div className="fixed inset-0 z-[9999] flex items-end justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full rounded-t-3xl overflow-hidden flex flex-col"
+      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col"
           style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
             boxShadow: '0 -8px 40px rgba(0,0,0,0.35)',
-            maxHeight: '90dvh',
+            maxHeight: '80dvh',
             animation: 'repostSheetIn 0.25s cubic-bezier(0.32,0.72,0,1)',
             paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
           }}>
@@ -101,7 +101,7 @@ export function RepostModal({ open, kind, author, title, body, thumb, reposting,
               </div>
 
               {thumb && (
-                <img src={thumb} alt="" className="w-full rounded-xl object-cover" style={{ aspectRatio: '1.5' }} />
+                <img src={thumb} alt="" className="w-full rounded-xl object-cover max-h-48" style={{ aspectRatio: '1.8' }} />
               )}
 
               {title && (

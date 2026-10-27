@@ -48,9 +48,9 @@ export function useConfirm() {
           une seule identité pour ce composant dans toute l'app. Toute la
           largeur de l'écran (pas de barre étroite flottante sur un grand
           moniteur) ; le contenu lui reste centré et lisible. */}
-      <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
         <div
-          className="w-full rounded-t-3xl overflow-hidden"
+          className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden"
           style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
