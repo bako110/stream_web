@@ -71,10 +71,14 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
           </div>
         )}
 
-        {/* pb-[60px] on mobile to clear the bottom nav — pas pour les pages immersives (pas de bottom nav) */}
+        {/* pb-[88px] on mobile to clear the bottom nav. Sur desktop, même
+            réserve quand le FAB (fixed bottom-8 right-8, ~88px de hauteur
+            totale avec sa marge) est visible — sans ça le bas de page pouvait
+            se retrouver caché derrière le bouton flottant (ex: carte CTA
+            "Me rappeler" sur les pages détail concert/événement). */}
         <main className={clsx(
           'flex-1 min-h-0',
-          (isImmersive || isImmersiveMobile) ? 'overflow-hidden lg:overflow-y-auto' : 'overflow-y-auto pb-[88px] lg:pb-0',
+          (isImmersive || isImmersiveMobile) ? 'overflow-hidden lg:overflow-y-auto' : clsx('overflow-y-auto pb-[88px]', hideCreateFab ? 'lg:pb-0' : 'lg:pb-[88px]'),
         )}>
           {children ?? <Outlet />}
         </main>
