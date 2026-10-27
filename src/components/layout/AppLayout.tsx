@@ -78,7 +78,7 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
             "Me rappeler" sur les pages détail concert/événement). */}
         <main className={clsx(
           'flex-1 min-h-0',
-          (isImmersive || isImmersiveMobile) ? 'overflow-hidden lg:overflow-y-auto' : clsx('overflow-y-auto pb-[88px]', hideCreateFab ? 'lg:pb-0' : 'lg:pb-[88px]'),
+          (isImmersive || isImmersiveMobile) ? 'overflow-hidden lg:overflow-y-auto' : 'overflow-y-auto pb-[88px] lg:pb-0',
         )}>
           {children ?? <Outlet />}
         </main>
