@@ -4,7 +4,7 @@ import { encodeId, decodeId } from '../../utils/slugId';
 import {
   Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
   Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
-  ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2, Bookmark,
+  ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2, Bookmark, Repeat2,
 } from 'lucide-react';
 import type { Event } from '../../types';
 import { apiClient } from '../../api';
@@ -17,6 +17,7 @@ import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
+import { useRepost } from '../../components/ui/RepostModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { formatTimeAgo } from '../../utils/date';
 import { ShareModal } from '../../components/ui/ShareModal';
@@ -393,6 +394,7 @@ export default function EventDetailPage() {
   const [favId,        setFavId]        = useState<string | null>(null);
   const [savingFav,    setSavingFav]    = useState(false);
   const [isOwner,      setIsOwner]      = useState(false);
+  const repost = useRepost();
   const [showAiModal,  setShowAiModal]  = useState(false);
   const [following,    setFollowing]    = useState(false);
   const [reminder,     setReminder]     = useState(false);
@@ -676,6 +678,18 @@ export default function EventDetailPage() {
                 {shareCount > 0 && <span>{shareCount}</span>}
                 <span className="hidden sm:inline">Partager</span>
               </button>
+              {/* Republier */}
+              {!isOwner && (
+                <button onClick={() => repost.open('event', {
+                    endpoint: Endpoints.events.repost(event.id), author: event.organizer,
+                    title: event.title, thumb: event.thumbnail_url ?? event.banner_url,
+                  })}
+                  className="flex items-center justify-center gap-1.5 flex-1 min-w-0 h-11 sm:flex-none sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                  <Repeat2 size={15} />
+                  <span className="hidden sm:inline">Republier</span>
+                </button>
+              )}
               {/* Favoris */}
               <button onClick={handleSaveFav} disabled={savingFav}
                 className="flex items-center justify-center gap-1.5 flex-1 min-w-0 h-11 sm:flex-none sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-sm font-semibold transition-colors"
@@ -932,6 +946,7 @@ export default function EventDetailPage() {
       </div>
 
       {showComments && <CommentsModal targetId={id!} onClose={() => setShowComments(false)} />}
+      {repost.modal}
 
       <ShareModal
         open={showShareModal}

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { applyHlsQualityPref } from '../../utils/hlsQuality';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Trash2, Edit3, Play, X, ChevronDown, Users } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Share2, Send, Bookmark, MoreHorizontal, Repeat2, Trash2, Edit3, Play, X, ChevronDown, Users } from 'lucide-react';
 import { GuestPreview } from '../../components/ui/GuestPreview';
 import { DetailBackHeader } from '../../components/ui/DetailBackHeader';
 import { useSmartBack } from '../../hooks/useSmartBack';
@@ -15,6 +15,7 @@ import { RichText, resolveFullText } from '../../components/ui/RichText';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { ShareModal } from '../../components/ui/ShareModal';
+import { useRepost } from '../../components/ui/RepostModal';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -278,6 +279,7 @@ export default function PostDetailPage() {
   const [favId,           setFavId]           = useState<string | null>(null);
   const [savingFav,       setSavingFav]       = useState(false);
   const [showShare,       setShowShare]       = useState(false);
+  const repost = useRepost();
   const [comments,        setComments]        = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [commentsLoadingMore, setCommentsLoadingMore] = useState(false);
@@ -694,6 +696,20 @@ export default function PostDetailPage() {
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <Share2 size={16} />
                 </button>
+                {/* Republier */}
+                {!isOwn && (
+                  <button onClick={() => repost.open('post', {
+                      endpoint: Endpoints.posts.repost(post.id), author: post.author, body: post.body,
+                      thumb: post.image_urls?.[0] ?? post.image_url,
+                    })}
+                    title="Republier"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <Repeat2 size={16} />
+                  </button>
+                )}
                 {/* Sauvegarder */}
                 <button onClick={handleSaveFav} disabled={savingFav}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ml-auto"
@@ -819,6 +835,8 @@ export default function PostDetailPage() {
         contentId={post.id}
         initialStatus={post.ai_analysis_status}
       />
+
+      {repost.modal}
 
       {showShare && (
         <ShareModal

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark, Edit3 } from 'lucide-react';
+import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark, Edit3, Repeat2 } from 'lucide-react';
 import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -13,6 +13,7 @@ import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
+import { useRepost } from '../../components/ui/RepostModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { useConfirm } from '../../components/ui/Dialog';
@@ -155,6 +156,7 @@ export default function ConcertDetailPage() {
     () => apiClient.get<Concert>(Endpoints.concerts.byId(id!)), [id],
   );
 
+  const repost = useRepost();
   const [starting,      setStarting]     = useState(false);
   const [stopping,      setStopping]     = useState(false);
   const [showBoost,     setShowBoost]    = useState(false);
@@ -591,6 +593,17 @@ export default function ConcertDetailPage() {
               )}
               </div>
 
+              {!isArtist && (
+                <button onClick={() => repost.open('concert', {
+                    endpoint: Endpoints.concerts.repost(c.id), author: c.artist,
+                    title: c.title, thumb: c.thumbnail_url ?? c.banner_url,
+                  })}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-2 mt-2 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                  <Repeat2 size={14} /> Republier
+                </button>
+              )}
+
               {/* Actions artiste */}
               {isArtist && (
                 <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -673,6 +686,7 @@ export default function ConcertDetailPage() {
         initialStatus={c.ai_analysis_status}
       />
 
+      {repost.modal}
       {ConfirmDialog}
     </div>
   );

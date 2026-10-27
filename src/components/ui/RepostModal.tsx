@@ -1,4 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { apiClient } from '../../api';
+import { getApiErrorDetail } from '../../utils/apiError';
 import { Repeat2, CheckCircle2, X } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { Spinner } from './Spinner';
@@ -138,4 +141,47 @@ export function RepostModal({ open, kind, author, title, body, thumb, reposting,
       `}</style>
     </>
   );
+}
+
+interface RepostTarget {
+  endpoint: string;
+  author: RepostAuthor | null | undefined;
+  title?: string | null;
+  body?: string | null;
+  thumb?: string | null;
+  onReposted?: () => void;
+}
+
+/** Hook pour les pages de détail : `open(kind, target)` + `modal` à rendre dans la page. */
+export function useRepost() {
+  const [state, setState] = useState<{ kind: RepostKind; target: RepostTarget } | null>(null);
+  const [reposting, setReposting] = useState(false);
+
+  const confirm = async () => {
+    if (!state || reposting) return;
+    setReposting(true);
+    try {
+      await apiClient.post(state.target.endpoint);
+      state.target.onReposted?.();
+      setState(null);
+      toast.success('Republié sur votre profil.');
+    } catch (e: any) {
+      toast.error(getApiErrorDetail(e) ?? e?.message ?? 'Impossible de republier.');
+    } finally { setReposting(false); }
+  };
+
+  const modal = (
+    <RepostModal
+      open={!!state}
+      kind={state?.kind ?? 'post'}
+      author={state?.target.author}
+      title={state?.target.title}
+      body={state?.target.body}
+      thumb={state?.target.thumb}
+      reposting={reposting}
+      onConfirm={confirm}
+      onClose={() => { if (!reposting) setState(null); }}
+    />
+  );
+  return { open: (kind: RepostKind, target: RepostTarget) => setState({ kind, target }), modal };
 }
