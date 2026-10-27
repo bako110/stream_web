@@ -31,6 +31,14 @@ export function ExploreLayout() {
             <span className="xp-display text-base">Gofolyx</span>
           </Link>
 
+          <nav className="xp-tabs">
+            {NAV_LINKS.map(({ to, label }) => (
+              <NavLink key={to} to={to} className={({ isActive }) => `xp-tab${isActive ? ' is-active' : ''}`}>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+
           <div className="xp-header-actions">
             <button onClick={toggle} className="inline-flex items-center justify-center xp-icon-btn" title={isDark ? 'Mode clair' : 'Mode sombre'}>
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
@@ -51,16 +59,6 @@ export function ExploreLayout() {
               </>
             )}
           </div>
-        </div>
-
-        <div className="xp-container">
-          <nav className="xp-tabs">
-            {NAV_LINKS.map(({ to, label }) => (
-              <NavLink key={to} to={to} className={({ isActive }) => `xp-tab${isActive ? ' is-active' : ''}`}>
-                {label}
-              </NavLink>
-            ))}
-          </nav>
         </div>
       </header>
 
