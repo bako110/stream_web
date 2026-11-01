@@ -13,6 +13,7 @@ import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { getEventTiming } from '../utils/eventTiming';
 
 const TYPE_LABELS: Record<string, string> = {
   concert: 'Concert', birthday: 'Anniversaire', festival: 'Festival',
@@ -29,8 +30,9 @@ const TYPE_COLORS: Record<string, string> = {
 function EventCard({ event, onDelete }: { event: Event; onDelete: (id: string) => void }) {
   const navigate     = useNavigate();
   const [deleting, setDeleting] = useState(false);
-  const color = TYPE_COLORS[event.event_type] ?? '#7B3FF2';
-  const label = TYPE_LABELS[event.event_type] ?? event.event_type;
+  const color  = TYPE_COLORS[event.event_type] ?? '#7B3FF2';
+  const label  = TYPE_LABELS[event.event_type] ?? event.event_type;
+  const timing = event.starts_at ? getEventTiming(event) : null;
   const { confirm, ConfirmDialog } = useConfirm();
 
   const goEdit = () => navigate(`/create/event?edit=${event.id}`);
@@ -73,10 +75,16 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: string) =
         {/* Badges */}
         <span className="absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full text-white"
           style={{ background: color }}>{label}</span>
-        {event.access_type === 'free' && (
-          <span className="absolute top-3 right-3 text-[11px] font-semibold px-2.5 py-1 rounded-full"
-            style={{ background: 'rgba(34,197,94,0.22)', color: '#22c55e', border: '1px solid #22c55e55' }}>Gratuit</span>
-        )}
+        <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
+          {timing?.phase === 'live' && (
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-white"
+              style={{ background: timing.color }}>{timing.label}</span>
+          )}
+          {event.access_type === 'free' && (
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(34,197,94,0.22)', color: '#22c55e', border: '1px solid #22c55e55' }}>Gratuit</span>
+          )}
+        </div>
 
         {/* Date + prix */}
         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">

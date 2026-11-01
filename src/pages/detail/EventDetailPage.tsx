@@ -20,6 +20,7 @@ import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketP
 import { useRepost } from '../../components/ui/RepostModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { formatTimeAgo } from '../../utils/date';
+import { getEventTiming } from '../../utils/eventTiming';
 import { ShareModal } from '../../components/ui/ShareModal';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { useConfirm } from '../../components/ui/Dialog';
@@ -562,9 +563,10 @@ export default function EventDetailPage() {
     );
   }
 
-  const ev    = event;
-  const color = TYPE_COLORS[ev.event_type] ?? '#7B3FF2';
-  const label = TYPE_LABELS[ev.event_type] ?? ev.event_type;
+  const ev     = event;
+  const color  = TYPE_COLORS[ev.event_type] ?? '#7B3FF2';
+  const label  = TYPE_LABELS[ev.event_type] ?? ev.event_type;
+  const timing = ev.starts_at ? getEventTiming(ev) : null;
 
   const allTiers = ([
     { key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: ev.ticket_price ?? 0,       sub: 'Accès standard' },
@@ -598,12 +600,20 @@ export default function EventDetailPage() {
             style={{ background: color, boxShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>
             {label}
           </span>
-          {ev.access_type === 'free' && (
-            <span className="absolute top-3 right-3 sm:top-4 sm:right-4 text-xs font-bold px-3 py-1.5 rounded-full text-white"
-              style={{ background: '#16A34A', boxShadow: '0 2px 10px rgba(22,163,74,0.4)' }}>
-              Gratuit
-            </span>
-          )}
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex flex-col items-end gap-1.5">
+            {timing?.phase === 'live' && (
+              <span className="text-xs font-bold px-3 py-1.5 rounded-full text-white"
+                style={{ background: timing.color, boxShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>
+                {timing.label}
+              </span>
+            )}
+            {ev.access_type === 'free' && (
+              <span className="text-xs font-bold px-3 py-1.5 rounded-full text-white"
+                style={{ background: '#16A34A', boxShadow: '0 2px 10px rgba(22,163,74,0.4)' }}>
+                Gratuit
+              </span>
+            )}
+          </div>
           <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 hidden sm:block">
             <h1 className="text-2xl font-black text-white leading-tight"
               style={{ textShadow: '0 2px 16px rgba(0,0,0,0.6)' }}>

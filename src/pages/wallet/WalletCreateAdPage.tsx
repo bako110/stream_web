@@ -32,11 +32,16 @@ const CPM_OPTIONS = [
   { label: 'Top',        cpm: 10, gogold: 1000, color: '#EF4444' },
 ];
 
+// Volontairement limité à male/female — "other"/"prefer_not_to_say" retirés
+// (2026-11) : un annonceur qui cochait "Non précisé" en pensant dire "peu
+// importe le genre, cible tout le monde" ciblait en réalité UNIQUEMENT les
+// comptes ayant eux-mêmes déclaré ce genre précis (segment quasi vide en
+// pratique) — même piège déjà corrigé côté mobile (CreateAdScreen.tsx).
+// "Tout le monde" reste exprimé par AUCUNE case cochée, jamais par un choix
+// explicite qui ressemble à un ciblage mais n'en est pas un.
 const GENDER_OPTIONS: { key: string; label: string }[] = [
-  { key: 'male',             label: 'Hommes' },
-  { key: 'female',           label: 'Femmes' },
-  { key: 'other',            label: 'Autre' },
-  { key: 'prefer_not_to_say',label: 'Non précisé' },
+  { key: 'male',   label: 'Hommes' },
+  { key: 'female', label: 'Femmes' },
 ];
 
 // Texte libre "Abidjan, Bouaké" → ["Abidjan", "Bouaké"] — pour la région/ville
@@ -153,6 +158,29 @@ export default function WalletCreateAdPage() {
   const [targetGenders,   setTargetGenders]   = useState<string[]>(editAd?.target_genders ?? []);
   const [targetAgeMin,    setTargetAgeMin]    = useState(editAd?.target_age_min != null ? String(editAd.target_age_min) : '');
   const [targetAgeMax,    setTargetAgeMax]    = useState(editAd?.target_age_max != null ? String(editAd.target_age_max) : '');
+
+  // Estimation live de l'audience couverte par le ciblage en cours — évite le
+  // piège vu en prod (campagne payée, ciblage genre réduisant l'audience à 0%
+  // sans que l'annonceur s'en rende compte avant de valider). Pas en édition
+  // (ciblage déjà figé, non modifiable). Débouncée : un seul appel réseau
+  // après que l'annonceur ait fini d'ajuster, pas un par frappe.
+  const [audienceEstimate, setAudienceEstimate] = useState<{ total_active_users: number; matching_users: number; ratio: number; too_narrow: boolean } | null>(null);
+  const [loadingAudience,  setLoadingAudience]  = useState(false);
+  useEffect(() => {
+    if (isEdit) return;
+    const timer = setTimeout(() => {
+      setLoadingAudience(true);
+      const regions = targetRegions.split(',').map(r => r.trim()).filter(Boolean);
+      apiClient.get(Endpoints.ads.audienceEstimate({
+        countries: targetCountries, regions, genders: targetGenders,
+        ageMin: targetAgeMin || undefined, ageMax: targetAgeMax || undefined,
+      }))
+        .then(r => setAudienceEstimate(r.data as any))
+        .catch(() => setAudienceEstimate(null))
+        .finally(() => setLoadingAudience(false));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isEdit, targetCountries, targetRegions, targetGenders, targetAgeMin, targetAgeMax]);
 
   // Upload state
   const [uploading,     setUploading]     = useState(false);
@@ -554,6 +582,25 @@ export default function WalletCreateAdPage() {
             Séparés par des virgules. Comparé au lieu renseigné sur le profil de chaque utilisateur.
           </p>
         </div>
+
+        {!isEdit && (loadingAudience || audienceEstimate) && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs"
+            style={{
+              background: audienceEstimate?.too_narrow ? '#EF444422' : 'var(--bg-secondary)',
+              border: `1px solid ${audienceEstimate?.too_narrow ? '#EF4444' : 'var(--border)'}`,
+              color: audienceEstimate?.too_narrow ? '#EF4444' : 'var(--text-secondary)',
+            }}>
+            {loadingAudience ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : audienceEstimate ? (
+              <span>
+                {audienceEstimate.too_narrow
+                  ? `Ciblage trop restreint : ≈${Math.round(audienceEstimate.ratio * 100)}% des utilisateurs seulement (${audienceEstimate.matching_users}/${audienceEstimate.total_active_users}). Élargis le ciblage avant de continuer.`
+                  : `≈${Math.round(audienceEstimate.ratio * 100)}% des utilisateurs correspondent à ce ciblage (${audienceEstimate.matching_users}/${audienceEstimate.total_active_users}).`}
+              </span>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Budget */}

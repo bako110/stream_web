@@ -25,6 +25,7 @@ import { formatTimeAgo } from '../utils/date';
 import { ShareModal } from '../components/ui/ShareModal';
 import { RepostModal } from '../components/ui/RepostModal';
 import { getApiErrorDetail } from '../utils/apiError';
+import { getEventTiming } from '../utils/eventTiming';
 import { SoundPickerSheet, SoundBar } from '../components/ui/SoundPickerSheet';
 import type { Sound } from '../types';
 import type { Concert, Event, Post, Reel, StoryGroup, Community, UserPublic } from '../types';
@@ -1834,6 +1835,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, on
   const navigate   = useNavigate();
   const { user: me } = useAuthStore();
   const color      = EVENT_COLORS[event.event_type ?? 'other'] ?? EVENT_COLORS.other;
+  const timing     = event.starts_at ? getEventTiming(event) : null;
   const authorId   = event.organizer?.id;
   const isFollowed = authorId ? followedIds.has(authorId) : false;
   const isOwn      = !!me && me.id === event.organizer_id;
@@ -1879,11 +1881,17 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, on
         ) : (
           <MediaPlaceholder title={event.title} icon={<Calendar size={36} color="#fff" />} />
         )}
-        <div className="absolute top-2.5 left-2.5">
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
           <span className="text-[10px] font-black px-2.5 py-1 rounded-full text-white capitalize"
             style={{ background: `${color}CC`, backdropFilter: 'blur(4px)' }}>
             {event.event_type ?? 'Événement'}
           </span>
+          {timing?.phase === 'live' && (
+            <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full text-white"
+              style={{ background: timing.color }}>
+              {timing.label}
+            </span>
+          )}
         </div>
         {event.starts_at && (
           <div className="absolute top-2.5 right-2.5">
