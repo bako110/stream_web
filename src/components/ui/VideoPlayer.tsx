@@ -108,7 +108,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
         const detail = err?.data?.detail;
         if (err?.status === 429 && detail?.code === 'too_many_screens') {
           videoRef.current?.pause();
-          setBlocked(detail.message ?? 'Votre plan autorise moins d'écrans simultanés.');
+          setBlocked(detail.message ?? "Votre plan autorise moins d'écrans simultanés.");
         }
       } finally {
         opening.current = false;
