@@ -13,6 +13,7 @@ import { Endpoints } from '../api/endpoints';
 import type { Concert, Content, Event } from '../types';
 import { useAuthStore } from '../store/authStore';
 import { GateLogo } from '../components/ui/GateLogo';
+import { PriceWithLocal } from '../components/ui/PriceWithLocal';
 import { STICKERS } from '../components/ui/Stickers';
 import { ShowcaseSlideshow } from '../components/ui/ShowcaseSlideshow';
 import './landing.css';

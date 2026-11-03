@@ -128,6 +128,32 @@ function formatCount(n: number): string {
   return String(n);
 }
 
+function Countdown({ to }: { to: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const diff = new Date(to).getTime() - now;
+  if (!Number.isFinite(diff) || diff <= 0) return null;
+  const cells: [number, string][] = [
+    [Math.floor(diff / 864e5), 'jours'],
+    [Math.floor((diff % 864e5) / 36e5), 'heures'],
+    [Math.floor((diff % 36e5) / 6e4), 'min'],
+    [Math.floor((diff % 6e4) / 1e3), 'sec'],
+  ];
+  return (
+    <div className="gp-count" aria-label="Compte à rebours">
+      {cells.map(([n, l]) => (
+        <div key={l} className="gp-count-cell">
+          <span key={n} className="gp-count-num">{String(n).padStart(2, '0')}</span>
+          <span className="gp-count-lbl">{l}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function GuestPreview({
   type, thumbnail, videoUrl, thumbnails, title, body, author, date,
   location, attendees, ticketPrice, likeCount, commentCount, viewCount, isLive,
@@ -664,6 +690,26 @@ export function GuestPreview({
           .gp-info::before, .gp-badge, .gp-title, .gp-avatar::before, .gp-stat, .gp-pill, .gp-why, .gp-why::before, .gp-why-item, .gp-why-ico,
           .gp-dock, .gp-dock-btn::before, .gp-pillbtn-solid::before, .gp-lock-glow, .gp-lock-btn-primary::before, .gp-lock-perk { animation: none !important; }
         }
+        /* Billet : compte a rebours + date / lieu / prix (evenements et concerts) */
+        @keyframes gp-tick { from { opacity: 0; transform: translateY(-10px) scale(.9); } to { opacity: 1; transform: none; } }
+        .gp-ticket { margin-top: 18px; display: grid; gap: 12px; animation: gp-rise .8s cubic-bezier(.16,1,.3,1) .55s both; }
+        .gp-count { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px; border-radius: 22px; color: #fff;
+          background: linear-gradient(135deg,#3d1478,#7B3FF2 55%,#C026D3); background-size: 200% 200%; animation: gp-hue 12s linear infinite;
+          box-shadow: 0 16px 34px -14px rgba(123,63,242,.7); }
+        .gp-count-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0; border-radius: 16px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); }
+        .gp-count-num { font-size: clamp(22px, 6vw, 30px); font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1; animation: gp-tick .45s cubic-bezier(.34,1.56,.64,1); }
+        .gp-count-lbl { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+        .gp-ticket-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .gp-ticket-cell { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 14px 16px; border-radius: 20px; min-width: 0;
+          background: var(--bg-secondary); border: 1px solid var(--border); transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, border-color .3s; }
+        .gp-ticket-cell:hover { transform: translateY(-4px); border-color: rgba(123,63,242,.45); box-shadow: 0 16px 30px -16px rgba(123,63,242,.5); }
+        .gp-ticket-accent { background: linear-gradient(135deg, rgba(123,63,242,.14), rgba(236,72,153,.1)); border-color: rgba(123,63,242,.3); }
+        .gp-ticket-lbl { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--text-tertiary); }
+        .gp-ticket-big { font-size: 20px; font-weight: 900; letter-spacing: -.02em; color: var(--text-primary); text-transform: capitalize; }
+        .gp-ticket-accent .gp-ticket-big { color: #7B3FF2; }
+        .gp-ticket-text { font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; text-transform: none; }
+        .gp-ticket-sub { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: capitalize; }
+        @media (prefers-reduced-motion: reduce) { .gp-ticket, .gp-count, .gp-count-num { animation: none !important; } }
       `}</style>
 
       <div className="gp-page is-fullscreen">
@@ -795,6 +841,34 @@ export function GuestPreview({
               </div>
             )}
 
+            {(type === 'event' || type === 'concert') && (date || location || ticketPrice != null) && (
+              <div className="gp-ticket">
+                {date && !isLive && !Number.isNaN(new Date(date).getTime()) && new Date(date).getTime() > Date.now() && <Countdown to={date} />}
+                <div className="gp-ticket-grid">
+                  {date && !Number.isNaN(new Date(date).getTime()) && (
+                    <div className="gp-ticket-cell">
+                      <span className="gp-ticket-lbl">Date</span>
+                      <span className="gp-ticket-big">{format(new Date(date), 'd MMM', { locale: fr })}</span>
+                      <span className="gp-ticket-sub">{format(new Date(date), "EEEE 'à' HH:mm", { locale: fr })}</span>
+                    </div>
+                  )}
+                  {location && (
+                    <div className="gp-ticket-cell">
+                      <span className="gp-ticket-lbl">Lieu</span>
+                      <span className="gp-ticket-big gp-ticket-text">{location}</span>
+                    </div>
+                  )}
+                  {ticketPrice != null && (
+                    <div className="gp-ticket-cell gp-ticket-accent">
+                      <span className="gp-ticket-lbl">Entrée</span>
+                      <span className="gp-ticket-big">{ticketPrice === 0 ? 'Gratuit' : ticketPrice.toLocaleString('fr-FR')}</span>
+                      {ticketPrice !== 0 && <span className="gp-ticket-sub">XOF · à partir de</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {hasStats && (
               <div className="gp-stats">
                 {showLikes && (
@@ -825,9 +899,9 @@ export function GuestPreview({
               </div>
             )}
 
-            {(location || attendees != null || ticketPrice != null) && (
+            {((type !== 'event' && type !== 'concert' && (location || ticketPrice != null)) || attendees != null) && (
               <div className="gp-pills">
-                {location && (
+                {location && type !== 'event' && type !== 'concert' && (
                   <span className="gp-pill">
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <path d="M6 1a3.5 3.5 0 0 1 3.5 3.5C9.5 8 6 11 6 11S2.5 8 2.5 4.5A3.5 3.5 0 0 1 6 1z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
@@ -847,7 +921,7 @@ export function GuestPreview({
                     {attendees.toLocaleString()} participants
                   </span>
                 )}
-                {ticketPrice != null && (
+                {ticketPrice != null && type !== 'event' && type !== 'concert' && (
                   <span className="gp-pill gp-pill-accent">
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <rect x="1" y="3" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" fill="none"/>

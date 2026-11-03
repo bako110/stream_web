@@ -7,6 +7,7 @@ import { useApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { PageLoader } from '../../components/ui/Spinner';
+import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import type { Concert } from '../../types';
 
 export default function ExploreConcertDetailPage() {
@@ -39,9 +40,9 @@ export default function ExploreConcertDetailPage() {
     { icon: Calendar, label: 'Date', value: format(date, 'EEEE d MMMM yyyy', { locale: fr }), sub: `à ${format(date, 'HH:mm')}` },
     venue ? { icon: MapPin, label: 'Lieu', value: venue } : null,
     concert.ticket_price != null
-      ? { icon: Ticket, label: 'Entrée', value: concert.ticket_price === 0 ? 'Gratuit' : `${concert.ticket_price} €` }
+      ? { icon: Ticket, label: 'Entrée', value: concert.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={concert.ticket_price} /> }
       : null,
-  ].filter(Boolean) as { icon: typeof Calendar; label: string; value: string; sub?: string }[];
+  ].filter(Boolean) as { icon: typeof Calendar; label: string; value: React.ReactNode; sub?: string }[];
 
   const cta = isLive
     ? { icon: Radio, text: 'Regarder le live' }

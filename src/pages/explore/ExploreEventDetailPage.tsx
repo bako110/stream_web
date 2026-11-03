@@ -8,6 +8,7 @@ import { useApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner , PageLoader} from '../../components/ui/Spinner';
+import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import type { Event } from '../../types';
 
 export default function ExploreEventDetailPage() {
@@ -120,7 +121,7 @@ export default function ExploreEventDetailPage() {
                   <span>Prix</span>
                 </div>
                 <p className="text-2xl font-bold text-[var(--primary)]">
-                  {event.ticket_price === 0 ? 'Gratuit' : `${event.ticket_price} €`}
+                  {event.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={event.ticket_price} />}
                 </p>
               </div>
             )}

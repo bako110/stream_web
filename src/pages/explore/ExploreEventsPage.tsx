@@ -9,6 +9,7 @@ import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
 import { ExploreBackButton } from '../../components/ui/ExploreBackButton';
+import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import type { Event, PaginatedResponse } from '../../types';
 import { getEventTiming, sortEventsByProximity } from '../../utils/eventTiming';
 
@@ -154,7 +155,7 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
       <div className="xp-card-footer">
         <span className="inline-flex items-center gap-1"><Calendar size={12} /> {format(startDate, 'd MMM yyyy', { locale: fr })}</span>
         {event.ticket_price != null && (
-          <span className="xp-card-price">{event.ticket_price === 0 ? 'Gratuit' : `${event.ticket_price}€`}</span>
+          <span className="xp-card-price">{event.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={event.ticket_price} />}</span>
         )}
       </div>
     </Link>

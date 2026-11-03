@@ -257,10 +257,10 @@ export default function ConcertDetailPage() {
         title={concert.title}
         body={(concert as any).description}
         author={(concert as any).artist ?? (concert as any).author}
-        date={(concert as any).starts_at ?? (concert as any).date}
-        location={(concert as any).venue ?? (concert as any).location}
+        date={concert.scheduled_at}
+        location={[concert.venue_name, concert.venue_city, concert.venue_country].filter(Boolean).join(', ') || undefined}
         attendees={(concert as any).attendees_count}
-        ticketPrice={(concert as any).ticket_price}
+        ticketPrice={concert.ticket_price}
         isLive={concert.status === 'live'}
       />
     );

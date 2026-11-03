@@ -555,7 +555,7 @@ export default function EventDetailPage() {
         body={(event as any).description}
         author={(event as any).organizer ?? (event as any).author}
         date={event.starts_at}
-        location={(event as any).location ?? (event as any).venue}
+        location={[event.venue_name, event.venue_city].filter(Boolean).join(', ') || (event as any).location || undefined}
         attendees={(event as any).attendees_count ?? (event as any).going_count}
         ticketPrice={minPrice}
         likeCount={event.like_count}

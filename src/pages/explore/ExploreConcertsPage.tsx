@@ -10,6 +10,7 @@ import { Endpoints } from '../../api/endpoints';
 import type { Concert, PaginatedResponse } from '../../types';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
 import { ExploreBackButton } from '../../components/ui/ExploreBackButton';
+import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 
 const FILTERS = ['Tous', 'À venir', 'En direct'];
 
@@ -150,7 +151,7 @@ function ConcertCard({ concert, isLive = false }: { concert: Concert; isLive?: b
       <div className="xp-card-footer">
         <span className="inline-flex items-center gap-1"><Calendar size={12} /> {format(date, 'd MMM à HH:mm', { locale: fr })}</span>
         {concert.ticket_price != null && (
-          <span className="xp-card-price"><Ticket size={12} /> {concert.ticket_price === 0 ? 'Gratuit' : `${concert.ticket_price}€`}</span>
+          <span className="xp-card-price"><Ticket size={12} /> {concert.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={concert.ticket_price} />}</span>
         )}
       </div>
       {venue && (
