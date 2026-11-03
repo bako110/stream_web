@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { Home, Play, Film, Radio, Video, ChevronLeft, Zap, Award, Users, MoreHorizontal, X } from 'lucide-react';
+import { Home, Play, Film, Radio, Video, PanelLeftClose, PanelLeftOpen, Zap, Award, Users, MoreHorizontal, X } from 'lucide-react';
 import { RoundLogo } from '../ui/RoundLogo';
 import { MoreMenuContent } from './MoreMenuContent';
 import { emitTabReselect } from '../../utils/tabReselect';
@@ -110,22 +110,29 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
         boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 24px rgba(11,11,16,0.08), 0 20px 40px -12px rgba(11,11,16,0.12)',
       }}
     >
-      {/* ── Logo + collapse toggle ── */}
-      <div className={clsx('flex items-center h-14 shrink-0 transition-all', collapsed ? 'px-2 justify-center' : 'px-4 justify-between')}>
+      {/* ── Logo + option « menu complet / icônes seules » (choix mémorisé) ── */}
+      <div className={clsx('flex shrink-0 transition-all', collapsed ? 'flex-col items-center gap-1.5 py-2.5 px-2' : 'items-center h-14 px-4 justify-between')}>
         {collapsed ? (
-          onCollapseToggle
-            ? <button onClick={onCollapseToggle} title="Déplier le menu"><RoundLogo size={30} /></button>
-            : <RoundLogo size={30} />
+          <>
+            {onCollapseToggle
+              ? <button onClick={onCollapseToggle} title="Déplier le menu"><RoundLogo size={30} /></button>
+              : <RoundLogo size={30} />}
+            {onCollapseToggle && (
+              <button onClick={onCollapseToggle} title="Afficher le menu complet" aria-label="Afficher le menu complet"
+                className="sb-mode-btn p-1.5 rounded-lg transition-all"
+                style={{ color: 'var(--text-tertiary)' }}>
+                <PanelLeftOpen size={16} />
+              </button>
+            )}
+          </>
         ) : (
           <>
             <RoundLogo size={32} />
             {onCollapseToggle && (
-              <button onClick={onCollapseToggle}
-                className="p-1.5 rounded-lg transition-all shrink-0"
-                style={{ color: 'var(--text-tertiary)' }}
-                onMouseEnter={e => { (e.currentTarget.style.background = 'var(--bg-secondary)'); (e.currentTarget.style.color = 'var(--text-primary)'); }}
-                onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = 'var(--text-tertiary)'); }}>
-                <ChevronLeft size={16} />
+              <button onClick={onCollapseToggle} title="Réduire le menu (icônes seules)" aria-label="Réduire le menu (icônes seules)"
+                className="sb-mode-btn p-1.5 rounded-lg transition-all shrink-0"
+                style={{ color: 'var(--text-tertiary)' }}>
+                <PanelLeftClose size={16} />
               </button>
             )}
           </>

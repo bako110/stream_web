@@ -923,3 +923,7 @@
 @media (prefers-reduced-motion: reduce) {
   .tx-overlay, .tx-sheet, .tx-receipt::before { animation: none !important; }
 }
+
+/* Bouton « menu complet / icônes seules » de la barre latérale */
+.sb-mode-btn:hover { background: var(--bg-secondary); color: var(--text-primary) !important; transform: scale(1.1); }
+.sb-mode-btn:active { transform: scale(.92); }

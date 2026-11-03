@@ -9,6 +9,7 @@ import { BottomNav } from './BottomNav';
 import { CreateFAB } from './CreateFAB';
 import { BattleInviteModal } from '../live/BattleInviteModal';
 import { startReelsPrefetch } from '../../utils/prefetch';
+import { useSidebarStore } from '../../store/sidebarStore';
 import toast from 'react-hot-toast';
 
 // Pages avec leur propre bouton flottant dédié — évite le doublon visuel avec le FAB global
@@ -23,7 +24,9 @@ const IMMERSIVE_MOBILE_ONLY_PREFIXES = ['/lives/', '/live/', '/battles/', '/join
 
 export function AppLayout({ children }: { children?: ReactNode } = {}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false);
+  // Menu complet / icônes seules — choix mémorisé (voir sidebarStore, réglable aussi dans Paramètres › Apparence).
+  const sidebarCollapsed = useSidebarStore(s => s.collapsed);
+  const toggleSidebar    = useSidebarStore(s => s.toggle);
   const { pathname } = useLocation();
   // Précharge la 1ère page Reels + 1ère vidéo dès l'entrée dans l'app (cf. reelsPrefetchService mobile).
   useEffect(() => { startReelsPrefetch(); }, []);
@@ -44,7 +47,7 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
       <div className="hidden lg:flex shrink-0 transition-all duration-300 p-2 pr-0">
         <Sidebar
           collapsed={sidebarCollapsed}
-          onCollapseToggle={() => setSidebarCollapsed(v => !v)}
+          onCollapseToggle={toggleSidebar}
         />
       </div>
 
