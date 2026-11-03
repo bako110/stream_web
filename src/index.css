@@ -686,3 +686,78 @@
   .dt-hero > img.dt-hero-img { width: 100%; height: auto !important; max-height: 78vh; object-fit: contain; display: block; margin: 0 auto; }
   .dt-hero-title, .dt-hero-scrim { display: none !important; }
 }
+
+
+/* ══ PAGES LEGALES (CGU, confidentialite) — lecture confortable + mouvement ══ */
+@keyframes lg-drop { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: none; } }
+@keyframes lg-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes lg-open { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes lg-hue { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+@keyframes lg-bob { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-5px) rotate(-4deg); } }
+@keyframes lg-drift-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(100px,60px) scale(1.2); } }
+@keyframes lg-drift-b { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-90px,70px) scale(.85); } }
+@keyframes lg-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.lg-v2 { position: relative; isolation: isolate; overflow-x: clip; }
+.lg-v2::before, .lg-v2::after { content: ''; position: fixed; z-index: -1; pointer-events: none; border-radius: 50%; filter: blur(90px); }
+.lg-v2::before { width: 420px; height: 420px; top: -100px; left: -120px; background: #7B3FF2; opacity: .16; animation: lg-drift-a 22s ease-in-out infinite; }
+.lg-v2::after  { width: 340px; height: 340px; bottom: -100px; right: -100px; background: #EC4899; opacity: .12; animation: lg-drift-b 26s ease-in-out infinite; }
+
+/* Barre de progression de lecture (navigateurs compatibles) */
+.lg-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60; display: none; transform-origin: left; background: linear-gradient(90deg,#7B3FF2,#EC4899,#F59E0B); }
+@supports (animation-timeline: scroll()) {
+  .lg-progress { display: block; transform: scaleX(0); animation: lg-grow linear both; animation-timeline: scroll(root); }
+}
+
+/* En-tete : tombe, contour degrade vivant */
+.lg-bar { animation: lg-drop .8s cubic-bezier(.16,1,.3,1) both; backdrop-filter: blur(14px) saturate(160%); }
+.lg-bar::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: linear-gradient(100deg,#7B3FF2,#EC4899,#F59E0B,#7B3FF2,#EC4899) 0% 50% / 300% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: .5; animation: lg-hue 9s linear infinite;
+}
+
+/* Carte d'introduction : degrade qui bouge, icone qui flotte */
+.lg-hero { position: relative; overflow: hidden; animation: lg-rise .9s cubic-bezier(.16,1,.3,1) .15s both; box-shadow: 0 24px 50px -28px rgba(123,63,242,.45); }
+.lg-hero::before { content: ''; position: absolute; width: 300px; height: 300px; right: -90px; top: -120px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(236,72,153,.22), transparent 70%); animation: lg-drift-b 16s ease-in-out infinite; }
+.lg-hero::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg,#7B3FF2,#EC4899,#F59E0B,#7B3FF2); background-size: 300% 100%; animation: lg-hue 8s linear infinite; }
+.lg-hero > * { position: relative; z-index: 1; }
+.lg-ico { animation: lg-bob 5s ease-in-out infinite; box-shadow: 0 12px 24px -10px rgba(123,63,242,.55); }
+
+/* Badges RGPD en cascade */
+.lg-v2 .flex.flex-wrap.gap-3 > div { animation: lg-rise .6s cubic-bezier(.16,1,.3,1) both; transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s; }
+.lg-v2 .flex.flex-wrap.gap-3 > div:nth-child(1) { animation-delay: .3s; } .lg-v2 .flex.flex-wrap.gap-3 > div:nth-child(2) { animation-delay: .38s; }
+.lg-v2 .flex.flex-wrap.gap-3 > div:nth-child(3) { animation-delay: .46s; } .lg-v2 .flex.flex-wrap.gap-3 > div:nth-child(4) { animation-delay: .54s; }
+.lg-v2 .flex.flex-wrap.gap-3 > div:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 10px 20px -10px rgba(123,63,242,.5); }
+
+/* Sommaire : entree, section active mise en avant avec un trait colore */
+.lg-v2 aside > div { animation: lg-rise .8s cubic-bezier(.16,1,.3,1) .3s both; }
+.lg-toc { position: relative; transition: transform .3s cubic-bezier(.16,1,.3,1), background-color .25s, box-shadow .3s !important; }
+.lg-toc:hover { transform: translateX(4px); }
+.lg-toc[data-active="true"] { background: linear-gradient(90deg, rgba(123,63,242,.14), rgba(236,72,153,.06)) !important; box-shadow: inset 3px 0 0 #7B3FF2; }
+.lg-toc[data-active="true"] span { color: var(--text-primary) !important; font-weight: 700; }
+.lg-toc svg { transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+.lg-toc:hover svg, .lg-toc[data-active="true"] svg { transform: scale(1.25) rotate(-8deg); }
+
+/* Accordeon : cartes lisibles, ouverture animee */
+.lg-sec { scroll-margin-top: 96px; animation: lg-rise .6s cubic-bezier(.16,1,.3,1) both; }
+.lg-sec:nth-child(1) { animation-delay: .35s; } .lg-sec:nth-child(2) { animation-delay: .42s; } .lg-sec:nth-child(3) { animation-delay: .49s; }
+.lg-sec:nth-child(4) { animation-delay: .56s; } .lg-sec:nth-child(n+5) { animation-delay: .63s; }
+.lg-sec button { transition: background-color .25s, padding-left .3s cubic-bezier(.16,1,.3,1); }
+.lg-sec button:hover { padding-left: 1.5rem; }
+.lg-sec button > div:first-child { transition: transform .4s cubic-bezier(.34,1.56,.64,1); }
+.lg-sec button:hover > div:first-child { transform: rotate(-10deg) scale(1.12); }
+.lg-body { animation: lg-open .4s cubic-bezier(.16,1,.3,1) both; }
+.lg-body pre { max-width: 68ch; font-size: 15px !important; line-height: 1.75 !important; }
+@media (max-width: 640px) { .lg-body pre { font-size: 14.5px !important; } }
+
+/* Cartes de contact */
+.lg-card { animation: lg-rise .7s cubic-bezier(.16,1,.3,1) .6s both; transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s, border-color .3s; }
+.lg-card:hover { transform: translateY(-3px); border-color: rgba(123,63,242,.4) !important; box-shadow: 0 18px 36px -20px rgba(123,63,242,.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-v2::before, .lg-v2::after, .lg-progress, .lg-bar, .lg-bar::before, .lg-hero, .lg-hero::before, .lg-hero::after, .lg-ico,
+  .lg-v2 .flex.flex-wrap.gap-3 > div, .lg-v2 aside > div, .lg-sec, .lg-body, .lg-card { animation: none !important; }
+}

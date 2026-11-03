@@ -3125,6 +3125,13 @@ export default function FeedPage() {
   // pour qu'une distance en px reste fiable dans les deux sens — testé trop serré
   // (raté sur scroll rapide) puis trop large (déclenché tôt), les deux peu fiables.
   const PREFETCH_ITEMS_REMAINING = 5;
+  // La page suivante existe tant que le total annonce par le backend n'est pas atteint ;
+  // a defaut de total, on retombe sur « la page etait pleine ».
+  function computeHasMore(data: unknown, rawLen: number, pageNo: number): boolean {
+    const total = Number((data as { total?: unknown } | null | undefined)?.total);
+    if (Number.isFinite(total) && total > 0) return pageNo * FEED_PAGE_SIZE < total;
+    return rawLen >= FEED_PAGE_SIZE;
+  }
   const nonReelCountRef  = useRef(0);
   const adCountRef       = useRef(0);
   const loadingMoreRef   = useRef(false);
@@ -3182,7 +3189,7 @@ export default function FeedPage() {
         if (adRes?.data) { setFeedAd(adRes.data); seenAdIdsRef.current = [adRes.data.id]; }
 
         const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
-        feedHasMoreRef.current = feedRaw.length >= FEED_PAGE_SIZE;
+        feedHasMoreRef.current = computeHasMore(feedRes?.data, feedRaw.length, 1);
 
         const seen = seenIdsRef.current;
         const mapped: FeedItem[] = [];
@@ -3273,7 +3280,7 @@ export default function FeedPage() {
       const feedRes = await apiClient.get<any>(`${Endpoints.search.feed}?page=${nextPage}&limit=${FEED_PAGE_SIZE}`).catch(() => null);
 
       const feedRaw: any[] = feedRes ? toArray<any>(feedRes.data) : [];
-      feedHasMoreRef.current = feedRaw.length >= FEED_PAGE_SIZE;
+      feedHasMoreRef.current = computeHasMore(feedRes?.data, feedRaw.length, nextPage);
       // Le pool se retrie a chaque page (score = f(temps)) -- une page BRUTE non vide
       // peut ne contenir QUE des items deja vus sur une page precedente (recoupement),
       // sans que le catalogue soit pour autant epuise. Ne conclure a la fin du flux que
@@ -3405,6 +3412,35 @@ export default function FeedPage() {
   // initial terminé, et loadMoreFeed ne change pas forcément d'identité à ce
   // moment-là — sans ça l'effet peut tourner une seule fois avec la ref encore
   // null et ne jamais ré-observer le marqueur une fois réellement monté.
+  // Filet de securite du scroll infini : sur mobile le vrai conteneur qui defile est le <main>
+  // d'AppLayout (pas la fenetre) et certains navigateurs mobiles declenchent mal
+  // l'IntersectionObserver. On ecoute donc aussi le scroll du plus proche ancetre defilant
+  // et on charge la suite des qu'il reste moins d'un ecran et demi a parcourir.
+  useEffect(() => {
+    if (tab !== 'all' || loading || !hasMoreFeed) return;
+    const start = feedScrollRef.current;
+    if (!start) return;
+    let scroller: HTMLElement | null = start;
+    while (scroller && scroller !== document.body) {
+      const oy = getComputedStyle(scroller).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && scroller.scrollHeight > scroller.clientHeight) break;
+      scroller = scroller.parentElement;
+    }
+    const target: HTMLElement | Window = scroller && scroller !== document.body ? scroller : window;
+    let ticking = false;
+    const check = () => {
+      ticking = false;
+      const remaining = target === window
+        ? document.documentElement.scrollHeight - window.scrollY - window.innerHeight
+        : (target as HTMLElement).scrollHeight - (target as HTMLElement).scrollTop - (target as HTMLElement).clientHeight;
+      if (remaining < window.innerHeight * 1.5) loadMoreFeed();
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(check); } };
+    target.addEventListener('scroll', onScroll, { passive: true });
+    check();
+    return () => target.removeEventListener('scroll', onScroll);
+  }, [tab, loading, hasMoreFeed, loadMoreFeed, items.length]);
+
   // Préférence : afficher ou non la colonne de droite (suggestions/communautés).
   // Masquée → la colonne du fil prend toute la place disponible.
   const [showSuggestions, setShowSuggestions] = useState(() => {
@@ -3605,14 +3641,26 @@ export default function FeedPage() {
 
               {/* ── Sentinel scroll infini ── */}
               {tab === 'all' && hasMoreFeed && (
-                <div ref={sentinelRef} className="flex justify-center py-4">
-                  {loadingMore && <Spinner size="sm" />}
+                <div ref={sentinelRef} className="flex flex-col items-center gap-2 py-4">
+                  {loadingMore
+                    ? <Spinner size="sm" />
+                    : <button type="button" onClick={() => loadMoreFeed()} className="text-xs font-bold px-4 py-2 rounded-full"
+                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                        Charger plus
+                      </button>}
                 </div>
               )}
               {tab === 'all' && !hasMoreFeed && items.length > 0 && (
-                <p className="text-center text-xs py-4" style={{ color: 'var(--text-tertiary)' }}>
-                  Vous avez tout vu
-                </p>
+                <div className="flex flex-col items-center gap-3 py-6">
+                  <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                    Vous avez tout vu pour le moment
+                  </p>
+                  <button type="button"
+                    onClick={() => { loadFeed('all', true); feedScrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+                    className="btn-primary text-sm px-6">
+                    Actualiser le fil
+                  </button>
+                </div>
               )}
             </div>
           )}

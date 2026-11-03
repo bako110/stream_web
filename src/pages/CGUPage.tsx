@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, UserCheck, Edit3, Shield, Zap, AlertTriangle, Tv,
@@ -199,7 +199,7 @@ function AccordionItem({ section, defaultOpen }: { section: Section; defaultOpen
         />
       </button>
       {open && (
-        <div className="px-5 pb-5 pt-1" style={{ background: 'var(--bg)' }}>
+        <div className="lg-body px-5 pb-5 pt-1" style={{ background: 'var(--bg)' }}>
           <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans"
             style={{ color: 'var(--text-secondary)' }}>
             {section.body}
@@ -216,15 +216,29 @@ export default function CGUPage() {
   const contentRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  const [active, setActive] = useState<string>(SECTIONS[0].key);
+  useEffect(() => {
+    const els = Object.values(sectionRefs.current).filter((e): e is HTMLDivElement => !!e);
+    if (els.length === 0) return;
+    const obs = new IntersectionObserver(entries => {
+      const top = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      const key = top?.target.getAttribute('data-key');
+      if (key) setActive(key);
+    }, { rootMargin: '-15% 0px -70% 0px' });
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
   const scrollTo = (key: string) => {
     sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+    <div className="lg-v2 min-h-screen" style={{ background: 'var(--bg)' }}>
+      <span className="lg-progress" aria-hidden="true" />
 
       {/* ── Header ── */}
-      <div className="sticky top-2 mx-2 sm:mx-4 mt-2 mb-2 rounded-full z-10 px-4 sm:px-6 py-3 flex items-center gap-3"
+      <div className="lg-bar sticky top-2 mx-2 sm:mx-4 mt-2 mb-2 rounded-full z-10 px-4 sm:px-6 py-3 flex items-center gap-3"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 20px rgba(11,11,16,0.08), 0 20px 40px -10px rgba(11,11,16,0.12)', backdropFilter: 'blur(12px)' }}>
         <button onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
@@ -249,9 +263,9 @@ export default function CGUPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
         {/* ── Intro card ── */}
-        <div className="rounded-2xl p-6 flex flex-col sm:flex-row gap-5 items-start"
+        <div className="lg-hero rounded-2xl p-6 flex flex-col sm:flex-row gap-5 items-start"
           style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(123,63,242,0.06))', border: '1px solid rgba(123,63,242,0.2)' }}>
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+          <div className="lg-ico w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
             style={{ background: 'rgba(123,63,242,0.15)' }}>
             <FileText size={26} style={{ color: 'var(--primary)' }} />
           </div>
@@ -283,7 +297,8 @@ export default function CGUPage() {
                   <button
                     key={sec.key}
                     onClick={() => scrollTo(sec.key)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all"
+                    className="lg-toc w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all"
+                    data-active={active === sec.key}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
@@ -304,14 +319,14 @@ export default function CGUPage() {
             <div ref={contentRef} className="rounded-2xl overflow-hidden"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               {SECTIONS.map((sec, i) => (
-                <div key={sec.key} ref={el => { sectionRefs.current[sec.key] = el; }}>
+                <div key={sec.key} data-key={sec.key} className="lg-sec" ref={el => { sectionRefs.current[sec.key] = el; }}>
                   <AccordionItem section={sec} defaultOpen={i === 0} />
                 </div>
               ))}
             </div>
 
             {/* Contact légal */}
-            <div className="rounded-2xl p-4 flex items-start gap-3"
+            <div className="lg-card rounded-2xl p-4 flex items-start gap-3"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: 'rgba(123,63,242,0.1)' }}>
