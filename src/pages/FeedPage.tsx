@@ -1447,7 +1447,7 @@ function ActionBar({
     <>
       {/* Pilule flottante translucide — même design glassmorphism que Topbar/BottomNav
           (glass-strong-bg + blur) au lieu d'une barre plate collée au bord de la carte. */}
-      <div className="flex items-center gap-1 px-2 py-2 mx-2 mb-2 rounded-full"
+      <div className="fd-actions flex items-center gap-1 px-2 py-2 mx-2 mb-2 rounded-full"
         style={{
           background:           'var(--glass-strong-bg)',
           backdropFilter:       'blur(20px) saturate(180%)',
@@ -1462,7 +1462,7 @@ function ActionBar({
           style={{ color: liked ? '#7B3FF2' : 'var(--text-secondary)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <Heart size={15} fill={liked ? '#7B3FF2' : 'none'} strokeWidth={liked ? 0 : 2} />
+          <Heart size={15} className={liked ? 'fd-heart' : undefined} fill={liked ? '#7B3FF2' : 'none'} strokeWidth={liked ? 0 : 2} />
           {likeCount > 0 && <span>{fmtCount(likeCount)}</span>}
         </button>
 
@@ -1657,7 +1657,7 @@ function LiveHero({ concert }: { concert: Concert }) {
   return (
     <div
       onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
-      className="relative overflow-hidden rounded-2xl cursor-pointer group animate-reveal-up flex flex-col justify-between min-h-[280px] sm:min-h-[300px] lg:aspect-[21/9]"
+      className="fd-card fd-live relative overflow-hidden rounded-2xl cursor-pointer group animate-reveal-up flex flex-col justify-between min-h-[280px] sm:min-h-[300px] lg:aspect-[21/9]"
     >
       {concert.thumbnail_url ? (
         <img src={concert.thumbnail_url} alt={concert.title}
@@ -1748,7 +1748,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
+    <div className="fd-card rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)', animationDelay: `${delay}s` }}>
 
       <AuthorRow
@@ -1856,7 +1856,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, on
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
+    <div className="fd-card rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)', animationDelay: `${delay}s` }}>
 
       <AuthorRow
@@ -2159,7 +2159,7 @@ function PostCard({ post, delay = 0, followedIds, onFollow, onOpenComments, onOp
 
   return (
     <>
-    <div className="rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
+    <div className="fd-card rounded-2xl overflow-hidden animate-reveal-up flex flex-col"
       style={{ background: 'var(--surface)', border: '1px solid var(--border)', animationDelay: `${delay}s` }}>
 
       <AuthorRow
@@ -2291,7 +2291,7 @@ function ReelCard({ reel, delay = 0 }: {
   }, [autoplayOn]);
 
   return (
-    <div ref={cardRef} className="rounded-2xl overflow-hidden animate-reveal-up"
+    <div ref={cardRef} className="fd-card rounded-2xl overflow-hidden animate-reveal-up"
       style={{ background: '#000', border: '1px solid var(--border)', animationDelay: `${delay}s`, aspectRatio: '9/16', maxHeight: 480, position: 'relative', cursor: 'pointer' }}
       onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}>
 
@@ -3560,7 +3560,7 @@ export default function FeedPage() {
               <button onClick={() => navigate('/search')} className="btn-primary mt-5 text-sm px-6">Explorer</button>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 animate-reveal-up delay-300">
+            <div className="fd-list flex flex-col gap-4 animate-reveal-up delay-300">
               {items.map((item, i) => {
                 // Marqueur de prefetch — observé par IntersectionObserver pour déclencher
                 // loadMoreFeed quand l'utilisateur approche de la fin RÉELLEMENT chargée

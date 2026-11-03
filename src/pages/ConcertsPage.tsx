@@ -9,6 +9,7 @@ import { Endpoints } from '../api/endpoints';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
+import { PriceWithLocal } from '../components/ui/PriceWithLocal';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -113,7 +114,7 @@ function ConcertCard({
                 ? '#7B3FF2' : 'var(--primary)',
               border: '1px solid currentColor',
             }}>
-            {concert.access_type === 'free' ? 'Gratuit' : concert.access_type === 'ticket' ? `${concert.ticket_price ?? ''}€` : 'Abonnement'}
+            {concert.access_type === 'free' ? 'Gratuit' : concert.access_type === 'ticket' ? (concert.ticket_price != null && <PriceWithLocal amountEur={concert.ticket_price} />) : 'Abonnement'}
           </span>
         </div>
 

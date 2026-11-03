@@ -412,8 +412,9 @@ export const Endpoints = {
     invite:  (id: string) => `${V1}/planning/invites/${id}`,
   },
   utils: {
-    linkPreview:   (url: string) => `${V1}/utils/link-preview?url=${encodeURIComponent(url)}`,
-    downloadImage: (url: string) => `${V1}/utils/download-image?url=${encodeURIComponent(url)}`,
+    linkPreview:    (url: string) => `${V1}/utils/link-preview?url=${encodeURIComponent(url)}`,
+    downloadImage:  (url: string) => `${V1}/utils/download-image?url=${encodeURIComponent(url)}`,
+    geocodeCountry: (lat: number, lon: number) => `${V1}/utils/geocode/country?lat=${lat}&lon=${lon}`,
   },
   social_ext: {
     friendsWhoLiked: (entityType: string, entityId: string) => {
@@ -447,5 +448,11 @@ export const Endpoints = {
     reach:         `${V1}/analytics/reach`,
     content:       `${V1}/analytics/content`,
     contentDetail: (contentType: string, contentId: string) => `${V1}/analytics/content/${contentType}/${contentId}`,
+  },
+
+  currencies: {
+    list:      `${V1}/currencies`,
+    get:       (code: string) => `${V1}/currencies/${code}`,
+    byCountry: (countryCode: string) => `${V1}/currencies/by-country/${countryCode}`,
   },
 } as const;

@@ -579,3 +579,94 @@
 @media (prefers-reduced-motion: reduce) {
   .gt-header .gt-header-inner::after, .xp-header .xp-container.xp-header-top::after { animation: none !important; }
 }
+
+
+/* ══ FIL D'ACTUALITE + PAGES DETAIL (connecte) — design et mouvement ══ */
+@keyframes fd-reveal { from { opacity: 0; transform: translateY(46px) scale(.96); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes fd-heart { 0% { transform: scale(.3); } 45% { transform: scale(1.5) rotate(-10deg); } 70% { transform: scale(.9); } 100% { transform: scale(1); } }
+@keyframes fd-sheen { 0% { background-position: 130% 0; } 40%,100% { background-position: -80% 0; } }
+@keyframes fd-live-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.45), 0 20px 40px -18px rgba(123,63,242,.5); } 50% { box-shadow: 0 0 0 10px rgba(239,68,68,0), 0 20px 40px -18px rgba(123,63,242,.5); } }
+@keyframes dt-in { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+@keyframes dt-in-right { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+@keyframes dt-reveal { from { opacity: 0; transform: scale(.97) translateY(18px); clip-path: inset(0 0 20% 0 round 1rem); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 1rem); } }
+@keyframes dt-settle { from { transform: scale(1.16); } to { transform: scale(1); } }
+@keyframes dt-kb { from { transform: scale(1); } to { transform: scale(1.08) translate(-1%, -1%); } }
+@keyframes dt-drift-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(100px,60px) scale(1.2); } }
+@keyframes dt-drift-b { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-90px,70px) scale(.85); } }
+@keyframes dt-shine { 0% { transform: translateX(-120%); } 35%,100% { transform: translateX(120%); } }
+@keyframes dt-badge { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: none; } }
+
+/* Fil : cartes plus aeriennes, relief au survol, apparition liee au defilement (navigateurs compatibles) */
+.fd-list { gap: 1.25rem; }
+.fd-card { position: relative; border-radius: 1.5rem !important; transition: transform .45s cubic-bezier(.16,1,.3,1), box-shadow .45s, border-color .3s; box-shadow: 0 1px 2px rgba(11,11,16,.04); }
+.fd-card:hover { transform: translateY(-4px); border-color: rgba(123,63,242,.4) !important; box-shadow: 0 26px 50px -22px rgba(123,63,242,.45); }
+.fd-card::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.12) 50%, transparent 65%);
+  background-size: 250% 100%; background-position: 130% 0; opacity: 0; transition: opacity .3s;
+}
+.fd-card:hover::after { opacity: 1; animation: fd-sheen 1.4s ease-out; }
+.fd-card img { transition: transform 1s cubic-bezier(.16,1,.3,1); }
+.fd-card:hover img { transform: scale(1.04); }
+@supports (animation-timeline: view()) {
+  .fd-list > .fd-card, .fd-list > div > .fd-card {
+    animation: fd-reveal linear backwards !important; animation-delay: 0s !important;
+    animation-timeline: view(); animation-range: entry 0% entry 38%;
+  }
+}
+.fd-live { animation: fd-live-glow 2.6s ease-in-out infinite; }
+
+/* Barre d'actions : icones qui rebondissent, coeur qui explose */
+.fd-actions button { transition: transform .3s cubic-bezier(.34,1.56,.64,1), background-color .2s !important; }
+.fd-actions button:hover { transform: translateY(-2px) scale(1.06); }
+.fd-actions button:active { transform: scale(.88); }
+.fd-actions button svg { transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+.fd-actions button:hover svg { transform: scale(1.2) rotate(-8deg); }
+.fd-heart { animation: fd-heart .55s cubic-bezier(.34,1.56,.64,1); filter: drop-shadow(0 4px 8px rgba(123,63,242,.5)); }
+
+/* Pages detail (evenement, concert, post) */
+.dt-v2 { position: relative; isolation: isolate; }
+.dt-v2::before, .dt-v2::after { content: ''; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%; filter: blur(90px); }
+.dt-v2::before { width: 420px; height: 420px; top: 0; left: -120px; background: #7B3FF2; opacity: .16; animation: dt-drift-a 22s ease-in-out infinite; }
+.dt-v2::after { width: 340px; height: 340px; top: 180px; right: -100px; background: #EC4899; opacity: .12; animation: dt-drift-b 26s ease-in-out infinite; }
+
+.dt-hero { animation: dt-reveal 1s cubic-bezier(.16,1,.3,1) both; box-shadow: 0 30px 70px -32px rgba(123,63,242,.55); }
+.dt-hero > img { animation: dt-settle 1.6s cubic-bezier(.16,1,.3,1) backwards, dt-kb 20s ease-in-out 1.6s infinite alternate; }
+.dt-hero::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.18) 50%, transparent 65%);
+  background-size: 250% 100%; background-position: 130% 0; animation: fd-sheen 8s ease-in-out 2s infinite;
+}
+.dt-hero > span, .dt-hero > div.absolute > span { animation: dt-badge .6s cubic-bezier(.34,1.56,.64,1) .5s both; }
+.dt-hero h1 { animation: dt-in .9s cubic-bezier(.16,1,.3,1) .35s both; }
+.dt-hero h1 + p { animation: dt-in .9s cubic-bezier(.16,1,.3,1) .5s both; }
+
+/* Colonnes : cascade a l'arrivee */
+.dt-v2 .grid > .flex.flex-col.gap-4 > * { animation: dt-in .8s cubic-bezier(.16,1,.3,1) backwards; }
+.dt-v2 .grid > .flex.flex-col.gap-4 > :nth-child(1) { animation-delay: .25s; }
+.dt-v2 .grid > .flex.flex-col.gap-4 > :nth-child(2) { animation-delay: .35s; }
+.dt-v2 .grid > .flex.flex-col.gap-4 > :nth-child(3) { animation-delay: .45s; }
+.dt-v2 .grid > .flex.flex-col.gap-4 > :nth-child(4) { animation-delay: .55s; }
+.dt-v2 .grid > .flex.flex-col.gap-4 > :nth-child(n+5) { animation-delay: .65s; }
+.dt-v2 .grid > :nth-child(2) { animation: dt-in-right .9s cubic-bezier(.16,1,.3,1) .4s backwards; }
+
+/* Cartes d'info / boutons : relief et rebond */
+.dt-v2 [style*="border-radius: 16px"] { transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s, border-color .3s; }
+.dt-v2 [style*="border-radius: 16px"]:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -22px rgba(123,63,242,.45); border-color: rgba(123,63,242,.35) !important; }
+.dt-v2 button.rounded-xl, .dt-v2 a.rounded-xl { transition: transform .3s cubic-bezier(.34,1.56,.64,1), background-color .2s, border-color .2s, box-shadow .3s !important; }
+.dt-v2 button.rounded-xl:hover:not(:disabled), .dt-v2 a.rounded-xl:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 10px 22px -10px rgba(123,63,242,.5); }
+.dt-v2 button.rounded-xl:active:not(:disabled) { transform: scale(.94); }
+.dt-v2 button svg { transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+.dt-v2 button:hover:not(:disabled) svg { transform: scale(1.18) rotate(-6deg); }
+.dt-v2 .btn-primary, .dt-v2 button[style*="background: var(--primary)"], .dt-v2 button[style*="linear-gradient(135deg"] { position: relative; overflow: hidden; }
+.dt-v2 .btn-primary::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.3) 50%, transparent 70%);
+  transform: translateX(-120%); animation: dt-shine 4s ease-in-out 1.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fd-list > .fd-card, .fd-list > div > .fd-card, .fd-live, .fd-heart, .fd-card:hover::after,
+  .dt-v2::before, .dt-v2::after, .dt-hero, .dt-hero > img, .dt-hero::after, .dt-hero > span, .dt-hero h1, .dt-hero h1 + p,
+  .dt-v2 .grid > *, .dt-v2 .grid > .flex.flex-col.gap-4 > *, .dt-v2 .btn-primary::before { animation: none !important; }
+}

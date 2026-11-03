@@ -9,6 +9,7 @@ import { ProtectedRoute }  from './components/layout/ProtectedRoute';
 import { PublicOnlyRoute } from './components/layout/PublicOnlyRoute';
 import { MobileGate }      from './components/layout/MobileGate';
 import { bootstrapAuth, useAuthStore } from './store/authStore';
+import { useCurrencyStore } from './store/currencyStore';
 import { accountsService } from './services/accountsService';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { PageLoader } from './components/ui/Spinner';
@@ -169,6 +170,17 @@ function AppShell() {
   useEffect(() => {
     if (user) accountsService.migrateIfNeeded();
   }, [user]);
+
+  // Devise locale (parité mobile, cf. CurrencyContext.tsx côté stream_mobile) —
+  // charge la liste des devises dès le démarrage, et tente une détection
+  // automatique par pays UNE SEULE FOIS par installation (jamais si l'utilisateur
+  // a déjà fait un choix manuel, cf. currencyStore.autoDetect). N'ouvre jamais
+  // le prompt de permission géoloc lui-même — n'utilise qu'une position déjà
+  // accordée ailleurs (ex: Create*Page), sinon reste en EUR silencieusement.
+  useEffect(() => {
+    useCurrencyStore.getState().loadCurrencies();
+    useCurrencyStore.getState().autoDetect();
+  }, []);
 
   // Chiffrement de bout en bout des messages — enregistre cet appareil
   // (navigateur) auprès du serveur dès l'authentification, condition pour

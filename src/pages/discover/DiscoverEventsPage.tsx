@@ -4,6 +4,7 @@ import { Calendar, Zap, MapPin, Search, X, Clock } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
+import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import { encodeId } from '../../utils/slugId';
 import type { Event } from '../../types';
 import { getEventTiming, sortEventsByProximity } from '../../utils/eventTiming';
@@ -105,7 +106,7 @@ function EventRow({ ev, onClick }: { ev: Event; onClick: () => void }) {
         </div>
         {ev.ticket_price != null && (
           <p className="text-xs font-bold mt-0.5" style={{ color: typeColor }}>
-            {ev.ticket_price === 0 ? 'Gratuit' : `${ev.ticket_price}€`}
+            {ev.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={ev.ticket_price} />}
           </p>
         )}
       </div>

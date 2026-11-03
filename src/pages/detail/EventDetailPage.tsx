@@ -23,6 +23,7 @@ import { formatTimeAgo } from '../../utils/date';
 import { getEventTiming } from '../../utils/eventTiming';
 import { ShareModal } from '../../components/ui/ShareModal';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
+import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import { useConfirm } from '../../components/ui/Dialog';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
@@ -580,13 +581,13 @@ export default function EventDetailPage() {
     : [{ key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: ev.ticket_price ?? 0, sub: 'Accès standard' }];
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="dt-v2 min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-full mx-auto px-4 py-5 sm:py-8">
 
         <DetailBackHeader onBack={goBack} />
 
         {/* ── Banner ── */}
-        <div className="relative rounded-2xl overflow-hidden mb-4 sm:mb-6 aspect-[16/9] sm:aspect-[21/8]"
+        <div className="dt-hero relative rounded-2xl overflow-hidden mb-4 sm:mb-6 aspect-[16/9] sm:aspect-[21/8]"
           style={{ minHeight: 160, background: 'var(--bg-secondary)' }}>
           {ev.banner_url || ev.thumbnail_url
             ? <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} className="w-full h-full object-cover cursor-zoom-in" alt={ev.title}
@@ -904,7 +905,7 @@ export default function EventDetailPage() {
                     style={{ color: 'var(--text-tertiary)' }}>Accès</p>
                   <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>
                     {ev.access_type === 'free'   ? 'Gratuit'
-                    : ev.access_type === 'ticket' ? `À partir de ${ev.ticket_price ?? '?'} €`
+                    : ev.access_type === 'ticket' ? (ev.ticket_price != null ? <>À partir de <PriceWithLocal amountEur={ev.ticket_price} /></> : 'À partir de ?')
                     : 'Sur invitation'}
                   </p>
                 </div>
@@ -918,7 +919,7 @@ export default function EventDetailPage() {
                           border: `1.5px solid ${selectedTier === tier.key ? tier.color : 'var(--border)'}`,
                           color: selectedTier === tier.key ? tier.color : 'var(--text-secondary)',
                         }}>
-                        {tier.label} · {tier.price} €
+                        {tier.label} · <PriceWithLocal amountEur={tier.price} />
                       </button>
                     ))}
                   </div>

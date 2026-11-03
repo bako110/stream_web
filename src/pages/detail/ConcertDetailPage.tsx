@@ -294,13 +294,13 @@ export default function ConcertDetailPage() {
     : [{ key: 'simple' as const, label: 'Simple', color: '#7B3FF2', price: c.ticket_price ?? 0, sub: 'Accès standard' }];
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+    <div className="dt-v2 min-h-screen" style={{ background: 'var(--bg)' }}>
       <div className="w-full mx-auto px-4 py-8">
 
         <DetailBackHeader onBack={goBack} />
 
         {/* ── Banner ── */}
-        <div className="relative rounded-2xl overflow-hidden mb-6"
+        <div className="dt-hero relative rounded-2xl overflow-hidden mb-6"
           style={{ aspectRatio: '21/8', minHeight: 160, background: 'var(--bg-secondary)' }}>
           {c.banner_url || c.thumbnail_url
             ? <img src={c.banner_url ?? c.thumbnail_url ?? ''} className="w-full h-full object-cover cursor-zoom-in" alt={c.title}
@@ -496,7 +496,7 @@ export default function ConcertDetailPage() {
                   style={{ color: 'var(--text-tertiary)' }}>Accès</p>
                 <p className="font-black text-xl" style={{ color: 'var(--text-primary)' }}>
                   {c.access_type === 'free'         ? 'Gratuit'
-                   : c.access_type === 'ticket'     ? `À partir de ${c.ticket_price != null ? Number(c.ticket_price).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '?'} €`
+                   : c.access_type === 'ticket'     ? (c.ticket_price != null ? <>À partir de <PriceWithLocal amountEur={c.ticket_price} /></> : 'À partir de ?')
                    : c.access_type === 'subscription'? 'Abonnement'
                    : 'PPV'}
                 </p>
