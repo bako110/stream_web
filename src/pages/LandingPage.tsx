@@ -30,6 +30,79 @@ function useScrollReveal() {
   });
 }
 
+// ── Mouvement : parallaxe souris (hero) + compteur animé ─────────────────────
+const reducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function useHeroParallax() {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reducedMotion()) return;
+    let raf = 0;
+    const move = (e: PointerEvent) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--mx', String(((e.clientX - r.left) / r.width - 0.5).toFixed(3)));
+        el.style.setProperty('--my', String(((e.clientY - r.top) / r.height - 0.5).toFixed(3)));
+      });
+    };
+    const leave = () => { el.style.setProperty('--mx', '0'); el.style.setProperty('--my', '0'); };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerleave', leave);
+    return () => { cancelAnimationFrame(raf); el.removeEventListener('pointermove', move); el.removeEventListener('pointerleave', leave); };
+  }, []);
+  return ref;
+}
+
+function CountUp({ value }: { value: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [text, setText] = useState(value);
+  useEffect(() => {
+    const el = ref.current;
+    const target = parseInt(value.replace(/\D/g, ''), 10);
+    if (!el || !target || reducedMotion()) return;
+    const suffix = value.replace(/[\d\s]/g, '');
+    setText(`0${suffix}`);
+    let raf = 0;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      obs.disconnect();
+      const t0 = performance.now();
+      const tick = (t: number) => {
+        const p = Math.min(1, (t - t0) / 1600);
+        const n = Math.round(target * (1 - Math.pow(1 - p, 4)));
+        setText(`${n.toLocaleString('fr-FR')}${suffix}`);
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, { threshold: 0.4 });
+    obs.observe(el);
+    return () => { obs.disconnect(); cancelAnimationFrame(raf); };
+  }, [value]);
+  return <p ref={ref} className="gt-stat-value">{text}</p>;
+}
+
+// Inclinaison 3D du panneau live qui suit le curseur
+function useTilt() {
+  const ref = useRef<HTMLDivElement>(null);
+  const onMove = (e: React.PointerEvent) => {
+    const el = ref.current;
+    if (!el || e.pointerType !== 'mouse' || reducedMotion()) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    el.style.setProperty('--rx', `${(-y * 8).toFixed(2)}deg`);
+    el.style.setProperty('--ry', `${(x * 10).toFixed(2)}deg`);
+  };
+  const onLeave = () => {
+    ref.current?.style.setProperty('--rx', '0deg');
+    ref.current?.style.setProperty('--ry', '0deg');
+  };
+  return { ref, onMove, onLeave };
+}
+
 const NAV_LINKS = [
   { label: 'Films & séries', href: '/explore/films'    },
   { label: 'Concerts',       href: '/explore/concerts' },
@@ -195,6 +268,7 @@ function LivePreviewVideo({ src, poster }: { src: string; poster?: string | null
 
 function HeroLivePanel({ concerts }: { concerts: Concert[] }) {
   const [liveNow, setLiveNow] = useState<Concert[]>([]);
+  const tilt = useTilt();
 
   // Concerts réellement en direct (endpoint public) — silencieux si indisponible.
   useEffect(() => {
@@ -212,8 +286,9 @@ function HeroLivePanel({ concerts }: { concerts: Concert[] }) {
   const artist  = main.artist?.display_name ?? main.artist?.username;
 
   return (
-    <aside className="gt-livepanel gt-rise" style={{ animationDelay: '200ms' }} aria-label="En direct sur Gofolyx">
-      <div className="gt-livepanel-media">
+    <aside className="gt-livepanel gt-rise" style={{ transitionDelay: '200ms' }} aria-label="En direct sur Gofolyx">
+      <div className="gt-float" onPointerMove={tilt.onMove} onPointerLeave={tilt.onLeave}>
+      <div className="gt-livepanel-media" ref={tilt.ref}>
         {main.thumbnail_url && <img src={main.thumbnail_url} alt="" className="gt-live-poster" />}
         {video && <LivePreviewVideo src={video} poster={main.thumbnail_url} />}
         <div className="gt-livepanel-scrim" />
@@ -230,6 +305,7 @@ function HeroLivePanel({ concerts }: { concerts: Concert[] }) {
             <Play size={14} fill="currentColor" /> {isLive ? 'Regarder le live' : 'Voir le concert'}
           </Link>
         </div>
+      </div>
       </div>
 
       {others.length > 0 && (
@@ -260,10 +336,19 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
   const [imgErr, setImgErr] = useState(false);
 
   const banner = concerts[0] ?? films[0];
+  const heroRef = useHeroParallax();
+  const words: { t: string; accent?: boolean }[] = [
+    { t: 'Tout' }, { t: 'se' }, { t: 'passe,' }, { t: 'en' }, { t: 'direct.', accent: true },
+  ];
 
   return (
-    <section className="gt-hero">
-      <div className="gt-container">
+    <section className="gt-hero" ref={heroRef}>
+      <div className="gt-aurora" aria-hidden="true">
+        <span className="gt-orb gt-orb-1" />
+        <span className="gt-orb gt-orb-2" />
+        <span className="gt-orb gt-orb-3" />
+      </div>
+      <div className="gt-container gt-hero-content">
         <div className="gt-hero-grid">
         <div className="gt-hero-intro">
           <div className="gt-rise flex items-center justify-center lg:justify-start gap-2 mb-6">
@@ -271,22 +356,27 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
               <span className="animate-ping absolute inset-0 rounded-full" style={{ background: 'var(--gt-accent)', opacity: 0.6 }} />
               <span className="relative rounded-full h-2 w-2 inline-block" style={{ background: 'var(--gt-accent)' }} />
             </span>
+            <span className="gt-eq" aria-hidden="true"><i /><i /><i /><i /></span>
             <span className="gt-eyebrow">
               En direct maintenant · {concerts.length > 0 ? `${concerts.length} lives` : 'reels, films, concerts'}
             </span>
           </div>
 
-          <h1 className="gt-display gt-rise text-[2.6rem] sm:text-[4rem] lg:text-[4.6rem] leading-[1.05] mb-7"
-            style={{ animationDelay: '80ms' }}>
-            Tout se passe, en <span style={{ color: 'var(--gt-accent)' }}>direct</span>.
+          <h1 className="gt-display text-[2.6rem] sm:text-[4rem] lg:text-[4.6rem] leading-[1.05] mb-7">
+            {words.map((w, i) => (
+              <span key={i} className="gt-word-mask">
+                <span className={`gt-word${w.accent ? ' gt-word-accent' : ''}`} style={{ ['--i' as any]: i }}>{w.t}</span>
+                {' '}
+              </span>
+            ))}
           </h1>
 
-          <p className="text-lg leading-relaxed max-w-xl mx-auto lg:mx-0 mb-9 gt-rise" style={{ color: 'var(--gt-text-2)', animationDelay: '160ms' }}>
+          <p className="text-lg leading-relaxed max-w-xl mx-auto lg:mx-0 mb-9 gt-rise" style={{ color: 'var(--gt-text-2)', transitionDelay: '160ms' }}>
             Concerts live, films, séries, reels et communautés — un seul endroit pour
             vivre la scène, l'écran et le direct, où que tu sois.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-12 lg:mb-0 gt-rise" style={{ animationDelay: '240ms' }}>
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-12 lg:mb-0 gt-rise" style={{ transitionDelay: '240ms' }}>
             {isAuthenticated ? (
               <button onClick={() => navigate('/feed')} className="gt-btn gt-btn-accent">
                 Mon espace <ArrowRight size={17} />
@@ -306,7 +396,7 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
         <HeroLivePanel concerts={concerts} />
         </div>
 
-        <div className="gt-hero-banner gt-rise" style={{ animationDelay: '200ms' }}>
+        <div className="gt-hero-banner gt-rise" style={{ transitionDelay: '200ms' }}>
           {banner?.thumbnail_url && !imgErr ? (
             <img src={banner.thumbnail_url} alt="" onError={() => setImgErr(true)} />
           ) : (
@@ -316,7 +406,7 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
           <div className="gt-stat-row gt-hero-banner-stats">
             {[['500+', 'Films & séries'], ['200+', 'Concerts live'], ['1 000+', 'Communautés']].map(([n, l]) => (
               <div key={l}>
-                <p className="gt-stat-value">{n}</p>
+                <CountUp value={n} />
                 <p className="gt-stat-label">{l}</p>
               </div>
             ))}
@@ -500,7 +590,7 @@ function FeaturesSection() {
 
           <div className="gt-features-list">
             {features.map(({ icon: Icon, title, desc }, i) => (
-              <div key={title} className="gt-rise gt-feature-card" style={{ animationDelay: `${i * 60}ms` }}>
+              <div key={title} className="gt-rise gt-feature-card" style={{ transitionDelay: `${i * 60}ms` }}>
                 <span className="gt-feature-card-num">{String(i + 1).padStart(2, '0')}</span>
                 <div className="gt-feature-icon"><Icon size={18} /></div>
                 <h3 className="font-semibold text-base mb-1.5">{title}</h3>
@@ -532,7 +622,7 @@ function SocialProof() {
         </div>
         <div className="gt-grid gt-grid-wide">
           {cards.map((r, i) => (
-            <div key={r.name} className="gt-tile gt-rise" style={{ animationDelay: `${i * 70}ms` }}>
+            <div key={r.name} className="gt-tile gt-rise" style={{ transitionDelay: `${i * 70}ms` }}>
               <div className="gt-testimonial">
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, j) => (
