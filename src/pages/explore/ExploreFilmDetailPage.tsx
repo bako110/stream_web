@@ -39,14 +39,14 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
   const backLabel = type === 'film' ? 'Films' : 'Séries';
 
   return (
-    <div className="xp-container pt-2 md:pt-4">
+    <div className="xp-container pt-2 md:pt-4 xd-page">
       <Link to="/" className="xp-back">
         <ArrowLeft size={15} />
         Accueil
       </Link>
 
       {/* Hero */}
-      <div className="relative rounded-3xl h-72 md:h-96 overflow-hidden">
+      <div className="relative rounded-3xl h-72 md:h-96 overflow-hidden xd-hero">
         {content.banner_url || content.thumbnail_url ? (
           <img
             src={content.banner_url ?? content.thumbnail_url!}
@@ -65,13 +65,13 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
         <div className="flex flex-col md:flex-row gap-6">
           {/* Thumbnail as poster */}
           {content.thumbnail_url && (
-            <div className="shrink-0 w-36 md:w-48 rounded-2xl overflow-hidden shadow-2xl self-start">
+            <div className="shrink-0 w-36 md:w-48 rounded-2xl overflow-hidden shadow-2xl self-start xd-poster">
               <img src={content.thumbnail_url} alt={content.title} className="w-full h-auto" />
             </div>
           )}
 
           {/* Info */}
-          <div className="flex-1">
+          <div className="flex-1 xd-stagger">
             <h1 className="text-2xl md:text-4xl font-bold text-[var(--text-primary)] mb-2">{content.title}</h1>
             {content.original_title && content.original_title !== content.title && (
               <p className="text-[var(--text-tertiary)] text-sm mb-2 italic">{content.original_title}</p>
@@ -120,15 +120,15 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
 
         {/* Director / cast */}
         {(content.director || content.cast) && (
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 xd-stagger">
             {content.director && (
-              <div className="card p-4">
+              <div className="card p-4 xd-lift">
                 <h3 className="text-xs uppercase tracking-wider text-[var(--text-tertiary)] mb-2">Réalisateur</h3>
                 <p className="text-[var(--text-primary)] font-medium">{content.director}</p>
               </div>
             )}
             {content.cast && Object.keys(content.cast).length > 0 && (
-              <div className="card p-4">
+              <div className="card p-4 xd-lift">
                 <h3 className="text-xs uppercase tracking-wider text-[var(--text-tertiary)] mb-2">Casting</h3>
                 <p className="text-[var(--text-primary)]">{Object.values(content.cast).join(', ')}</p>
               </div>
@@ -137,7 +137,7 @@ export default function ExploreFilmDetailPage({ type = 'film' }: Props) {
         )}
 
         {/* Signup banner */}
-        <div className="mt-12 rounded-2xl bg-gradient-to-r from-[var(--primary)]/20 to-purple-500/10 border border-[var(--primary)]/20 p-8 text-center">
+        <div className="xd-banner mt-12 rounded-2xl bg-gradient-to-r from-[var(--primary)]/20 to-purple-500/10 border border-[var(--primary)]/20 p-8 text-center">
           <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2">
             Prêt à regarder {content.title} ?
           </h2>

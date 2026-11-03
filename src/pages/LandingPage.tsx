@@ -330,12 +330,9 @@ function HeroLivePanel({ concerts }: { concerts: Concert[] }) {
   );
 }
 
-function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[] }) {
+function HeroSection({ concerts }: { films: Content[]; concerts: Concert[] }) {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
-  const [imgErr, setImgErr] = useState(false);
-
-  const banner = concerts[0] ?? films[0];
   const heroRef = useHeroParallax();
   const words: { t: string; accent?: boolean }[] = [
     { t: 'Tout' }, { t: 'se' }, { t: 'passe,' }, { t: 'en' }, { t: 'direct.', accent: true },
@@ -396,21 +393,21 @@ function HeroSection({ films, concerts }: { films: Content[]; concerts: Concert[
         <HeroLivePanel concerts={concerts} />
         </div>
 
-        <div className="gt-hero-banner gt-rise" style={{ transitionDelay: '200ms' }}>
-          {banner?.thumbnail_url && !imgErr ? (
-            <img src={banner.thumbnail_url} alt="" onError={() => setImgErr(true)} />
-          ) : (
-            <div className="gt-hero-banner-fallback"><Play size={40} /></div>
-          )}
-          <div className="gt-hero-banner-scrim" />
-          <div className="gt-stat-row gt-hero-banner-stats">
-            {[['500+', 'Films & séries'], ['200+', 'Concerts live'], ['1 000+', 'Communautés']].map(([n, l]) => (
-              <div key={l}>
+        <div className="gt-stats gt-rise" style={{ transitionDelay: '200ms' }}>
+          {[
+            { icon: Film,   n: '500+',   l: 'Films & séries', d: 'En streaming HD' },
+            { icon: Music2, n: '200+',   l: 'Concerts live',  d: 'Chat et cadeaux en direct' },
+            { icon: Users,  n: '1 000+', l: 'Communautés',    d: 'Groupes et créateurs' },
+          ].map(({ icon: Icon, n, l, d }, i) => (
+            <div key={l} className="gt-stat-card" style={{ ['--i' as any]: i }}>
+              <span className="gt-stat-card-icon"><Icon size={20} /></span>
+              <div className="gt-stat-card-body">
                 <CountUp value={n} />
                 <p className="gt-stat-label">{l}</p>
+                <p className="gt-stat-desc">{d}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -565,12 +562,12 @@ function EmptyRow() {
 // ── Features — mise en page éditoriale : titre figé à gauche, cartes à droite ─
 function FeaturesSection() {
   const features = [
-    { icon: Radio,  title: 'Concerts en direct', desc: 'Live streaming HD, chat en temps réel, cadeaux virtuels pour soutenir les artistes pendant le show.' },
-    { icon: Play,   title: 'Films & séries',     desc: 'Un catalogue en streaming HD, sous-titré, accessible sans interruption publicitaire.' },
-    { icon: Film,   title: 'Reels & stories',    desc: 'Formats courts pour découvrir les créateurs et partager tes propres moments en quelques secondes.' },
-    { icon: Users,  title: 'Communautés',        desc: 'Groupes thématiques avec trésorerie partagée, cotisations et gouvernance par les membres.' },
-    { icon: Calendar, title: 'Événements & billets', desc: 'Festivals, expos, conférences — billetterie intégrée, du premier accès au dernier rappel.' },
-    { icon: Shield, title: 'Monétisation créatrice', desc: 'Abonnements, cadeaux, publicité partagée — les créateurs sont payés directement sur la plateforme.' },
+    { icon: Radio,  c: '#7B3FF2', title: 'Concerts en direct', desc: 'Live streaming HD, chat en temps réel, cadeaux virtuels pour soutenir les artistes pendant le show.' },
+    { icon: Play,   c: '#EC4899', title: 'Films & séries',     desc: 'Un catalogue en streaming HD, sous-titré, accessible sans interruption publicitaire.' },
+    { icon: Film,   c: '#F59E0B', title: 'Reels & stories',    desc: 'Formats courts pour découvrir les créateurs et partager tes propres moments en quelques secondes.' },
+    { icon: Users,  c: '#10B981', title: 'Communautés',        desc: 'Groupes thématiques avec trésorerie partagée, cotisations et gouvernance par les membres.' },
+    { icon: Calendar, c: '#0EA5E9', title: 'Événements & billets', desc: 'Festivals, expos, conférences — billetterie intégrée, du premier accès au dernier rappel.' },
+    { icon: Shield, c: '#8B5CF6', title: 'Monétisation créatrice', desc: 'Abonnements, cadeaux, publicité partagée — les créateurs sont payés directement sur la plateforme.' },
   ];
 
   return (
@@ -586,11 +583,19 @@ function FeaturesSection() {
               Chaque format que tu regardes, chaque scène que tu suis, chaque
               communauté que tu rejoins — au même endroit, avec le même compte.
             </p>
+            <ul className="gt-checks">
+              {['Gratuit pour commencer', 'Sans publicité intrusive', 'Sur mobile et sur le web'].map(t => (
+                <li key={t}><span><Star size={11} fill="currentColor" /></span>{t}</li>
+              ))}
+            </ul>
+            <Link to="/auth/register" className="gt-btn gt-btn-accent mt-6">
+              Créer mon compte <ArrowRight size={17} />
+            </Link>
           </div>
 
           <div className="gt-features-list">
-            {features.map(({ icon: Icon, title, desc }, i) => (
-              <div key={title} className="gt-rise gt-feature-card" style={{ transitionDelay: `${i * 60}ms` }}>
+            {features.map(({ icon: Icon, c, title, desc }, i) => (
+              <div key={title} className="gt-rise gt-feature-card" style={{ transitionDelay: `${i * 60}ms`, ['--c' as any]: c }}>
                 <span className="gt-feature-card-num">{String(i + 1).padStart(2, '0')}</span>
                 <div className="gt-feature-icon"><Icon size={18} /></div>
                 <h3 className="font-semibold text-base mb-1.5">{title}</h3>
@@ -620,25 +625,25 @@ function SocialProof() {
           <span className="gt-eyebrow">Communauté</span>
           <h2 className="gt-display text-2xl sm:text-3xl mt-2">Déjà sur Gofolyx</h2>
         </div>
-        <div className="gt-grid gt-grid-wide">
-          {cards.map((r, i) => (
-            <div key={r.name} className="gt-tile gt-rise" style={{ transitionDelay: `${i * 70}ms` }}>
-              <div className="gt-testimonial">
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <Star key={j} size={12} style={{ color: 'var(--gt-accent)' }} fill="var(--gt-accent)" />
-                  ))}
-                </div>
-                <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--gt-text-2)' }}>"{r.text}"</p>
-                <div className="flex items-center gap-2.5">
-                  <div className="gt-avatar">{r.name.charAt(0)}</div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">{r.name}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--gt-text-3)' }}>{r.city}</p>
-                  </div>
-                </div>
+      </div>
+      <div className="gt-marquee gt-rise">
+        <div className="gt-marquee-track">
+          {[...cards, ...cards].map((r, i) => (
+            <figure key={i} className="gt-review" aria-hidden={i >= cards.length}>
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <Star key={j} size={13} style={{ color: '#F59E0B' }} fill="#F59E0B" />
+                ))}
               </div>
-            </div>
+              <blockquote>"{r.text}"</blockquote>
+              <figcaption>
+                <div className="gt-avatar">{r.name.charAt(0)}</div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{r.name}</p>
+                  <p className="text-xs truncate" style={{ color: 'var(--gt-text-3)' }}>{r.city}</p>
+                </div>
+              </figcaption>
+            </figure>
           ))}
         </div>
       </div>

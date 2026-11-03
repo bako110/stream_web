@@ -36,14 +36,14 @@ export default function ExploreEventDetailPage() {
   const location  = [event.venue_name, event.venue_address, event.venue_city, event.venue_country].filter(Boolean).join(', ');
 
   return (
-    <div className="xp-container pt-2 md:pt-4">
+    <div className="xp-container pt-2 md:pt-4 xd-page">
       <Link to="/" className="xp-back">
         <ArrowLeft size={15} />
         Accueil
       </Link>
 
       {/* Hero */}
-      <div className="relative rounded-3xl h-64 md:h-96 overflow-hidden">
+      <div className="relative rounded-3xl h-64 md:h-96 overflow-hidden xd-hero">
         {event.thumbnail_url || event.banner_url ? (
           <img
             src={event.banner_url ?? event.thumbnail_url!}
@@ -65,12 +65,12 @@ export default function ExploreEventDetailPage() {
 
       {/* Content */}
       <div className="w-full px-2 sm:px-4 -mt-16 relative z-10 pb-16">
-        <div className="card p-6 md:p-8">
+        <div className="card p-6 md:p-8 xd-rise">
           <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">{event.title}</h1>
 
           {/* Meta grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6 xd-stagger">
+            <div className="bg-[var(--bg-secondary)] rounded-xl p-4 xd-lift">
               <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-xs mb-1">
                 <Calendar size={12} />
                 <span>Début</span>
@@ -82,7 +82,7 @@ export default function ExploreEventDetailPage() {
             </div>
 
             {endDate && (
-              <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+              <div className="bg-[var(--bg-secondary)] rounded-xl p-4 xd-lift">
                 <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-xs mb-1">
                   <Calendar size={12} />
                   <span>Fin</span>
@@ -94,7 +94,7 @@ export default function ExploreEventDetailPage() {
             )}
 
             {location && (
-              <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+              <div className="bg-[var(--bg-secondary)] rounded-xl p-4 xd-lift">
                 <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-xs mb-1">
                   <MapPin size={12} />
                   <span>Lieu</span>
@@ -104,7 +104,7 @@ export default function ExploreEventDetailPage() {
             )}
 
             {event.max_attendees != null && (
-              <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+              <div className="bg-[var(--bg-secondary)] rounded-xl p-4 xd-lift">
                 <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-xs mb-1">
                   <Users size={12} />
                   <span>Capacité</span>
@@ -114,7 +114,7 @@ export default function ExploreEventDetailPage() {
             )}
 
             {event.ticket_price != null && (
-              <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+              <div className="bg-[var(--bg-secondary)] rounded-xl p-4 xd-lift">
                 <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-xs mb-1">
                   <Ticket size={12} />
                   <span>Prix</span>
@@ -166,7 +166,7 @@ export default function ExploreEventDetailPage() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl bg-gradient-to-r from-orange-500/20 to-red-500/10 border border-orange-500/20 p-8 text-center">
+        <div className="xd-banner mt-8 rounded-2xl bg-gradient-to-r from-orange-500/20 to-red-500/10 border border-orange-500/20 p-8 text-center">
           <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2">
             Rejoignez la communauté Gofolyx
           </h2>

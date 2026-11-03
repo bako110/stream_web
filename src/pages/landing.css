@@ -1097,3 +1097,104 @@
   .gt-showcase-badge, .gt-timing-chip, .gt-showcase-slide.is-active .gt-showcase-media img { animation: none !important; }
   .gt-showcase-dot-fill { animation: none; transform: scaleX(1); }
 }
+
+/* ══ BANDE DE CHIFFRES — remplace la grande banniere image (doublon du panneau live) ══ */
+.gt-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: .5rem; }
+@media (max-width: 720px) { .gt-stats { grid-template-columns: 1fr; gap: .75rem; } }
+.gt-stat-card {
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 1.1rem;
+  padding: 1.35rem 1.5rem; border-radius: 1.5rem;
+  background: var(--gt-surface); border: 1px solid var(--gt-line);
+  box-shadow: 0 1px 2px rgba(11,11,16,.04);
+  transition: transform .45s cubic-bezier(.16,1,.3,1), box-shadow .45s, border-color .3s;
+}
+.gt-stat-card::before {
+  content: ''; position: absolute; width: 180px; height: 180px; right: -60px; top: -80px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(123,63,242,.22), transparent 70%); transition: transform .6s cubic-bezier(.16,1,.3,1);
+}
+.gt-stat-card::after {
+  content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; transform: scaleX(0); transform-origin: left;
+  background: linear-gradient(90deg, var(--gt-accent), #EC4899); transition: transform .6s cubic-bezier(.16,1,.3,1);
+}
+.gt-stat-card:hover { transform: translateY(-6px); border-color: color-mix(in srgb, var(--gt-accent) 45%, var(--gt-line)); box-shadow: 0 22px 44px -18px rgba(123,63,242,.4); }
+.gt-stat-card:hover::before { transform: scale(1.5); }
+.gt-stat-card:hover::after { transform: scaleX(1); }
+.gt-stat-card-icon {
+  position: relative; z-index: 1; flex-shrink: 0; width: 52px; height: 52px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  background: linear-gradient(135deg, var(--gt-accent), #A855F7); box-shadow: 0 10px 22px -6px rgba(123,63,242,.55);
+  animation: gt-bob 4s ease-in-out infinite; animation-delay: calc(var(--i) * -1.2s);
+  transition: transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.gt-stat-card:hover .gt-stat-card-icon { transform: rotate(-8deg) scale(1.12); animation: none; }
+.gt-stat-card-body { position: relative; z-index: 1; min-width: 0; }
+.gt-stat-card .gt-stat-value { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--gt-text); font-variant-numeric: tabular-nums; }
+.gt-stat-card .gt-stat-label { margin-top: .4rem; font-size: .9rem; font-weight: 700; color: var(--gt-text); }
+.gt-stat-desc { margin-top: .1rem; font-size: .78rem; color: var(--gt-text-3); }
+@media (prefers-reduced-motion: reduce) { .gt-stat-card-icon { animation: none; } }
+
+/* ══ POURQUOI GOFOLYX + TEMOIGNAGES — nouvelle mise en page ══ */
+
+/* Intro : liste de points + bouton, pour remplir la colonne gauche */
+.gt-checks { list-style: none; margin: 1.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .7rem; }
+.gt-checks li { display: flex; align-items: center; gap: .65rem; font-size: .9rem; font-weight: 600; color: var(--gt-text); }
+.gt-checks li span {
+  width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;
+  background: linear-gradient(135deg, var(--gt-accent), #A855F7); box-shadow: 0 4px 10px -2px rgba(123,63,242,.5);
+}
+
+/* Cartes bento : la 1re et la derniere occupent toute la largeur, couleur propre a chaque carte */
+.gt-feature-card { --c: var(--gt-accent); overflow: hidden; border-radius: 1.5rem; padding: 1.6rem; }
+.gt-feature-card::before {
+  content: ''; position: absolute; width: 200px; height: 200px; right: -70px; bottom: -90px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 28%, transparent), transparent 70%);
+  transition: transform .6s cubic-bezier(.16,1,.3,1);
+}
+.gt-feature-card:hover::before { transform: scale(1.6); }
+.gt-feature-card::after {
+  content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 3px; background: var(--c);
+  transform: scaleX(0); transform-origin: left; transition: transform .6s cubic-bezier(.16,1,.3,1);
+}
+.gt-feature-card:hover::after { transform: scaleX(1); }
+.gt-feature-card:hover { border-color: color-mix(in srgb, var(--c) 45%, var(--gt-line)); box-shadow: 0 22px 44px -20px color-mix(in srgb, var(--c) 55%, transparent); }
+.gt-feature-icon {
+  color: #fff; border: none; background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 60%, #fff));
+  box-shadow: 0 10px 20px -6px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.gt-feature-card > * { position: relative; z-index: 1; }
+.gt-feature-card-num { z-index: 1; }
+@media (min-width: 640px) {
+  .gt-features-list .gt-feature-card:first-child,
+  .gt-features-list .gt-feature-card:last-child { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; column-gap: 1.25rem; align-items: center; }
+  .gt-features-list .gt-feature-card:first-child .gt-feature-icon,
+  .gt-features-list .gt-feature-card:last-child .gt-feature-icon { grid-row: 1 / span 2; margin-bottom: 0; width: 3.5rem; height: 3.5rem; }
+  .gt-features-list .gt-feature-card:first-child h3,
+  .gt-features-list .gt-feature-card:last-child h3 { margin-bottom: .25rem; font-size: 1.1rem; }
+}
+
+/* Temoignages : defilement continu, bords en fondu, pause au survol */
+.gt-marquee {
+  overflow: hidden; padding: .5rem 0 1.5rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.gt-marquee-track { display: flex; gap: 1.25rem; width: max-content; animation: gt-scroll 50s linear infinite; padding-left: 1.25rem; }
+.gt-marquee:hover .gt-marquee-track { animation-play-state: paused; }
+.gt-review {
+  position: relative; flex: 0 0 340px; margin: 0; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;
+  border-radius: 1.5rem; background: var(--gt-surface); border: 1px solid var(--gt-line);
+  transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s, border-color .3s;
+}
+@media (max-width: 520px) { .gt-review { flex-basis: 280px; } }
+.gt-review::before {
+  content: '\201C'; position: absolute; top: .4rem; right: 1.2rem; font-size: 4.5rem; line-height: 1; font-weight: 800;
+  color: color-mix(in srgb, var(--gt-accent) 16%, transparent); pointer-events: none;
+}
+.gt-review:hover { transform: translateY(-6px) rotate(-.6deg); border-color: color-mix(in srgb, var(--gt-accent) 45%, var(--gt-line)); box-shadow: 0 22px 44px -20px rgba(123,63,242,.4); }
+.gt-review blockquote { margin: 0; flex: 1; font-size: .92rem; line-height: 1.6; color: var(--gt-text-2); }
+.gt-review figcaption { display: flex; align-items: center; gap: .7rem; }
+.gt-review .gt-avatar { background: linear-gradient(135deg, var(--gt-accent), #EC4899); color: #fff; width: 2.5rem; height: 2.5rem; }
+@media (prefers-reduced-motion: reduce) {
+  .gt-marquee-track { animation: none; overflow-x: auto; }
+  .gt-marquee { -webkit-mask-image: none; mask-image: none; overflow-x: auto; }
+}

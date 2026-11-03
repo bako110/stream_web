@@ -390,3 +390,234 @@
   transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 .xp-back:hover { color: var(--xp-text); border-color: var(--xp-text-3); transform: translateX(-2px); }
+
+
+/* ══ PAGES DETAIL (visiteur non connecte) — mouvement ══════════════════════════ */
+.xd-page { position: relative; isolation: isolate; }
+.xd-page::before, .xd-page::after {
+  content: ''; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%; filter: blur(80px);
+}
+.xd-page::before { width: 380px; height: 380px; top: -60px; left: -100px; background: #7B3FF2; opacity: .22; animation: xd-drift-a 20s ease-in-out infinite; }
+.xd-page::after  { width: 320px; height: 320px; top: 120px; right: -80px; background: #EC4899; opacity: .16; animation: xd-drift-b 24s ease-in-out infinite; }
+@keyframes xd-drift-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(110px,60px) scale(1.2); } }
+@keyframes xd-drift-b { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-90px,80px) scale(.85); } }
+
+.xd-page .xp-back { animation: xd-in-left .6s cubic-bezier(.16,1,.3,1) both; }
+@keyframes xd-in-left { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+
+/* Visuel principal : se devoile, ken-burns, reflet en diagonale */
+.xd-hero { animation: xd-reveal 1s cubic-bezier(.16,1,.3,1) both; box-shadow: 0 30px 70px -30px rgba(123,63,242,.5); }
+@keyframes xd-reveal {
+  from { opacity: 0; transform: scale(.96) translateY(20px); clip-path: inset(0 0 18% 0 round 1.5rem); }
+  to   { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 1.5rem); }
+}
+@keyframes xd-kenburns { from { transform: scale(1); } to { transform: scale(1.1) translate(-1.5%, -1%); } }
+@keyframes xd-settle { from { transform: scale(1.18); } to { transform: scale(1); } }
+.xd-hero img { animation: xd-settle 1.6s cubic-bezier(.16,1,.3,1) backwards, xd-kenburns 18s ease-in-out 1.6s infinite alternate; }
+.xd-hero::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.2) 50%, transparent 65%);
+  background-size: 250% 100%; background-position: 130% 0; animation: xd-sheen 7s ease-in-out 1.8s infinite;
+}
+@keyframes xd-sheen { 0% { background-position: 130% 0; } 35%,100% { background-position: -80% 0; } }
+.xd-hero > span { animation: xd-pop .7s cubic-bezier(.34,1.56,.64,1) .5s both; }
+@keyframes xd-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: none; } }
+
+/* Affiche : arrive en rebond puis flotte */
+@keyframes xd-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.xd-poster { animation: xd-poster-in .9s cubic-bezier(.34,1.3,.64,1) .25s both, xd-float 7s ease-in-out 1.2s infinite; transition: box-shadow .4s; }
+.xd-poster:hover { box-shadow: 0 30px 60px -12px rgba(123,63,242,.55); }
+@keyframes xd-poster-in { from { opacity: 0; transform: translateY(40px) rotate(-4deg) scale(.9); } to { opacity: 1; transform: none; } }
+
+/* Cascade : chaque enfant monte l'un apres l'autre */
+@keyframes xd-rise { from { opacity: 0; transform: translateY(22px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+.xd-stagger > * { animation: xd-rise .8s cubic-bezier(.16,1,.3,1) both; }
+.xd-stagger > :nth-child(1) { animation-delay: .25s; }
+.xd-stagger > :nth-child(2) { animation-delay: .35s; }
+.xd-stagger > :nth-child(3) { animation-delay: .45s; }
+.xd-stagger > :nth-child(4) { animation-delay: .55s; }
+.xd-stagger > :nth-child(5) { animation-delay: .65s; }
+.xd-stagger > :nth-child(6) { animation-delay: .75s; }
+.xd-stagger > :nth-child(n+7) { animation-delay: .85s; }
+.xd-rise { animation: xd-rise .9s cubic-bezier(.16,1,.3,1) .4s both; }
+
+/* Titre : balayage de lumiere violette */
+@keyframes xd-shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+.xd-page h1 {
+  background: linear-gradient(100deg, var(--xp-text, currentColor) 55%, #7B3FF2 80%, var(--xp-text, currentColor));
+  background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: xd-rise .8s cubic-bezier(.16,1,.3,1) .3s both, xd-shimmer 6s linear 1.5s infinite;
+}
+
+/* Cartes d'info : relief au survol ; icones qui flottent */
+.xd-lift { transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s; }
+.xd-lift:hover { transform: translateY(-5px); box-shadow: 0 18px 36px -16px rgba(123,63,242,.4); }
+@keyframes xd-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.xd-stagger li > span:first-child { transition: transform .45s cubic-bezier(.34,1.56,.64,1); animation: xd-bob 4s ease-in-out infinite; }
+.xd-stagger li:hover > span:first-child { transform: rotate(-10deg) scale(1.15); animation: none; }
+
+/* Boutons d'action : reflet + pulsation douce */
+@keyframes xd-shine { 0% { transform: translateX(-120%); } 30%,100% { transform: translateX(120%); } }
+@keyframes xd-cta-pulse {
+  0%,100% { box-shadow: 0 8px 20px rgba(123,63,242,.3), 0 0 0 0 rgba(123,63,242,.45); }
+  60%     { box-shadow: 0 8px 20px rgba(123,63,242,.3), 0 0 0 12px rgba(123,63,242,0); }
+}
+.xd-page .btn-primary, .xd-page .xp-btn-accent { position: relative; overflow: hidden; animation: xd-cta-pulse 2.8s ease-in-out 1.5s infinite; }
+.xd-page .btn-primary::before, .xd-page .xp-btn-accent::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+  transform: translateX(-120%); animation: xd-shine 4s ease-in-out 1.8s infinite;
+}
+.xd-page .btn-primary:hover, .xd-page .xp-btn-accent:hover { animation: none; transform: translateY(-2px) scale(1.03); }
+
+/* Bandeau d'inscription : degrade qui tourne doucement */
+@keyframes xd-spin { to { transform: rotate(360deg); } }
+.xd-banner { position: relative; overflow: hidden; animation: xd-rise .9s cubic-bezier(.16,1,.3,1) .6s both; }
+.xd-banner::before {
+  content: ''; position: absolute; width: 140%; height: 220%; top: -60%; left: -20%; pointer-events: none; z-index: 0;
+  background: radial-gradient(35% 40% at 25% 40%, rgba(123,63,242,.3), transparent 70%), radial-gradient(30% 35% at 75% 60%, rgba(236,72,153,.22), transparent 70%);
+  animation: xd-spin 18s linear infinite;
+}
+.xd-banner > * { position: relative; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .xd-page::before, .xd-page::after, .xd-page .xp-back, .xd-hero, .xd-hero img, .xd-hero::after, .xd-hero > span,
+  .xd-poster, .xd-stagger > *, .xd-rise, .xd-page h1, .xd-stagger li > span:first-child,
+  .xd-page .btn-primary, .xd-page .xp-btn-accent, .xd-page .btn-primary::before, .xd-page .xp-btn-accent::before,
+  .xd-banner, .xd-banner::before { animation: none !important; }
+}
+
+
+/* ══ PAGES LISTE (films, series, concerts, evenements) — nouvelle mise en page ══ */
+
+/* En-tete : bloc titre + recherche dans un panneau, compteur, fond lumineux */
+.xl-page .xp-page-head {
+  position: relative; margin-top: .5rem; margin-bottom: 1.75rem; padding: 2rem 1.5rem;
+  border-radius: 1.75rem; border: 1px solid var(--xp-line); background: var(--xp-surface);
+  overflow: hidden; box-shadow: 0 1px 2px rgba(11,11,16,.04);
+}
+@media (min-width: 768px) { .xl-page .xp-page-head { padding: 2.5rem 2.5rem; } }
+.xl-page .xp-page-head::before {
+  content: ''; position: absolute; width: 360px; height: 360px; right: -90px; top: -160px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(123,63,242,.28), transparent 70%); animation: xd-drift-b 16s ease-in-out infinite;
+}
+.xl-page .xp-page-head::after {
+  content: ''; position: absolute; width: 280px; height: 280px; left: -80px; bottom: -150px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(236,72,153,.18), transparent 70%); animation: xd-drift-a 20s ease-in-out infinite;
+}
+.xl-page .xp-page-head > * { position: relative; z-index: 1; }
+.xl-page .xp-page-title { font-size: 2.4rem; letter-spacing: -.035em; }
+@media (min-width: 640px) { .xl-page .xp-page-title { font-size: 3.2rem; } }
+.xl-eyebrow-row { display: flex; align-items: center; gap: .6rem; }
+.xl-count {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 22px; padding: 0 .5rem;
+  border-radius: 999px; font-size: .72rem; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--xp-accent), #A855F7); box-shadow: 0 6px 14px -4px rgba(123,63,242,.6);
+  animation: xd-pop .6s cubic-bezier(.34,1.56,.64,1) .5s both;
+}
+
+/* Recherche : pilule plus haute, halo au focus */
+.xl-page .xp-search input { padding: .95rem 1.1rem .95rem 2.8rem; font-size: .92rem; transition: border-color .25s, box-shadow .35s, width .35s; }
+.xl-page .xp-search input:focus { border-color: var(--xp-accent); box-shadow: 0 0 0 5px rgba(123,63,242,.14), 0 12px 28px -12px rgba(123,63,242,.4); }
+.xl-page .xp-search svg { left: 1.1rem; transition: color .25s, transform .3s; }
+.xl-page .xp-search:focus-within svg { color: var(--xp-accent); transform: translateY(-50%) scale(1.15); }
+@media (min-width: 1024px) { .xl-page .xp-search { width: 340px; } .xl-page .xp-search:focus-within { width: 380px; } .xl-page .xp-search { transition: width .35s cubic-bezier(.16,1,.3,1); } }
+
+/* A la une : grande carte horizontale (films / series) */
+.xl-feature {
+  position: relative; display: block; overflow: hidden; border-radius: 1.75rem; margin-bottom: 1.75rem;
+  min-height: 340px; color: #fff; isolation: isolate;
+  box-shadow: 0 30px 60px -30px rgba(123,63,242,.55); transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s;
+}
+@media (min-width: 768px) { .xl-feature { min-height: 420px; } }
+.xl-feature:hover { transform: translateY(-4px); box-shadow: 0 40px 80px -30px rgba(123,63,242,.7); }
+.xl-feature-media { position: absolute; inset: 0; z-index: -2; background: #1a1033; }
+.xl-feature-media img { width: 100%; height: 100%; object-fit: cover; animation: xd-kenburns 22s ease-in-out infinite alternate; }
+.xl-feature-scrim {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to right, rgba(8,3,18,.92) 0%, rgba(8,3,18,.6) 45%, transparent 80%), linear-gradient(to top, rgba(8,3,18,.7), transparent 55%);
+}
+.xl-feature-body { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; justify-content: flex-end; min-height: inherit; padding: 1.75rem; max-width: 640px; }
+@media (min-width: 768px) { .xl-feature-body { padding: 2.75rem; } }
+.xl-feature-body > * { animation: xd-rise .8s cubic-bezier(.16,1,.3,1) both; }
+.xl-feature-body > :nth-child(2) { animation-delay: .1s; } .xl-feature-body > :nth-child(3) { animation-delay: .2s; }
+.xl-feature-body > :nth-child(4) { animation-delay: .3s; } .xl-feature-body > :nth-child(5) { animation-delay: .4s; }
+.xl-feature-tag {
+  display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .8rem; border-radius: 999px;
+  font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  background: rgba(255,255,255,.14); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.25);
+}
+.xl-feature-tag svg { color: #FBBF24; }
+.xl-feature-title { font-size: 2rem; line-height: 1.05; color: #fff; }
+@media (min-width: 768px) { .xl-feature-title { font-size: 3.2rem; } }
+.xl-feature-meta { display: flex; align-items: center; gap: .9rem; font-size: .9rem; font-weight: 600; color: rgba(255,255,255,.8); }
+.xl-feature-rating { display: inline-flex; align-items: center; gap: .3rem; color: #FBBF24; font-weight: 800; }
+.xl-feature-syn { font-size: .95rem; line-height: 1.55; color: rgba(255,255,255,.75); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.xl-feature-cta {
+  position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: .5rem; height: 48px; padding: 0 1.5rem; margin-top: .4rem;
+  border-radius: 999px; background: #fff; color: #5B2EC4; font-weight: 800; font-size: .92rem;
+  box-shadow: 0 10px 26px rgba(0,0,0,.4); transition: transform .3s cubic-bezier(.16,1,.3,1);
+  animation: xd-rise .8s cubic-bezier(.16,1,.3,1) .4s both, xl-cta-pulse 2.6s ease-in-out 1.5s infinite;
+}
+.xl-feature:hover .xl-feature-cta { transform: scale(1.06); animation: none; }
+
+/* Cartes : bouton d'action qui surgit, relief, lueur */
+.xp-card { border-radius: 1.25rem; transition: transform .45s cubic-bezier(.16,1,.3,1), box-shadow .45s, border-color .3s; }
+.xp-card:hover { transform: translateY(-8px); border-color: color-mix(in srgb, var(--xp-accent) 45%, var(--xp-line)); box-shadow: 0 24px 44px -18px rgba(123,63,242,.4); }
+.xp-card-media img { transition: transform 1s cubic-bezier(.16,1,.3,1); }
+.xp-card:hover .xp-card-media img { transform: scale(1.09); }
+.xp-card-media::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.22) 50%, transparent 65%);
+  background-size: 250% 100%; background-position: 130% 0; transition: background-position .9s cubic-bezier(.16,1,.3,1);
+}
+.xp-card:hover .xp-card-media::after { background-position: -60% 0; }
+.xp-card-go {
+  position: absolute; top: 50%; left: 50%; z-index: 3; width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; color: #5B2EC4; background: #fff;
+  box-shadow: 0 12px 28px rgba(0,0,0,.4); opacity: 0; transform: translate(-50%, -30%) scale(.5);
+  transition: opacity .35s, transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.xp-card:hover .xp-card-go { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.xp-card-overlay { transition: transform .45s cubic-bezier(.16,1,.3,1); }
+.xp-card:hover .xp-card-overlay { transform: translateY(-4px); }
+.xp-card-overlay-title { font-size: 1rem; }
+.xp-card-chip { backdrop-filter: blur(8px); background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.18); }
+.xp-card-date { backdrop-filter: blur(10px); box-shadow: 0 8px 20px rgba(0,0,0,.25); animation: xd-bob 4s ease-in-out infinite; }
+.xp-card-badge { box-shadow: 0 4px 14px rgba(239,68,68,.5); }
+.xp-card-footer { transition: background-color .3s; }
+.xp-card:hover .xp-card-footer { background: color-mix(in srgb, var(--xp-accent) 6%, transparent); }
+.xp-card-body { transition: background-color .3s; }
+.xp-card-title { transition: color .25s; }
+.xp-card:hover .xp-card-title { color: var(--xp-accent); }
+
+/* Grilles : respiration */
+.xl-page .xp-grid { gap: 1.5rem; }
+@media (min-width: 1024px) { .xl-page .xp-grid { grid-template-columns: repeat(5, 1fr); } }
+.xl-page .xp-grid-wide { gap: 1.5rem; }
+
+/* Separateurs de section */
+.xl-page .xp-rule { margin-bottom: 1.5rem; }
+.xl-page .xp-rule .xp-eyebrow { display: inline-flex; align-items: center; gap: .55rem; }
+.xl-page .xp-rule .xp-eyebrow::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: xl-dot-pulse 1.8s ease-in-out infinite; }
+
+/* Onglets (concerts) : le bouton actif prend la couleur de l'accent */
+.xl-page .xp-tab { transition: transform .25s cubic-bezier(.16,1,.3,1), background-color .25s, color .25s, border-color .25s, box-shadow .3s; }
+.xl-page .xp-tab:hover { transform: translateY(-2px); }
+.xl-page .xp-tab.is-active { background: var(--xp-accent); border-color: var(--xp-accent); color: #fff; box-shadow: 0 10px 22px -8px rgba(123,63,242,.6); }
+
+/* Bande d'appel final : degrade anime */
+.xl-cta { position: relative; overflow: hidden; isolation: isolate; }
+.xl-cta::before {
+  content: ''; position: absolute; z-index: -1; width: 140%; height: 220%; top: -60%; left: -20%; pointer-events: none;
+  background: radial-gradient(35% 40% at 25% 40%, rgba(123,63,242,.55), transparent 70%), radial-gradient(30% 35% at 75% 60%, rgba(236,72,153,.4), transparent 70%);
+  animation: xd-spin 16s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xl-page .xp-page-head::before, .xl-page .xp-page-head::after, .xl-count, .xl-feature-media img, .xl-feature-body > *,
+  .xl-feature-cta, .xp-card-date, .xl-page .xp-rule .xp-eyebrow::before, .xl-cta::before { animation: none !important; }
+}
+
+@keyframes xl-cta-pulse { 0%,100% { box-shadow: 0 10px 26px rgba(0,0,0,.4), 0 0 0 0 rgba(255,255,255,.55); } 60% { box-shadow: 0 10px 26px rgba(0,0,0,.4), 0 0 0 12px rgba(255,255,255,0); } }
+@keyframes xl-dot-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.7); } }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { encodeId } from '../../utils/slugId';
-import { Search, Music2, MapPin, Calendar, Radio, Users, Ticket } from 'lucide-react';
+import { Search, Music2, MapPin, Calendar, Radio, Users, Ticket, ArrowUpRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePaginatedApi } from '../../hooks/useApi';
@@ -48,12 +48,12 @@ export default function ExploreConcertsPage() {
   const upNext  = filtered.filter(c => c.status !== 'live');
 
   return (
-    <div className="xp-container">
+    <div className="xp-container xd-page xl-page">
       <ExploreBackButton />
       <div className="xp-page-head xp-rise">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <span className="xp-eyebrow">Live</span>
+            <div className="xl-eyebrow-row"><span className="xp-eyebrow">Live</span>{!loading && <span className="xl-count">{items.length}</span>}</div>
             <h1 className="xp-display xp-page-title">Concerts</h1>
             <p className="xp-page-sub">La musique en temps réel — vis la scène depuis n'importe où</p>
           </div>
@@ -92,7 +92,7 @@ export default function ExploreConcertsPage() {
                 <h2 className="xp-display text-lg">En ce moment</h2>
               </div>
               <div className="xp-grid-wide grid gap-6">
-                {live.map((c, i) => <div key={c.id} className="xp-rise" style={{ animationDelay: `${i * 60}ms` }}><ConcertCard concert={c} isLive /></div>)}
+                {live.map((c, i) => <div key={c.id} className="xp-rise" style={{ transitionDelay: `${i * 60}ms` }}><ConcertCard concert={c} isLive /></div>)}
               </div>
             </div>
           )}
@@ -101,7 +101,7 @@ export default function ExploreConcertsPage() {
             <div className="xp-empty">{search ? `Aucun résultat pour "${search}"` : 'Aucun concert disponible pour le moment'}</div>
           ) : upNext.length > 0 && (
             <div className="xp-grid-wide grid gap-6">
-              {upNext.map((c, i) => <div key={c.id} className="xp-rise" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}><ConcertCard concert={c} /></div>)}
+              {upNext.map((c, i) => <div key={c.id} className="xp-rise" style={{ transitionDelay: `${Math.min(i, 8) * 50}ms` }}><ConcertCard concert={c} /></div>)}
             </div>
           )}
           {page < pages && (
@@ -112,7 +112,7 @@ export default function ExploreConcertsPage() {
         </>
       )}
 
-      <div className="xp-cta xp-rise">
+      <div className="xp-cta xl-cta xp-rise">
         <Music2 size={26} className="mx-auto mb-4" style={{ color: 'var(--xp-accent)' }} />
         <h2 className="xp-display text-2xl sm:text-3xl mb-3" style={{ color: 'var(--xp-paper)' }}>Ne manque plus aucun concert</h2>
         <p className="mb-8 max-w-md mx-auto" style={{ color: 'rgba(245,244,242,0.65)' }}>Inscris-toi pour recevoir des alertes et acheter tes billets.</p>
@@ -141,6 +141,7 @@ function ConcertCard({ concert, isLive = false }: { concert: Concert; isLive?: b
         {(concert.current_viewers ?? 0) > 0 && (
           <div className="xp-card-chip"><Users size={10} /> {(concert.current_viewers ?? 0).toLocaleString()}</div>
         )}
+        <span className="xp-card-go"><ArrowUpRight size={18} /></span>
         <div className="xp-card-overlay">
           <p className="xp-card-overlay-title truncate">{concert.title}</p>
           {artistName && <p className="xp-card-overlay-sub truncate">{artistName}</p>}

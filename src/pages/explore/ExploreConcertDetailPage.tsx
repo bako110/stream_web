@@ -51,7 +51,7 @@ export default function ExploreConcertDetailPage() {
   const CtaIcon = cta.icon;
 
   return (
-    <div className="xp-container pt-2 md:pt-4 pb-16">
+    <div className="xp-container pt-2 md:pt-4 pb-16 xd-page">
       <Link to="/" className="xp-back">
         <ArrowLeft size={15} />
         Accueil
@@ -59,7 +59,7 @@ export default function ExploreConcertDetailPage() {
 
       <div className="grid lg:grid-cols-[1.35fr_1fr] gap-6 lg:gap-10 items-start mt-2">
         {/* Visuel */}
-        <div className="relative rounded-3xl overflow-hidden aspect-[4/3] sm:aspect-video lg:aspect-[4/3]"
+        <div className="relative rounded-3xl overflow-hidden aspect-[4/3] sm:aspect-video lg:aspect-[4/3] xd-hero"
           style={{ background: 'linear-gradient(135deg,#1a1033,#2d1b69)' }}>
           {(concert.banner_url || concert.thumbnail_url) && (
             <img src={concert.banner_url ?? concert.thumbnail_url!} alt={concert.title}
@@ -80,7 +80,7 @@ export default function ExploreConcertDetailPage() {
         </div>
 
         {/* Infos */}
-        <div className="lg:sticky lg:top-24">
+        <div className="lg:sticky lg:top-24 xd-stagger">
           <span className="xp-eyebrow">Concert</span>
           <h1 className="xp-display text-3xl sm:text-4xl leading-tight mt-2" style={{ color: 'var(--xp-text)' }}>
             {concert.title}
@@ -89,7 +89,7 @@ export default function ExploreConcertDetailPage() {
             <p className="text-lg mt-1.5" style={{ color: 'var(--xp-text-2)' }}>{artistName}</p>
           )}
 
-          <ul className="mt-6 divide-y" style={{ borderTop: '1px solid var(--xp-line)', borderBottom: '1px solid var(--xp-line)' }}>
+          <ul className="mt-6 divide-y xd-stagger" style={{ borderTop: '1px solid var(--xp-line)', borderBottom: '1px solid var(--xp-line)' }}>
             {facts.map(({ icon: Icon, label, value, sub }) => (
               <li key={label} className="flex items-center gap-4 py-3.5" style={{ borderColor: 'var(--xp-line)' }}>
                 <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
@@ -118,7 +118,7 @@ export default function ExploreConcertDetailPage() {
       </div>
 
       {concert.description && (
-        <section className="mt-10 max-w-3xl">
+        <section className="mt-10 max-w-3xl xd-rise">
           <h2 className="xp-display text-xl mb-3" style={{ color: 'var(--xp-text)' }}>À propos</h2>
           <p className="leading-relaxed whitespace-pre-line" style={{ color: 'var(--xp-text-2)' }}>{concert.description}</p>
         </section>

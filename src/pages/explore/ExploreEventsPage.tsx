@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { encodeId } from '../../utils/slugId';
-import { Search, Calendar, MapPin } from 'lucide-react';
+import { Search, Calendar, MapPin, ArrowUpRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePaginatedApi } from '../../hooks/useApi';
@@ -46,12 +46,12 @@ export default function ExploreEventsPage() {
   const past     = sorted.filter(ev => getEventTiming(ev, now).isPast);
 
   return (
-    <div className="xp-container">
+    <div className="xp-container xd-page xl-page">
       <ExploreBackButton />
       <div className="xp-page-head xp-rise">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <span className="xp-eyebrow">Agenda</span>
+            <div className="xl-eyebrow-row"><span className="xp-eyebrow">Agenda</span>{!loading && <span className="xl-count">{items.length}</span>}</div>
             <h1 className="xp-display xp-page-title">Événements</h1>
             <p className="xp-page-sub">Festivals, conférences, expositions — ne manque rien</p>
           </div>
@@ -74,7 +74,7 @@ export default function ExploreEventsPage() {
             <section className="mb-10 xp-rise">
               <div className="xp-rule"><span className="xp-eyebrow shrink-0" style={{ color: '#F59E0B' }}>Bientôt · 7 prochains jours</span></div>
               <div className="xp-grid-wide grid gap-6">
-                {near.map((ev, i) => <div key={ev.id} className="xp-rise" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}><EventCard event={ev} /></div>)}
+                {near.map((ev, i) => <div key={ev.id} className="xp-rise" style={{ transitionDelay: `${Math.min(i, 8) * 50}ms` }}><EventCard event={ev} /></div>)}
               </div>
             </section>
           )}
@@ -82,7 +82,7 @@ export default function ExploreEventsPage() {
             <section className="mb-10 xp-rise">
               <div className="xp-rule"><span className="xp-eyebrow shrink-0">À venir</span></div>
               <div className="xp-grid-wide grid gap-6">
-                {upcoming.map((ev, i) => <div key={ev.id} className="xp-rise" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}><EventCard event={ev} /></div>)}
+                {upcoming.map((ev, i) => <div key={ev.id} className="xp-rise" style={{ transitionDelay: `${Math.min(i, 8) * 50}ms` }}><EventCard event={ev} /></div>)}
               </div>
             </section>
           )}
@@ -102,7 +102,7 @@ export default function ExploreEventsPage() {
         </>
       )}
 
-      <div className="xp-cta xp-rise">
+      <div className="xp-cta xl-cta xp-rise">
         <Calendar size={26} className="mx-auto mb-4" style={{ color: 'var(--xp-accent)' }} />
         <h2 className="xp-display text-2xl sm:text-3xl mb-3" style={{ color: 'var(--xp-paper)' }}>Participe aux prochains événements</h2>
         <p className="mb-8 max-w-md mx-auto" style={{ color: 'rgba(245,244,242,0.65)' }}>Achète tes billets et partage tes expériences avec la communauté.</p>
@@ -145,6 +145,7 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
             <span className="text-white text-xs font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(0,0,0,0.6)' }}>{timing.label}</span>
           </div>
         )}
+        <span className="xp-card-go"><ArrowUpRight size={18} /></span>
         <div className="xp-card-overlay">
           <p className="xp-card-overlay-title truncate">{event.title}</p>
           {location && <p className="xp-card-overlay-sub truncate"><MapPin size={10} /> {location}</p>}
