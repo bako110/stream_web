@@ -987,11 +987,13 @@
 .auth-v2 .input {
   border-radius: 999px;
   min-height: 50px;
-  padding-left: 20px;
   background: var(--bg-secondary);
   border: 1.5px solid transparent;
   font-size: 15px;
 }
+.auth-v2 .input:not([class*="pl-"]) { padding-left: 20px; }
+.auth-v2 .input[class*="pl-"] { padding-left: 2.9rem; }
+.auth-v2 .input[class*="pr-"] { padding-right: 2.9rem; }
 .auth-v2 .input:focus { background: var(--surface); }
 .auth-v2 label { font-weight: 700; font-size: 13px; color: var(--text-secondary); }
 
