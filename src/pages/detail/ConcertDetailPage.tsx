@@ -16,6 +16,7 @@ import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketP
 import { useRepost } from '../../components/ui/RepostModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
+import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import { useConfirm } from '../../components/ui/Dialog';
 import { useAuthStore } from '../../store/authStore';
 import { format } from 'date-fns';
@@ -513,7 +514,7 @@ export default function ConcertDetailPage() {
                         border: `1.5px solid ${selectedTier === tier.key ? tier.color : 'var(--border)'}`,
                         color: selectedTier === tier.key ? tier.color : 'var(--text-secondary)',
                       }}>
-                      {tier.label} · {tier.price} €
+                      {tier.label} · <PriceWithLocal amountEur={tier.price} />
                     </button>
                   ))}
                 </div>

@@ -9,6 +9,7 @@ import type { Event } from '../types';
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
+import { PriceWithLocal } from '../components/ui/PriceWithLocal';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -95,7 +96,7 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: string) =
           {event.access_type === 'ticket' && event.ticket_price != null && (
             <span className="text-xs font-black text-white flex items-center gap-1">
               <Ticket size={11} style={{ color: '#7B3FF2' }} />
-              <span style={{ color: '#7B3FF2' }}>{event.ticket_price}€</span>
+              <span style={{ color: '#7B3FF2' }}><PriceWithLocal amountEur={event.ticket_price} /></span>
             </span>
           )}
         </div>

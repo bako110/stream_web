@@ -492,7 +492,7 @@ function ConcertShowcase({ concert, onClick }: { concert: Concert; onClick: () =
       <div className="gt-showcase-footer">
         <span className="gt-showcase-meta"><Music2 size={13} /> Concert en streaming</span>
         {concert.ticket_price != null ? (
-          <span className="gt-showcase-price"><Ticket size={13} /> {concert.ticket_price === 0 ? 'Gratuit' : `${concert.ticket_price}€`}</span>
+          <span className="gt-showcase-price"><Ticket size={13} /> {concert.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={concert.ticket_price} />}</span>
         ) : (
           <span className="gt-showcase-cta">Voir <ArrowUpRight size={14} /></span>
         )}
@@ -537,7 +537,7 @@ function EventShowcase({ event, onClick }: { event: Event; onClick: () => void }
         {timing.isPast ? (
           <span className="gt-showcase-price gt-showcase-price--past">Terminé</span>
         ) : event.ticket_price != null ? (
-          <span className="gt-showcase-price">{event.ticket_price === 0 ? 'Gratuit' : `${event.ticket_price}€`}</span>
+          <span className="gt-showcase-price">{event.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={event.ticket_price} />}</span>
         ) : (
           <span className="gt-showcase-cta">Voir <ArrowUpRight size={14} /></span>
         )}

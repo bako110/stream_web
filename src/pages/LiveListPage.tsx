@@ -8,6 +8,7 @@ import { Endpoints } from '../api/endpoints';
 import { useApi, usePaginatedApi } from '../hooks/useApi';
 import { Spinner, PageLoader } from '../components/ui/Spinner';
 import { Avatar } from '../components/ui/Avatar';
+import { PriceWithLocal } from '../components/ui/PriceWithLocal';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { extractApiErrorMessage } from '../utils/apiError';
@@ -20,7 +21,7 @@ import {
 function AccessBadge({ type, price }: { type: Concert['access_type']; price: number | null }) {
   if (type === 'free') return <GlassChip tone="green">Gratuit</GlassChip>;
   if (type === 'ticket') return (
-    <GlassChip tone="gold"><Ticket size={11} /> {price != null ? price.toLocaleString('fr-FR') + ' FCFA' : 'Payant'}</GlassChip>
+    <GlassChip tone="gold"><Ticket size={11} /> {price != null ? <PriceWithLocal amountEur={price} /> : 'Payant'}</GlassChip>
   );
   return <GlassChip tone="violet">Abonnement</GlassChip>;
 }

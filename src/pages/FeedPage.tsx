@@ -23,6 +23,7 @@ import { uploadVideoHls } from '../api/uploadVideo';
 import { toProxiedUrl } from '../utils/constants';
 import { formatTimeAgo } from '../utils/date';
 import { ShareModal } from '../components/ui/ShareModal';
+import { PriceWithLocal } from '../components/ui/PriceWithLocal';
 import { RepostModal } from '../components/ui/RepostModal';
 import { getApiErrorDetail } from '../utils/apiError';
 import { getEventTiming } from '../utils/eventTiming';
@@ -1782,7 +1783,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
           )}
           <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white"
             style={{ background: concert.access_type === 'free' ? 'rgba(34,197,94,0.8)' : 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-            {concert.access_type === 'free' ? 'Gratuit' : concert.access_type === 'ticket' ? `${concert.ticket_price ?? '?'}€` : 'Abo'}
+            {concert.access_type === 'free' ? 'Gratuit' : concert.access_type === 'ticket' ? (concert.ticket_price != null ? <PriceWithLocal amountEur={concert.ticket_price} /> : '?') : 'Abo'}
           </span>
         </div>
       </div>
@@ -1910,7 +1911,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, on
           {event.venue_city && <span className="flex items-center gap-1"><MapPin size={11} />{event.venue_city}{event.venue_country ? `, ${event.venue_country}` : ''}</span>}
           {event.starts_at && <span><Clock size={11} className="inline mr-1" />{format(new Date(event.starts_at), 'd MMM · HH:mm', { locale: fr })}</span>}
           {event.access_type === 'free' && <span className="font-semibold" style={{ color: '#7B3FF2' }}>Gratuit</span>}
-          {event.access_type === 'ticket' && event.ticket_price && <span className="font-semibold" style={{ color: color }}>{event.ticket_price}€</span>}
+          {event.access_type === 'ticket' && event.ticket_price && <span className="font-semibold" style={{ color: color }}><PriceWithLocal amountEur={event.ticket_price} /></span>}
         </div>
       </div>
 

@@ -553,6 +553,117 @@ export function GuestPreview({
         .gp-lock-btn-ghost:hover { background: rgba(255,255,255,0.12); }
         .gp-lock-perks { position: relative; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
         .gp-lock-perk { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); }
+
+        /* ═══ Refonte : couleur + mouvement ═══ */
+        @keyframes gp-drop { from { opacity: 0; transform: translateY(-22px); } to { opacity: 1; transform: none; } }
+        @keyframes gp-rise { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+        @keyframes gp-reveal { from { opacity: 0; transform: scale(.96) translateY(22px); } to { opacity: 1; transform: none; } }
+        @keyframes gp-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: none; } }
+        @keyframes gp-drift-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(110px,70px) scale(1.2); } }
+        @keyframes gp-drift-b { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-90px,80px) scale(.85); } }
+        @keyframes gp-hue { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+        @keyframes gp-shine { 0% { transform: translateX(-120%); } 35%,100% { transform: translateX(120%); } }
+        @keyframes gp-sheen { 0% { background-position: 130% 0; } 40%,100% { background-position: -80% 0; } }
+        @keyframes gp-kb { from { transform: scale(1); } to { transform: scale(1.07); } }
+        @keyframes gp-ring { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.5); } 70%,100% { box-shadow: 0 0 0 20px rgba(255,255,255,0); } }
+        @keyframes gp-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        @keyframes gp-spin { to { transform: rotate(360deg); } }
+        @keyframes gp-shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+        @keyframes gp-dock-in { from { opacity: 0; transform: translate(-50%, 40px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        @keyframes gp-glowpulse { 0%,100% { opacity: .8; transform: translate(-50%,-60%) scale(1); } 50% { opacity: 1; transform: translate(-50%,-60%) scale(1.15); } }
+
+        /* Fond : halos qui derivent */
+        .gp-page { isolation: isolate; }
+        .gp-page::before, .gp-page::after { content: ''; position: fixed; z-index: -1; pointer-events: none; border-radius: 50%; filter: blur(90px); }
+        .gp-page::before { width: 460px; height: 460px; top: -100px; left: -140px; background: #7B3FF2; opacity: .2; animation: gp-drift-a 22s ease-in-out infinite; }
+        .gp-page::after  { width: 380px; height: 380px; bottom: -120px; right: -120px; background: #EC4899; opacity: .14; animation: gp-drift-b 26s ease-in-out infinite; }
+
+        /* Barre du haut : tombe, contour degrade vivant, bouton avec reflet */
+        .gp-bar { animation: gp-drop .8s cubic-bezier(.16,1,.3,1) both; }
+        .gp-bar::before {
+          content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none;
+          background: linear-gradient(100deg,#7B3FF2,#EC4899,#F59E0B,#7B3FF2,#EC4899) 0% 50% / 300% 100%;
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+                  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+          opacity: .5; animation: gp-hue 9s linear infinite;
+        }
+        .gp-logo { transition: transform .3s cubic-bezier(.16,1,.3,1); }
+        .gp-logo:hover { transform: scale(1.05); }
+        .gp-pillbtn { position: relative; overflow: hidden; }
+        .gp-pillbtn-ghost:hover { border-color: #7B3FF2; color: #7B3FF2; transform: translateY(-1px); }
+        .gp-pillbtn-solid::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); transform: translateX(-120%); animation: gp-shine 4s ease-in-out 1.5s infinite; }
+        .gp-pillbtn-solid:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -6px rgba(123,63,242,.65); }
+
+        /* Visuel : se devoile, halo violet, reflet, lecture qui pulse */
+        .gp-hero { animation: gp-reveal 1s cubic-bezier(.16,1,.3,1) .15s both; box-shadow: 0 2px 6px rgba(11,11,16,.06), 0 34px 70px -26px rgba(123,63,242,.6); }
+        .gp-hero::after {
+          content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 4;
+          background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.16) 50%, transparent 65%);
+          background-size: 250% 100%; background-position: 130% 0; animation: gp-sheen 8s ease-in-out 2s infinite;
+        }
+        .gp-hero:not(.is-reel) .gp-hero-slide { animation: gp-kb 18s ease-in-out infinite alternate; }
+        .gp-hero-play { animation: gp-ring 2.4s ease-out infinite; }
+        .gp-hero-play:active { transform: translate(-50%,-50%) scale(.92); }
+
+        /* Carte d'infos : monte, badges rebondissent, titre brille, pastilles vivantes */
+        .gp-info { animation: gp-rise .9s cubic-bezier(.16,1,.3,1) .35s both; position: relative; overflow: hidden; }
+        .gp-info::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg,#7B3FF2,#EC4899,#F59E0B,#7B3FF2); background-size: 300% 100%; animation: gp-hue 8s linear infinite; }
+        .gp-badge { animation: gp-pop .55s cubic-bezier(.34,1.56,.64,1) .6s both; }
+        .gp-badge-live { box-shadow: 0 0 0 0 rgba(239,68,68,.5); animation: gp-pop .55s cubic-bezier(.34,1.56,.64,1) .6s both, gp-ring 2s ease-out 1.2s infinite; }
+        .gp-title {
+          background: linear-gradient(100deg, var(--text-primary) 55%, #7B3FF2 80%, var(--text-primary)); background-size: 220% 100%;
+          -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: gp-shimmer 6s linear 1.5s infinite;
+        }
+        .gp-avatar { position: relative; overflow: visible; }
+        .gp-avatar img { border-radius: 50%; }
+        .gp-avatar::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; z-index: -1; background: conic-gradient(#7B3FF2, #EC4899, #F59E0B, #7B3FF2); animation: gp-spin 6s linear infinite; }
+        .gp-author { isolation: isolate; }
+        .gp-stat, .gp-pill { animation: gp-rise .6s cubic-bezier(.16,1,.3,1) .7s both; transition: transform .3s cubic-bezier(.34,1.56,.64,1), background-color .2s; }
+        .gp-stat:hover, .gp-pill:hover { transform: translateY(-3px) scale(1.04); }
+        .gp-pill-accent { box-shadow: 0 6px 16px -8px rgba(123,63,242,.6); }
+
+        /* Bloc « pourquoi rejoindre » : degrade qui bouge, items en cascade */
+        .gp-why { position: relative; overflow: hidden; animation: gp-rise .9s cubic-bezier(.16,1,.3,1) .5s both;
+          background: linear-gradient(135deg,#8b4dff,#5B2EC4,#c026d3,#5B2EC4,#8b4dff); background-size: 300% 300%; animation: gp-rise .9s cubic-bezier(.16,1,.3,1) .5s both, gp-hue 14s linear infinite; }
+        .gp-why::before { content: ''; position: absolute; width: 320px; height: 320px; right: -120px; top: -140px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.22), transparent 70%); pointer-events: none; animation: gp-drift-b 14s ease-in-out infinite; }
+        .gp-why > * { position: relative; }
+        .gp-why-item { animation: gp-rise .6s cubic-bezier(.16,1,.3,1) both; transition: transform .35s cubic-bezier(.16,1,.3,1), background-color .25s; }
+        .gp-why-item:nth-child(1) { animation-delay: .7s; } .gp-why-item:nth-child(2) { animation-delay: .78s; }
+        .gp-why-item:nth-child(3) { animation-delay: .86s; } .gp-why-item:nth-child(4) { animation-delay: .94s; } .gp-why-item:nth-child(5) { animation-delay: 1.02s; }
+        .gp-why-item:hover { transform: translateX(6px); background: rgba(255,255,255,.18); }
+        .gp-why-ico { animation: gp-bob 4s ease-in-out infinite; }
+        .gp-why-item:nth-child(2n) .gp-why-ico { animation-delay: -1.3s; }
+        .gp-why-item:nth-child(3n) .gp-why-ico { animation-delay: -2.6s; }
+
+        /* Barre d'invitation flottante en bas */
+        .gp-dock {
+          position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 40; transform: translateX(-50%);
+          width: calc(100% - 1.5rem); max-width: 560px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+          padding: 8px 8px 8px 20px; border-radius: 999px; color: #fff;
+          background: linear-gradient(135deg, rgba(20,8,48,.92), rgba(60,20,130,.92)); backdrop-filter: blur(16px);
+          box-shadow: 0 20px 44px -12px rgba(91,46,196,.7); border: 1px solid rgba(255,255,255,.14);
+          animation: gp-dock-in .9s cubic-bezier(.16,1,.3,1) 1.2s both;
+        }
+        .gp-dock-text { min-width: 0; font-size: 13px; font-weight: 700; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .gp-dock-btn {
+          position: relative; overflow: hidden; flex-shrink: 0; height: 42px; padding: 0 20px; border-radius: 999px; display: inline-flex; align-items: center;
+          font-size: 14px; font-weight: 800; color: #5B2EC4; background: #fff; text-decoration: none; transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+        }
+        .gp-dock-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(123,63,242,.25) 50%, transparent 70%); transform: translateX(-120%); animation: gp-shine 3.5s ease-in-out 2s infinite; }
+        .gp-dock-btn:hover { transform: scale(1.06); }
+        .gp-page { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+        /* Overlay de connexion : halo qui respire */
+        .gp-lock-glow { animation: gp-glowpulse 4s ease-in-out infinite; }
+        .gp-lock-btn-primary { position: relative; overflow: hidden; }
+        .gp-lock-btn-primary::before { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.3) 50%, transparent 70%); transform: translateX(-120%); animation: gp-shine 3.5s ease-in-out 1s infinite; }
+        .gp-lock-perk { animation: gp-rise .6s cubic-bezier(.16,1,.3,1) .4s both; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .gp-page::before, .gp-page::after, .gp-bar, .gp-bar::before, .gp-hero, .gp-hero::after, .gp-hero-slide, .gp-hero-play, .gp-info,
+          .gp-info::before, .gp-badge, .gp-title, .gp-avatar::before, .gp-stat, .gp-pill, .gp-why, .gp-why::before, .gp-why-item, .gp-why-ico,
+          .gp-dock, .gp-dock-btn::before, .gp-pillbtn-solid::before, .gp-lock-glow, .gp-lock-btn-primary::before, .gp-lock-perk { animation: none !important; }
+        }
       `}</style>
 
       <div className="gp-page is-fullscreen">
@@ -780,6 +891,12 @@ export function GuestPreview({
             <p className="gp-why-foot">100 % gratuit · sans engagement · en quelques secondes</p>
           </section>
         </main>
+
+        {/* Barre d'invitation flottante */}
+        <div className="gp-dock">
+          <span className="gp-dock-text">{cfg.cta}</span>
+          <Link to={`/auth/register?redirect=${redirectParam}`} className="gp-dock-btn">Rejoindre</Link>
+        </div>
 
         {/* Bottom sheet — description complète (au clic sur « Voir plus ») */}
         {bodyOpen && body && (

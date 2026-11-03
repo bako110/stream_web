@@ -1,4 +1,5 @@
 import { PageLoader } from '../components/ui/Spinner';
+import { PriceWithLocal } from '../components/ui/PriceWithLocal';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../utils/slugId';
@@ -598,7 +599,7 @@ export default function LivePage() {
                 <p className="font-semibold text-lg">Accès payant</p>
                 <p className="text-sm text-white/60 mt-1">
                   {concert.ticket_price != null
-                    ? `${concert.ticket_price.toLocaleString()} FCFA pour accéder au live`
+                    ? <><PriceWithLocal amountEur={concert.ticket_price} /> pour accéder au live</>
                     : 'Un ticket est requis pour accéder'}
                 </p>
               </div>
@@ -606,7 +607,7 @@ export default function LivePage() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
                 style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 4px 20px rgba(123,63,242,0.4)' }}>
                 {buying ? <Spinner size="sm" /> : <Ticket size={16} />}
-                {buying ? 'Traitement...' : `Adhérer — ${concert.ticket_price != null ? concert.ticket_price.toLocaleString() + ' FCFA' : 'Gratuit'}`}
+                {buying ? 'Traitement...' : <>Adhérer — {concert.ticket_price != null ? <PriceWithLocal amountEur={concert.ticket_price} /> : 'Gratuit'}</>}
               </button>
             </div>
 
