@@ -4,7 +4,7 @@ import { ArrowLeft, Receipt, Loader2 } from 'lucide-react';
 import { Spinner } from '../../components/ui/Spinner';
 import { revenueService, SOURCE_FILTERS } from '../../api/revenueService';
 import type { RevenueTransaction } from '../../api/revenueService';
-import { TransactionReceiptModal, type Receipt } from '../../components/ui/TransactionReceiptModal';
+import { TransactionReceiptModal, type Receipt as TxReceipt } from '../../components/ui/TransactionReceiptModal';
 
 const PAGE_LIMIT = 30;
 
@@ -22,7 +22,7 @@ export default function WalletRevenueTransactionsPage() {
   const [source, setSource] = useState<string | undefined>(undefined);
   const [items, setItems] = useState<RevenueTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [receipt, setReceipt] = useState<TxReceipt | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const pageRef = useRef(1);
