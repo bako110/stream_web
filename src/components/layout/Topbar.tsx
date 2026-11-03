@@ -57,7 +57,7 @@ export function Topbar({ onMenuClick }: Props) {
 
   return (
     <header
-      className="sticky top-2 z-30 flex items-center gap-1.5 sm:gap-3 pl-3 pr-3 sm:px-5 h-14 mx-2 sm:mx-4 mt-2 mb-1 rounded-full shrink-0"
+      className="tb-v2 sticky top-2 z-30 flex items-center gap-1.5 sm:gap-3 pl-3 pr-3 sm:px-5 h-14 mx-2 sm:mx-4 mt-2 mb-1 rounded-full shrink-0"
       style={{
         background:          'var(--glass-strong-bg)',
         backdropFilter:      'blur(20px) saturate(180%)',

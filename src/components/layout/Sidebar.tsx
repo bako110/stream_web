@@ -104,7 +104,7 @@ export function Sidebar({ collapsed, onClose, onCollapseToggle }: Props) {
   return (
     <>
     <aside
-      className={clsx('relative flex flex-col h-full transition-all duration-300 shrink-0 rounded-[2rem] overflow-hidden', collapsed ? 'w-[68px]' : 'w-[240px]')}
+      className={clsx('sb-v2 relative flex flex-col h-full transition-all duration-300 shrink-0 rounded-[2rem] overflow-hidden', collapsed ? 'w-[68px]' : 'w-[240px]')}
       style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
         boxShadow: '0 1px 2px rgba(11,11,16,0.05), 0 8px 24px rgba(11,11,16,0.08), 0 20px 40px -12px rgba(11,11,16,0.12)',

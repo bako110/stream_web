@@ -502,3 +502,80 @@
   .text-xs       { font-size: 0.8125rem; line-height: 1.2rem; }
   body { -webkit-text-size-adjust: 100%; }
 }
+
+
+/* ══ APP CONNECTEE — header, menu lateral, barre mobile : couleurs + mouvement ══ */
+@keyframes ap-drop { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: none; } }
+@keyframes ap-in-left { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+@keyframes ap-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes ap-spin { to { transform: rotate(360deg); } }
+@keyframes ap-hue { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+@keyframes ap-ping { 0% { box-shadow: 0 0 0 0 rgba(123,63,242,.6); } 70%,100% { box-shadow: 0 0 0 8px rgba(123,63,242,0); } }
+@keyframes ap-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes ap-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+/* Contour degrade anime partage par les trois barres (violet > rose > orange) */
+.tb-v2::before, .sb-v2::before, .bn-v2::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 0;
+  background: linear-gradient(100deg, #7B3FF2, #EC4899, #F59E0B, #7B3FF2, #EC4899) 0% 50% / 300% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: .55; animation: ap-hue 9s linear infinite;
+}
+.tb-v2 { animation: ap-drop .7s cubic-bezier(.16,1,.3,1) both; box-shadow: 0 8px 28px -10px rgba(123,63,242,.3) !important; }
+.bn-v2 { animation: ap-rise .8s cubic-bezier(.16,1,.3,1) .2s both; box-shadow: 0 10px 30px -8px rgba(123,63,242,.4) !important; }
+.sb-v2 { animation: ap-in-left .8s cubic-bezier(.16,1,.3,1) both; }
+
+/* Header : logo qui tourne, recherche qui s'illumine, pastilles vivantes */
+.tb-v2 > button:first-of-type + button, .tb-v2 > button:nth-of-type(2) { transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+.tb-v2 > button:nth-of-type(2):hover { transform: scale(1.08) rotate(-6deg); }
+.tb-v2 form input { transition: border-color .25s, box-shadow .35s, background-color .25s, transform .3s !important; }
+.tb-v2 form input:hover { background: var(--surface) !important; }
+.tb-v2 form input:focus { transform: translateY(-1px); box-shadow: 0 0 0 4px rgba(123,63,242,.16), 0 12px 26px -12px rgba(123,63,242,.5) !important; }
+.tb-v2 button svg { transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+.tb-v2 button:hover svg { transform: scale(1.18) rotate(-8deg); }
+.tb-v2 .absolute.rounded-full[style*="linear-gradient"] { animation: ap-ping 2s ease-out infinite; }
+.tb-v2 span.absolute.min-w-\[16px\] { animation: ap-pop .5s cubic-bezier(.34,1.56,.64,1) both, ap-ping 2.4s ease-out 1s infinite; }
+
+/* Menu lateral : logo flottant, items en cascade, actif colore avec lueur, survol qui glisse */
+.sb-v2 > div:first-child > :first-child, .sb-v2 > div:first-child > button { animation: ap-float 5s ease-in-out infinite; }
+.sb-v2 nav a { animation: ap-in-left .6s cubic-bezier(.16,1,.3,1) both; transition: transform .35s cubic-bezier(.16,1,.3,1), background-color .25s, box-shadow .3s !important; }
+.sb-v2 nav a:nth-child(1) { animation-delay: .15s; } .sb-v2 nav a:nth-child(2) { animation-delay: .2s; }
+.sb-v2 nav a:nth-child(3) { animation-delay: .25s; } .sb-v2 nav a:nth-child(4) { animation-delay: .3s; }
+.sb-v2 nav a:nth-child(5) { animation-delay: .35s; } .sb-v2 nav a:nth-child(6) { animation-delay: .4s; }
+.sb-v2 nav a:nth-child(7) { animation-delay: .45s; } .sb-v2 nav a:nth-child(8) { animation-delay: .5s; }
+.sb-v2 nav a:nth-child(n+9) { animation-delay: .55s; }
+.sb-v2 nav a:hover { transform: translateX(5px); }
+.sb-v2 nav a[aria-current="page"] { box-shadow: 0 10px 22px -12px currentColor; }
+.sb-v2 nav a[aria-current="page"]::before {
+  content: ''; position: absolute; left: -8px; top: 22%; bottom: 22%; width: 4px; border-radius: 0 4px 4px 0; background: currentColor;
+  animation: ap-pop .45s cubic-bezier(.34,1.56,.64,1) both;
+}
+.sb-v2 nav a svg { transition: transform .45s cubic-bezier(.34,1.56,.64,1); }
+.sb-v2 nav a:hover svg { transform: scale(1.2) rotate(-8deg); }
+.sb-v2 nav a[aria-current="page"] > div:first-child { animation: ap-ping 2.6s ease-out infinite; }
+.sb-v2 > div:last-child button { transition: transform .3s cubic-bezier(.16,1,.3,1), background-color .25s; }
+.sb-v2 > div:last-child button:hover { transform: translateX(4px); }
+
+/* Barre mobile : icone active qui bondit et brille */
+.bn-v2 a { transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+.bn-v2 a:active { transform: scale(.88); }
+.bn-v2 a[aria-current="page"] > div { background: linear-gradient(135deg, rgba(123,63,242,.22), rgba(236,72,153,.18)) !important; box-shadow: 0 6px 16px -6px rgba(123,63,242,.6); animation: ap-pop .4s cubic-bezier(.34,1.56,.64,1) both; }
+.bn-v2 a[aria-current="page"] svg { animation: ap-float 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tb-v2, .sb-v2, .bn-v2, .tb-v2::before, .sb-v2::before, .bn-v2::before, .sb-v2 nav a, .sb-v2 > div:first-child > *,
+  .tb-v2 .absolute, .bn-v2 a > div, .bn-v2 a svg, .sb-v2 nav a::before { animation: none !important; }
+}
+
+/* ══ HEADERS VISITEUR — meme contour degrade anime ══ */
+.gt-header .gt-header-inner::after, .xp-header .xp-container.xp-header-top::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: linear-gradient(100deg, #7B3FF2, #EC4899, #F59E0B, #7B3FF2, #EC4899) 0% 50% / 300% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: .5; animation: ap-hue 9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gt-header .gt-header-inner::after, .xp-header .xp-container.xp-header-top::after { animation: none !important; }
+}

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, ArrowUp } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { GateLogo } from '../ui/GateLogo';
@@ -23,9 +23,14 @@ export function ExploreLayout() {
   const { isAuthenticated } = useAuthStore();
   const { isDark, toggle }  = useThemeStore();
   const [scrolled, setScrolled] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 8);
+    const fn = () => {
+      setScrolled(window.scrollY > 8);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      headerRef.current?.style.setProperty('--sp', String(max > 0 ? Math.min(1, window.scrollY / max) : 0));
+    };
     fn();
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
@@ -33,8 +38,9 @@ export function ExploreLayout() {
 
   return (
     <div className="explore-v3">
-      <header className={`xp-header${scrolled ? ' is-scrolled' : ''}`}>
+      <header ref={headerRef} className={`xp-header${scrolled ? ' is-scrolled' : ''}`}>
         <div className="xp-container xp-header-top">
+          <span className="xp-progress" aria-hidden="true" />
           <Link to="/" className="xp-header-brand">
             <GateLogo size={30} />
             <span className="xp-display text-base">Gofolyx</span>
@@ -77,6 +83,7 @@ export function ExploreLayout() {
       </main>
 
       <footer className="xp-footer">
+        <div className="xp-footer-glow" aria-hidden="true" />
         <div className="xp-container">
           <div className="xp-footer-row">
             <div className="flex items-center gap-2.5">
@@ -96,8 +103,13 @@ export function ExploreLayout() {
               <Link to="/cgu">Conditions</Link>
               <Link to="/cookies">Cookies</Link>
             </div>
+            <button type="button" className="xp-totop" aria-label="Retour en haut"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <ArrowUp size={16} />
+            </button>
           </div>
         </div>
+        <div className="xp-footer-mark" aria-hidden="true">Gofolyx</div>
       </footer>
     </div>
   );

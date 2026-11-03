@@ -64,7 +64,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="lg:hidden fixed inset-x-3 z-40 flex items-center justify-around px-2 rounded-full"
+      className="bn-v2 lg:hidden fixed inset-x-3 z-40 flex items-center justify-around px-2 rounded-full"
       style={{
         bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
         height: '60px',

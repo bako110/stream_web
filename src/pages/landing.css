@@ -1295,3 +1295,83 @@
 @media (prefers-reduced-motion: reduce) {
   .auth-v2 *, .auth-v2 *::before, .auth-v2 *::after { animation: none !important; }
 }
+
+
+/* ══ HEADER + FOOTER — nouveau design (gate pages) ══ */
+@keyframes hf-drop { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: none; } }
+@keyframes hf-spin { to { transform: rotate(360deg); } }
+@keyframes hf-drift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(60px,-30px) scale(1.2); } }
+@keyframes hf-shine { 0% { transform: translateX(-120%); } 35%,100% { transform: translateX(120%); } }
+@keyframes hf-shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+
+/* Header : tombe du haut, barre de progression de lecture, liens soulignes, boutons vivants */
+.gt-header { animation: hf-drop .8s cubic-bezier(.16,1,.3,1) both; --sp: 0; }
+.gt-header .gt-header-inner { position: relative; overflow: hidden; }
+.gt-progress {
+  position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; pointer-events: none;
+  background: linear-gradient(90deg, var(--gt-accent), #EC4899, #F59E0B); transform-origin: left;
+  transform: scaleX(var(--sp)); transition: transform .12s linear; border-radius: 3px;
+}
+.gt-header-inner > a:first-child { transition: transform .3s cubic-bezier(.16,1,.3,1); }
+.gt-header-inner > a:first-of-type:hover { transform: scale(1.04); }
+.gt-header-inner > a:first-of-type:hover svg { animation: hf-spin .8s cubic-bezier(.16,1,.3,1); }
+.gt-navlink { position: relative; }
+.gt-navlink::after {
+  content: ''; position: absolute; left: 50%; bottom: .3rem; width: 0; height: 2px; border-radius: 2px; transform: translateX(-50%);
+  background: linear-gradient(90deg, var(--gt-accent), #EC4899); transition: width .35s cubic-bezier(.16,1,.3,1);
+}
+.gt-navlink:hover::after { width: calc(100% - 1.6rem); }
+.gt-navlink:hover { background: transparent; }
+.gt-header .gt-btn-solid { position: relative; overflow: hidden; background: linear-gradient(135deg, var(--gt-ink), #2a1360); box-shadow: 0 8px 18px -6px rgba(123,63,242,.5); }
+.gt-header .gt-btn-solid::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.3) 50%, transparent 70%);
+  transform: translateX(-120%); animation: hf-shine 4.5s ease-in-out 2s infinite;
+}
+.gt-header .gt-btn-solid:hover { transform: translateY(-2px); box-shadow: 0 12px 22px -6px rgba(123,63,242,.65); }
+.gt-header .gt-btn-line:hover { border-color: var(--gt-accent); color: var(--gt-accent); transform: translateY(-1px); }
+
+/* Footer : bloc sombre, halo qui derive, grande phrase, liens qui glissent, mot geant en filigrane */
+.gt-footer {
+  --gt-text: #F5F4F2; --gt-text-2: rgba(245,244,242,.72); --gt-text-3: rgba(245,244,242,.45);
+  --gt-line: rgba(255,255,255,.12); --gt-line-2: rgba(255,255,255,.07);
+  position: relative; overflow: hidden; isolation: isolate; color: var(--gt-text);
+  background: var(--gt-ink); border-color: transparent; padding-bottom: 0;
+}
+.gt-footer-glow { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.gt-footer-glow::before, .gt-footer-glow::after { content: ''; position: absolute; border-radius: 50%; filter: blur(80px); }
+.gt-footer-glow::before { width: 420px; height: 420px; top: -160px; left: 8%; background: rgba(123,63,242,.5); animation: hf-drift 18s ease-in-out infinite; }
+.gt-footer-glow::after { width: 340px; height: 340px; top: -120px; right: 6%; background: rgba(236,72,153,.32); animation: hf-drift 22s ease-in-out infinite reverse; }
+.gt-footer-top {
+  display: flex; flex-direction: column; gap: 1.5rem; align-items: flex-start; justify-content: space-between;
+  padding-bottom: 3rem; margin-bottom: 3rem; border-bottom: 1px solid var(--gt-line);
+}
+@media (min-width: 768px) { .gt-footer-top { flex-direction: row; align-items: center; } }
+.gt-footer-big { font-size: 1.7rem; line-height: 1.15; max-width: 560px; color: #fff; }
+@media (min-width: 768px) { .gt-footer-big { font-size: 2.4rem; } }
+.gt-footer-big em {
+  font-style: normal; background: linear-gradient(100deg, #A855F7, #F472B6, #A855F7); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: hf-shimmer 4s linear infinite;
+}
+.gt-footer .gt-btn-accent { position: relative; overflow: hidden; }
+.gt-footer-links a { display: inline-flex; align-items: center; gap: .35rem; width: fit-content; position: relative; transition: color .25s, transform .35s cubic-bezier(.16,1,.3,1); }
+.gt-footer-links a svg { opacity: 0; transform: translate(-6px, 4px); transition: opacity .3s, transform .35s cubic-bezier(.16,1,.3,1); color: #A855F7; }
+.gt-footer-links a:hover { color: #fff; transform: translateX(4px); }
+.gt-footer-links a:hover svg { opacity: 1; transform: none; }
+.gt-footer-legal a { transition: color .2s; }
+.gt-footer-legal a:hover { color: #fff; }
+.gt-footer-bottom { position: relative; z-index: 1; padding-bottom: 1.5rem; }
+.gt-totop {
+  width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; cursor: pointer;
+  background: rgba(255,255,255,.08); border: 1px solid var(--gt-line); transition: transform .35s cubic-bezier(.34,1.56,.64,1), background .25s;
+}
+.gt-totop:hover { background: var(--gt-accent); transform: translateY(-5px); }
+.gt-footer-mark {
+  position: relative; text-align: center; line-height: .8; user-select: none; pointer-events: none; overflow: hidden;
+  font-weight: 800; letter-spacing: -.05em; font-size: clamp(4rem, 19vw, 17rem); margin-top: -.5rem; padding-bottom: .05em;
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0) 85%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-header, .gt-header .gt-btn-solid::before, .gt-footer-glow::before, .gt-footer-glow::after, .gt-footer-big em { animation: none !important; }
+}

@@ -4,7 +4,7 @@ import { encodeId } from '../utils/slugId';
 import { getEventTiming, sortEventsByProximity } from '../utils/eventTiming';
 import {
   Play, Music2, Calendar, Users, ArrowRight, ArrowUpRight,
-  Menu, X, MapPin, Star, Ticket, Radio, Film, Shield, Eye, Volume2, VolumeX,
+  Menu, X, MapPin, ArrowUp, Star, Ticket, Radio, Film, Shield, Eye, Volume2, VolumeX,
 } from 'lucide-react';
 import Hls from 'hls.js';
 import { toProxiedUrl } from '../utils/constants';
@@ -137,19 +137,25 @@ export function GateHeader({ navLinks = NAV_LINKS }: { navLinks?: typeof NAV_LIN
   const { isAuthenticated } = useAuthStore();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 8);
+    const fn = () => {
+      setScrolled(window.scrollY > 8);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      headerRef.current?.style.setProperty('--sp', String(max > 0 ? Math.min(1, window.scrollY / max) : 0));
+    };
     fn();
-    window.addEventListener('scroll', fn);
+    window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
   return (
     <>
-      <header className={`gt-header${scrolled ? ' is-scrolled' : ''}`}>
+      <header ref={headerRef} className={`gt-header${scrolled ? ' is-scrolled' : ''}`}>
         <div className="gt-container gt-header-inner">
+          <span className="gt-progress" aria-hidden="true" />
           <Link to="/" className="flex items-center gap-2.5">
             <GateLogo size={32} />
             <span className="gt-display text-base">Gofolyx</span>
@@ -688,6 +694,7 @@ function CtaSection() {
 
 // ── Footer — un seul composant réutilisé par toutes les pages "gate" ─────────
 export function GateFooter() {
+  const { isAuthenticated } = useAuthStore();
   const cols = [
     { title: 'Explorer', links: [
       { label: 'Films',      href: '/explore/films'    },
@@ -708,15 +715,27 @@ export function GateFooter() {
 
   return (
     <footer className="gt-footer">
-      <div className="gt-container">
+      <div className="gt-footer-glow" aria-hidden="true" />
+      <div className="gt-container gt-footer-inner">
+        <div className="gt-footer-top">
+          <h3 className="gt-display gt-footer-big">
+            La scène, l'écran et le direct — <em>réunis</em>.
+          </h3>
+          {!isAuthenticated && (
+            <Link to="/auth/register" className="gt-btn gt-btn-accent">
+              Rejoindre Gofolyx <ArrowRight size={17} />
+            </Link>
+          )}
+        </div>
+
         <div className="gt-footer-grid">
           <div>
             <div className="flex items-center gap-2.5 mb-4">
               <GateLogo size={30} />
               <span className="gt-display text-base">Gofolyx</span>
             </div>
-            <p className="text-sm leading-relaxed max-w-[220px]" style={{ color: 'var(--gt-text-3)' }}>
-              La scène, l'écran et le direct — réunis en un seul endroit.
+            <p className="text-sm leading-relaxed max-w-[240px]" style={{ color: 'var(--gt-text-3)' }}>
+              Concerts live, films, séries, reels et communautés — un seul endroit, un seul compte.
             </p>
           </div>
           {cols.map(col => (
@@ -724,7 +743,7 @@ export function GateFooter() {
               <span className="gt-eyebrow gt-footer-col-title block">{col.title}</span>
               <div className="gt-footer-links">
                 {col.links.map(({ label, href }) => (
-                  <Link key={label} to={href}>{label}</Link>
+                  <Link key={label} to={href}><span>{label}</span><ArrowUpRight size={13} /></Link>
                 ))}
               </div>
             </div>
@@ -741,8 +760,13 @@ export function GateFooter() {
               <Link key={label} to={href} className="transition-colors">{label}</Link>
             ))}
           </div>
+          <button type="button" className="gt-totop" aria-label="Retour en haut"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <ArrowUp size={16} />
+          </button>
         </div>
       </div>
+      <div className="gt-footer-mark" aria-hidden="true">Gofolyx</div>
     </footer>
   );
 }
