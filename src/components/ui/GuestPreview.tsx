@@ -8,6 +8,7 @@ import { Lightbox } from './Lightbox';
 import { Clapperboard, MessageCircle, Radio, Users, Coins } from 'lucide-react';
 import { renderTextWithLinks } from './RichText';
 import { toProxiedUrl } from '../../utils/constants';
+import { PriceWithLocal } from './PriceWithLocal';
 
 // Portion de la vidéo lue avant coupure — au-delà, l'overlay de connexion
 // s'affiche automatiquement pour inciter à créer un compte.
@@ -861,8 +862,8 @@ export function GuestPreview({
                   {ticketPrice != null && (
                     <div className="gp-ticket-cell gp-ticket-accent">
                       <span className="gp-ticket-lbl">Entrée</span>
-                      <span className="gp-ticket-big">{ticketPrice === 0 ? 'Gratuit' : ticketPrice.toLocaleString('fr-FR')}</span>
-                      {ticketPrice !== 0 && <span className="gp-ticket-sub">XOF · à partir de</span>}
+                      <span className="gp-ticket-big">{ticketPrice === 0 ? 'Gratuit' : <PriceWithLocal amountEur={ticketPrice} />}</span>
+                      {ticketPrice !== 0 && <span className="gp-ticket-sub">à partir de</span>}
                     </div>
                   )}
                 </div>
@@ -927,7 +928,7 @@ export function GuestPreview({
                       <rect x="1" y="3" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.2" fill="none"/>
                       <path d="M4 3V2M8 3V2" stroke="currentColor" strokeWidth="1.2"/>
                     </svg>
-                    {ticketPrice === 0 ? 'Gratuit' : `À partir de ${ticketPrice.toLocaleString()} XOF`}
+                    {ticketPrice === 0 ? 'Gratuit' : <>À partir de <PriceWithLocal amountEur={ticketPrice} /></>}
                   </span>
                 )}
               </div>
