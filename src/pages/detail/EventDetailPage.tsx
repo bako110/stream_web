@@ -590,12 +590,15 @@ export default function EventDetailPage() {
         <div className="dt-hero relative rounded-2xl overflow-hidden mb-4 sm:mb-6 aspect-[16/9] sm:aspect-[21/8]"
           style={{ minHeight: 160, background: 'var(--bg-secondary)' }}>
           {ev.banner_url || ev.thumbnail_url
-            ? <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} className="w-full h-full object-cover cursor-zoom-in" alt={ev.title}
-                onClick={() => setLightbox(ev.gallery_urls?.length ? ev.gallery_urls.length : 0)} />
+            ? <>
+                <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} alt="" aria-hidden="true" className="dt-hero-bg" />
+                <img src={ev.banner_url ?? ev.thumbnail_url ?? ''} className="dt-hero-img w-full h-full object-contain cursor-zoom-in" alt={ev.title}
+                  onClick={() => setLightbox(ev.gallery_urls?.length ? ev.gallery_urls.length : 0)} />
+              </>
             : <div className="w-full h-full flex items-center justify-center">
                 <Calendar size={48} style={{ color, opacity: 0.3 }} />
               </div>}
-          <div className="absolute inset-0 hidden sm:block"
+          <div className="dt-hero-scrim absolute inset-0 hidden sm:block pointer-events-none"
             style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 55%)' }} />
           <span className="absolute top-3 left-3 sm:top-4 sm:left-4 text-xs font-bold px-3 py-1.5 rounded-full text-white"
             style={{ background: color, boxShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>

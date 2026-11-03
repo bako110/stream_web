@@ -304,12 +304,15 @@ export default function ConcertDetailPage() {
         <div className="dt-hero relative rounded-2xl overflow-hidden mb-6"
           style={{ aspectRatio: '21/8', minHeight: 160, background: 'var(--bg-secondary)' }}>
           {c.banner_url || c.thumbnail_url
-            ? <img src={c.banner_url ?? c.thumbnail_url ?? ''} className="w-full h-full object-cover cursor-zoom-in" alt={c.title}
-                onClick={() => setLightbox(true)} />
+            ? <>
+                <img src={c.banner_url ?? c.thumbnail_url ?? ''} alt="" aria-hidden="true" className="dt-hero-bg" />
+                <img src={c.banner_url ?? c.thumbnail_url ?? ''} className="dt-hero-img w-full h-full object-contain cursor-zoom-in" alt={c.title}
+                  onClick={() => setLightbox(true)} />
+              </>
             : <div className="w-full h-full flex items-center justify-center">
                 <Radio size={48} style={{ color: 'var(--text-tertiary)', opacity: 0.3 }} />
               </div>}
-          <div className="absolute inset-0"
+          <div className="dt-hero-scrim absolute inset-0 pointer-events-none"
             style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 55%)' }} />
           {/* Live badge */}
           {isLive && (
@@ -333,7 +336,7 @@ export default function ConcertDetailPage() {
             </span>
           )}
           {/* Title */}
-          <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
+          <div className="dt-hero-title absolute bottom-0 left-0 right-0 px-5 pb-5 pointer-events-none">
             <h1 className="text-2xl font-black text-white leading-tight"
               style={{ textShadow: '0 2px 16px rgba(0,0,0,0.6)' }}>
               {c.title}

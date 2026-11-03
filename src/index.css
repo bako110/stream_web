@@ -670,3 +670,19 @@
   .dt-v2::before, .dt-v2::after, .dt-hero, .dt-hero > img, .dt-hero::after, .dt-hero > span, .dt-hero h1, .dt-hero h1 + p,
   .dt-v2 .grid > *, .dt-v2 .grid > .flex.flex-col.gap-4 > *, .dt-v2 .btn-primary::before { animation: none !important; }
 }
+
+/* ══ Visuel des details : photo entiere (jamais rognee), fond flou, pas de debordement mobile ══ */
+.dt-v2 { overflow-x: clip; max-width: 100vw; }
+.dt-hero { background: #0b0712 !important; }
+.dt-hero-bg {
+  position: absolute; inset: -8%; width: 116%; height: 116%; object-fit: cover; pointer-events: none;
+  filter: blur(34px) saturate(1.3) brightness(.55); transform: scale(1.1);
+}
+.dt-hero > img.dt-hero-bg { animation: none; }
+.dt-hero-img { position: relative; z-index: 1; }
+/* Sur le visuel de plus de 21:8 on garde le bandeau ; en mobile le visuel prend sa hauteur naturelle */
+@media (max-width: 639px) {
+  .dt-hero { aspect-ratio: auto !important; min-height: 0 !important; border-radius: 1.25rem; }
+  .dt-hero > img.dt-hero-img { width: 100%; height: auto !important; max-height: 78vh; object-fit: contain; display: block; margin: 0 auto; }
+  .dt-hero-title, .dt-hero-scrim { display: none !important; }
+}
