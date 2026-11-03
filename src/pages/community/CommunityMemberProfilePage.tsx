@@ -137,7 +137,7 @@ export default function CommunityMemberProfilePage() {
   if (loading) return <PageLoader />;
 
   if (!profile) return (
-    <div className="flex flex-col h-full">
+    <div className="st-v2 flex flex-col h-full">
       <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <button onClick={() => navigate(-1)} style={{ color: 'var(--text-primary)' }}><ArrowLeft size={20} /></button>
       </div>

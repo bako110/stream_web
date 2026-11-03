@@ -808,7 +808,7 @@ export default function PlanningPage() {
   const pendingInvites = entries.filter(e => e.type === 'invited' && e.invite_status === 'pending').length;
 
   return (
-    <div className="flex flex-col h-full relative" style={{ background: 'var(--bg)' }}>
+    <div className="st-v2 flex flex-col h-full relative" style={{ background: 'var(--bg)' }}>
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 shrink-0"

@@ -248,7 +248,7 @@ export default function NotificationsPage() {
   const hasNotifs = notifications.length > 0 && !loading;
 
   return (
-    <div className="w-full mx-auto p-6 space-y-4">
+    <div className="st-v2 w-full mx-auto p-6 space-y-4">
 
       {/* ── Header : mode normal ── */}
       {!selectMode && (

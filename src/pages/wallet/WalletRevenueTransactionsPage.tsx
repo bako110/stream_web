@@ -4,6 +4,7 @@ import { ArrowLeft, Receipt, Loader2 } from 'lucide-react';
 import { Spinner } from '../../components/ui/Spinner';
 import { revenueService, SOURCE_FILTERS } from '../../api/revenueService';
 import type { RevenueTransaction } from '../../api/revenueService';
+import { TransactionReceiptModal, type Receipt } from '../../components/ui/TransactionReceiptModal';
 
 const PAGE_LIMIT = 30;
 
@@ -21,6 +22,7 @@ export default function WalletRevenueTransactionsPage() {
   const [source, setSource] = useState<string | undefined>(undefined);
   const [items, setItems] = useState<RevenueTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const pageRef = useRef(1);
@@ -62,7 +64,7 @@ export default function WalletRevenueTransactionsPage() {
   }, [loadMore, items.length]);
 
   return (
-    <div className="w-full mx-auto px-4 py-6 space-y-5">
+    <div className="st-v2 w-full mx-auto px-4 py-6 space-y-5">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="p-2.5 rounded-xl transition-all"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
@@ -111,7 +113,14 @@ export default function WalletRevenueTransactionsPage() {
         <>
           <div className="rounded-2xl px-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             {items.map((tx, i) => (
-              <div key={tx.id} className="flex items-center gap-3 py-3"
+              <div key={tx.id} role="button" tabIndex={0}
+                onClick={() => setReceipt({
+                  id: tx.public_id, type: tx.transaction_type, typeLabel: tx.label, status: 'completed',
+                  gogold: tx.gogold_amount, eur: tx.eur_amount, description: tx.description, date: tx.created_at,
+                  referenceType: tx.reference_type, referenceId: tx.reference_id,
+                })}
+                onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.click(); }}
+                className="flex items-center gap-3 py-3 cursor-pointer"
                 style={{ borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none' }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{tx.label}</p>
@@ -130,6 +139,7 @@ export default function WalletRevenueTransactionsPage() {
       )}
 
       <div className="h-4" />
+      <TransactionReceiptModal receipt={receipt} onClose={() => setReceipt(null)} />
     </div>
   );
 }

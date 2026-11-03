@@ -8,6 +8,7 @@ import {
 import { apiClient } from '../api';
 import { Endpoints } from '../api/endpoints';
 import { Spinner , PageLoader} from '../components/ui/Spinner';
+import { TransactionReceiptModal, txTypeLabel, type Receipt } from '../components/ui/TransactionReceiptModal';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -27,7 +28,12 @@ interface Transaction {
   description: string | null;
   created_at: string;
   status: 'completed' | 'pending' | 'failed';
+  eur_amount?: number | string | null;
+  balance_after?: number | null;
+  reference_type?: string | null;
 }
+
+const TX_PAGE = 20;
 
 const goGoldToEur = (c: number) => ((c / 100) * 0.35).toFixed(2);
 
@@ -53,6 +59,9 @@ export default function WalletPage() {
   const [error,    setError]    = useState<string | null>(null);
   const [balance,  setBalance]  = useState<WalletBalance | null>(null);
   const [txs,      setTxs]      = useState<Transaction[]>([]);
+  const [receipt,  setReceipt]  = useState<Receipt | null>(null);
+  const [hasMoreTx, setHasMoreTx] = useState(false);
+  const [loadingTx, setLoadingTx] = useState(false);
   const [display,  setDisplay]  = useState(0);
   const animRef = useRef<number | null>(null);
 
@@ -74,15 +83,39 @@ export default function WalletPage() {
     try {
       const [balRes, txRes] = await Promise.all([
         apiClient.get<WalletBalance>(Endpoints.wallet.balance),
-        apiClient.get<Transaction[]>(`${Endpoints.wallet.transactions}?limit=10`),
+        apiClient.get<Transaction[]>(`${Endpoints.wallet.transactions}?limit=${TX_PAGE}`),
       ]);
       setBalance(balRes.data);
-      setTxs(Array.isArray(txRes.data) ? txRes.data : []);
+      const first = Array.isArray(txRes.data) ? txRes.data : [];
+      setTxs(first);
+      setHasMoreTx(first.length >= TX_PAGE);
       animateCount(balRes.data?.gogold_balance ?? 0);
     } catch (e: any) {
       setError(e?.message ?? 'Erreur de chargement');
     }
   }, []);
+
+  async function loadMoreTx() {
+    if (loadingTx) return;
+    setLoadingTx(true);
+    try {
+      const res = await apiClient.get<Transaction[]>(`${Endpoints.wallet.transactions}?limit=${TX_PAGE}&offset=${txs.length}`);
+      const more = Array.isArray(res.data) ? res.data : [];
+      setTxs(prev => [...prev, ...more]);
+      setHasMoreTx(more.length >= TX_PAGE);
+    } catch { setHasMoreTx(false); }
+    finally { setLoadingTx(false); }
+  }
+
+  function openReceipt(tx: Transaction) {
+    setReceipt({
+      id: tx.public_id, type: tx.transaction_type, typeLabel: txTypeLabel(tx.transaction_type),
+      status: tx.status, gogold: tx.gogold_amount,
+      eur: tx.eur_amount != null ? Number(tx.eur_amount) : null,
+      description: tx.description, balanceAfter: tx.balance_after ?? null,
+      date: tx.created_at, referenceType: tx.reference_type ?? null,
+    });
+  }
 
   useEffect(() => {
     fetchData().finally(() => setLoading(false));
@@ -115,7 +148,7 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="w-full mx-auto px-4 py-5 space-y-4">
+    <div className="st-v2 w-full mx-auto px-4 py-5 space-y-4">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -201,8 +234,12 @@ export default function WalletPage() {
               const cfg = TX_CONFIG[tx.transaction_type] ?? TX_CONFIG.default;
               const isCredit = tx.gogold_amount >= 0;
               return (
-                <div key={tx.public_id} className="flex items-center gap-3 px-4 py-3.5"
-                  style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <div key={tx.public_id} role="button" tabIndex={0} onClick={() => openReceipt(tx)}
+                  onKeyDown={e => e.key === 'Enter' && openReceipt(tx)}
+                  className="flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors"
+                  style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
                     style={{ background: `${cfg.color}22`, color: cfg.color }}>
                     {cfg.icon}
@@ -227,7 +264,15 @@ export default function WalletPage() {
             })}
           </div>
         )}
+        {hasMoreTx && (
+          <button onClick={loadMoreTx} disabled={loadingTx}
+            className="w-full mt-3 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-60"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--primary)' }}>
+            {loadingTx ? 'Chargement…' : 'Voir plus de transactions'}
+          </button>
+        )}
       </div>
+      <TransactionReceiptModal receipt={receipt} onClose={() => setReceipt(null)} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark, Edit3, Repeat2 } from 'lucide-react';
+import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark, Edit3, Repeat2, Heart, MessageCircle, Share2 } from 'lucide-react';
 import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -15,6 +15,8 @@ import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
 import { useRepost } from '../../components/ui/RepostModal';
 import { Lightbox } from '../../components/ui/Lightbox';
+import { ShareModal } from '../../components/ui/ShareModal';
+import { CommentsModal } from './EventDetailPage';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import { useConfirm } from '../../components/ui/Dialog';
@@ -170,6 +172,35 @@ export default function ConcertDetailPage() {
   const [showAiModal,   setShowAiModal]  = useState(false);
   const [favId,         setFavId]        = useState<string | null>(null);
   const [savingFav,     setSavingFav]    = useState(false);
+  const [liked,         setLiked]        = useState(false);
+  const [likeCount,     setLikeCount]    = useState(0);
+  const [shareCount,    setShareCount]   = useState(0);
+  const [showComments,  setShowComments] = useState(false);
+  const [showShare,     setShowShare]    = useState(false);
+
+  // Reactions et partages (connecte uniquement) — meme pattern que la page evenement
+  useEffect(() => {
+    if (!id || !user) return;
+    setLiked(false); setLikeCount(0); setShareCount(0);
+    apiClient.get<any>(`${Endpoints.social.reactionCounts}?concert_id=${id}`)
+      .then(r => setLikeCount(r.data?.likes ?? r.data?.like ?? 0)).catch(() => {});
+    apiClient.get<any>(`${Endpoints.social.myReaction}?concert_id=${id}`)
+      .then(r => setLiked(r.data?.reaction_type === 'like')).catch(() => {});
+    apiClient.get<any>(`${Endpoints.social.shareCounts}?concert_id=${id}`)
+      .then(r => setShareCount(r.data?.shares ?? 0)).catch(() => {});
+  }, [id, user]);
+
+  const toggleLike = useCallback(async () => {
+    let prevLiked = false;
+    setLiked(v => { prevLiked = v; return !v; });
+    setLikeCount(v => prevLiked ? Math.max(0, v - 1) : v + 1);
+    try {
+      await apiClient.post(Endpoints.social.toggleReaction, { concert_id: id, reaction_type: 'like' });
+    } catch {
+      setLiked(prevLiked);
+      setLikeCount(v => prevLiked ? v + 1 : Math.max(0, v - 1));
+    }
+  }, [id]);
 
   useEffect(() => {
     if (!id || !concert || !user || concert.artist_id === user.id) return;
@@ -354,6 +385,53 @@ export default function ConcertDetailPage() {
 
           {/* ═══ Colonne gauche ═══ */}
           <div className="flex flex-col gap-4">
+
+            {/* Barre d'actions — meme pilule en verre que les posts, juste sous le visuel */}
+            <div className="flex items-center gap-0.5 px-4 py-2.5 rounded-full"
+              style={{
+                background: 'var(--glass-strong-bg)', backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                border: '1px solid var(--glass-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              }}>
+              {(() => {
+                const ib = 'flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[var(--bg-secondary)]';
+                const commentCount = Number((c as any).comment_count ?? 0);
+                return (<>
+                  <button onClick={toggleLike} title="J'aime" className={ib}
+                    style={{ color: liked ? '#f03e3e' : 'var(--text-secondary)', background: liked ? 'rgba(240,62,62,0.08)' : undefined }}>
+                    <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+                    {likeCount > 0 && <span>{likeCount}</span>}
+                  </button>
+                  <button onClick={() => setShowComments(true)} title="Commenter" className={ib} style={{ color: 'var(--text-secondary)' }}>
+                    <MessageCircle size={16} />
+                    {commentCount > 0 && <span>{commentCount}</span>}
+                  </button>
+                  <button onClick={() => setShowShare(true)} title="Partager" className={ib} style={{ color: 'var(--text-secondary)' }}>
+                    <Share2 size={16} />
+                    {shareCount > 0 && <span>{shareCount}</span>}
+                  </button>
+                  {!isArtist && (
+                    <button onClick={() => repost.open('concert', {
+                        endpoint: Endpoints.concerts.repost(c.id), author: c.artist,
+                        title: c.title, thumb: c.thumbnail_url ?? c.banner_url,
+                      })}
+                      title="Republier" className={ib} style={{ color: 'var(--text-secondary)' }}>
+                      <Repeat2 size={16} />
+                    </button>
+                  )}
+                  {!isArtist && !isEnded && (
+                    <button onClick={toggleReminder} disabled={remindLoading} title={reminder ? 'Rappel actif' : 'Me rappeler'} className={ib}
+                      style={{ color: reminder ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                      {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={16} /> : <Bell size={16} />}
+                    </button>
+                  )}
+                  <button onClick={handleSaveFav} disabled={savingFav} title={favId ? 'Sauvegardé' : 'Sauvegarder'} className={`${ib} ml-auto`}
+                    style={{ color: favId ? 'var(--primary)' : 'var(--text-secondary)', opacity: savingFav ? 0.6 : 1 }}>
+                    <Bookmark size={16} fill={favId ? 'var(--primary)' : 'none'} />
+                  </button>
+                </>);
+              })()}
+            </div>
 
             {/* Card artiste + badges */}
             <div style={{ ...CARD, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
@@ -567,47 +645,6 @@ export default function ConcertDetailPage() {
                 </p>
               )}
 
-              {/* Actions secondaires */}
-              <div className={`grid gap-2 ${!isArtist && !isEnded ? 'grid-cols-2' : 'grid-cols-1'}`}>
-              {/* Favoris */}
-              <button onClick={handleSaveFav} disabled={savingFav}
-                className="w-full flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
-                style={{
-                  background: favId ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)',
-                  border: `1px solid ${favId ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
-                  color: favId ? 'var(--primary)' : 'var(--text-secondary)',
-                  opacity: savingFav ? 0.6 : 1,
-                }}>
-                <Bookmark size={14} fill={favId ? 'currentColor' : 'none'} />
-                {favId ? 'Sauvegardé' : 'Sauvegarder'}
-              </button>
-
-              {/* Rappel */}
-              {!isArtist && !isEnded && (
-                <button onClick={toggleReminder} disabled={remindLoading}
-                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
-                  style={{
-                    background: reminder ? 'rgba(123,63,242,0.08)' : 'var(--bg-secondary)',
-                    border: `1px solid ${reminder ? 'rgba(123,63,242,0.3)' : 'var(--border)'}`,
-                    color: reminder ? 'var(--primary)' : 'var(--text-secondary)',
-                  }}>
-                  {remindLoading ? <Spinner size="sm" /> : reminder ? <BellOff size={14} /> : <Bell size={14} />}
-                  {reminder ? 'Rappel actif' : 'Me rappeler'}
-                </button>
-              )}
-              </div>
-
-              {!isArtist && (
-                <button onClick={() => repost.open('concert', {
-                    endpoint: Endpoints.concerts.repost(c.id), author: c.artist,
-                    title: c.title, thumb: c.thumbnail_url ?? c.banner_url,
-                  })}
-                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-2 mt-2 rounded-xl text-sm font-semibold transition-colors"
-                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                  <Repeat2 size={14} /> Republier
-                </button>
-              )}
-
               {/* Actions artiste */}
               {isArtist && (
                 <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -692,6 +729,18 @@ export default function ConcertDetailPage() {
 
       {repost.modal}
       {ConfirmDialog}
+      {showComments && <CommentsModal targetId={id!} targetKey="concert_id" onClose={() => setShowComments(false)} />}
+      <ShareModal
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        url={`${window.location.origin}/concerts/${encodeId(id!)}`}
+        title={c.title ?? 'Concert Gofolyx'}
+        desc={c.venue_city ?? undefined}
+        image={c.banner_url ?? c.thumbnail_url ?? undefined}
+        targetType="concert"
+        targetId={id!}
+        onShared={() => setShareCount(n => n + 1)}
+      />
     </div>
   );
 }

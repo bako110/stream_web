@@ -361,7 +361,7 @@ export default function CommunitiesPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="st-v2 flex flex-col h-full">
       <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-5 pb-28 lg:pb-10">
 

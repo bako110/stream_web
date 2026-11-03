@@ -165,7 +165,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="w-full mx-auto p-4 sm:p-6 space-y-5">
+    <div className="st-v2 w-full mx-auto p-4 sm:p-6 space-y-5">
       <div>
         <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>Paramètres</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Gérez votre compte et vos préférences</p>
@@ -173,7 +173,7 @@ export default function SettingsPage() {
 
       {/* Carte profil */}
       <button onClick={() => navigate('/profile')}
-        className="w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all"
+        className="st-profile w-full flex items-center gap-4 p-4 rounded-2xl text-left"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
         onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
         onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
@@ -232,7 +232,7 @@ export default function SettingsPage() {
           try { await logout(); } catch {}
           navigate('/', { replace: true });
         }}
-        className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-black text-sm transition-all"
+        className="st-logout w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-black text-sm"
         style={{ color: '#EF4444', border: '1.5px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.04)' }}
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.04)')}>

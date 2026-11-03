@@ -73,7 +73,7 @@ export default function WalletTransferPage() {
   const displayName = (u: UserResult) => u.display_name ?? u.username;
 
   return (
-    <div className="w-full mx-auto px-4 py-6 space-y-5">
+    <div className="st-v2 w-full mx-auto px-4 py-6 space-y-5">
 
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/wallet')}

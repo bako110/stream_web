@@ -212,7 +212,7 @@ export default function WalletCreatorDashboardPage() {
   if (loading) return <PageLoader />;
 
   return (
-    <div className="w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className="st-v2 w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">

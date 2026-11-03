@@ -1096,9 +1096,10 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
     const last = lastTapRef.current;
     if (last && last.zone === zone && now - last.t < 300) {
       lastTapRef.current = null;
-      if (zone === 'left')       doSkip(-10);
-      else if (zone === 'right') doSkip(10);
-      else {
+      if (zone === 'left' || zone === 'right') {
+        togglePlay(); // annule la pause/lecture déclenchée par le 1er tap
+        doSkip(zone === 'left' ? -10 : 10);
+      } else {
         togglePlay(); // annule la pause/lecture déclenchée par le 1er tap
         const rect = (e.target as HTMLElement).closest('[data-reel-zone]')?.getBoundingClientRect();
         if (rect) setHeartPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
@@ -1115,7 +1116,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
       return;
     }
     lastTapRef.current = { t: now, zone };
-    if (zone === 'center') togglePlay();
+    togglePlay(); // un tap n'importe où sur la vidéo = pause / lecture
   }
 
   function handleTap() {

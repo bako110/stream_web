@@ -74,7 +74,7 @@ export default function CommunityTreasuryPage() {
   }, [id]);
 
   return (
-    <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
+    <div className="st-v2 flex flex-col h-full" style={{ background: 'var(--bg)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0"
         style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>

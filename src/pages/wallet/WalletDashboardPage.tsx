@@ -46,7 +46,7 @@ export default function WalletDashboardPage() {
   ];
 
   return (
-    <div className="w-full mx-auto px-4 py-6 space-y-5">
+    <div className="st-v2 w-full mx-auto px-4 py-6 space-y-5">
 
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/wallet')}

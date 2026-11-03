@@ -65,7 +65,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className="st-v2 w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
       {/* Hero */}
       <div className="rounded-2xl p-6 flex flex-col items-center text-center" style={{ background: 'rgba(123,63,242,0.08)' }}>

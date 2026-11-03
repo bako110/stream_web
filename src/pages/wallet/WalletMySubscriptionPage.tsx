@@ -3,10 +3,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useConfirm } from '../../components/ui/Dialog';
 import {
-  ArrowLeft, Monitor, Tv, Users, Download, RefreshCw, Trash2, Calendar, Clock,
+  ArrowLeft, Monitor, Tv, Download, RefreshCw, Trash2, Calendar, Clock,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
+import { usePlanCatalog } from './planCatalog';
 import { Spinner } from '../../components/ui/Spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,66 +18,25 @@ import { extractApiErrorMessage } from '../../utils/apiError';
 // Types
 // ---------------------------------------------------------------------------
 
+// Forme renvoyée par GET /subscriptions/me et /subscriptions/history (SubscriptionResponse).
 interface ActiveSubscription {
   id: string;
-  plan_id: string;
-  plan_name?: string;
-  status: 'active' | 'cancelled' | 'expired' | string;
-  started_at: string;
-  ends_at: string;
-  auto_renew?: boolean;
+  plan: string;
+  status: 'active' | 'cancelled' | 'expired' | 'past_due' | 'trialing' | string;
+  current_period_start: string;
+  current_period_end: string;
+  downloads_used?: number;
+  max_downloads?: number;
 }
 
-interface HistoryEntry {
-  id: string;
-  plan_id: string;
-  plan_name?: string;
-  status: string;
-  started_at: string;
-  ends_at: string;
-}
-
-// ---------------------------------------------------------------------------
-// Static plan metadata
-// ---------------------------------------------------------------------------
-
-const PLAN_META: Record<string, { label: string; gradient: string; color: string; screens: number; quality: string; profiles: number; downloads: number }> = {
-  free: {
-    label: 'Gratuit',
-    gradient: 'linear-gradient(135deg,#6B7280,#9CA3AF)',
-    color: '#6B7280',
-    screens: 1, quality: 'SD', profiles: 1, downloads: 0,
-  },
-  basic: {
-    label: 'Basic',
-    gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
-    color: '#7B3FF2',
-    screens: 2, quality: 'HD', profiles: 2, downloads: 5,
-  },
-  premium: {
-    label: 'Premium',
-    gradient: 'linear-gradient(135deg,#7B3FF2,#A855F7)',
-    color: '#7B3FF2',
-    screens: 4, quality: '4K', profiles: 4, downloads: 25,
-  },
-  family: {
-    label: 'Famille',
-    gradient: 'linear-gradient(135deg,#10B981,#34D399)',
-    color: '#10B981',
-    screens: 6, quality: '4K', profiles: 6, downloads: 50,
-  },
-};
+type HistoryEntry = ActiveSubscription;
 
 const DEFAULT_META = {
   label: 'Inconnu',
   gradient: 'linear-gradient(135deg,#6B7280,#9CA3AF)',
   color: '#6B7280',
-  screens: 0, quality: '-', profiles: 0, downloads: 0,
+  screens: 0, quality: '-', downloads: 0,
 };
-
-function getPlanMeta(planId: string) {
-  return PLAN_META[planId] ?? DEFAULT_META;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -111,6 +71,8 @@ function StatusPill({ status }: { status: string }) {
 export default function WalletMySubscriptionPage() {
   const navigate = useNavigate();
   const { confirm, ConfirmDialog } = useConfirm();
+  const catalog = usePlanCatalog();
+  const getPlanMeta = (planId: string) => catalog.find(p => p.id === planId) ?? DEFAULT_META;
 
   const [sub,        setSub]        = useState<ActiveSubscription | null>(null);
   const [history,    setHistory]    = useState<HistoryEntry[]>([]);
@@ -129,7 +91,7 @@ export default function WalletMySubscriptionPage() {
   useEffect(() => {
     fetchSub();
 
-    apiClient.get<HistoryEntry[]>('/api/v1/subscriptions/history')
+    apiClient.get<HistoryEntry[]>(Endpoints.subscriptions.history)
       .then(r => setHistory(Array.isArray(r.data) ? r.data : []))
       .catch(() => setHistory([]))
       .finally(() => setLoadingH(false));
@@ -138,7 +100,7 @@ export default function WalletMySubscriptionPage() {
   async function handleCancel() {
     const confirmed = await confirm({
       title: 'Annuler l\'abonnement ?',
-      message: 'Vous conservez l\'accès jusqu\'à la fin de la période en cours.',
+      message: 'L\'annulation est immédiate : vous perdez l\'accès au contenu premium dès maintenant, et la période déjà payée n\'est pas remboursée.',
       danger: true,
       confirmLabel: 'Annuler l\'abonnement',
     });
@@ -156,10 +118,10 @@ export default function WalletMySubscriptionPage() {
     }
   }
 
-  const meta = sub ? getPlanMeta(sub.plan_id) : null;
+  const meta = sub ? getPlanMeta(sub.plan) : null;
 
   return (
-    <div className="w-full mx-auto px-4 py-6 space-y-5">
+    <div className="st-v2 w-full mx-auto px-4 py-6 space-y-5">
 
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -204,11 +166,11 @@ export default function WalletMySubscriptionPage() {
                 <div className="flex flex-wrap gap-4 mt-4">
                   <div className="flex items-center gap-1.5 text-xs text-white/80">
                     <Calendar size={12} />
-                    <span>Debut : <span className="font-bold text-white">{fmtDate(sub.started_at)}</span></span>
+                    <span>Debut : <span className="font-bold text-white">{fmtDate(sub.current_period_start)}</span></span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-white/80">
                     <Clock size={12} />
-                    <span>Fin : <span className="font-bold text-white">{fmtDate(sub.ends_at)}</span></span>
+                    <span>Fin : <span className="font-bold text-white">{fmtDate(sub.current_period_end)}</span></span>
                   </div>
                 </div>
               </div>
@@ -223,8 +185,7 @@ export default function WalletMySubscriptionPage() {
                 {[
                   { icon: <Monitor size={15} />, label: 'Ecrans simultanes', value: `${meta!.screens} ecran${meta!.screens > 1 ? 's' : ''}` },
                   { icon: <Tv size={15} />,      label: 'Qualite',           value: meta!.quality },
-                  { icon: <Users size={15} />,   label: 'Profils',           value: `${meta!.profiles} profil${meta!.profiles > 1 ? 's' : ''}` },
-                  { icon: <Download size={15} />,label: 'Telechargements',   value: meta!.downloads === 0 ? 'Aucun' : `${meta!.downloads} / mois` },
+                  { icon: <Download size={15} />,label: 'Telechargements',   value: meta!.downloads === 0 ? 'Aucun' : `${sub.downloads_used ?? 0} / ${meta!.downloads} ce mois-ci` },
                 ].map(item => (
                   <div
                     key={item.label}
@@ -318,7 +279,7 @@ export default function WalletMySubscriptionPage() {
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
           >
             {history.map((entry, i) => {
-              const m = getPlanMeta(entry.plan_id);
+              const m = getPlanMeta(entry.plan);
               return (
                 <div
                   key={entry.id}
@@ -331,10 +292,10 @@ export default function WalletMySubscriptionPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {entry.plan_name ?? m.label}
+                      {m.label}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                      {fmtDate(entry.started_at)} &mdash; {fmtDate(entry.ends_at)}
+                      {fmtDate(entry.current_period_start)} &mdash; {fmtDate(entry.current_period_end)}
                     </p>
                   </div>
                   <StatusPill status={entry.status} />

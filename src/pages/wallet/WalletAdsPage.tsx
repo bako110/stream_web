@@ -253,7 +253,7 @@ export default function WalletAdsPage() {
   if (loading) return <PageLoader />;
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-3 sm:px-4 pb-8">
+    <div className="st-v2 w-full max-w-5xl mx-auto px-3 sm:px-4 pb-8">
 
       {/* Header — pilule flottante (même design que AdsScreen mobile) */}
       <div className="sticky top-2 z-10 mt-2 mb-5 flex items-center gap-3 pl-2 pr-3 py-2 rounded-full"

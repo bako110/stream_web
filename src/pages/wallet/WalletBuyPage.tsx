@@ -338,7 +338,7 @@ export default function WalletBuyPage() {
       );
     }
     return (
-      <div className="w-full mx-auto px-4 py-6 space-y-5">
+      <div className="st-v2 w-full mx-auto px-4 py-6 space-y-5">
         <div>
           <h2 className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Paiement par carte</h2>
           <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -408,7 +408,7 @@ export default function WalletBuyPage() {
 
   // ── Écran de sélection ────────────────────────────────────────
   return (
-    <div className="w-full mx-auto px-4 py-6 space-y-5">
+    <div className="st-v2 w-full mx-auto px-4 py-6 space-y-5">
 
       {/* Header */}
       <div className="flex items-center gap-3">

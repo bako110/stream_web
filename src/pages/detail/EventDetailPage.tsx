@@ -43,7 +43,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 const QUICK_EMOJIS = ['❤️', '🔥', '👏', '😂', '😍', '🎉'];
 
-function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () => void }) {
+export function CommentsModal({ targetId, targetKey = 'event_id', onClose }: { targetId: string; targetKey?: 'event_id' | 'concert_id'; onClose: () => void }) {
   const { user: me } = useAuthStore();
   const [comments, setComments]   = useState<any[]>([]);
   const [input,    setInput]      = useState('');
@@ -59,7 +59,7 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
     setLoading(true);
-    apiClient.get<any>(`${Endpoints.social.comments}?event_id=${targetId}&limit=50`)
+    apiClient.get<any>(`${Endpoints.social.comments}?${targetKey}=${targetId}&limit=50`)
       .then(res => {
         const raw = res.data;
         const list: any[] = Array.isArray(raw) ? raw : raw?.items ?? raw?.data ?? raw?.comments ?? [];
@@ -76,7 +76,7 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
       .catch(() => {})
       .finally(() => setLoading(false));
     setTimeout(() => inputRef.current?.focus(), 350);
-  }, [targetId]);
+  }, [targetId, targetKey]);
 
   function handleClose() {
     setVisible(false);
@@ -89,7 +89,7 @@ function CommentsModal({ targetId, onClose }: { targetId: string; onClose: () =>
     setInput('');
     setSending(true);
     try {
-      const res = await apiClient.post<any>(Endpoints.social.comments, { event_id: targetId, body });
+      const res = await apiClient.post<any>(Endpoints.social.comments, { [targetKey]: targetId, body });
       const newComment = res.data;
       setComments(prev => [...prev, newComment]);
       setLikeCounts(prev => ({ ...prev, [newComment.id]: 0 }));

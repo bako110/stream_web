@@ -48,7 +48,7 @@ export default function CommunityLeaderboardPage() {
   const rest    = entries.slice(3);
 
   return (
-    <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
+    <div className="st-v2 flex flex-col h-full" style={{ background: 'var(--bg)' }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-3 py-2.5 shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>

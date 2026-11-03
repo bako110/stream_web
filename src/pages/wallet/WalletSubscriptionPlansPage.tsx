@@ -2,115 +2,23 @@ import { PageLoader } from '../../components/ui/Spinner';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Monitor, Tv, Users, Download, Check, Settings,
+  ArrowLeft, Monitor, Tv, Download, Check, Settings,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
+import { usePlanCatalog, type PlanConfig } from './planCatalog';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 interface ActiveSubscription {
-  plan_id: string;
+  plan: string;
   status: string;
 }
 
-interface PlanConfig {
-  id: string;
-  label: string;
-  price: number;
-  screens: number;
-  quality: string;
-  profiles: number;
-  downloads: number;
-  gradient: string;
-  color: string;
-  features: string[];
-}
-
-// ---------------------------------------------------------------------------
-// Static plan data
-// ---------------------------------------------------------------------------
-
-const PLANS: PlanConfig[] = [
-  {
-    id: 'free',
-    label: 'Gratuit',
-    price: 0,
-    screens: 1,
-    quality: 'SD',
-    profiles: 1,
-    downloads: 0,
-    gradient: 'linear-gradient(135deg,#6B7280,#9CA3AF)',
-    color: '#6B7280',
-    features: [
-      'Contenu standard uniquement',
-      '1 écran simultané',
-      'Qualité SD',
-      '1 profil utilisateur',
-    ],
-  },
-  {
-    id: 'basic',
-    label: 'Basic',
-    price: 3.99,
-    screens: 2,
-    quality: 'HD',
-    profiles: 2,
-    downloads: 5,
-    gradient: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)',
-    color: '#7B3FF2',
-    features: [
-      'Tout le contenu Basic',
-      '2 écrans simultanés',
-      'Qualité HD',
-      '2 profils utilisateurs',
-      '5 téléchargements / mois',
-    ],
-  },
-  {
-    id: 'premium',
-    label: 'Premium',
-    price: 6.99,
-    screens: 4,
-    quality: '4K',
-    profiles: 4,
-    downloads: 25,
-    gradient: 'linear-gradient(135deg,#7B3FF2,#A855F7)',
-    color: '#7B3FF2',
-    features: [
-      'Tout le contenu Premium',
-      '4 écrans simultanés',
-      'Qualité 4K Ultra HD',
-      '4 profils utilisateurs',
-      '25 téléchargements / mois',
-      'Audio Dolby Atmos',
-    ],
-  },
-  {
-    id: 'family',
-    label: 'Famille',
-    price: 9.99,
-    screens: 6,
-    quality: '4K',
-    profiles: 6,
-    downloads: 50,
-    gradient: 'linear-gradient(135deg,#10B981,#34D399)',
-    color: '#10B981',
-    features: [
-      'Tout le contenu Premium',
-      '6 écrans simultanés',
-      'Qualité 4K Ultra HD',
-      '6 profils utilisateurs',
-      '50 téléchargements / mois',
-      'Audio Dolby Atmos',
-      'Contrôle parental avancé',
-    ],
-  },
-];
 
 // ---------------------------------------------------------------------------
 // Component
@@ -118,6 +26,7 @@ const PLANS: PlanConfig[] = [
 
 export default function WalletSubscriptionPlansPage() {
   const navigate = useNavigate();
+  const plans = usePlanCatalog();
   const [activeSub,  setActiveSub]  = useState<ActiveSubscription | null>(null);
   const [loadingSub, setLoadingSub] = useState(true);
   const [checking,   setChecking]   = useState<string | null>(null);
@@ -146,7 +55,7 @@ export default function WalletSubscriptionPlansPage() {
   }
 
   return (
-    <div className="w-full mx-auto px-4 py-6 space-y-5">
+    <div className="st-v2 w-full mx-auto px-4 py-6 space-y-5">
 
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -169,8 +78,8 @@ export default function WalletSubscriptionPlansPage() {
         <PageLoader />
       ) : (
         <div className="space-y-4">
-          {PLANS.map(plan => {
-            const isActive  = activeSub?.plan_id === plan.id;
+          {plans.map(plan => {
+            const isActive  = activeSub?.plan === plan.id;
             const isBusy    = checking === plan.id;
 
             return (
@@ -219,9 +128,6 @@ export default function WalletSubscriptionPlansPage() {
                     </span>
                     <span className="flex items-center gap-1 text-xs text-white/80 font-medium">
                       <Tv size={12} /> {plan.quality}
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-white/80 font-medium">
-                      <Users size={12} /> {plan.profiles} profil{plan.profiles > 1 ? 's' : ''}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-white/80 font-medium">
                       <Download size={12} /> {plan.downloads} dl

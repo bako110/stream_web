@@ -76,7 +76,7 @@ export default function CommunityJoinRequestsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
+    <div className="st-v2 flex flex-col h-full" style={{ background: 'var(--bg)' }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
