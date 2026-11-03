@@ -8,6 +8,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import toast from 'react-hot-toast';
 import { extractApiErrorMessage } from '../../utils/apiError';
 import { usePlanCatalog, type PlanConfig } from './planCatalog';
+import { invalidateEntitlements } from '../../hooks/useEntitlements';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -96,6 +97,7 @@ export default function WalletSubscriptionPaymentPage() {
     setPaying(true);
     try {
       await apiClient.post(Endpoints.subscriptions.subscribeWallet(plan.id));
+      invalidateEntitlements();
       setSuccess(true);
     } catch (err: any) {
       toast.error(extractApiErrorMessage(err, 'Paiement echoue. Reessayez.'));

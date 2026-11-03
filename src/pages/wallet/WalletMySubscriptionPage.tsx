@@ -8,6 +8,7 @@ import {
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { usePlanCatalog } from './planCatalog';
+import { invalidateEntitlements } from '../../hooks/useEntitlements';
 import { Spinner } from '../../components/ui/Spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -109,6 +110,7 @@ export default function WalletMySubscriptionPage() {
     setCancelling(true);
     try {
       await apiClient.delete(Endpoints.subscriptions.cancel);
+      invalidateEntitlements();
       toast.success('Abonnement annule avec succes.');
       fetchSub();
     } catch (err: any) {

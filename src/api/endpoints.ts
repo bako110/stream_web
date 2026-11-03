@@ -245,6 +245,14 @@ export const Endpoints = {
     walletCheck:    (plan: string) => `${V1}/subscriptions/wallet-check?plan=${plan}`,
     cancel:         `${V1}/subscriptions/me`,
     history:        `${V1}/subscriptions/history`,
+    entitlements:   `${V1}/subscriptions/entitlements`,
+    consumeDownload:`${V1}/subscriptions/downloads`,
+  },
+  // Écrans simultanés : une session par lecture (battement de coeur ~30 s)
+  playback: {
+    sessions:  `${V1}/playback/sessions`,
+    heartbeat: (id: string) => `${V1}/playback/sessions/${id}/heartbeat`,
+    end:       (id: string) => `${V1}/playback/sessions/${id}`,
   },
   // Texte complet à la demande : les listes (feed, posts, events, concerts, reels,
   // commentaires) renvoient un texte tronqué côté serveur (is_*_truncated).
