@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
 import { getEventTiming, sortEventsByProximity } from '../utils/eventTiming';
@@ -368,10 +368,12 @@ function HeroSection({ concerts }: { films: Content[]; concerts: Concert[] }) {
 
           <h1 className="gt-display text-[2.6rem] sm:text-[4rem] lg:text-[4.6rem] leading-[1.05] mb-7">
             {words.map((w, i) => (
-              <span key={i} className="gt-word-mask">
-                <span className={`gt-word${w.accent ? ' gt-word-accent' : ''}`} style={{ ['--i' as any]: i }}>{w.t}</span>
+              <Fragment key={i}>
+                <span className="gt-word-mask">
+                  <span className={`gt-word${w.accent ? ' gt-word-accent' : ''}`} style={{ ['--i' as any]: i }}>{w.t}</span>
+                </span>
                 {' '}
-              </span>
+              </Fragment>
             ))}
           </h1>
 
