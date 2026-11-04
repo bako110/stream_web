@@ -641,6 +641,19 @@ function HeartBurst({ show, x, y }: { show: boolean; x?: number; y?: number }) {
 const MAX_RETRIES   = 3;
 const STALL_TIMEOUT = 8000; // 8s identique mobile
 
+// Dernier recours (iOS mode économie d'énergie, WebView strict) : si même la
+// lecture muette est refusée, on relance dès le premier toucher de l'écran —
+// le geste utilisateur lève la restriction, plus besoin de cibler le bouton play.
+function retryOnFirstTouch(v: HTMLVideoElement) {
+  const go = () => {
+    window.removeEventListener('pointerdown', go, true);
+    window.removeEventListener('touchstart', go, true);
+    if (v.isConnected && v.paused && v.dataset.userPaused !== '1') v.play().catch(() => {});
+  };
+  window.addEventListener('pointerdown', go, true);
+  window.addEventListener('touchstart', go, true);
+}
+
 function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayFallbackMuted, onCommentOpen, onMoreOpen, onRatioChange, onShareRequest }: {
   reel: Reel; active: boolean;
   /** Distance (en slides) au reel actif — pilote la fenêtre de préchargement, comme PRELOAD_WINDOW du mobile. */
@@ -885,6 +898,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
     };
     v.addEventListener('loadedmetadata', onMeta);
 
+    v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
     const playWhenReady = () => {
       if (!active) return;
       if (autoplayBlocked()) { userPausedRef.current = true; setPlaying(false); return; }
@@ -897,7 +911,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
         if (!v.muted) {
           v.muted = true;
           onAutoplayFallbackMuted?.();
-          v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => setPlaying(false));
+          v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => { setPlaying(false); retryOnFirstTouch(v); });
         } else {
           setPlaying(false);
         }
@@ -974,7 +988,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
             setPlaying(true);
             startTimeRef.current = Date.now();
             sessionStartRef.current = Date.now();
-          }).catch(() => setPlaying(false));
+          }).catch(() => { setPlaying(false); retryOnFirstTouch(v); });
         } else {
           setPlaying(false);
         }

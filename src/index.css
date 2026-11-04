@@ -946,12 +946,12 @@
 .fd-media-tall  { aspect-ratio: 16 / 9; }
 .fd-media-video { aspect-ratio: 16 / 9; }
 .fd-media-ad    { aspect-ratio: 1.6 / 1; }
-.fd-media-reel  { aspect-ratio: 4 / 5; max-height: 720px; }
+.fd-media-reel  { aspect-ratio: 1 / 1; max-height: 560px; }
 @media (max-width: 639px) {
   .fd-media-tall  { aspect-ratio: 4 / 5; max-height: 78vh; }
   .fd-media-video { aspect-ratio: 4 / 5; max-height: 78vh; }
   .fd-media-ad    { aspect-ratio: 1 / 1; }
-  .fd-media-reel  { aspect-ratio: 9 / 16; max-height: 82vh; }
+  .fd-media-reel  { aspect-ratio: 4 / 5; max-height: 62vh; width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; }
 }
 
 /* Tablettes (640–1023 px) : médias du fil plus hauts aussi, mais plus carrés
@@ -961,5 +961,11 @@
   .fd-pimg-4 { aspect-ratio: 1 / 1; max-height: 72vh; }
   .fd-media-tall, .fd-media-video { aspect-ratio: 1 / 1; max-height: 72vh; }
   .fd-media-ad { aspect-ratio: 4 / 3; }
-  .fd-media-reel { aspect-ratio: 4 / 5; max-height: 78vh; }
+  .fd-media-reel { aspect-ratio: 1 / 1; max-height: 56vh; }
+}
+
+/* App native (Android) : on reprend automatiquement la police système de l'appareil */
+html.is-native, html.is-native body, html.is-native button, html.is-native input,
+html.is-native textarea, html.is-native select {
+  font-family: system-ui, -apple-system, 'Roboto', 'Segoe UI', sans-serif, 'Apple Color Emoji', 'Noto Color Emoji';
 }

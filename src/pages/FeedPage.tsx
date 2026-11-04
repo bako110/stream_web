@@ -1937,6 +1937,18 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, on
   );
 }
 
+// iOS / Safari : l'autoplay n'est permis que si la vidéo est vraiment muette
+// (attribut + propriété) et inline, et play() doit être retenté quand la
+// source est enfin prête (HLS natif, chargement différé) — sinon il faut
+// toucher l'écran pour lancer la lecture.
+function primeAutoplay(v: HTMLVideoElement) {
+  v.muted = true;
+  v.defaultMuted = true;
+  v.setAttribute('muted', '');
+  v.setAttribute('playsinline', '');
+  v.setAttribute('webkit-playsinline', '');
+}
+
 // ── Post video player ─────────────────────────────────────────────────────────
 // Lecteur vidéo inline pour une carte de post — même langage visuel que
 // InlineVideoPlayer côté mobile (stream_mobile/src/components/common/
@@ -1981,20 +1993,26 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
     const el = wrapRef.current;
     const v  = videoRef.current;
     if (!el || !v) return;
+    primeAutoplay(v);
+    let visible = false;
+    const tryPlay = () => {
+      if (!visible || !autoplay) return;
+      primeAutoplay(v);
+      v.play().then(() => { setStarted(true); setPlaying(true); }).catch(() => {});
+    };
     const obs = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) {
-          if (!autoplay) return;
-          v.play().then(() => { setStarted(true); setPlaying(true); }).catch(() => {});
-        } else {
-          v.pause();
-          setPlaying(false);
-        }
+        visible = e.isIntersecting;
+        if (visible) tryPlay();
+        else { v.pause(); setPlaying(false); }
       },
       { threshold: 0.5 },
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    // La source peut arriver après l'entrée dans l'écran : on retente alors.
+    v.addEventListener('loadeddata', tryPlay);
+    v.addEventListener('canplay', tryPlay);
+    return () => { obs.disconnect(); v.removeEventListener('loadeddata', tryPlay); v.removeEventListener('canplay', tryPlay); };
   }, [autoplay]);
 
   function togglePlay(e: React.MouseEvent) {
@@ -2281,12 +2299,17 @@ function ReelCard({ reel, delay = 0 }: {
     const el = cardRef.current;
     const video = videoRef.current;
     if (!el || !video || !autoplayOn) return;
+    primeAutoplay(video);
+    let visible = false;
+    const tryPlay = () => { if (visible) { primeAutoplay(video); video.play().catch(() => {}); } };
     const obs = new IntersectionObserver(
-      ([entry]) => { entry.isIntersecting ? video.play().catch(() => {}) : video.pause(); },
+      ([entry]) => { visible = entry.isIntersecting; if (visible) tryPlay(); else video.pause(); },
       { threshold: 0.5 },
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    video.addEventListener('loadeddata', tryPlay);
+    video.addEventListener('canplay', tryPlay);
+    return () => { obs.disconnect(); video.removeEventListener('loadeddata', tryPlay); video.removeEventListener('canplay', tryPlay); };
   }, [autoplayOn]);
 
   return (

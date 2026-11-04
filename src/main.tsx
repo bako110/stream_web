@@ -3,17 +3,20 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { initPressFeedback } from './utils/pressFeedback'
+import { initNativeStatusBar } from './utils/nativeStatusBar'
 
 initPressFeedback()
+initNativeStatusBar()
 
-// iPhone / Safari : le HLS est lu nativement par <video>. hls.js (MSE) y est
-// instable (iOS 17.1+ annonce un support partiel qui échoue sur nos flux) et
-// n'existe pas du tout sur les anciens iPhone. Si le navigateur lit déjà le
-// HLS, on dit à hls.js de s'effacer : tout le code retombe alors sur la
-// branche « lecture native » (video.src = manifest).
+// iPhone / iPad (Safari, WebView iOS) : le HLS est lu nativement par <video>.
+// hls.js (MSE) y est instable et absent des anciens iPhone → on le désactive
+// pour que tout le code retombe sur « video.src = manifest ».
+// NE PAS étendre à Android : canPlayType() y répond « maybe » mais hls.js y
+// reste plus fiable (qualité, reprise, autoplay) que le HLS natif du WebView.
 try {
-  const probe = document.createElement('video');
-  if (probe.canPlayType('application/vnd.apple.mpegurl')) {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) {
     import('hls.js').then(({ default: Hls }) => { Hls.isSupported = () => false; });
   }
 } catch { /* ignore */ }
