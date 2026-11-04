@@ -2369,7 +2369,7 @@ function UpcomingEventsPanel() {
   const loadPage = useCallback((p: number) => {
     setLoading(true);
     // upcoming_only=true — exclut les événements déjà passés côté backend (via
-    // starts_at >= now dans la requête SQL), peu importe leur score de
+    // starts_at >= now OU ends_at >= now dans la requête SQL), peu importe leur score de
     // pertinence (boost/follow/featured peuvent dépasser la pénalité
     // temporelle d'un événement passé).
     apiClient.get<any>(`${Endpoints.events.list}?page=${p}&limit=${UPCOMING_PAGE_SIZE}&status=published&upcoming_only=true&originals_only=true`)
@@ -2420,6 +2420,7 @@ function UpcomingEventsPanel() {
       <div className="divide-y overflow-y-auto" style={{ borderColor: 'var(--border)', maxHeight: 340, scrollbarWidth: 'thin' }}>
         {events.map((e: any) => {
           const color = EVENT_COLORS[e.event_type ?? 'other'] ?? EVENT_COLORS.other;
+          const ongoing = e.starts_at ? getEventTiming(e).phase === 'live' : false;
           return (
             <div key={e.id}
               onClick={() => navigate(`/events/${encodeId(e.id)}`)}
@@ -2435,6 +2436,11 @@ function UpcomingEventsPanel() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold truncate leading-snug" style={{ color: 'var(--text-primary)' }}>{e.title}</p>
+                {ongoing && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full text-white mr-1" style={{ background: '#EF4444' }}>
+                    <span className="w-1 h-1 rounded-full bg-white animate-pulse" /> EN COURS
+                  </span>
+                )}
                 {e.venue_city && <p className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}><MapPin size={8} className="inline mr-0.5" />{e.venue_city}</p>}
               </div>
             </div>

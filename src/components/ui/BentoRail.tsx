@@ -10,6 +10,7 @@ export interface BentoTile {
   image?: string | null;
   chip?: string | null;          // pastille (année, date, artiste…)
   badge?: React.ReactNode;       // badge haut-gauche (LIVE, note…)
+  live?: boolean;                // badge rouge « en cours / en direct »
   icon: React.ReactNode;         // fallback si pas d'image
   onClick: () => void;
 }
@@ -56,7 +57,7 @@ function Tile({ tile, big, index }: { tile: BentoTile; big: boolean; index: numb
       )}
       <div className="gt-bento-scrim" />
       <div className="gt-bento-glow" />
-      {tile.badge && <div className="gt-bento-badge">{tile.badge}</div>}
+      {tile.badge && <div className={`gt-bento-badge${tile.live ? ' is-live' : ''}`}>{tile.live && <span className="gt-bento-badge-dot" />}{tile.badge}</div>}
       <div className="gt-bento-info">
         <p className="gt-bento-title">{tile.title}</p>
         {tile.chip && <span className="gt-bento-chip">{tile.chip}</span>}

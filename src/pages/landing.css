@@ -1528,3 +1528,7 @@
 @media (hover: none) {
   .gt-bento-glow { display: none; }
 }
+
+.gt-bento-badge.is-live { background: #EF4444; border-color: rgba(255,255,255,.35); box-shadow: 0 6px 18px rgba(239,68,68,.5); backdrop-filter: none; }
+.gt-bento-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: gt-bento-pulse 1.2s ease-in-out infinite; }
+@keyframes gt-bento-pulse { 50% { opacity: .3; transform: scale(.7); } }

@@ -20,7 +20,7 @@ import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketP
 import { useRepost } from '../../components/ui/RepostModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { formatTimeAgo } from '../../utils/date';
-import { getEventTiming } from '../../utils/eventTiming';
+import { getEventTiming, isMultiDay, daysSpan } from '../../utils/eventTiming';
 import { ShareModal } from '../../components/ui/ShareModal';
 import { AiAnalysisStatusModal } from '../../components/ui/AiAnalysisStatusModal';
 import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
@@ -605,7 +605,7 @@ export default function EventDetailPage() {
             {label}
           </span>
           <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex flex-col items-end gap-1.5">
-            {timing?.phase === 'live' && (
+            {(timing?.phase === 'live' || timing?.isPast) && (
               <span className="text-xs font-bold px-3 py-1.5 rounded-full text-white"
                 style={{ background: timing.color, boxShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>
                 {timing.label}
@@ -772,7 +772,9 @@ export default function EventDetailPage() {
                     </p>
                     {ev.ends_at && (
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                        Jusqu'à {format(new Date(ev.ends_at), 'HH:mm')}
+                        {isMultiDay(new Date(ev.starts_at), new Date(ev.ends_at))
+                          ? `Jusqu'au ${format(new Date(ev.ends_at), "EEEE d MMMM 'à' HH:mm", { locale: fr })} · ${daysSpan(new Date(ev.starts_at), new Date(ev.ends_at))} jours`
+                          : `Jusqu'à ${format(new Date(ev.ends_at), 'HH:mm')}`}
                       </p>
                     )}
                   </div>
