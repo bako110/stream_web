@@ -44,33 +44,45 @@ export default function ExploreEventDetailPage() {
       </Link>
 
       {/* Hero */}
-      <div className="relative rounded-3xl h-64 md:h-96 overflow-hidden xd-hero">
+      <div className="relative rounded-3xl h-64 md:h-96 overflow-hidden xd-hero xd-hero-poster">
         {event.thumbnail_url || event.banner_url ? (
-          <img
-            src={event.banner_url ?? event.thumbnail_url!}
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
+          <>
+            <img src={event.banner_url ?? event.thumbnail_url!} alt="" aria-hidden="true" className="xd-hero-blur" />
+            <img
+              src={event.banner_url ?? event.thumbnail_url!}
+              alt={event.title}
+              className="w-full h-full object-cover xd-hero-main"
+            />
+          </>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-orange-900/80 to-red-900/80" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/40 to-transparent" />
 
 
+        <div className="xd-m-title md:hidden">
+          {event.event_type && <span className="xd-m-type">{event.event_type}</span>}
+          <h1>{event.title}</h1>
+          <p>
+            <Calendar size={13} /> {format(startDate, 'd MMM yyyy · HH:mm', { locale: fr })}
+            {event.venue_city && <><span className="xd-m-sep" /><MapPin size={13} /> {event.venue_city}</>}
+          </p>
+        </div>
+
         {event.event_type && (
-          <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full capitalize">
+          <div className="hidden md:block absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full capitalize">
             {event.event_type}
           </div>
         )}
       </div>
 
       {/* Content */}
-      <div className="w-full px-2 sm:px-4 -mt-16 relative z-10 pb-16">
+      <div className="w-full px-2 sm:px-4 -mt-16 relative z-10 pb-16 xd-content">
         <div className="card p-6 md:p-8 xd-rise">
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">{event.title}</h1>
+          <h1 className="hidden md:block text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">{event.title}</h1>
 
           {/* Meta grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6 xd-stagger">
+          <div className="grid md:grid-cols-3 gap-4 mb-6 xd-stagger xd-meta">
             <div className="bg-[var(--bg-secondary)] rounded-xl p-4 xd-lift">
               <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-xs mb-1">
                 <Calendar size={12} />
@@ -100,7 +112,7 @@ export default function ExploreEventDetailPage() {
                   <MapPin size={12} />
                   <span>Lieu</span>
                 </div>
-                <p className="text-[var(--text-primary)] font-medium truncate">{location}</p>
+                <p className="text-[var(--text-primary)] font-medium break-words">{location}</p>
               </div>
             )}
 
@@ -156,7 +168,7 @@ export default function ExploreEventDetailPage() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 xd-actions">
             {!isPast && event.access_type !== 'free' && event.ticket_price !== 0 && (
               <Link to="/auth/register" className="btn-primary flex items-center gap-2">
                 <Ticket size={16} />
@@ -166,6 +178,19 @@ export default function ExploreEventDetailPage() {
             <Link to="/auth/login" className="btn-secondary">J'ai déjà un compte</Link>
           </div>
         </div>
+
+        {!isPast && (
+          <div className="xd-m-bar md:hidden">
+            <div>
+              <span>Prix</span>
+              <b>{event.ticket_price == null || event.ticket_price === 0 || event.access_type === 'free'
+                ? 'Gratuit' : <PriceWithLocal amountEur={event.ticket_price} />}</b>
+            </div>
+            <Link to={event.access_type === 'free' ? '/auth/login' : '/auth/register'} className="xd-m-cta">
+              <Ticket size={16} /> {event.access_type === 'free' ? 'Participer' : 'Acheter mon billet'}
+            </Link>
+          </div>
+        )}
 
         <div className="xd-banner mt-8 rounded-2xl bg-gradient-to-r from-orange-500/20 to-red-500/10 border border-orange-500/20 p-8 text-center">
           <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2">

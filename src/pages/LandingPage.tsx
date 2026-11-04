@@ -15,7 +15,7 @@ import { useAuthStore } from '../store/authStore';
 import { GateLogo } from '../components/ui/GateLogo';
 import { PriceWithLocal } from '../components/ui/PriceWithLocal';
 import { STICKERS } from '../components/ui/Stickers';
-import { ShowcaseSlideshow } from '../components/ui/ShowcaseSlideshow';
+import { BentoRail, BentoSkeleton, type BentoTile } from '../components/ui/BentoRail';
 import './landing.css';
 
 // ── Scroll reveal ─────────────────────────────────────────────────────────────
@@ -798,6 +798,33 @@ export default function LandingPage() {
     ]).finally(() => setLoading(false));
   }, []);
 
+  const contentTile = (kind: 'films' | 'series') => (c: Content): BentoTile => ({
+    key: c.id, title: c.title, image: c.thumbnail_url,
+    chip: c.year ? String(c.year) : null,
+    badge: c.rating != null ? <><Star size={12} fill="#fff" /> {Number(c.rating).toFixed(1)}</> : null,
+    icon: <Film size={40} />,
+    onClick: () => navigate(`/explore/${kind}/${encodeId(c.id)}`),
+  });
+  const filmTiles = films.map(contentTile('films'));
+  const serieTiles = series.map(contentTile('series'));
+  const concertTiles: BentoTile[] = concerts.map(c => ({
+    key: c.id, title: c.title, image: c.thumbnail_url,
+    chip: c.artist?.display_name ?? c.artist?.username ?? null,
+    badge: c.status === 'live' ? <><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> EN DIRECT</> : null,
+    icon: <Music2 size={40} />,
+    onClick: () => navigate(`/explore/concerts/${encodeId(c.id)}`),
+  }));
+  const eventTiles: BentoTile[] = events.map(e => {
+    const d = new Date(e.starts_at);
+    return {
+      key: e.id, title: e.title, image: e.thumbnail_url,
+      chip: [d.toLocaleDateString('fr', { day: '2-digit', month: 'short' }), e.venue_city].filter(Boolean).join(' · '),
+      badge: getEventTiming(e).label,
+      icon: <Calendar size={40} />,
+      onClick: () => navigate(`/explore/events/${encodeId(e.id)}`),
+    };
+  });
+
   return (
     <div className="gate-page relative min-h-screen">
       <GateHeader />
@@ -808,52 +835,28 @@ export default function LandingPage() {
         <section id="films" className="gt-section" style={{ paddingBottom: 0 }}>
           <div className="gt-container">
             <SectionHeader index="Cinéma" title="Films en vedette" sub="Sans inscription requise" seeAllHref="/explore/films" />
-            {loading ? <ShowcaseSkeleton />
-              : films.length === 0 ? <EmptyRow />
-              : <ShowcaseSlideshow
-                  items={films}
-                  getKey={f => f.id}
-                  renderItem={f => <FilmShowcase item={f} onClick={() => navigate(`/explore/films/${encodeId(f.id)}`)} />}
-                />}
+            {loading ? <BentoSkeleton /> : films.length === 0 ? <EmptyRow /> : <BentoRail tiles={filmTiles} />}
           </div>
         </section>
 
         <section className="gt-section">
           <div className="gt-container">
             <SectionHeader index="Séries" title="Séries populaires" sub="Des saisons entières à explorer" seeAllHref="/explore/series" />
-            {loading ? <ShowcaseSkeleton />
-              : series.length === 0 ? <EmptyRow />
-              : <ShowcaseSlideshow
-                  items={series}
-                  getKey={s => s.id}
-                  renderItem={s => <FilmShowcase item={s} onClick={() => navigate(`/explore/series/${encodeId(s.id)}`)} />}
-                />}
+            {loading ? <BentoSkeleton /> : series.length === 0 ? <EmptyRow /> : <BentoRail tiles={serieTiles} />}
           </div>
         </section>
 
         <section id="concerts" className="gt-section">
           <div className="gt-container">
             <SectionHeader index="Live" title="Concerts & lives" sub="La musique en temps réel" seeAllHref="/explore/concerts" />
-            {loading ? <ShowcaseSkeleton />
-              : concerts.length === 0 ? <EmptyRow />
-              : <ShowcaseSlideshow
-                  items={concerts}
-                  getKey={c => c.id}
-                  renderItem={c => <ConcertShowcase concert={c} onClick={() => navigate(`/explore/concerts/${encodeId(c.id)}`)} />}
-                />}
+            {loading ? <BentoSkeleton /> : concerts.length === 0 ? <EmptyRow /> : <BentoRail tiles={concertTiles} />}
           </div>
         </section>
 
         <section id="events" className="gt-section">
           <div className="gt-container">
             <SectionHeader index="Événements" title="À ne pas manquer" sub="Festivals, conférences, expositions" seeAllHref="/explore/events" />
-            {loading ? <ShowcaseSkeleton />
-              : events.length === 0 ? <EmptyRow />
-              : <ShowcaseSlideshow
-                  items={events}
-                  getKey={e => e.id}
-                  renderItem={e => <EventShowcase event={e} onClick={() => navigate(`/explore/events/${encodeId(e.id)}`)} />}
-                />}
+            {loading ? <BentoSkeleton /> : events.length === 0 ? <EmptyRow /> : <BentoRail tiles={eventTiles} />}
           </div>
         </section>
       </div>
