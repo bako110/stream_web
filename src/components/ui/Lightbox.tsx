@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Endpoints } from '../../api/endpoints';
@@ -79,9 +80,11 @@ export function Lightbox({ urls, index, onClose }: LightboxProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [urls.length, onClose]);
 
-  return (
+  // Porté vers document.body : sinon le lightbox reste coincé dans le contexte
+  // d'empilement de la page et le header / le bouton « + » passent par-dessus.
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-[300] flex items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(10px)' }}
       onClick={onClose}
     >
@@ -168,6 +171,7 @@ export function Lightbox({ urls, index, onClose }: LightboxProps) {
           ))}
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

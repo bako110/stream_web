@@ -431,6 +431,8 @@ function MessageBubble({ msg, isMe, peer, onReply, onEdit, onDelete, onDeleteFor
                 <video
                   src={(msg as any).attachment_meta?.hls_url ?? (msg as any).attachment_url}
                   controls
+                  playsInline
+                  preload="metadata"
                   className="rounded-lg"
                   style={{ display: 'block', maxWidth: 260, width: '100%', maxHeight: 460 }}
                 />
@@ -1145,7 +1147,7 @@ function ChatWindow({ userId, wsPayload, isWsConnected, onMessageSent, onBack }:
               {pendingFiles[0].type.startsWith('image/') ? (
                 <img src={URL.createObjectURL(pendingFiles[0])} alt="" className="max-h-[340px] w-full object-contain" />
               ) : pendingFiles[0].type.startsWith('video/') ? (
-                <video src={URL.createObjectURL(pendingFiles[0])} controls className="max-h-[340px] w-full object-contain" />
+                <video src={URL.createObjectURL(pendingFiles[0])} controls className="max-h-[340px] w-full object-contain" playsInline />
               ) : (
                 <div className="flex flex-col items-center gap-2 py-10 px-6">
                   <Paperclip size={36} style={{ color: 'var(--text-tertiary)' }} />

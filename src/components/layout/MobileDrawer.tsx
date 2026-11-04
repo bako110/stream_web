@@ -39,7 +39,7 @@ export function MobileDrawer({ onClose }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden" style={{ background: 'var(--bg)' }}>
 
       {/* ── Header profil ── */}
       <div className="flex items-center gap-3 px-4 py-4 shrink-0"

@@ -59,7 +59,7 @@ export function AppLayout({ children }: { children?: ReactNode } = {}) {
             style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <div className="relative z-10 w-72 max-w-[calc(100%-1rem)] m-2 rounded-[2rem] overflow-hidden animate-reveal-left"
+          <div className="relative z-10 w-72 max-w-[calc(100%-1rem)] m-2 rounded-[2rem] overflow-hidden flex flex-col max-h-[calc(100dvh-1rem)] animate-reveal-left"
             style={{ animationDuration: '0.22s', border: '1px solid var(--border)', boxShadow: '0 8px 20px rgba(11,11,16,0.12), 0 24px 56px -8px rgba(11,11,16,0.28)' }}>
             <MobileDrawer onClose={() => setMobileSidebarOpen(false)} />
           </div>

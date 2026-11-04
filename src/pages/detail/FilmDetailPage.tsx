@@ -473,7 +473,7 @@ export default function FilmDetailPage() {
           <div>
             <h3 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Bande-annonce</h3>
             <div className="aspect-video rounded-xl overflow-hidden" style={{ background: '#000' }}>
-              <video src={f.trailer_url} controls className="w-full h-full" />
+              <video src={f.trailer_url} controls playsInline className="w-full h-full" />
             </div>
           </div>
         )}

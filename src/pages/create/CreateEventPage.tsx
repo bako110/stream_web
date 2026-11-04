@@ -597,7 +597,7 @@ export default function CreateEventPage() {
               </label>
               {videoPreview || existingVideoUrl ? (
                 <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                  <video src={videoPreview ?? existingVideoUrl!} className="w-full h-full object-cover" controls />
+                  <video src={videoPreview ?? existingVideoUrl!} className="w-full h-full object-cover" controls playsInline />
                   <button onClick={() => { if (videoPreview) URL.revokeObjectURL(videoPreview); setVideoFile(null); setVideoPreview(null); setExistingVideoUrl(null); }}
                     className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(0,0,0,0.6)' }}>

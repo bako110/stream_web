@@ -223,7 +223,7 @@ export default function CreatePostPage() {
       {/* Video preview (nouvelle sélection ou vidéo existante) */}
       {(videoPreview || existingVideoUrl) && (
         <div className="mx-4 mb-3 rounded-2xl overflow-hidden relative" style={{ aspectRatio: '16/9' }}>
-          <video src={videoPreview ?? existingVideoUrl!} className="w-full h-full object-cover" controls />
+          <video src={videoPreview ?? existingVideoUrl!} className="w-full h-full object-cover" controls playsInline />
           <button onClick={removeVideo}
             className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
             style={{ background: 'rgba(0,0,0,0.6)' }}>

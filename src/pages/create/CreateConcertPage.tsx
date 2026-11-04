@@ -565,7 +565,7 @@ export default function CreateConcertPage() {
               </label>
               {videoPreview ? (
                 <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                  <video src={videoPreview} className="w-full h-full object-cover" controls />
+                  <video src={videoPreview} className="w-full h-full object-cover" controls playsInline />
                   <button onClick={() => { URL.revokeObjectURL(videoPreview); setVideoFile(null); setVideoPreview(null); }}
                     className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(0,0,0,0.6)' }}>
