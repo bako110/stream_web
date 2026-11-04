@@ -644,6 +644,15 @@ const STALL_TIMEOUT = 8000; // 8s identique mobile
 // Dernier recours (iOS mode économie d'énergie, WebView strict) : si même la
 // lecture muette est refusée, on relance dès le premier toucher de l'écran —
 // le geste utilisateur lève la restriction, plus besoin de cibler le bouton play.
+// iPhone / iPad (Safari, WebView iOS) : lecture avec son refusée sans geste, et
+// currentTime sur un média vide fige le chargement → comportement dédié.
+const IS_IOS = typeof navigator !== 'undefined' &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
+function rewindIfLoaded(v: HTMLVideoElement) {
+  if (v.readyState >= 1) { try { v.currentTime = 0; } catch { /* ignore */ } }
+}
+
 function retryOnFirstTouch(v: HTMLVideoElement) {
   const go = () => {
     window.removeEventListener('pointerdown', go, true);
@@ -902,8 +911,11 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
     const playWhenReady = () => {
       if (!active) return;
       if (autoplayBlocked()) { userPausedRef.current = true; setPlaying(false); return; }
-      v.currentTime = 0;
-      v.muted = globalMuted;
+      rewindIfLoaded(v);
+      // iOS : démarrage toujours muet (seule lecture auto autorisée), le son
+      // s'active ensuite d'un tap sur le bouton volume.
+      if (IS_IOS && !v.muted) { v.muted = true; onAutoplayFallbackMuted?.(); }
+      else v.muted = globalMuted;
       userPausedRef.current = false;
       v.play().then(() => { setPlaying(true); startTimeRef.current = Date.now(); }).catch(() => {
         // Autoplay avec son bloqué par le navigateur — retombe en muet pour
@@ -925,6 +937,7 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
       // montage, y compris pour les slides préchargées hors écran.
       v.src = loadSrc;
       v.addEventListener('loadedmetadata', playWhenReady, { once: true });
+      v.addEventListener('canplay', () => { if (active && v.paused && !userPausedRef.current) playWhenReady(); }, { once: true });
       // Démarre tout de suite : le navigateur lit dès qu'il a assez de données (poster + fond flou
       // entre-temps), au lieu d'attendre les métadonnées puis de démarrer.
       if (active) playWhenReady();
@@ -972,8 +985,9 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
     } else if (v.currentSrc || v.getAttribute('src')) {
       // play() sur un média encore en cours de chargement est mis en file par le navigateur et
       // démarre dès que possible — couvre un voisin préchargé pas encore prêt au moment du swipe.
-      v.muted = hasMusic ? true : globalMuted;
-      v.currentTime = 0;
+      if (IS_IOS && !hasMusic && !v.muted) { v.muted = true; onAutoplayFallbackMuted?.(); }
+      else v.muted = hasMusic ? true : globalMuted;
+      rewindIfLoaded(v);
       userPausedRef.current = false;
       v.play().then(() => {
         setPlaying(true);
@@ -1040,7 +1054,11 @@ function ReelPlayer({ reel, active, distance, globalMuted, onUnmute, onAutoplayF
       everPlayedRef.current = true;
       if (!startTimeRef.current) startTimeRef.current = Date.now();
       if (!sessionStartRef.current) sessionStartRef.current = Date.now();
-      v.play().then(() => setPlaying(true)).catch(() => {});
+      v.play().then(() => setPlaying(true)).catch(() => {
+        // Dernier recours : relance en muet (certains iOS refusent encore le son).
+        v.muted = true; onAutoplayFallbackMuted?.();
+        v.play().then(() => setPlaying(true)).catch(() => {});
+      });
     } else {
       userPausedRef.current = true;
       v.pause();
