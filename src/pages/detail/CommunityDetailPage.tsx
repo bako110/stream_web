@@ -774,129 +774,115 @@ function CommunityLanding({ community, joinStatus, onJoined, onPendingUpdate, on
   const entryPrice = (community as any).entry_price_gogold ?? 0;
   const requiresApproval = (community as any).requires_approval ?? community.is_private;
 
+  const perks = [
+    { icon: <MessageCircle size={16} />, color: '#7B3FF2', title: 'Discussions en direct', sub: 'Échangez avec les membres, réagissez, répondez' },
+    { icon: <Megaphone size={16} />,     color: '#F59E0B', title: 'Annonces officielles',  sub: 'Ne ratez aucune information importante' },
+    { icon: <Calendar size={16} />,      color: '#10B981', title: 'Événements du groupe',  sub: 'Rendez-vous et sorties organisés ensemble' },
+    { icon: <Trophy size={16} />,        color: '#EF4444', title: 'Classement & sondages', sub: 'Participez, votez et gagnez en visibilité' },
+  ];
+
+  const stats = [
+    { label: 'Membres', value: fmtCount(count), icon: <Users size={15} /> },
+    { label: 'Accès', value: community.is_private ? 'Privée' : 'Publique', icon: community.is_private ? <Lock size={15} /> : <Globe size={15} /> },
+    { label: 'Adhésion', value: entryPrice > 0 ? `${entryPrice} GoGold` : requiresApproval ? 'Sur validation' : 'Libre', icon: requiresApproval ? <Clock size={15} /> : <Check size={15} /> },
+  ];
+
   return (
-    <div className="flex-1 overflow-y-auto">
-      {/* Hero banner */}
-      <div className="relative" style={{ height: 200 }}>
+    <div className="flex-1 overflow-y-auto relative">
+      {/* Hero immersif */}
+      <div className="relative overflow-hidden" style={{ height: 230 }}>
         {community.banner_url
           ? <img src={community.banner_url} className="w-full h-full object-cover" alt="" />
-          : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${g1}dd, ${g2}dd)` }} />
+          : <div className="w-full h-full" style={{ background: `radial-gradient(120% 140% at 0% 0%, ${g2}cc 0%, transparent 60%), linear-gradient(135deg, ${g1}, ${g2})` }} />
         }
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg) 0%, rgba(0,0,0,0.05) 55%, rgba(0,0,0,0.25) 100%)' }} />
       </div>
 
-      <div className="px-5 pb-8">
-        {/* Avatar (chevauche la banniere) + nom (sous la banniere, jamais superpose) */}
-        <div className="flex items-end gap-4 mb-4">
+      <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 pb-32">
+        {/* Identité */}
+        <div className="flex flex-col items-center text-center -mt-16 relative">
           {community.avatar_url
-            ? <img src={community.avatar_url} className="w-20 h-20 rounded-2xl object-cover shrink-0"
-                style={{ marginTop: -40, border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} alt="" />
-            : <div className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-white text-3xl shrink-0"
-                style={{ marginTop: -40, background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '4px solid var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+            ? <img src={community.avatar_url} className="w-24 h-24 rounded-[1.75rem] object-cover"
+                style={{ border: '4px solid var(--bg)', boxShadow: '0 12px 32px rgba(0,0,0,0.25)' }} alt="" />
+            : <div className="w-24 h-24 rounded-[1.75rem] flex items-center justify-center font-black text-white text-4xl"
+                style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '4px solid var(--bg)', boxShadow: `0 12px 32px ${g1}66` }}>
                 {community.name[0]?.toUpperCase()}
               </div>
           }
-          <div className="mb-1 min-w-0 pt-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>{community.name}</h1>
-              {community.is_verified && <VerifiedBadge size={20} />}
-            </div>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: '#7B3FF215', color: '#7B3FF2' }}>
-                {community.is_private ? <Lock size={9} /> : <Globe size={9} />}
-                {community.is_private ? 'Privée' : 'Publique'}
-              </span>
-              <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
-                <Users size={9} /> {fmtCount(count)} membres
-              </span>
-              {requiresApproval && (
-                <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
-                  style={{ background: '#F59E0B15', color: '#F59E0B' }}>
-                  <Clock size={9} /> Approbation requise
-                </span>
-              )}
-            </div>
+          <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-black leading-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>{community.name}</h1>
+            {community.is_verified && <VerifiedBadge size={20} />}
           </div>
-        </div>
-
-        {community.description && (
-          <p className="text-sm leading-relaxed mb-5 whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
-            {community.description}
-          </p>
-        )}
-
-        {/* Card accès membres */}
-        <div className="rounded-2xl overflow-hidden mb-4"
-          style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}>
-          <div className="px-4 py-3 flex items-center gap-2"
-            style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
-            <Lock size={13} style={{ color: 'var(--text-tertiary)' }} />
-            <p className="text-xs font-bold tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-              CONTENU RÉSERVÉ AUX MEMBRES
+          {community.description && (
+            <p className="text-sm leading-relaxed mt-2 max-w-md whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+              {community.description}
             </p>
-          </div>
-          <div className="px-4 py-4 flex items-start gap-3">
-            <MessageCircle size={18} style={{ color: 'var(--text-tertiary)', flexShrink: 0, marginTop: 1 }} />
-            <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>Messages & membres privés</p>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-                {requiresApproval
-                  ? 'Envoyez une demande — un admin l\'examinera avant de vous donner accès.'
-                  : 'Rejoignez pour accéder aux conversations et voir les membres.'}
-              </p>
-            </div>
-          </div>
-          {entryPrice > 0 && (
-            <div className="px-4 py-3 flex items-center gap-2"
-              style={{ borderTop: '1px solid var(--border)', background: 'rgba(123,63,242,0.04)' }}>
-              <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: '#7B3FF220' }}>
-                <span style={{ fontSize: 10, color: '#7B3FF2', fontWeight: 700 }}>C</span>
-              </div>
-              <p className="text-xs font-bold" style={{ color: '#7B3FF2' }}>
-                {entryPrice} GoGold requis pour adhérer
-              </p>
-            </div>
           )}
         </div>
 
-        {/* Bouton adhésion */}
-        {joinStatus === 'pending' ? (
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-3 p-4 rounded-2xl"
-              style={{ background: 'rgba(123,63,242,0.08)', border: '1.5px solid rgba(123,63,242,0.25)' }}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(123,63,242,0.15)' }}>
-                <Clock size={16} style={{ color: '#7B3FF2' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm" style={{ color: '#7B3FF2' }}>Demande envoyée</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                  En attente d'approbation par un administrateur
-                </p>
+        {/* Chiffres clés */}
+        <div className="grid grid-cols-3 gap-2.5 mt-6">
+          {stats.map(s => (
+            <div key={s.label} className="flex flex-col items-center gap-1 py-3.5 px-2 rounded-2xl text-center"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <span style={{ color: g1 }}>{s.icon}</span>
+              <p className="text-[13px] font-black leading-tight" style={{ color: 'var(--text-primary)' }}>{s.value}</p>
+              <p className="text-[10px] font-semibold uppercase" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Ce que vous débloquez */}
+        <p className="text-[11px] font-black uppercase mt-7 mb-3 px-1" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.12em' }}>
+          Ce que vous débloquez en rejoignant
+        </p>
+        <div className="space-y-2.5">
+          {perks.map(p => (
+            <div key={p.title} className="flex items-center gap-3 p-3.5 rounded-2xl"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: `${p.color}18`, color: p.color }}>{p.icon}</div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{p.title}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{p.sub}</p>
               </div>
             </div>
-            <button onClick={handleCancelRequest}
-              className="w-full py-3 rounded-2xl font-semibold text-sm transition-colors"
-              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#EF4444'; (e.currentTarget as HTMLElement).style.color = '#EF4444'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}>
-              Annuler la demande
+          ))}
+        </div>
+      </div>
+
+      {/* Barre d'adhésion fixée en bas */}
+      <div className="sticky bottom-0 inset-x-0 px-4 sm:px-6 pt-4 pb-[max(16px,env(safe-area-inset-bottom))]"
+        style={{ background: 'linear-gradient(to top, var(--bg) 70%, transparent)' }}>
+        <div className="w-full max-w-2xl mx-auto">
+          {joinStatus === 'pending' ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl"
+                style={{ background: 'rgba(123,63,242,0.1)', border: '1.5px solid rgba(123,63,242,0.28)' }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.18)' }}>
+                  <Clock size={16} style={{ color: '#7B3FF2' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm" style={{ color: '#7B3FF2' }}>Demande envoyée</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>En attente d'approbation par un administrateur</p>
+                </div>
+                <button onClick={handleCancelRequest} className="shrink-0 h-9 px-4 rounded-full text-xs font-bold"
+                  style={{ background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={handleJoin} disabled={joining}
+              className="w-full flex items-center justify-center gap-2 h-14 rounded-full font-bold text-white text-[15px] disabled:opacity-60 active:scale-[0.99] transition-transform"
+              style={{ background: `linear-gradient(90deg, ${g1}, ${g2})`, boxShadow: `0 12px 28px -8px ${g1}99` }}>
+              {joining
+                ? <Spinner size="sm" />
+                : <><UserPlus size={17} /> {requiresApproval ? 'Demander à rejoindre' : 'Rejoindre la communauté'}{entryPrice > 0 ? ` · ${entryPrice} GoGold` : ''}</>
+              }
             </button>
-          </div>
-        ) : (
-          <button onClick={handleJoin} disabled={joining}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60 transition-opacity hover:opacity-90"
-            style={{ background: `linear-gradient(90deg, ${g1}, ${g2})`, boxShadow: `0 4px 16px ${g1}55` }}>
-            {joining
-              ? <Spinner size="sm" />
-              : requiresApproval
-                ? <><UserPlus size={15} /> Demander à rejoindre</>
-                : <><UserPlus size={15} /> Rejoindre la communauté</>
-            }
-          </button>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
