@@ -5,6 +5,7 @@ import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner } from '../../components/ui/Spinner';
 import { extractApiErrorMessage } from '../../utils/apiError';
+import { MonetizationChecklist, useMonetizationEligibility } from '../../components/wallet/MonetizationChecklist';
 
 const CONTENT_TYPES = [
   { id: 'music',   label: 'Musique' },
@@ -22,6 +23,8 @@ const DESC_MAX = 500;
 
 export default function WalletMonetisationRequestPage() {
   const navigate = useNavigate();
+  const { data: elig, loading: loadingElig } = useMonetizationEligibility();
+  const notEligible = elig?.eligible === false;
 
   const [selectedTypes, setSelectedTypes] = useState<ContentTypeId[]>([]);
   const [description,   setDescription]   = useState('');
@@ -81,7 +84,7 @@ export default function WalletMonetisationRequestPage() {
           <div>
             <p className="text-xl font-black" style={{ color: 'var(--text-primary)' }}>Demande envoyee !</p>
             <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Notre equipe examinera votre profil sous 2 a 5 jours ouvres. Vous recevrez une notification des que la decision sera prise.
+              Votre dossier est vérifié automatiquement sous 24h. Vous recevrez une notification dès que la décision sera prise.
             </p>
           </div>
           <button
@@ -185,6 +188,9 @@ export default function WalletMonetisationRequestPage() {
         )}
       </div>
 
+      {/* Conditions vérifiées automatiquement */}
+      <MonetizationChecklist eligibility={elig} />
+
       {/* Legal note */}
       <div className="rounded-xl px-4 py-3"
         style={{ background: 'rgba(123,63,242,0.06)', border: '1px solid rgba(123,63,242,0.15)' }}>
@@ -206,7 +212,7 @@ export default function WalletMonetisationRequestPage() {
       {/* Submit button */}
       <button
         onClick={handleSubmit}
-        disabled={submitting}
+        disabled={submitting || loadingElig || notEligible}
         className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
         style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
         {submitting ? <Spinner size="sm" /> : <><Send size={15} /> Envoyer ma demande</>}

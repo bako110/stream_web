@@ -16,6 +16,13 @@ import {
   Coins as GoGold,
   BarChart2,
   Lock,
+  CircleHelp,
+  Clock,
+  Ticket,
+  Megaphone,
+  Users,
+  Wallet,
+  X,
 } from 'lucide-react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -129,6 +136,8 @@ export default function WalletCreatorDashboardPage() {
   const [topReels, setTopReels]       = useState<TopReel[]>([]);
   const [recentGifts, setRecentGifts] = useState<GiftReceived[]>([]);
   const [toggling, setToggling]       = useState(false);
+  const [monStatus, setMonStatus]     = useState<{ status: 'none' | 'pending' | 'approved' | 'rejected'; admin_note?: string | null } | null>(null);
+  const [showInfo, setShowInfo]       = useState(false);
   const [subPrice, setSubPrice]       = useState('');
   const [savingPrice, setSavingPrice] = useState(false);
   const [savingMethod, setSavingMethod] = useState<string | null>(null);
@@ -138,6 +147,7 @@ export default function WalletCreatorDashboardPage() {
     if (!profRes) return;
 
     setProfile(profRes.data);
+    apiClient.get<any>(Endpoints.monetization.status).then(r => setMonStatus(r.data)).catch(() => setMonStatus({ status: 'none' }));
     setSubPrice(String(profRes.data.monthly_subscription_price ?? ''));
 
     if (!profRes.data.is_monetized) return; // pas encore monétisé : pas la peine d'appeler les endpoints réservés
@@ -233,7 +243,50 @@ export default function WalletCreatorDashboardPage() {
             Tableau de bord créateur
           </p>
         </div>
+        <button
+          onClick={() => setShowInfo(v => !v)}
+          className="ml-auto p-2.5 rounded-xl transition-all"
+          style={{ background: showInfo ? 'var(--primary)' : 'var(--surface)', border: '1px solid var(--border)', color: showInfo ? '#fff' : 'var(--primary)' }}
+          aria-label="Qu'est-ce que la monétisation ?" aria-expanded={showInfo}
+        >
+          {showInfo ? <X size={17} /> : <CircleHelp size={17} />}
+        </button>
       </div>
+
+      {/* ── Explication : ce que la monétisation apporte ─────────────────────── */}
+      {showInfo && (
+        <div className="rounded-2xl p-5 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div>
+            <p className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>Qu'est-ce que la monétisation ?</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              C'est le programme Créateur de Gofolyx : une fois votre demande validée, votre contenu peut vous rapporter de l'argent directement sur la plateforme.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {[
+              { icon: Gift,      t: 'Cadeaux virtuels',    d: 'Vos fans vous envoient des cadeaux pendant vos lives, reels et concerts.' },
+              { icon: Users,     t: 'Abonnements payants', d: 'Fixez un prix mensuel pour vos abonnés et vos contenus exclusifs.' },
+              { icon: Ticket,    t: 'Billets & accès',     d: 'Vendez des billets pour vos concerts et événements.' },
+              { icon: Megaphone, t: 'Publicité partagée',  d: 'Touchez une part des revenus publicitaires générés par votre audience.' },
+              { icon: BarChart2, t: 'Statistiques',        d: 'Suivez vos vues, vos revenus et vos meilleurs contenus en détail.' },
+              { icon: Wallet,    t: 'Retraits',            d: 'Retirez vos gains vers Mobile Money ou votre carte bancaire.' },
+            ].map(({ icon: Icon, t, d }) => (
+              <div key={t} className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(123,63,242,0.12)' }}>
+                  <Icon size={15} style={{ color: 'var(--primary)' }} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{t}</p>
+                  <p className="text-[11px] leading-snug" style={{ color: 'var(--text-tertiary)' }}>{d}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+            Pour être éligible, il faut un nombre minimum d'abonnés, des contenus publiés, un compte actif depuis un moment et le respect des CGU. Votre demande est ensuite examinée par l'équipe Gofolyx.
+          </p>
+        </div>
+      )}
 
       {/* ── Overlay : compte pas encore monétisé ─────────────────────────────── */}
       {profile && !profile.is_monetized && (
@@ -252,21 +305,35 @@ export default function WalletCreatorDashboardPage() {
               Compte non monétisé
             </p>
             <p className="text-sm max-w-md" style={{ color: 'var(--text-secondary)' }}>
-              Activez la monétisation pour accéder à vos statistiques, vos revenus et vos cadeaux reçus.
+              Faites une demande de monétisation pour accéder à vos statistiques, vos revenus et vos cadeaux reçus.
             </p>
           </div>
-          <button
-            onClick={toggleMonetization}
-            disabled={toggling}
-            className="mt-2 flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm text-white disabled:opacity-60 transition-all"
-            style={{ background: 'linear-gradient(135deg,#9B65F5,#E85DAD)', boxShadow: '0 8px 24px rgba(155,101,245,0.35)' }}
-          >
-            {toggling ? <Spinner size="sm" /> : <><Euro size={16} /> Activer la monétisation</>}
-          </button>
+          {monStatus?.status === 'pending' ? (
+            <div className="mt-2 flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold"
+              style={{ background: 'rgba(245,158,11,0.12)', color: '#D97706', border: '1px solid rgba(245,158,11,0.3)' }}>
+              <Clock size={16} /> Demande en cours d'examen
+            </div>
+          ) : (
+            <>
+              {monStatus?.status === 'rejected' && (
+                <p className="text-xs max-w-md" style={{ color: '#EF4444' }}>
+                  Votre demande a été refusée{monStatus.admin_note ? ` : ${monStatus.admin_note}` : '.'}
+                </p>
+              )}
+              <button
+                onClick={() => navigate('/wallet/monetisation')}
+                className="mt-2 flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm text-white transition-all"
+                style={{ background: 'linear-gradient(135deg,#9B65F5,#E85DAD)', boxShadow: '0 8px 24px rgba(155,101,245,0.35)' }}
+              >
+                <Euro size={16} /> {monStatus?.status === 'rejected' ? 'Refaire une demande' : 'Demander la monétisation'}
+              </button>
+            </>
+          )}
         </div>
       )}
 
-      {/* ── Toggle monétisation ────────────────────────────────────────────── */}
+      {/* ── Toggle monétisation (pause / reprise) — seulement une fois le compte monétisé ── */}
+      {profile?.is_monetized && (
       <div
         className="flex items-center gap-4 rounded-2xl p-4"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
@@ -305,6 +372,7 @@ export default function WalletCreatorDashboardPage() {
           )}
         </button>
       </div>
+      )}
 
       {/* ── Raccourcis vers les dashboards détaillés ─────────────────────────── */}
       {profile?.is_monetized && (

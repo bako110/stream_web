@@ -743,3 +743,5 @@
 .xd-m-live { display: inline-flex; align-items: center; gap: 6px; background: #EF4444 !important; margin-right: 6px; }
 .xd-m-live i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: gt-pulse-dot 1.2s ease-in-out infinite; }
 @keyframes gt-pulse-dot { 50% { opacity: .3; transform: scale(.7); } }
+
+.dark .xp-header .xp-btn-solid { background: linear-gradient(135deg, #7B3FF2, #5B2EC4); color: #fff; }

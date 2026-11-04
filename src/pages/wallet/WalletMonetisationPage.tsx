@@ -1,35 +1,13 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Users, FileText, CalendarDays, ShieldCheck, ChevronRight, AlertCircle } from 'lucide-react';
-import { apiClient } from '../../api';
-import { Endpoints } from '../../api/endpoints';
-import { Spinner, PageLoader } from '../../components/ui/Spinner';
+import { ArrowLeft, Clock, ChevronRight, AlertCircle } from 'lucide-react';
+import { PageLoader } from '../../components/ui/Spinner';
+import { MonetizationChecklist, useMonetizationEligibility } from '../../components/wallet/MonetizationChecklist';
 
-type MonetizationStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
-interface MonetizationStatusResponse {
-  status: MonetizationStatus;
-  admin_note?: string | null;
-}
-
-const CONDITIONS = [
-  { icon: <Users size={15} />,        label: '100 abonnés minimum',            color: '#7B3FF2' },
-  { icon: <FileText size={15} />,     label: '5 contenus publiés',             color: '#7B3FF2' },
-  { icon: <CalendarDays size={15} />, label: 'Compte actif depuis 30 jours',   color: '#7B3FF2' },
-  { icon: <ShieldCheck size={15} />,  label: 'Respect des CGU et politiques',  color: '#22C55E' },
-];
 
 export default function WalletMonetisationPage() {
   const navigate = useNavigate();
-  const [status,  setStatus]  = useState<MonetizationStatusResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiClient.get<MonetizationStatusResponse>(Endpoints.monetization.status)
-      .then(r => setStatus(r.data))
-      .catch(() => setStatus({ status: 'none' }))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: status, loading } = useMonetizationEligibility();
 
   if (loading) return <PageLoader />;
 
@@ -124,28 +102,13 @@ export default function WalletMonetisationPage() {
             </div>
           )}
 
-          {/* Conditions card */}
-          <div className="rounded-2xl p-5"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <p className="text-xs font-black uppercase tracking-wider mb-4" style={{ color: 'var(--text-tertiary)' }}>
-              Conditions requises
-            </p>
-            <div className="space-y-3">
-              {CONDITIONS.map(c => (
-                <div key={c.label} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: `${c.color}18`, color: c.color }}>
-                    {c.icon}
-                  </div>
-                  <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{c.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Conditions — vérifiées automatiquement */}
+          <MonetizationChecklist eligibility={status} />
 
           <button
             onClick={() => navigate('/wallet/monetisation/request')}
-            className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 transition-all"
+            disabled={status?.eligible === false}
+            className="w-full py-4 rounded-2xl font-black text-white text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 8px 24px rgba(123,63,242,0.3)' }}>
             Faire une demande
           </button>

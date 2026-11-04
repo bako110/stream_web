@@ -1532,3 +1532,7 @@
 .gt-bento-badge.is-live { background: #EF4444; border-color: rgba(255,255,255,.35); box-shadow: 0 6px 18px rgba(239,68,68,.5); backdrop-filter: none; }
 .gt-bento-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: gt-bento-pulse 1.2s ease-in-out infinite; }
 @keyframes gt-bento-pulse { 50% { opacity: .3; transform: scale(.7); } }
+
+/* Mode sombre : bouton « S'inscrire » de l'en-tête lisible (texte blanc, dégradé violet) */
+.gt-header .gt-btn-solid { color: #fff; }
+.dark .gt-header .gt-btn-solid { background: linear-gradient(135deg, #7B3FF2, #5B2EC4); color: #fff; box-shadow: 0 8px 22px -6px rgba(123,63,242,.7); }
