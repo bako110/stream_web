@@ -1,4 +1,3 @@
-import { PageLoader } from '../components/ui/Spinner';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useConfirm } from '../components/ui/Dialog';
@@ -6,7 +5,7 @@ import { encodeId } from '../utils/slugId';
 import {
   Users, Plus, Globe, Lock, Search, X,
   LogOut, MessageCircle, UserPlus, Zap,
-  ChevronRight,
+  ChevronRight, Sparkles,
 } from 'lucide-react';
 import type { Community } from '../types';
 import { apiClient } from '../api';
@@ -35,71 +34,145 @@ function gradientFor(name: string): [string, string] {
   return GRADIENTS[i] as [string, string];
 }
 
-// ── CommunityCard ─────────────────────────────────────────────────────────────
+// ── Révélation à l'entrée dans l'écran (une fois) ────────────────────────────
 
-function CommunityCard({
-  community, isMine, onJoin, onLeave,
-}: {
+function useReveal<T extends HTMLElement>(delay = 0) {
+  const ref = useRef<T>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') { setSeen(true); return; }
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setSeen(true); obs.disconnect(); } }, { threshold: 0.12 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  const style: React.CSSProperties = {
+    opacity: seen ? 1 : 0,
+    transform: seen ? 'none' : 'translateY(18px) scale(.98)',
+    transition: `opacity .5s ease ${delay}ms, transform .6s cubic-bezier(.16,1,.3,1) ${delay}ms`,
+  };
+  return { ref, style };
+}
+
+interface CardProps {
   community: Community;
   isMine:    boolean;
+  index:     number;
   onJoin:    () => void;
   onLeave:   () => void;
-}) {
-  const navigate   = useNavigate();
-  const count      = community.members_count ?? (community as any).member_count ?? 0;
-  const [g1, g2]   = gradientFor(community.name);
-  const isBoosted  = (community as any).is_boosted ?? false;
-  const open       = () => navigate(`/communities/${encodeId(community.id)}`);
+}
 
+function useCommunityMeta(community: Community) {
+  const navigate = useNavigate();
+  const count    = community.members_count ?? community.member_count ?? 0;
+  const [g1, g2] = gradientFor(community.name);
+  return { count, g1, g2, open: () => navigate(`/communities/${encodeId(community.id)}`) };
+}
+
+function CommunityAvatar({ community, size, g1, g2 }: { community: Community; size: number; g1: string; g2: string }) {
+  const radius = Math.round(size * 0.3);
+  return community.avatar_url
+    ? <img src={community.avatar_url} alt="" loading="lazy" className="object-cover shrink-0"
+        style={{ width: size, height: size, borderRadius: radius, border: '3px solid var(--surface)', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }} />
+    : <div className="flex items-center justify-center font-black text-white shrink-0"
+        style={{ width: size, height: size, borderRadius: radius, fontSize: size * 0.4, background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '3px solid var(--surface)', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}>
+        {community.name[0]?.toUpperCase()}
+      </div>;
+}
+
+function ActionButton({ isMine, g1, g2, onJoin, onLeave, open, compact }: {
+  isMine: boolean; g1: string; g2: string; onJoin: () => void; onLeave: () => void; open: () => void; compact?: boolean;
+}) {
+  return isMine ? (
+    <div className="flex items-center gap-1.5 shrink-0">
+      <button onClick={e => { e.stopPropagation(); open(); }}
+        className="flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-bold text-white transition-transform active:scale-95"
+        style={{ background: `linear-gradient(90deg, ${g1}, ${g2})`, boxShadow: `0 6px 14px ${g1}55` }}>
+        <MessageCircle size={13} /> {!compact && 'Ouvrir'}
+      </button>
+      <button onClick={e => { e.stopPropagation(); onLeave(); }} aria-label="Quitter la communauté"
+        className="w-9 h-9 flex items-center justify-center rounded-full shrink-0 transition-colors hover:bg-red-500/10 hover:text-red-500"
+        style={{ border: '1.5px solid var(--border)', color: 'var(--text-tertiary)' }}>
+        <LogOut size={13} />
+      </button>
+    </div>
+  ) : (
+    <button onClick={e => { e.stopPropagation(); onJoin(); }}
+      className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-bold text-white transition-transform active:scale-95"
+      style={{ background: 'var(--primary)', boxShadow: '0 6px 14px rgba(123,63,242,0.3)' }}>
+      <UserPlus size={13} /> Rejoindre
+    </button>
+  );
+}
+
+// ── Ligne compacte (téléphone) ───────────────────────────────────────────────
+
+function CommunityRow({ community, isMine, index, onJoin, onLeave }: CardProps) {
+  const { count, g1, g2, open } = useCommunityMeta(community);
+  const { ref, style } = useReveal<HTMLDivElement>(Math.min(index, 6) * 60);
   return (
-    <div
-      onClick={open}
-      className="group relative flex flex-col overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1"
-      style={{
-        borderRadius: '1.5rem',
-        background: 'var(--surface)',
-        border: '1.5px solid var(--border)',
-        boxShadow: '0 1px 2px rgba(11,11,16,0.04)',
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = g1; e.currentTarget.style.boxShadow = `0 18px 40px -14px ${g1}66`; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(11,11,16,0.04)'; }}
-    >
-      {/* Bandeau couleur */}
-      <div className="relative h-20 shrink-0"
+    <div ref={ref} onClick={open} role="link" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') open(); }}
+      className="flex items-center gap-3 p-3 rounded-3xl cursor-pointer active:scale-[0.99]"
+      style={{ ...style, background: 'var(--surface)', border: '1.5px solid var(--border)' }}>
+      <div className="relative shrink-0">
+        <CommunityAvatar community={community} size={56} g1={g1} g2={g2} />
+        {community.is_private && (
+          <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-white"
+            style={{ background: '#475569', border: '2px solid var(--surface)' }}><Lock size={9} /></span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-[15px] font-extrabold truncate" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{community.name}</p>
+          {community.is_verified && <VerifiedBadge size={13} />}
+          {community.is_boosted && <Zap size={12} fill="#F59E0B" color="#F59E0B" className="shrink-0" />}
+        </div>
+        <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'var(--text-secondary)' }}>
+          {community.description || 'Une communauté Gofolyx à découvrir.'}
+        </p>
+        <p className="text-[11px] font-semibold mt-1 inline-flex items-center gap-1" style={{ color: g1 }}>
+          <Users size={11} /> {fmtCount(count)} membre{count > 1 ? 's' : ''}
+        </p>
+      </div>
+      <ActionButton isMine={isMine} g1={g1} g2={g2} onJoin={onJoin} onLeave={onLeave} open={open} compact />
+    </div>
+  );
+}
+
+// ── Carte avec bannière (tablette / bureau) ──────────────────────────────────
+
+function CommunityCard({ community, isMine, index, onJoin, onLeave }: CardProps) {
+  const { count, g1, g2, open } = useCommunityMeta(community);
+  const { ref, style } = useReveal<HTMLDivElement>(Math.min(index, 8) * 70);
+  return (
+    <div ref={ref} onClick={open} role="link" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') open(); }}
+      className="group relative flex flex-col overflow-hidden cursor-pointer hover:-translate-y-1"
+      style={{ ...style, borderRadius: '1.75rem', background: 'var(--surface)', border: '1.5px solid var(--border)' }}>
+      <div className="relative h-28 shrink-0 overflow-hidden"
         style={{ background: `radial-gradient(120% 140% at 0% 0%, ${g2}cc 0%, transparent 60%), linear-gradient(135deg, ${g1}, ${g2})` }}>
-        {isBoosted && (
+        {community.banner_url && (
+          <img src={community.banner_url} alt="" loading="lazy" draggable={false}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+        )}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,.35), transparent 60%)' }} />
+        {community.is_boosted && (
           <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black"
-            style={{ background: 'rgba(255,255,255,0.92)', color: '#D97706' }}>
-            <Zap size={10} fill="currentColor" /> Boosté
-          </span>
+            style={{ background: 'rgba(255,255,255,0.92)', color: '#D97706' }}><Zap size={10} fill="currentColor" /> Boosté</span>
         )}
         {community.is_private && (
           <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white"
-            style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(6px)' }}>
-            <Lock size={10} /> Privée
-          </span>
+            style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)' }}><Lock size={10} /> Privée</span>
         )}
       </div>
 
-      {/* Avatar chevauchant */}
-      <div className="px-4 -mt-7 shrink-0">
-        {community.avatar_url
-          ? <img src={community.avatar_url} alt=""
-              className="w-14 h-14 rounded-2xl object-cover"
-              style={{ border: '3px solid var(--surface)', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }} />
-          : <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-white text-xl"
-              style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, border: '3px solid var(--surface)', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}>
-              {community.name[0]?.toUpperCase()}
-            </div>
-        }
+      <div className="px-4 -mt-8 shrink-0 relative">
+        <CommunityAvatar community={community} size={60} g1={g1} g2={g2} />
       </div>
 
-      {/* Infos */}
       <div className="flex-1 px-4 pt-2.5 pb-3 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
-          <p className="text-base font-extrabold truncate leading-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-            {community.name}
-          </p>
+          <p className="text-base font-extrabold truncate leading-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{community.name}</p>
           {community.is_verified && <VerifiedBadge size={14} />}
         </div>
         <p className="text-[13px] mt-1 line-clamp-2 leading-snug min-h-[2.4em]" style={{ color: 'var(--text-secondary)' }}>
@@ -107,43 +180,75 @@ function CommunityCard({
         </p>
       </div>
 
-      {/* Pied : membres + action */}
       <div className="flex items-center justify-between gap-2 px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
           style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
-          <Users size={12} style={{ color: g1 }} /> {fmtCount(count)} membre{count > 1 ? 's' : ''}
+          <Users size={12} style={{ color: g1 }} /> {fmtCount(count)}
         </span>
+        <ActionButton isMine={isMine} g1={g1} g2={g2} onJoin={onJoin} onLeave={onLeave} open={open} />
+      </div>
+    </div>
+  );
+}
 
-        {isMine ? (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={e => { e.stopPropagation(); open(); }}
-              className="flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-bold text-white transition-transform active:scale-95"
-              style={{ background: `linear-gradient(90deg, ${g1}, ${g2})`, boxShadow: `0 6px 14px ${g1}55` }}>
-              <MessageCircle size={13} /> Ouvrir
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); onLeave(); }}
-              aria-label="Quitter la communauté"
-              className="w-9 h-9 flex items-center justify-center rounded-full transition-colors shrink-0"
-              style={{ border: '1.5px solid var(--border)', color: 'var(--text-tertiary)' }}
-              onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
-              <LogOut size={13} />
-            </button>
+// ── À la une : grande carte immersive ────────────────────────────────────────
+
+function FeaturedCommunity({ community, isMine, onJoin }: { community: Community; isMine: boolean; onJoin: () => void }) {
+  const { count, g1, g2, open } = useCommunityMeta(community);
+  const { ref, style } = useReveal<HTMLDivElement>();
+  return (
+    <div ref={ref} onClick={open} role="link" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') open(); }}
+      className="relative overflow-hidden cursor-pointer mb-5 group"
+      style={{ ...style, borderRadius: '2rem', minHeight: 210,
+        background: `radial-gradient(120% 140% at 0% 0%, ${g2}cc 0%, transparent 60%), linear-gradient(135deg, ${g1}, ${g2})` }}>
+      {community.banner_url && (
+        <img src={community.banner_url} alt="" draggable={false}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+      )}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(8,6,20,.85) 0%, rgba(8,6,20,.15) 65%)' }} />
+      <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black"
+        style={{ background: 'rgba(255,255,255,0.92)', color: '#D97706' }}>
+        <Zap size={11} fill="currentColor" /> À la une
+      </span>
+      <div className="relative flex items-end gap-3 p-5 pt-24 sm:pt-28">
+        <CommunityAvatar community={community} size={64} g1={g1} g2={g2} />
+        <div className="flex-1 min-w-0 pb-0.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="text-lg sm:text-xl font-black text-white truncate" style={{ letterSpacing: '-0.02em' }}>{community.name}</p>
+            {community.is_verified && <VerifiedBadge size={15} />}
           </div>
-        ) : (
-          <button
-            onClick={e => { e.stopPropagation(); onJoin(); }}
-            className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-bold text-white transition-transform active:scale-95"
-            style={{ background: 'var(--primary)', boxShadow: '0 6px 14px rgba(123,63,242,0.3)' }}>
-            <UserPlus size={13} /> Rejoindre
+          <p className="text-xs text-white/75 mt-0.5 inline-flex items-center gap-1"><Users size={12} /> {fmtCount(count)} membre{count > 1 ? 's' : ''}</p>
+        </div>
+        {!isMine && (
+          <button onClick={e => { e.stopPropagation(); onJoin(); }}
+            className="shrink-0 h-10 px-5 rounded-full text-xs font-bold text-white inline-flex items-center gap-1.5 active:scale-95"
+            style={{ background: 'var(--primary)', boxShadow: '0 8px 20px rgba(123,63,242,0.45)' }}>
+            <UserPlus size={14} /> Rejoindre
           </button>
         )}
       </div>
     </div>
   );
 }
+
+function CommunitySkeleton() {
+  return (
+    <>
+      <div className="sm:hidden space-y-3">
+        {[0, 1, 2, 3].map(i => <div key={i} className="h-[84px] rounded-3xl gt-skeleton" />)}
+      </div>
+      <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-4">
+        {[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="h-72 rounded-[1.75rem] gt-skeleton" />)}
+      </div>
+    </>
+  );
+}
+
+type Filter = 'all' | 'popular' | 'verified' | 'public' | 'private';
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: 'all', label: 'Toutes' }, { key: 'popular', label: 'Populaires' },
+  { key: 'verified', label: 'Vérifiées' }, { key: 'public', label: 'Publiques' }, { key: 'private', label: 'Privées' },
+];
 
 // ── CreateModal ───────────────────────────────────────────────────────────────
 
@@ -344,11 +449,26 @@ export default function CommunitiesPage() {
     return () => obs.disconnect();
   }, [loading, loadingMore, hasMore, query, load]);
 
-  const communities = query.trim()
-    ? all.filter(c =>
-        c.name.toLowerCase().includes(query.toLowerCase()) ||
-        c.description?.toLowerCase().includes(query.toLowerCase()))
-    : all;
+  const [filter, setFilter] = useState<Filter>('all');
+  const countOf = (c: Community) => c.members_count ?? c.member_count ?? 0;
+
+  const communities = (() => {
+    const q = query.trim().toLowerCase();
+    let list = q
+      ? all.filter(c => c.name.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q))
+      : all;
+    if (filter === 'verified') list = list.filter(c => c.is_verified);
+    else if (filter === 'public') list = list.filter(c => !c.is_private);
+    else if (filter === 'private') list = list.filter(c => c.is_private);
+    else if (filter === 'popular') list = [...list].sort((a, b) => countOf(b) - countOf(a));
+    return list;
+  })();
+
+  // « À la une » : communauté boostée (sinon la plus populaire) — onglet Découvrir, sans filtre.
+  const featured = tab === 'discover' && !query.trim() && filter === 'all' && all.length >= 4
+    ? ([...all].sort((a, b) => (Number(!!b.is_boosted) - Number(!!a.is_boosted)) || (countOf(b) - countOf(a)))[0])
+    : null;
+  const listItems = featured ? communities.filter(c => c.id !== featured.id) : communities;
 
   async function handleJoin(id: string) {
     try { await apiClient.post(Endpoints.communities.join(id)); load(true); } catch {}
@@ -366,24 +486,24 @@ export default function CommunitiesPage() {
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-5 pb-28 lg:pb-10">
 
           {/* ── En-tête ── */}
-          <div className="flex items-start justify-between gap-4 mb-5">
-            <div className="min-w-0">
-              <span className="text-[11px] font-semibold uppercase"
-                style={{ color: 'var(--text-tertiary)', letterSpacing: '0.13em', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace' }}>
-                Communautés
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-black mt-1" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
-                Trouve ta tribu
-              </h1>
-              <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                Groupes thématiques, discussions et événements entre passionnés
-              </p>
+          <div className="relative overflow-hidden mb-5 p-5 sm:p-7"
+            style={{ borderRadius: '2rem', background: 'linear-gradient(135deg, #7B3FF2 0%, #5B2EC4 55%, #3B1E8F 100%)', boxShadow: '0 18px 44px -18px rgba(91,46,196,.6)' }}>
+            <span aria-hidden className="absolute -top-16 -right-10 w-52 h-52 rounded-full" style={{ background: 'rgba(255,255,255,.12)', filter: 'blur(8px)' }} />
+            <span aria-hidden className="absolute -bottom-20 left-1/3 w-56 h-56 rounded-full" style={{ background: 'rgba(236,72,153,.28)', filter: 'blur(40px)' }} />
+            <div className="relative flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase text-white/80" style={{ letterSpacing: '0.13em' }}>
+                  <Sparkles size={12} /> Découvrir et échanger
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-black mt-1.5 text-white" style={{ letterSpacing: '-0.03em' }}>Communautés</h1>
+                <p className="text-sm mt-1 text-white/75 max-w-md">Rejoignez des groupes autour de vos passions : discussions, événements et partages.</p>
+              </div>
+              <button onClick={() => setShowCreate(true)}
+                className="shrink-0 flex items-center gap-1.5 h-11 px-5 rounded-full text-sm font-bold transition-transform active:scale-95"
+                style={{ background: '#fff', color: '#5B2EC4', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
+                <Plus size={16} /> <span className="hidden xs:inline sm:inline">Créer</span>
+              </button>
             </div>
-            <button onClick={() => setShowCreate(true)}
-              className="shrink-0 flex items-center gap-1.5 h-11 px-5 rounded-full text-sm font-bold text-white transition-transform active:scale-95"
-              style={{ background: 'var(--primary)', boxShadow: '0 8px 20px rgba(123,63,242,0.3)' }}>
-              <Plus size={16} /> Créer
-            </button>
           </div>
 
           {/* ── Recherche ── */}
@@ -417,9 +537,22 @@ export default function CommunitiesPage() {
             ))}
           </div>
 
+          {/* ── Filtres ── */}
+          <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4 sm:mx-0 sm:px-0 mb-1" style={{ scrollbarWidth: 'none' }}>
+            {FILTERS.map(f => (
+              <button key={f.key} onClick={() => setFilter(f.key)}
+                className="shrink-0 h-9 px-4 rounded-full text-xs font-bold transition-all"
+                style={filter === f.key
+                  ? { background: 'var(--primary)', color: '#fff', boxShadow: '0 6px 14px rgba(123,63,242,0.3)' }
+                  : { background: 'var(--surface)', color: 'var(--text-secondary)', border: '1.5px solid var(--border)' }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           {/* ── Contenu ── */}
           {loading ? (
-            <PageLoader />
+            <CommunitySkeleton />
           ) : communities.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 rounded-3xl"
               style={{ border: '1.5px dashed var(--border)' }}>
@@ -458,9 +591,19 @@ export default function CommunitiesPage() {
                   : `Mes communautés · ${communities.length}`}
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {communities.map(c => (
-                  <CommunityCard key={c.id} community={c} isMine={tab === 'mine'}
+              {featured && <FeaturedCommunity community={featured} isMine={false} onJoin={() => handleJoin(featured.id)} />}
+
+              {/* Téléphone : liste compacte */}
+              <div className="sm:hidden space-y-3">
+                {listItems.map((c, i) => (
+                  <CommunityRow key={c.id} community={c} index={i} isMine={tab === 'mine'}
+                    onJoin={() => handleJoin(c.id)} onLeave={() => handleLeave(c.id)} />
+                ))}
+              </div>
+              {/* Tablette / bureau : cartes avec bannière */}
+              <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-4">
+                {listItems.map((c, i) => (
+                  <CommunityCard key={c.id} community={c} index={i} isMine={tab === 'mine'}
                     onJoin={() => handleJoin(c.id)} onLeave={() => handleLeave(c.id)} />
                 ))}
               </div>
