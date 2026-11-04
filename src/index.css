@@ -946,10 +946,20 @@
 .fd-media-tall  { aspect-ratio: 16 / 9; }
 .fd-media-video { aspect-ratio: 16 / 9; }
 .fd-media-ad    { aspect-ratio: 1.6 / 1; }
-.fd-media-reel  { aspect-ratio: 9 / 16; max-height: 480px; }
+.fd-media-reel  { aspect-ratio: 4 / 5; max-height: 720px; }
 @media (max-width: 639px) {
   .fd-media-tall  { aspect-ratio: 4 / 5; max-height: 78vh; }
   .fd-media-video { aspect-ratio: 4 / 5; max-height: 78vh; }
   .fd-media-ad    { aspect-ratio: 1 / 1; }
-  .fd-media-reel  { max-height: 76vh; }
+  .fd-media-reel  { aspect-ratio: 9 / 16; max-height: 82vh; }
+}
+
+/* Tablettes (640–1023 px) : médias du fil plus hauts aussi, mais plus carrés
+   que sur téléphone (la carte est plus large). */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .fd-pimg-1, .fd-pimg-2, .fd-pimg-3 { aspect-ratio: 1 / 1; max-height: 72vh; }
+  .fd-pimg-4 { aspect-ratio: 1 / 1; max-height: 72vh; }
+  .fd-media-tall, .fd-media-video { aspect-ratio: 1 / 1; max-height: 72vh; }
+  .fd-media-ad { aspect-ratio: 4 / 3; }
+  .fd-media-reel { aspect-ratio: 4 / 5; max-height: 78vh; }
 }

@@ -2305,10 +2305,10 @@ function ReelCard({ reel, delay = 0 }: {
           onPlaying={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onWaiting={() => setIsPlaying(false)}
-          className="w-full h-full object-contain pointer-events-none"
+          className="w-full h-full object-cover pointer-events-none"
         />
       ) : reel.thumbnail_url ? (
-        <img src={reel.thumbnail_url} alt="" className="w-full h-full object-contain pointer-events-none" />
+        <img src={reel.thumbnail_url} alt="" className="w-full h-full object-cover pointer-events-none" />
       ) : (
         <MediaPlaceholder title={reel.caption} icon={<Play size={36} color="#fff" />} className="pointer-events-none" />
       )}

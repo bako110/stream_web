@@ -745,3 +745,14 @@
 @keyframes gt-pulse-dot { 50% { opacity: .3; transform: scale(.7); } }
 
 .dark .xp-header .xp-btn-solid { background: linear-gradient(135deg, #7B3FF2, #5B2EC4); color: #fff; }
+
+/* ── Détail événement sur tablette (768–1023 px) : affiche entière sur fond flouté ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .xd-hero-poster { background: #0d0b14; }
+  .xd-hero-blur {
+    display: block; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    filter: blur(32px) saturate(1.4) brightness(.55); transform: scale(1.3); animation: none !important;
+  }
+  .xd-hero-poster .xd-hero-main { position: relative; object-fit: contain; animation: none !important; }
+  .xd-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

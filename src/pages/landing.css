@@ -1536,3 +1536,10 @@
 /* Mode sombre : bouton « S'inscrire » de l'en-tête lisible (texte blanc, dégradé violet) */
 .gt-header .gt-btn-solid { color: #fff; }
 .dark .gt-header .gt-btn-solid { background: linear-gradient(135deg, #7B3FF2, #5B2EC4); color: #fff; box-shadow: 0 8px 22px -6px rgba(123,63,242,.7); }
+
+/* ── Bento : tablettes (640–1023 px) ── */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .gt-bento-page { height: clamp(460px, 62vw, 620px); }
+  .gt-bento-title { font-size: clamp(1.1rem, 2.6vw, 1.5rem); }
+  .gt-bento-tile.is-big .gt-bento-title { font-size: clamp(1.7rem, 4.2vw, 2.6rem); }
+}
