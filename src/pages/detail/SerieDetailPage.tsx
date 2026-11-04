@@ -2,8 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { decodeId, encodeId } from '../../utils/slugId';
 import {
-  Play, Star, Crown, ChevronDown, ChevronUp, Lock, Film, Clock,
-  Coins as GoGold, Check, AlertTriangle, X, Wallet, Share2,
+  Play, Crown, Lock, Film, Clock, Coins as GoGold, Check, AlertTriangle, X, Wallet,
 } from 'lucide-react';
 import type { Content, Season, Episode, VideoMeta } from '../../types';
 import { apiClient } from '../../api';
@@ -19,6 +18,8 @@ import toast from 'react-hot-toast';
 import { extractApiErrorMessage } from '../../utils/apiError';
 import { usePlaybackPrefs } from '../../hooks/usePlaybackPrefs';
 import { ShareModal } from '../../components/ui/ShareModal';
+import { createPortal } from 'react-dom';
+import { MediaBackdrop, AccessBadge, MediaTitleBlock, MediaSynopsis, MediaFacts, PremiumCta } from '../../components/detail/MediaDetailParts';
 
 // 1 EUR = 100 GoGold (taux unifié plateforme)
 const GOGOLD_PER_EUR = 100;
@@ -71,10 +72,10 @@ function PaywallModal({ serie, onClose, onPurchased }: {
     } finally { setBuying(false); }
   }
 
-  return (
+  return createPortal(
     <>
-      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} onClick={onClose} />
-      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 rounded-3xl overflow-hidden max-w-sm mx-auto"
+      <div className="fixed inset-0 z-[300]" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} onClick={onClose} />
+      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[310] rounded-3xl overflow-hidden max-w-sm mx-auto"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 32px 80px rgba(0,0,0,0.5)' }}>
 
         <div className="relative p-6 text-center"
@@ -150,7 +151,8 @@ function PaywallModal({ serie, onClose, onPurchased }: {
           </button>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 
@@ -215,7 +217,6 @@ function VideoPlayerWithTracking({ url, poster, videoId, contentId }: {
 export default function SerieDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
   const id            = decodeId(slug!);
-  const navigate      = useNavigate();
   const goBack        = useSmartBack('/series');
   const location      = useLocation();
   const { user }      = useAuthStore();
@@ -240,7 +241,6 @@ export default function SerieDetailPage() {
   const [playingVideo, setPlayingVideo] = useState<VideoMeta | null>(null);
   const [epVidLoading, setEpVidLoading] = useState(false);
 
-  const [expandSynopsis, setExpandSynopsis] = useState(false);
 
   const serie = useApi<Content>(
     () => stateItem
@@ -365,247 +365,186 @@ export default function SerieDetailPage() {
   const accessOk     = !isPremium || hasAccess === true;
   const loadingAccess = isPremium && hasAccess === null;
 
-  function handleShare(e: React.MouseEvent) {
-    e.stopPropagation();
-    setShowShareModal(true);
-  }
+
+  const poster = s.thumbnail_url ?? s.banner_url ?? null;
+  const goldLabel = s.price ? `${eurToGoGold(s.price).toLocaleString('fr-FR')} GoGold` : 'Contenu premium';
+  const firstEp = episodes[0];
+  const firstLocked = !!firstEp && isPremium && !accessOk && !firstEp.is_free;
 
   return (
-    <div className="w-full mx-auto px-4 sm:px-6 pb-4 sm:pb-6 pt-2 space-y-6">
+    <div className="relative">
+      <MediaBackdrop image={s.banner_url ?? s.thumbnail_url} />
 
-      <DetailBackHeader onBack={goBack} />
+      <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 pb-8 pt-2">
+        <DetailBackHeader onBack={goBack} />
 
-      {/* ── Player ou bannière ── */}
-      {playingVideo && playingEp ? (
-        <VideoPlayerWithTracking
-          url={playingVideo.hls_url!}
-          poster={playingEp.thumbnail_url ?? s.thumbnail_url ?? undefined}
-          videoId={playingVideo.id}
-          contentId={s.id}
-        />
-      ) : (
-        <div className="relative aspect-video rounded-2xl overflow-hidden"
-          style={{ background: 'var(--bg-tertiary)' }}>
-          {(s.banner_url || s.thumbnail_url) && (
-            <img src={s.banner_url ?? s.thumbnail_url ?? ''} className="w-full h-full object-cover" alt={s.title} />
-          )}
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-            {loadingAccess && <Spinner size="lg" />}
-          </div>
-
-          {/* Badge accès */}
-          {isPremium && (
-            <div className="absolute top-3 right-3">
-              {hasAccess ? (
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white"
-                  style={{ background: 'rgba(34,197,94,0.85)', backdropFilter: 'blur(4px)' }}>
-                  <Check size={11} /> Accès
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-6 mt-3">
+          {/* ── Colonne principale ── */}
+          <div className="space-y-5 min-w-0">
+            {/* Player ou bannière */}
+            {playingVideo && playingEp ? (
+              <VideoPlayerWithTracking
+                url={playingVideo.hls_url!}
+                poster={playingEp.thumbnail_url ?? s.thumbnail_url ?? undefined}
+                videoId={playingVideo.id}
+                contentId={s.id}
+              />
+            ) : (
+              <div className={`relative aspect-video overflow-hidden ${firstEp ? 'cursor-pointer group' : ''}`}
+                style={{ borderRadius: '1.75rem', background: 'var(--bg-tertiary)', boxShadow: '0 24px 60px -20px rgba(0,0,0,0.45)' }}
+                onClick={() => { if (firstEp) handlePlayEpisode(firstEp, firstLocked); }}>
+                {(s.banner_url || s.thumbnail_url) && (
+                  <img src={s.banner_url ?? s.thumbnail_url ?? ''} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={s.title} />
+                )}
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.1) 55%)' }} />
+                <div className="absolute top-3 left-3">
+                  <AccessBadge isPremium={isPremium} hasAccess={hasAccess} hasActiveSub={hasActiveSub} price={s.price} />
                 </div>
-              ) : hasActiveSub ? (
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white"
-                  style={{ background: 'rgba(123,63,242,0.85)', backdropFilter: 'blur(4px)' }}>
-                  <Crown size={11} /> Abonné
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {loadingAccess || epVidLoading ? <Spinner size="lg" /> : firstEp && (
+                    firstLocked ? (
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(123,63,242,0.92)' }}>
+                        <Lock size={26} color="white" />
+                      </div>
+                    ) : (
+                      <div className="w-[72px] h-[72px] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform"
+                        style={{ background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(10px)', border: '2px solid rgba(255,255,255,0.5)' }}>
+                        <Play size={32} fill="white" color="white" style={{ marginLeft: 4 }} />
+                      </div>
+                    )
+                  )}
                 </div>
-              ) : (
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-                  <Crown size={11} /> Premium · {s.price ? `${s.price.toFixed(2)} €` : ''}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="absolute bottom-4 left-4">
-            <h1 className="text-white text-2xl font-black" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>{s.title}</h1>
-          </div>
-        </div>
-      )}
-
-      {/* ── Infos ── */}
-      <div className="space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>{s.title}</h1>
-            {s.original_title && s.original_title !== s.title && (
-              <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{s.original_title}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            {s.average_rating && (
-              <div className="flex items-center gap-1 text-yellow-400">
-                <Star size={18} fill="currentColor" />
-                <span className="font-black text-lg">{s.average_rating.toFixed(1)}</span>
               </div>
             )}
-            <button onClick={handleShare}
-              className="p-2 rounded-full transition-colors"
-              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-              aria-label="Partager">
-              <Share2 size={17} />
-            </button>
-          </div>
-        </div>
 
-        <div className="flex flex-wrap gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {s.year > 0 && <span className="px-3 py-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>{s.year}</span>}
-          {s.total_seasons > 0 && (
-            <span className="px-3 py-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>
-              {s.total_seasons} saison{s.total_seasons > 1 ? 's' : ''}
-            </span>
-          )}
-          {s.language && <span className="px-3 py-1 rounded-full uppercase" style={{ background: 'var(--bg-secondary)' }}>{s.language}</span>}
-          {s.country  && <span className="px-3 py-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>{s.country}</span>}
-          {s.view_count > 0 && (
-            <span className="px-3 py-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>
-              {s.view_count.toLocaleString()} vues
-            </span>
-          )}
-        </div>
+            <MediaTitleBlock
+              title={s.title}
+              originalTitle={s.original_title}
+              rating={s.average_rating}
+              onShare={() => setShowShareModal(true)}
+              chips={[s.year > 0 && String(s.year), s.total_seasons > 0 && `${s.total_seasons} saison${s.total_seasons > 1 ? 's' : ''}`, s.country, s.language && s.language.toUpperCase()]}
+            />
 
-        {s.synopsis && (
-          <div>
-            <p className={`text-sm leading-relaxed ${!expandSynopsis ? 'line-clamp-3' : ''}`}
-              style={{ color: 'var(--text-secondary)' }}>{s.synopsis}</p>
-            <button onClick={() => setExpandSynopsis(v => !v)}
-              className="text-sm flex items-center gap-1 mt-1" style={{ color: 'var(--primary)' }}>
-              {expandSynopsis ? <><ChevronUp size={14} /> Moins</> : <><ChevronDown size={14} /> Lire plus</>}
-            </button>
-          </div>
-        )}
+            {/* Action principale */}
+            {firstEp && (
+              <button onClick={() => handlePlayEpisode(playingEp ?? firstEp, playingEp ? false : firstLocked)}
+                className="w-full py-3.5 rounded-full font-black text-white text-sm flex items-center justify-center gap-2 active:scale-[0.99] transition-transform"
+                style={{ background: firstLocked ? 'linear-gradient(135deg,#7B3FF2,#EC4899)' : 'linear-gradient(135deg,#7B3FF2,#5B2EC4)', boxShadow: '0 12px 28px -8px rgba(123,63,242,0.65)' }}>
+                {firstLocked
+                  ? <><Lock size={16} /> Débloquer · {goldLabel}</>
+                  : <><Play size={17} fill="currentColor" /> {playingEp ? `Épisode ${playingEp.number} en cours` : `Regarder · S${selectedSeason ?? 1} E${firstEp.number}`}</>}
+              </button>
+            )}
 
-        {/* ── CTA Achat si série premium non achetée ── */}
-        {isPremium && !hasAccess && hasAccess !== null && (
-          <div className="p-4 rounded-2xl flex items-center justify-between gap-4"
-            style={{ background: 'linear-gradient(135deg,rgba(123,63,242,0.08),rgba(123,63,242,0.05))', border: '1px solid rgba(123,63,242,0.3)' }}>
-            <div>
-              <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Accès à toute la série</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                {s.price ? `${eurToGoGold(s.price).toLocaleString('fr-FR')} GoGold · ${s.price.toFixed(2)} €` : 'Contenu premium'}
-              </p>
-            </div>
-            <button onClick={() => setShowPaywall(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-white text-sm shrink-0"
-              style={{ background: 'linear-gradient(135deg,#7B3FF2,#5B2EC4)' }}>
-              <Lock size={14} /> Débloquer
-            </button>
-          </div>
-        )}
-      </div>
+            {isPremium && !hasAccess && hasAccess !== null && (
+              <PremiumCta title="Accès à toute la série" subtitle={s.price ? `${goldLabel} · ${s.price.toFixed(2)} €` : 'Contenu premium'} onClick={() => setShowPaywall(true)} />
+            )}
 
-      {/* ── Saisons ── */}
-      {!seasonsLoading && seasons.length > 0 && (
-        <div>
-          <h3 className="font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Saisons</h3>
-          <div className="flex flex-wrap gap-2">
-            {seasons.map(season => {
-              const active = selectedSeason === season.number;
-              return (
-                <button key={season.id} onClick={() => setSelectedSeason(season.number)}
-                  className="px-4 py-2 rounded-xl text-sm font-medium border transition-colors"
-                  style={{
-                    borderColor: active ? 'var(--primary)' : 'var(--border)',
-                    background:  active ? 'rgba(123,63,242,0.1)' : 'transparent',
-                    color:       active ? 'var(--primary)' : 'var(--text-secondary)',
-                  }}>
-                  {season.title ?? `Saison ${season.number}`}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+            <MediaSynopsis text={s.synopsis} />
 
-      {/* ── Épisodes ── */}
-      <div>
-        <h3 className="font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-          Épisodes{selectedSeason !== null ? ` — Saison ${selectedSeason}` : ''}
-        </h3>
+            {/* ── Saisons (onglets défilants) ── */}
+            {!seasonsLoading && seasons.length > 0 && (
+              <section>
+                <h2 className="text-[11px] font-black uppercase mb-2.5 px-1" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.12em' }}>Saisons</h2>
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ scrollbarWidth: 'none' }}>
+                  {seasons.map(season => {
+                    const active = selectedSeason === season.number;
+                    return (
+                      <button key={season.id} onClick={() => setSelectedSeason(season.number)}
+                        className="shrink-0 h-10 px-5 rounded-full text-sm font-bold transition-all"
+                        style={active
+                          ? { background: 'var(--primary)', color: '#fff', boxShadow: '0 6px 14px rgba(123,63,242,0.35)' }
+                          : { background: 'var(--surface)', color: 'var(--text-secondary)', border: '1.5px solid var(--border)' }}>
+                        {season.title ?? `Saison ${season.number}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
-        {epLoading ? (
-          <PageLoader />
-        ) : episodes.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Aucun épisode disponible.</p>
-        ) : (
-          <div className="space-y-2">
-            {episodes.map(ep => {
-              const isLocked = isPremium && !accessOk && !ep.is_free;
-              const isPlaying = playingEp?.id === ep.id;
+            {/* ── Épisodes ── */}
+            <section>
+              <div className="flex items-baseline justify-between mb-2.5 px-1">
+                <h2 className="text-[11px] font-black uppercase" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.12em' }}>
+                  Épisodes{selectedSeason !== null ? ` · Saison ${selectedSeason}` : ''}
+                </h2>
+                {episodes.length > 0 && <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>{episodes.length} épisode{episodes.length > 1 ? 's' : ''}</span>}
+              </div>
 
-              return (
-                <button key={ep.id}
-                  onClick={() => handlePlayEpisode(ep, isLocked)}
-                  className="w-full rounded-2xl border p-3 flex gap-3 text-left transition-all"
-                  style={{
-                    background:   isPlaying ? 'rgba(123,63,242,0.08)' : 'var(--surface)',
-                    borderColor:  isPlaying ? 'var(--primary)'        : 'var(--border)',
-                    opacity:      isLocked && !ep.is_free ? 0.85 : 1,
-                  }}
-                  onMouseEnter={e => { if (!isPlaying) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
-                  onMouseLeave={e => { if (!isPlaying) e.currentTarget.style.background = 'var(--surface)'; }}>
-
-                  {/* Thumbnail */}
-                  <div className="relative shrink-0 rounded-lg overflow-hidden"
-                    style={{ width: 120, aspectRatio: '16/9', background: 'var(--bg-tertiary)' }}>
-                    {ep.thumbnail_url
-                      ? <img src={ep.thumbnail_url} className="w-full h-full object-cover" alt="" />
-                      : <div className="w-full h-full flex items-center justify-center">
-                          <Film size={20} style={{ color: 'var(--text-tertiary)' }} />
+              {epLoading ? (
+                <PageLoader />
+              ) : episodes.length === 0 ? (
+                <p className="text-sm p-5 rounded-3xl text-center" style={{ color: 'var(--text-secondary)', background: 'var(--surface)', border: '1px dashed var(--border)' }}>
+                  Aucun épisode disponible pour le moment.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {episodes.map(ep => {
+                    const isLocked = isPremium && !accessOk && !ep.is_free;
+                    const isPlaying = playingEp?.id === ep.id;
+                    return (
+                      <button key={ep.id} onClick={() => handlePlayEpisode(ep, isLocked)}
+                        className="w-full rounded-3xl p-2.5 flex gap-3 text-left transition-all active:scale-[0.995]"
+                        style={{
+                          background: isPlaying ? 'rgba(123,63,242,0.1)' : 'var(--surface)',
+                          border: `1.5px solid ${isPlaying ? 'var(--primary)' : 'var(--border)'}`,
+                        }}>
+                        {/* Vignette */}
+                        <div className="relative shrink-0 overflow-hidden w-[116px] sm:w-[148px]"
+                          style={{ aspectRatio: '16/10', borderRadius: '1.1rem', background: 'var(--bg-tertiary)' }}>
+                          {ep.thumbnail_url
+                            ? <img src={ep.thumbnail_url} className="w-full h-full object-cover" alt="" loading="lazy" />
+                            : <div className="w-full h-full flex items-center justify-center"><Film size={20} style={{ color: 'var(--text-tertiary)' }} /></div>}
+                          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.22)' }}>
+                            {isLocked ? (
+                              <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(123,63,242,0.9)' }}><Lock size={15} color="white" /></span>
+                            ) : epVidLoading && isPlaying ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}><Play size={15} className="text-white" fill="white" style={{ marginLeft: 2 }} /></span>
+                            )}
+                          </div>
+                          <span className="absolute bottom-1.5 left-1.5 min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-black text-white flex items-center justify-center"
+                            style={{ background: 'rgba(0,0,0,0.65)' }}>{ep.number}</span>
                         </div>
-                    }
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {isLocked ? (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ background: 'rgba(123,63,242,0.85)' }}>
-                          <Lock size={14} color="white" />
-                        </div>
-                      ) : epVidLoading && isPlaying ? (
-                        <Spinner size="sm" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ background: 'rgba(0,0,0,0.55)' }}>
-                          <Play size={14} className="text-white" fill="white" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-                        Épisode {ep.number}
-                      </span>
-                      {isLocked && <Lock size={11} style={{ color: '#7B3FF2' }} />}
-                      {ep.is_free && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded"
-                          style={{ background: '#10b98118', color: '#10b981' }}>
-                          Gratuit
-                        </span>
-                      )}
-                      {isPlaying && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded"
-                          style={{ background: 'rgba(123,63,242,0.15)', color: 'var(--primary)' }}>
-                          En lecture
-                        </span>
-                      )}
-                    </div>
-                    <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{ep.title}</p>
-                    {ep.synopsis && (
-                      <p className="text-xs line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{ep.synopsis}</p>
-                    )}
-                    {ep.duration_sec && (
-                      <p className="text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-                        <Clock size={10} /> {fmt(ep.duration_sec)}
-                      </p>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                        {/* Infos */}
+                        <div className="flex-1 min-w-0 py-1 pr-1.5 flex flex-col justify-center gap-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {ep.is_free && isPremium && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: '#10b98120', color: '#10b981' }}>GRATUIT</span>
+                            )}
+                            {isPlaying && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(123,63,242,0.18)', color: 'var(--primary)' }}>EN LECTURE</span>
+                            )}
+                          </div>
+                          <p className="font-extrabold text-sm leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>{ep.title}</p>
+                          {ep.synopsis && <p className="text-xs line-clamp-2 hidden sm:block" style={{ color: 'var(--text-secondary)' }}>{ep.synopsis}</p>}
+                          {ep.duration_sec && (
+                            <p className="text-[11px] font-semibold flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
+                              <Clock size={11} /> {fmt(ep.duration_sec)}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
-        )}
+
+          {/* ── Colonne latérale : affiche + fiche technique ── */}
+          <aside className="space-y-5 lg:sticky lg:top-4 self-start">
+            {poster && (
+              <div className="hidden lg:block overflow-hidden" style={{ borderRadius: '1.75rem', aspectRatio: '2 / 3', boxShadow: '0 24px 60px -20px rgba(0,0,0,0.5)' }}>
+                <img src={poster} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <MediaFacts country={s.country} language={s.language} year={s.year > 0 ? s.year : null} views={s.view_count} />
+          </aside>
+        </div>
       </div>
 
       {/* ── Paywall modal ── */}
