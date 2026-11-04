@@ -739,3 +739,7 @@
   }
 }
 @media (min-width: 768px) { .xd-m-bar { display: none; } }
+
+.xd-m-live { display: inline-flex; align-items: center; gap: 6px; background: #EF4444 !important; margin-right: 6px; }
+.xd-m-live i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: gt-pulse-dot 1.2s ease-in-out infinite; }
+@keyframes gt-pulse-dot { 50% { opacity: .3; transform: scale(.7); } }

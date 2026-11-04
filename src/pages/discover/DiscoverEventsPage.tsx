@@ -7,7 +7,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import { encodeId } from '../../utils/slugId';
 import type { Event } from '../../types';
-import { getEventTiming, sortEventsByProximity } from '../../utils/eventTiming';
+import { getEventTiming, sortEventsByProximity, isMultiDay, formatDateRange, daysSpan } from '../../utils/eventTiming';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -47,6 +47,8 @@ function EventRow({ ev, onClick }: { ev: Event; onClick: () => void }) {
   const location  = [ev.venue_name, ev.venue_city].filter(Boolean).join(', ');
   const timing    = getEventTiming(ev);
   const isPast    = timing.isPast;
+  const endD      = ev.ends_at ? new Date(ev.ends_at) : null;
+  const multiDay  = isMultiDay(date, endD);
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 transition-all cursor-pointer"
@@ -96,7 +98,7 @@ function EventRow({ ev, onClick }: { ev: Event; onClick: () => void }) {
             {timing.label}
           </span>
           <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            <Clock size={10} />{time}
+            <Clock size={10} />{multiDay && endD ? `${formatDateRange(date, endD)} · ${daysSpan(date, endD)} j` : time}
           </span>
           {location && (
             <span className="flex items-center gap-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
@@ -148,7 +150,8 @@ export default function DiscoverEventsPage() {
 
   const boosted  = filtered.filter(ev => ev.is_boosted);
   const rest     = sortEventsByProximity(filtered.filter(ev => !ev.is_boosted), now);
-  const near     = rest.filter(ev => getEventTiming(ev, now).isNear);
+  const ongoing  = rest.filter(ev => getEventTiming(ev, now).phase === 'live');
+  const near     = rest.filter(ev => { const t = getEventTiming(ev, now); return t.isNear && t.phase !== 'live'; });
   const upcoming = rest.filter(ev => { const t = getEventTiming(ev, now); return !t.isNear && !t.isPast; });
   const past     = rest.filter(ev => getEventTiming(ev, now).isPast);
 
@@ -213,6 +216,7 @@ export default function DiscoverEventsPage() {
       ) : (
         <div>
           {renderSection(boosted,  <Zap size={14} style={{ color: '#F59E0B' }} />, 'Événements boostés', 'Ces événements ont boosté leur visibilité')}
+          {renderSection(ongoing,  <Zap size={14} style={{ color: '#EF4444' }} />, 'En cours', 'Déjà commencés, pas encore terminés')}
           {renderSection(near,     <Zap size={14} style={{ color: '#F59E0B' }} />, 'Bientôt', 'Dans les 7 prochains jours, du plus proche au plus lointain')}
           {renderSection(upcoming, <Calendar size={14} style={{ color: 'var(--primary)' }} />, 'À venir', 'Prochains événements')}
           {renderSection(past,     <Clock size={14} style={{ color: 'var(--text-tertiary)' }} />, 'Passés', 'Événements terminés')}

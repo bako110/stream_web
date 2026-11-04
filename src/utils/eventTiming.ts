@@ -55,3 +55,32 @@ export function sortEventsByProximity<T extends Pick<Event, 'starts_at' | 'ends_
   const past     = list.filter(e => getEventTiming(e, now).isPast).sort((a, b) => t(b) - t(a));
   return [...upcoming, ...past];
 }
+
+/** Fin réelle d'un concert : scheduled_at + duration_min (sans durée → 3 h). */
+export function getConcertEnd(c: { scheduled_at: string; duration_min?: number | null }): Date {
+  const start = new Date(c.scheduled_at);
+  return new Date(start.getTime() + (c.duration_min && c.duration_min > 0 ? c.duration_min * 60_000 : DEFAULT_DURATION_MS));
+}
+
+/** Même jour calendaire ? */
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+/** Vrai si l'événement s'étale sur plusieurs jours (ex. un festival de 8 jours). */
+export function isMultiDay(start: Date, end: Date | null): boolean {
+  return !!end && !sameDay(start, end);
+}
+
+/** « 4 mars 2027 » ou « Du 4 au 11 mars 2027 » / « Du 28 févr. au 7 mars 2027 ». */
+export function formatDateRange(start: Date, end: Date | null): string {
+  const f = (d: Date, o: Intl.DateTimeFormatOptions) => d.toLocaleDateString('fr-FR', o);
+  if (!end || sameDay(start, end)) return f(start, { day: 'numeric', month: 'long', year: 'numeric' });
+  if (start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth())
+    return `Du ${start.getDate()} au ${f(end, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  return `Du ${f(start, { day: 'numeric', month: 'short' })} au ${f(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+}
+
+/** Nombre de jours couverts (bornes incluses). */
+export function daysSpan(start: Date, end: Date): number {
+  return differenceInCalendarDays(end, start) + 1;
+}

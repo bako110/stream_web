@@ -9,6 +9,7 @@ import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
 import { Spinner , PageLoader} from '../../components/ui/Spinner';
 import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
+import { getEventTiming, isMultiDay, formatDateRange, daysSpan } from '../../utils/eventTiming';
 import type { Event } from '../../types';
 
 export default function ExploreEventDetailPage() {
@@ -33,7 +34,11 @@ export default function ExploreEventDetailPage() {
 
   const startDate = new Date(event.starts_at);
   const endDate   = event.ends_at ? new Date(event.ends_at) : null;
-  const isPast    = startDate < new Date();
+  const timing    = getEventTiming(event);
+  const isPast    = timing.isPast;
+  const inProgress = timing.phase === 'live';
+  const multiDay  = isMultiDay(startDate, endDate);
+  const rangeLabel = formatDateRange(startDate, endDate);
   const location  = [event.venue_name, event.venue_address, event.venue_city, event.venue_country].filter(Boolean).join(', ');
 
   return (
@@ -61,14 +66,20 @@ export default function ExploreEventDetailPage() {
 
 
         <div className="xd-m-title md:hidden">
+          {inProgress && <span className="xd-m-type xd-m-live"><i /> En cours</span>}
           {event.event_type && <span className="xd-m-type">{event.event_type}</span>}
           <h1>{event.title}</h1>
           <p>
-            <Calendar size={13} /> {format(startDate, 'd MMM yyyy · HH:mm', { locale: fr })}
+            <Calendar size={13} /> {multiDay ? rangeLabel : format(startDate, 'd MMM yyyy · HH:mm', { locale: fr })}
             {event.venue_city && <><span className="xd-m-sep" /><MapPin size={13} /> {event.venue_city}</>}
           </p>
         </div>
 
+        {inProgress && (
+          <div className="hidden md:flex absolute top-4 left-4 items-center gap-2 bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> En cours
+          </div>
+        )}
         {event.event_type && (
           <div className="hidden md:block absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full capitalize">
             {event.event_type}
@@ -92,6 +103,11 @@ export default function ExploreEventDetailPage() {
                 {format(startDate, 'EEEE d MMMM yyyy', { locale: fr })}
               </p>
               <p className="text-[var(--text-secondary)] text-sm">à {format(startDate, 'HH:mm')}</p>
+              {multiDay && endDate && (
+                <p className="text-xs mt-1 font-semibold" style={{ color: 'var(--primary)' }}>
+                  {daysSpan(startDate, endDate)} jours · {rangeLabel}
+                </p>
+              )}
             </div>
 
             {endDate && (
@@ -101,8 +117,9 @@ export default function ExploreEventDetailPage() {
                   <span>Fin</span>
                 </div>
                 <p className="text-[var(--text-primary)] font-medium">
-                  {format(endDate, 'd MMMM yyyy', { locale: fr })}
+                  {format(endDate, multiDay ? 'EEEE d MMMM yyyy' : 'd MMMM yyyy', { locale: fr })}
                 </p>
+                <p className="text-[var(--text-secondary)] text-sm">à {format(endDate, 'HH:mm')}</p>
               </div>
             )}
 

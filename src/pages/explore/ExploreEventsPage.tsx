@@ -11,7 +11,7 @@ import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
 import { ExploreBackButton } from '../../components/ui/ExploreBackButton';
 import { PriceWithLocal } from '../../components/ui/PriceWithLocal';
 import type { Event, PaginatedResponse } from '../../types';
-import { getEventTiming, sortEventsByProximity } from '../../utils/eventTiming';
+import { getEventTiming, sortEventsByProximity, isMultiDay, formatDateRange, daysSpan } from '../../utils/eventTiming';
 
 const TYPE_LABELS: Record<string, string> = {
   concert: 'Concert', birthday: 'Anniversaire', festival: 'Festival',
@@ -42,7 +42,8 @@ export default function ExploreEventsPage() {
   const now      = new Date();
   const filtered = items.filter(ev => !search || ev.title.toLowerCase().includes(search.toLowerCase()));
   const sorted   = sortEventsByProximity(filtered, now);
-  const near     = sorted.filter(ev => getEventTiming(ev, now).isNear);
+  const ongoing  = sorted.filter(ev => getEventTiming(ev, now).phase === 'live');
+  const near     = sorted.filter(ev => { const t = getEventTiming(ev, now); return t.isNear && t.phase !== 'live'; });
   const upcoming = sorted.filter(ev => { const t = getEventTiming(ev, now); return !t.isNear && !t.isPast; });
   const past     = sorted.filter(ev => getEventTiming(ev, now).isPast);
 
@@ -71,6 +72,18 @@ export default function ExploreEventsPage() {
         <div className="xp-empty">{search ? `Aucun résultat pour "${search}"` : 'Aucun événement disponible'}</div>
       ) : (
         <>
+          {ongoing.length > 0 && (
+            <section className="mb-10 xp-rise">
+              <div className="xp-rule">
+                <span className="xp-eyebrow shrink-0 inline-flex items-center gap-2" style={{ color: '#EF4444' }}>
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#EF4444' }} /> En cours maintenant
+                </span>
+              </div>
+              <div className="xp-grid-wide grid gap-6">
+                {ongoing.map((ev, i) => <div key={ev.id} className="xp-rise" style={{ transitionDelay: `${Math.min(i, 8) * 50}ms` }}><EventCard event={ev} /></div>)}
+              </div>
+            </section>
+          )}
           {near.length > 0 && (
             <section className="mb-10 xp-rise">
               <div className="xp-rule"><span className="xp-eyebrow shrink-0" style={{ color: '#F59E0B' }}>Bientôt · 7 prochains jours</span></div>
@@ -120,6 +133,8 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
   const label     = TYPE_LABELS[event.event_type] ?? event.event_type;
   const timing    = getEventTiming(event);
   isPast = isPast || timing.isPast;
+  const endDate   = event.ends_at ? new Date(event.ends_at) : null;
+  const multiDay  = isMultiDay(startDate, endDate);
 
   return (
     <Link to={`/explore/events/${encodeId(event.id)}`} className="xp-card block"
@@ -134,8 +149,8 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
         <div className="xp-card-scrim" />
         <span className="xp-card-badge" style={{ background: 'var(--xp-ink)' }}>{label}</span>
         {!isPast && (
-          <span className="absolute top-3 right-3 text-[11px] font-extrabold px-2.5 py-1 rounded-full text-white shadow-lg"
-            style={{ background: timing.color }}>{timing.label}</span>
+          <span className="absolute top-3 text-[11px] font-extrabold px-2.5 py-1 rounded-full text-white shadow-lg"
+            style={{ background: timing.color, right: 78 }}>{timing.label}</span>
         )}
         <div className="xp-card-date">
           <span className="xp-card-date-day">{format(startDate, 'd')}</span>
@@ -153,7 +168,7 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
         </div>
       </div>
       <div className="xp-card-footer">
-        <span className="inline-flex items-center gap-1"><Calendar size={12} /> {format(startDate, 'd MMM yyyy', { locale: fr })}</span>
+        <span className="inline-flex items-center gap-1"><Calendar size={12} /> {multiDay && endDate ? `${formatDateRange(startDate, endDate)} · ${daysSpan(startDate, endDate)} j` : format(startDate, 'd MMM yyyy', { locale: fr })}</span>
         {event.ticket_price != null && (
           <span className="xp-card-price">{event.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={event.ticket_price} />}</span>
         )}

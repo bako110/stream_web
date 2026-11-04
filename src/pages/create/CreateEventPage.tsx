@@ -238,7 +238,8 @@ export default function CreateEventPage() {
       }
 
       const starts_at = startDate && startTime ? `${startDate}T${startTime}:00` : undefined;
-      const ends_at   = endDate   && endTime   ? `${endDate}T${endTime}:00`     : undefined;
+      // Date de fin seule (ex. salon de 8 jours) → on termine à 23:59 ce jour-là
+      const ends_at   = endDate ? `${endDate}T${endTime || '23:59'}:00` : undefined;
 
       const payload: Record<string, unknown> = {
         title:          title.trim(),
@@ -544,7 +545,7 @@ export default function CreateEventPage() {
               </div>
               <div>
                 <label className="text-xs font-black uppercase tracking-wider block mb-2" style={{ color: 'var(--text-tertiary)' }}>
-                  Date fin
+                  Date fin <span style={{ textTransform: 'none', fontWeight: 500 }}>(si plusieurs jours)</span>
                 </label>
                 <input type="date" className={inputCls} style={inputStyle}
                   value={endDate} onChange={e => setEndDate(e.target.value)} />
@@ -626,7 +627,7 @@ export default function CreateEventPage() {
                 { label: 'Accès',    value: ACCESS_TYPES.find(t => t.type === accessType)?.label ?? accessType },
                 { label: 'Lieu',     value: isOnline ? 'En ligne' : `${venueCity}${country ? `, ${country}` : ''}` },
                 { label: 'Début',    value: startDate && startTime ? `${startDate} à ${startTime}` : '—' },
-                { label: 'Fin',      value: endDate && endTime ? `${endDate} à ${endTime}` : '—' },
+                { label: 'Fin',      value: endDate ? `${endDate} à ${endTime || '23:59'}` : '—' },
                 { label: 'Photos',   value: `${imagePreviews.length} photo(s)` },
                 { label: 'Vidéo',    value: videoFile ? videoFile.name : existingVideoUrl ? 'Vidéo existante conservée' : '—' },
               ].map(({ label, value }, i, arr) => (

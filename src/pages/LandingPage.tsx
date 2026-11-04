@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { encodeId } from '../utils/slugId';
-import { getEventTiming, sortEventsByProximity } from '../utils/eventTiming';
+import { getEventTiming, sortEventsByProximity, isMultiDay, formatDateRange, getConcertEnd } from '../utils/eventTiming';
 import {
   Play, Music2, Calendar, Users, ArrowRight, ArrowUpRight,
   Menu, X, MapPin, ArrowUp, Star, Ticket, Radio, Film, Shield, Eye, Volume2, VolumeX,
@@ -810,7 +810,8 @@ export default function LandingPage() {
   const concertTiles: BentoTile[] = concerts.map(c => ({
     key: c.id, title: c.title, image: c.thumbnail_url,
     chip: c.artist?.display_name ?? c.artist?.username ?? null,
-    badge: c.status === 'live' ? <><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> EN DIRECT</> : null,
+    badge: c.status === 'live' ? <><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> EN DIRECT</>
+      : (new Date(c.scheduled_at) <= new Date() && new Date() <= getConcertEnd(c)) ? <><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> EN COURS</> : null,
     icon: <Music2 size={40} />,
     onClick: () => navigate(`/explore/concerts/${encodeId(c.id)}`),
   }));
@@ -818,7 +819,7 @@ export default function LandingPage() {
     const d = new Date(e.starts_at);
     return {
       key: e.id, title: e.title, image: e.thumbnail_url,
-      chip: [d.toLocaleDateString('fr', { day: '2-digit', month: 'short' }), e.venue_city].filter(Boolean).join(' · '),
+      chip: [isMultiDay(d, e.ends_at ? new Date(e.ends_at) : null) ? formatDateRange(d, new Date(e.ends_at!)) : d.toLocaleDateString('fr', { day: '2-digit', month: 'short' }), e.venue_city].filter(Boolean).join(' · '),
       badge: getEventTiming(e).label,
       icon: <Calendar size={40} />,
       onClick: () => navigate(`/explore/events/${encodeId(e.id)}`),

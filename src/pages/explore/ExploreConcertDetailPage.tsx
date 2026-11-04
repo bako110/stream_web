@@ -1,3 +1,4 @@
+import { getConcertEnd, isMultiDay, formatDateRange, daysSpan } from '../../utils/eventTiming';
 import { useParams, Link } from 'react-router-dom';
 import { MapPin, Calendar, Ticket, ArrowLeft, Radio, Play } from 'lucide-react';
 import { decodeId } from '../../utils/slugId';
@@ -32,19 +33,23 @@ export default function ExploreConcertDetailPage() {
 
   const date       = new Date(concert.scheduled_at);
   const isLive     = concert.status === 'live';
-  const isPast     = date < new Date() && !isLive;
+  const endDate    = getConcertEnd(concert);
+  const nowD       = new Date();
+  const inProgress = isLive || (date <= nowD && nowD <= endDate);
+  const multiDay   = isMultiDay(date, endDate);
+  const isPast     = endDate < nowD && !isLive;
   const artistName = concert.artist?.display_name ?? concert.artist?.username ?? null;
   const venue      = [concert.venue_name, concert.venue_city, concert.venue_country].filter(Boolean).join(', ');
 
   const facts = [
-    { icon: Calendar, label: 'Date', value: format(date, 'EEEE d MMMM yyyy', { locale: fr }), sub: `à ${format(date, 'HH:mm')}` },
+    { icon: Calendar, label: multiDay ? 'Dates' : 'Date', value: multiDay ? formatDateRange(date, endDate) : format(date, 'EEEE d MMMM yyyy', { locale: fr }), sub: inProgress ? `En cours · jusqu'au ${format(endDate, 'd MMM HH:mm', { locale: fr })}` : `à ${format(date, 'HH:mm')}${multiDay ? ` · ${daysSpan(date, endDate)} jours` : ''}` },
     venue ? { icon: MapPin, label: 'Lieu', value: venue } : null,
     concert.ticket_price != null
       ? { icon: Ticket, label: 'Entrée', value: concert.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={concert.ticket_price} /> }
       : null,
   ].filter(Boolean) as { icon: typeof Calendar; label: string; value: React.ReactNode; sub?: string }[];
 
-  const cta = isLive
+  const cta = inProgress
     ? { icon: Radio, text: 'Regarder le live' }
     : isPast
       ? { icon: Play, text: 'Voir le replay' }

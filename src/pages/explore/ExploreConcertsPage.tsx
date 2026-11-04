@@ -7,6 +7,7 @@ import { fr } from 'date-fns/locale';
 import { usePaginatedApi } from '../../hooks/useApi';
 import { publicClient } from '../../api/client';
 import { Endpoints } from '../../api/endpoints';
+import { getConcertEnd, isMultiDay, formatDateRange, daysSpan } from '../../utils/eventTiming';
 import type { Concert, PaginatedResponse } from '../../types';
 import { MediaPlaceholder } from '../../components/ui/MediaPlaceholder';
 import { ExploreBackButton } from '../../components/ui/ExploreBackButton';
@@ -41,7 +42,7 @@ export default function ExploreConcertsPage() {
     const matchSearch = !search || concert.title.toLowerCase().includes(search.toLowerCase()) || artistName.toLowerCase().includes(search.toLowerCase());
     if (!matchSearch) return false;
     const date = new Date(concert.scheduled_at);
-    if (filter === 'À venir')   return date > now && concert.status !== 'live';
+    if (filter === 'À venir')   return getConcertEnd(concert) > now && concert.status !== 'live';
     if (filter === 'En direct') return concert.status === 'live';
     return true;
   });
@@ -128,6 +129,10 @@ function ConcertCard({ concert, isLive = false }: { concert: Concert; isLive?: b
   const date       = new Date(concert.scheduled_at);
   const artistName = concert.artist?.display_name ?? concert.artist?.username ?? null;
   const venue      = [concert.venue_name, concert.venue_city].filter(Boolean).join(', ');
+  const endDate    = getConcertEnd(concert);
+  const nowD       = new Date();
+  const inProgress = !isLive && date <= nowD && nowD <= endDate;
+  const multiDay   = isMultiDay(date, endDate);
 
   return (
     <Link to={`/explore/concerts/${encodeId(concert.id)}`} className="xp-card block">
@@ -139,6 +144,7 @@ function ConcertCard({ concert, isLive = false }: { concert: Concert; isLive?: b
         )}
         <div className="xp-card-scrim" />
         {isLive && <span className="xp-card-badge"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live</span>}
+        {inProgress && <span className="xp-card-badge" style={{ background: '#EF4444' }}><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> En cours</span>}
         {(concert.current_viewers ?? 0) > 0 && (
           <div className="xp-card-chip"><Users size={10} /> {(concert.current_viewers ?? 0).toLocaleString()}</div>
         )}
@@ -149,7 +155,7 @@ function ConcertCard({ concert, isLive = false }: { concert: Concert; isLive?: b
         </div>
       </div>
       <div className="xp-card-footer">
-        <span className="inline-flex items-center gap-1"><Calendar size={12} /> {format(date, 'd MMM à HH:mm', { locale: fr })}</span>
+        <span className="inline-flex items-center gap-1"><Calendar size={12} /> {multiDay ? `${formatDateRange(date, endDate)} · ${daysSpan(date, endDate)} j` : format(date, 'd MMM à HH:mm', { locale: fr })}</span>
         {concert.ticket_price != null && (
           <span className="xp-card-price"><Ticket size={12} /> {concert.ticket_price === 0 ? 'Gratuit' : <PriceWithLocal amountEur={concert.ticket_price} />}</span>
         )}
