@@ -1602,7 +1602,7 @@ function FeedAdCard({ ad }: { ad: FeedAd }) {
 
       {/* Visuel — miniature figée + play pour les vidéos (jamais d'autoplay) */}
       <div className="px-4">
-        <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: '1.6/1', background: 'rgba(123,63,242,0.07)' }}>
+        <div className="relative rounded-2xl overflow-hidden fd-media-ad" style={{ background: 'rgba(123,63,242,0.07)' }}>
           {hasCreative ? (
             <img src={creative!} alt={ad.title} className="w-full h-full object-cover" loading="lazy"
               onError={() => setImgFailed(true)} />
@@ -1766,8 +1766,7 @@ function ConcertCard({ concert, delay = 0, followedIds, onFollow, onOpenComments
       />
 
       <div onClick={() => navigate(`/concerts/${encodeId(concert.id)}`)}
-        className="relative overflow-hidden cursor-pointer group"
-        style={{ aspectRatio: '16/9' }}>
+        className="relative overflow-hidden cursor-pointer group fd-media-tall">
         {concert.thumbnail_url ? (
           <img src={concert.thumbnail_url} alt={concert.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -1874,8 +1873,7 @@ function EventCard({ event, delay = 0, followedIds, onFollow, onOpenComments, on
       />
 
       <div onClick={() => navigate(`/events/${encodeId(event.id)}`)}
-        className="relative overflow-hidden cursor-pointer group"
-        style={{ aspectRatio: '16/9' }}>
+        className="relative overflow-hidden cursor-pointer group fd-media-tall">
         {event.thumbnail_url ? (
           <img src={event.thumbnail_url} alt={event.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -2016,7 +2014,7 @@ function PostVideoPlayer({ src, thumbnail, onClick }: { src: string; thumbnail?:
   }
 
   return (
-    <div ref={wrapRef} className="relative overflow-hidden" style={{ background: '#000', aspectRatio: '16/9' }}>
+    <div ref={wrapRef} className="relative overflow-hidden fd-media-video" style={{ background: '#000' }}>
       {!started && thumbnail && (
         <img src={thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover" />
       )}
@@ -2097,8 +2095,8 @@ function PostImageGrid({ urls, onClick }: { urls: string[]; onClick: () => void 
 
   if (n === 1) {
     return (
-      <div onClick={onClick} className="relative overflow-hidden cursor-pointer group"
-        style={{ background: 'var(--bg-secondary)', aspectRatio: '4/3' }}>
+      <div onClick={onClick} className="relative overflow-hidden cursor-pointer group fd-pimg fd-pimg-1"
+        style={{ background: 'var(--bg-secondary)' }}>
         <img src={shown[0]} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
       </div>
     );
@@ -2107,15 +2105,15 @@ function PostImageGrid({ urls, onClick }: { urls: string[]; onClick: () => void 
   const gap = 2;
   let gridStyle: CSSProperties;
   if (n === 2) {
-    gridStyle = { gridTemplateColumns: '1fr 1fr', aspectRatio: '4/3' };
+    gridStyle = { gridTemplateColumns: '1fr 1fr' };
   } else if (n === 3) {
-    gridStyle = { gridTemplateColumns: '2fr 1fr', gridTemplateRows: '1fr 1fr', aspectRatio: '4/3' };
+    gridStyle = { gridTemplateColumns: '2fr 1fr', gridTemplateRows: '1fr 1fr' };
   } else {
-    gridStyle = { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', aspectRatio: '1/1' };
+    gridStyle = { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' };
   }
 
   return (
-    <div onClick={onClick} className="grid cursor-pointer" style={{ gap, ...gridStyle }}>
+    <div onClick={onClick} className={`grid cursor-pointer fd-pimg fd-pimg-${n}`} style={{ gap, ...gridStyle }}>
       {shown.map((src, i) => cell(src, i, n === 3 && i === 0 ? { gridRow: 'span 2' } : undefined))}
     </div>
   );
@@ -2292,8 +2290,8 @@ function ReelCard({ reel, delay = 0 }: {
   }, [autoplayOn]);
 
   return (
-    <div ref={cardRef} className="fd-card rounded-2xl overflow-hidden animate-reveal-up"
-      style={{ background: '#000', border: '1px solid var(--border)', animationDelay: `${delay}s`, aspectRatio: '9/16', maxHeight: 480, position: 'relative', cursor: 'pointer' }}
+    <div ref={cardRef} className="fd-card rounded-2xl overflow-hidden animate-reveal-up fd-media-reel"
+      style={{ background: '#000', border: '1px solid var(--border)', animationDelay: `${delay}s`, position: 'relative', cursor: 'pointer' }}
       onClick={() => navigate(`/reels?id=${encodeId(reel.id)}`)}>
 
       {/* Video autoplay muted — pointer-events-none so clicks go to the wrapper */}
