@@ -411,7 +411,7 @@ export default function FilmDetailPage() {
               <section id="film-trailer">
                 <h2 className="text-[11px] font-black uppercase mb-2.5 px-1" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.12em' }}>Bande-annonce</h2>
                 <div className="aspect-video overflow-hidden" style={{ background: '#000', borderRadius: '1.5rem' }}>
-                  <video src={f.trailer_url} controls playsInline className="w-full h-full" />
+                  <video src={f.trailer_url} poster={f.banner_url ?? f.thumbnail_url ?? undefined} controls playsInline preload="metadata" className="w-full h-full object-cover" />
                 </div>
               </section>
             )}
