@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
 import { ExternalLink } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/constants';
 
 interface Preview {
   title: string | null;
@@ -22,7 +23,8 @@ export function LinkPreviewCard({ url }: Props) {
     _cache.has(url) ? _cache.get(url) : undefined,
   );
   const fetchedRef = useRef(false);
-  const [imgFailed, setImgFailed] = useState(false);
+  // 0 = via le proxy du backend, 1 = URL directe (si le proxy échoue), 2 = abandon
+  const [imgStage, setImgStage] = useState(0);
 
   useEffect(() => {
     if (_cache.has(url)) {
@@ -62,35 +64,34 @@ export function LinkPreviewCard({ url }: Props) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={e => e.stopPropagation()}
-      className="mt-2 flex rounded-xl overflow-hidden transition-opacity hover:opacity-90 block"
-      style={{ border: '1px solid var(--border)', background: 'var(--bg-secondary)', textDecoration: 'none' }}
+      className="mt-2 block rounded-xl overflow-hidden transition-opacity hover:opacity-90"
+      style={{ border: '1px solid var(--border)', background: 'var(--surface)', textDecoration: 'none' }}
     >
-      {preview.image && !imgFailed && (
-        <div className="shrink-0 w-24 h-24 overflow-hidden">
-          {/* no-referrer : les CDN (Facebook, Instagram…) refusent souvent les requêtes avec Referer d'un autre site */}
-          <img src={preview.image} alt="" className="w-full h-full object-cover"
-            referrerPolicy="no-referrer" loading="lazy" onError={() => setImgFailed(true)} />
+      {/* Image en haut (ratio Open Graph 1.91), proxifiée par le backend : les CDN
+          (Facebook, Instagram…) bloquent souvent le hotlink depuis un autre site. */}
+      {preview.image && imgStage < 2 && (
+        <div className="w-full overflow-hidden" style={{ aspectRatio: '1.91 / 1', background: 'var(--bg-secondary)' }}>
+          <img key={imgStage} src={imgStage === 0 ? `${API_BASE_URL}${Endpoints.utils.linkPreviewImage(preview.image)}` : preview.image} alt="" referrerPolicy="no-referrer"
+            className="w-full h-full object-cover" loading="lazy" onError={() => setImgStage(n => n + 1)} />
         </div>
       )}
-      <div className="flex flex-col justify-center px-3 py-2 min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5"
-          style={{ color: 'var(--text-tertiary)' }}>
-          {displayUrl}
+      <div className="px-3 py-2.5 min-w-0 flex flex-col gap-0.5">
+        <p className="text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: 'var(--text-tertiary)' }}>
+          {(preview.site_name || displayUrl).replace(/^www\./i, '')}
         </p>
         {preview.title && (
-          <p className="text-sm font-bold leading-tight line-clamp-2"
-            style={{ color: 'var(--text-primary)' }}>
+          <p className="text-sm font-bold leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
             {preview.title}
           </p>
         )}
         {preview.description && (
-          <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-[13px] leading-snug line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
             {preview.description}
           </p>
         )}
-        <div className="flex items-center gap-1 mt-1.5">
+        <div className="flex items-center gap-1 mt-1">
           <ExternalLink size={10} style={{ color: 'var(--text-tertiary)' }} />
-          <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{displayUrl}</span>
+          <span className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>{displayUrl.replace(/^www\./i, '')}</span>
         </div>
       </div>
     </a>

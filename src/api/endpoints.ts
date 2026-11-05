@@ -421,6 +421,7 @@ export const Endpoints = {
   },
   utils: {
     linkPreview:    (url: string) => `${V1}/utils/link-preview?url=${encodeURIComponent(url)}`,
+    linkPreviewImage: (url: string) => `${V1}/utils/link-preview-image?url=${encodeURIComponent(url)}`,
     downloadImage:  (url: string) => `${V1}/utils/download-image?url=${encodeURIComponent(url)}`,
     geocodeCountry: (lat: number, lon: number) => `${V1}/utils/geocode/country?lat=${lat}&lon=${lon}`,
   },
