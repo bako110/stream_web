@@ -4,7 +4,7 @@ import { encodeId, decodeId } from '../../utils/slugId';
 import {
   Calendar, MapPin, Globe, Users, Ticket, Heart, MessageCircle,
   Share2, UserPlus, UserCheck, Clock, ArrowLeft, ExternalLink, Send, X,
-  ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2, Bookmark, Repeat2,
+  ZoomIn, Edit3, Bell, BellOff, SmilePlus, Trash2, Bookmark, Repeat2, Check, Plus,
 } from 'lucide-react';
 import type { Event } from '../../types';
 import { apiClient } from '../../api';
@@ -17,6 +17,7 @@ import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
+import { TicketModal, TIER_CONFIG, type EventTicket } from '../../components/ui/TicketModal';
 import { useRepost } from '../../components/ui/RepostModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { formatTimeAgo } from '../../utils/date';
@@ -406,6 +407,23 @@ export default function EventDetailPage() {
   const [paySheet,     setPaySheet]     = useState(false);
   const [selectedTier, setSelectedTier] = useState<TicketTier['key']>('simple');
   const [otherEvents,  setOtherEvents]  = useState<Event[]>([]);
+  // Billets déjà achetés (web ou mobile), du plus récent au plus ancien. On peut en
+  // acheter un autre (proche, ami) : « Voir mon billet » + « Acheter un autre billet ».
+  const [myTickets,    setMyTickets]    = useState<EventTicket[]>([]);
+  const [openTicket,   setOpenTicket]   = useState<EventTicket | null>(null);
+
+  const loadMyTickets = useCallback(() => {
+    if (!id || !me) return Promise.resolve([] as EventTicket[]);
+    return apiClient.get<EventTicket[]>(Endpoints.events.myTickets)
+      .then(r => {
+        const list = (Array.isArray(r.data) ? r.data : []).filter(t => t.event_id === id);
+        setMyTickets(list);
+        return list;
+      })
+      .catch(() => [] as EventTicket[]);
+  }, [id, me]);
+
+  useEffect(() => { setMyTickets([]); loadMyTickets(); }, [loadMyTickets]);
 
   // Charge les reactions et l'etat follow au montage — meme pattern que le mobile
   useEffect(() => {
@@ -929,12 +947,36 @@ export default function EventDetailPage() {
                     ))}
                   </div>
                 )}
+                {myTickets.length > 0 && (
+                  <div className="mb-3">
+                    <p className="flex items-center gap-1.5 text-xs font-bold mb-2" style={{ color: '#22C55E' }}>
+                      <Check size={13} /> {myTickets.length > 1 ? `Tu as déjà ${myTickets.length} billets` : 'Tu as déjà un billet'}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {myTickets.map(t => (
+                        <button key={t.id} onClick={() => setOpenTicket(t)}
+                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white"
+                          style={{ background: '#22C55E' }}>
+                          <Ticket size={14} /> Voir mon billet · {(TIER_CONFIG[t.ticket_tier] ?? TIER_CONFIG.simple).label} #{(t.access_code ?? t.id).slice(0, 6).toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {ev.access_type === 'ticket' && (
-                  <button onClick={handleBuyTicket}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white"
-                    style={{ background: tierColor }}>
-                    <Ticket size={14} /> Acheter un billet
-                  </button>
+                  myTickets.length > 0 ? (
+                    <button onClick={handleBuyTicket}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold"
+                      style={{ background: 'transparent', border: `1.5px solid ${tierColor}`, color: tierColor }}>
+                      <Plus size={14} /> Acheter un autre billet
+                    </button>
+                  ) : (
+                    <button onClick={handleBuyTicket}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white"
+                      style={{ background: tierColor }}>
+                      <Ticket size={14} /> Acheter un billet
+                    </button>
+                  )
                 )}
                 {ev.access_type === 'free' && (
                   <p className="text-center text-sm font-semibold py-1" style={{ color: '#22c55e' }}>
@@ -987,12 +1029,29 @@ export default function EventDetailPage() {
       })()}
 
       <TicketPaymentModal
-        open={paySheet} onClose={() => setPaySheet(false)} onSuccess={() => setPaySheet(false)}
+        open={paySheet} onClose={() => setPaySheet(false)}
+        onSuccess={t => {
+          setPaySheet(false);
+          loadMyTickets().then(list => {
+            const fresh = (t && list.find(x => x.id === t.id)) ?? t ?? list[0] ?? null;
+            if (fresh) setOpenTicket(fresh);
+          });
+        }}
         itemId={ev.id} title={ev.title} thumbnail={ev.thumbnail_url}
         kind="event" accessType={ev.access_type as any}
         tiers={safeTiers} selectedTierKey={selectedTier}
         onBuy={tierKey => apiClient.post(Endpoints.events.buyTicket(ev.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
       />
+
+      {openTicket && (
+        <TicketModal
+          kind="event" onClose={() => setOpenTicket(null)}
+          ticket={{
+            ...openTicket,
+            event: openTicket.event ?? { title: ev.title, starts_at: ev.starts_at, venue_name: ev.venue_name ?? undefined, venue_city: ev.venue_city ?? undefined },
+          }}
+        />
+      )}
 
       <AiAnalysisStatusModal
         open={showAiModal}

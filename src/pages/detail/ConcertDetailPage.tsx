@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { encodeId, decodeId } from '../../utils/slugId';
-import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark, Edit3, Repeat2, Heart, MessageCircle, Share2 } from 'lucide-react';
+import { Radio, MapPin, Clock, Users, Ticket, Play, Zap, StopCircle, Bell, BellOff, ArrowLeft, Bookmark, Edit3, Repeat2, Heart, MessageCircle, Share2, Check, Plus } from 'lucide-react';
 import type { Concert, StreamToken } from '../../types';
 import { apiClient } from '../../api';
 import { Endpoints } from '../../api/endpoints';
@@ -13,6 +13,7 @@ import { Avatar, VerifiedBadge } from '../../components/ui/Avatar';
 import { Spinner, PageLoader } from '../../components/ui/Spinner';
 import { RichText } from '../../components/ui/RichText';
 import { TicketPaymentModal, type TicketTier } from '../../components/ui/TicketPaymentModal';
+import { TicketModal, TIER_CONFIG, type ConcertTicket } from '../../components/ui/TicketModal';
 import { useRepost } from '../../components/ui/RepostModal';
 import { Lightbox } from '../../components/ui/Lightbox';
 import { ShareModal } from '../../components/ui/ShareModal';
@@ -177,6 +178,23 @@ export default function ConcertDetailPage() {
   const [shareCount,    setShareCount]   = useState(0);
   const [showComments,  setShowComments] = useState(false);
   const [showShare,     setShowShare]    = useState(false);
+  // Billets déjà achetés (web ou mobile), du plus récent au plus ancien : « Voir mon
+  // billet » + possibilité d'en acheter un autre.
+  const [myTickets,     setMyTickets]    = useState<ConcertTicket[]>([]);
+  const [openTicket,    setOpenTicket]   = useState<ConcertTicket | null>(null);
+
+  const loadMyTickets = useCallback(() => {
+    if (!id || !user) return Promise.resolve([] as ConcertTicket[]);
+    return apiClient.get<ConcertTicket[]>(Endpoints.concerts.myTickets)
+      .then(r => {
+        const list = (Array.isArray(r.data) ? r.data : []).filter(t => t.concert_id === id);
+        setMyTickets(list);
+        return list;
+      })
+      .catch(() => [] as ConcertTicket[]);
+  }, [id, user]);
+
+  useEffect(() => { setMyTickets([]); loadMyTickets(); }, [loadMyTickets]);
 
   // Reactions et partages (connecte uniquement) — meme pattern que la page evenement
   useEffect(() => {
@@ -621,6 +639,28 @@ export default function ConcertDetailPage() {
                       EgressEnded, quelques minutes après la fin du live). */}
                   Ce concert est terminé. Le replay sera bientôt disponible.
                 </p>
+              ) : myTickets.length > 0 ? (
+                <div className="mb-3">
+                  <p className="flex items-center gap-1.5 text-xs font-bold mb-2" style={{ color: '#22C55E' }}>
+                    <Check size={13} /> {myTickets.length > 1 ? `Tu as déjà ${myTickets.length} billets` : 'Tu as déjà un billet'}
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {myTickets.map(t => (
+                      <button key={t.id} onClick={() => setOpenTicket(t)}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white"
+                        style={{ background: '#22C55E' }}>
+                        <Ticket size={15} /> Voir mon billet · {(TIER_CONFIG[t.ticket_tier] ?? TIER_CONFIG.simple).label} #{(t.access_code ?? t.id).slice(0, 6).toUpperCase()}
+                      </button>
+                    ))}
+                    {(c.access_type === 'ticket' || c.access_type === 'ppv') && (
+                      <button onClick={handleBuyTicket}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold"
+                        style={{ background: 'transparent', border: `1.5px solid ${activeTierColor}`, color: activeTierColor }}>
+                        <Plus size={15} /> Acheter un autre billet
+                      </button>
+                    )}
+                  </div>
+                </div>
               ) : c.access_type === 'ticket' || c.access_type === 'ppv' ? (
                 <button onClick={handleBuyTicket}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white mb-3"
@@ -712,12 +752,29 @@ export default function ConcertDetailPage() {
       <TicketPaymentModal
         open={paySheet}
         onClose={() => setPaySheet(false)}
-        onSuccess={() => { setPaySheet(false); if (c.access_type !== 'free') navigate(`/live/${encodeId(c.id)}`); }}
+        onSuccess={t => {
+          setPaySheet(false);
+          loadMyTickets().then(list => {
+            const fresh = (t && list.find(x => x.id === t.id)) ?? t ?? list[0] ?? null;
+            if (c.access_type !== 'free') navigate(`/live/${encodeId(c.id)}`);
+            else if (fresh) setOpenTicket(fresh);
+          });
+        }}
         itemId={c.id} title={c.title} thumbnail={c.thumbnail_url}
         kind="concert" accessType={c.access_type as any}
         tiers={safeTiers} selectedTierKey={selectedTier}
         onBuy={tierKey => apiClient.post(Endpoints.concerts.buyTicket(c.id), tierKey ? { tier: tierKey } : undefined).then(r => r.data)}
       />
+
+      {openTicket && (
+        <TicketModal
+          kind="concert" onClose={() => setOpenTicket(null)}
+          ticket={{
+            ...openTicket,
+            concert: openTicket.concert ?? { title: c.title, starts_at: c.scheduled_at, venue_name: c.venue_name ?? undefined, venue_city: c.venue_city ?? undefined },
+          }}
+        />
+      )}
 
       <AiAnalysisStatusModal
         open={showAiModal}

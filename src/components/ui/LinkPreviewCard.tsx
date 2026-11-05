@@ -22,6 +22,7 @@ export function LinkPreviewCard({ url }: Props) {
     _cache.has(url) ? _cache.get(url) : undefined,
   );
   const fetchedRef = useRef(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
     if (_cache.has(url)) {
@@ -64,9 +65,11 @@ export function LinkPreviewCard({ url }: Props) {
       className="mt-2 flex rounded-xl overflow-hidden transition-opacity hover:opacity-90 block"
       style={{ border: '1px solid var(--border)', background: 'var(--bg-secondary)', textDecoration: 'none' }}
     >
-      {preview.image && (
+      {preview.image && !imgFailed && (
         <div className="shrink-0 w-24 h-24 overflow-hidden">
-          <img src={preview.image} alt="" className="w-full h-full object-cover" />
+          {/* no-referrer : les CDN (Facebook, Instagram…) refusent souvent les requêtes avec Referer d'un autre site */}
+          <img src={preview.image} alt="" className="w-full h-full object-cover"
+            referrerPolicy="no-referrer" loading="lazy" onError={() => setImgFailed(true)} />
         </div>
       )}
       <div className="flex flex-col justify-center px-3 py-2 min-w-0 flex-1">
